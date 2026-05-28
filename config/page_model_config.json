@@ -1,0 +1,36 @@
+{
+  "pom_output_dir": "pom_pages",
+  "manual_tests_output_dir": "manual_tests",
+  "robot_tests_output_dir": "tests",
+  "workflow_input_dir": "workflow_inputs",
+
+  "browser": "chromium",
+  "headless": true,
+  "wait_seconds": 5,
+  "accept_cookies": false,
+  "cookie_button_text": "Accept",
+
+  "ai": {
+    "enabled": true,
+    "endpoint": "https://gains.dovercorp.com/se/gains-api/chat",
+    "token_env_var": "DEVEX_AI_TOKEN"
+  },
+
+  "generation_control": {
+    "regenerate_pom_pages": true,
+    "overwrite_pom_pages": false,
+    "excluded_pom_modules": ["home_page"],
+    "overwrite_manual_tests": false,
+    "excluded_workflows": [],
+    "overwrite_robot_tests": false,
+    "excluded_modules": [],
+    "excluded_manual_files": []
+  },
+
+  "pages": [
+    {
+      "url": "http://172.21.166.115/washtabui/login?data=undefined",
+      "page_name": "login_page"
+    }
+  ]
+}

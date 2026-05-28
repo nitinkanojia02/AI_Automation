@@ -1,0 +1,27 @@
+{
+  "workflowName": "Login",
+  "resourceFiles": [
+    "login_page/login_page.resource"
+  ],
+  "preconditions": [
+    "user has valid credentials",
+    "app is reachable"
+  ],
+  "steps": [
+    "Open login page",
+    "Enter valid username 'haklarr'",
+    "Enter valid password 'Icstunnel1'",
+    "Click login button"
+  ],
+  "expectedResult": "User lands on home page http://172.21.166.115/washtabui/home",
+  "fields": [
+    "username textbox",
+    "password textbox",
+    "login button",
+    "error message area"
+  ],
+  "observedValidations": [
+    "Login failed when incorrect username or password",
+    "Login failed when username and password is blank"
+  ]
+}
