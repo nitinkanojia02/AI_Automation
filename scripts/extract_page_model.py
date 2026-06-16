@@ -588,7 +588,7 @@ def process_page(playwright, config: dict, page_entry: Dict[str, str]):
 
     engine = get_browser_engine(playwright, config["browser"])
     browser = engine.launch(headless=config["headless"])
-    page = browser.new_page(viewport={"width": 1440, "height": 2200})
+    page = browser.new_page(viewport={"width": 1920, "height": 1080})
 
     try:
         logger.info("Opening URL: %s", url)
@@ -605,6 +605,7 @@ def process_page(playwright, config: dict, page_entry: Dict[str, str]):
         maybe_accept_cookies(page, config["accept_cookies"], config["cookie_button_text"])
 
         try:
+            page.set_viewport_size({"width": 1920, "height": 1080})
             page.screenshot(path=str(screenshot_path), full_page=True)
         except Exception as exc:
             logger.warning("Screenshot failed for %s: %s", page_name, exc)

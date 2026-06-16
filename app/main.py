@@ -21,7 +21,7 @@ from scripts.generate_robot_from_manual import (
     build_prompt as build_robot_prompt,
     call_ai_chat,
     get_ai_token as get_robot_ai_token,
-    load_json as load_robot_json,
+    load_json as load_robot_ai_json,
     parse_resource_file,
     validate_config as validate_robot_config,
     validate_robot_content,
@@ -33,19 +33,19 @@ MANUAL_DIR = BASE_DIR / "manual_tests"
 TESTS_DIR = BASE_DIR / "tests"
 POM_DIR = BASE_DIR / "pom_pages"
 TEMPLATES_DIR = BASE_DIR / "app" / "templates"
+CONFIG_PATH = BASE_DIR / "config" / "page_model_config.json"
 
 app = FastAPI(title="WashTab Automation MVP")
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
+# -------------------------------------------------------------------
+# Generic helpers
+# -------------------------------------------------------------------
+
 def render_template(request: Request, template_name: str, context: dict, status_code: int = 200):
-    payload = {"success_message": None, "error_message": None}
+    payload = {"request": request, "success_message": None, "error_message": None}
     payload.update(context)
-    return templates.TemplateResponse(
-        request=request,
-        name=template_name,
-        context=payload,
-        status_code=status_code,
-    )
+    return templates.TemplateResponse(template_name, payload, status_code=status_code)
 
 def read_json(path: Path):
     return json.loads(path.read_text(encoding="utf-8"))
@@ -57,6 +57,19 @@ def write_json(path: Path, data):
 def read_text(path: Path) -> str:
     return path.read_text(encoding="utf-8") if path.exists() else ""
 
+def get_workflow_status(workflow_name: str) -> str:
+    workflow_path = WORKFLOW_DIR / f"{workflow_name}.json"
+    manual_path = MANUAL_DIR / f"{workflow_name}.json"
+    robot_path = TESTS_DIR / f"{workflow_name}_tests.robot"
+
+    if robot_path.exists():
+        return "automation_generated"
+    if manual_path.exists():
+        return "manual_tests_generated"
+    if workflow_path.exists():
+        return "workflow_saved"
+    return "not_started"
+
 def slugify(value: str) -> str:
     value = (value or "").strip().lower()
     value = re.sub(r"[^a-z0-9]+", "_", value)
@@ -66,108 +79,51 @@ def slugify(value: str) -> str:
 def clean_text(value: str) -> str:
     return re.sub(r"\s+", " ", (value or "").strip())
 
-def title_case(value: str) -> str:
-    return " ".join(word.capitalize() for word in re.split(r"[_\-\s]+", clean_text(value)) if word)
-
 def to_keyword_title(element_name: str) -> str:
     base = clean_text(element_name).replace("_", " ")
     return " ".join(word.capitalize() for word in base.split())
+
+def to_robot_variable_name(name: str) -> str:
+    return slugify(name).upper()
+
+# -------------------------------------------------------------------
+# Workflow status
+# -------------------------------------------------------------------
+
+def get_status_path(workflow_name: str) -> Path:
+    return WORKFLOW_DIR / f"{workflow_name}.status.json"
+
+def load_workflow_status(workflow_name: str) -> dict:
+    status_path = get_status_path(workflow_name)
+    if status_path.exists():
+        try:
+            return read_json(status_path)
+        except Exception:
+            pass
+    return {
+        "page_reviewed": False,
+        "keywords_reviewed": False,
+        "manual_approved": False,
+        "automation_generated": False
+    }
+
+def save_workflow_status(workflow_name: str, status: dict):
+    write_json(get_status_path(workflow_name), status)
+
+def update_workflow_status(workflow_name: str, **updates):
+    status = load_workflow_status(workflow_name)
+    status.update(updates)
+    save_workflow_status(workflow_name, status)
+
+# -------------------------------------------------------------------
+# Workflow handling
+# -------------------------------------------------------------------
 
 def load_workflow_or_404(workflow_name: str) -> dict:
     workflow_path = WORKFLOW_DIR / f"{workflow_name}.json"
     if not workflow_path.exists():
         raise HTTPException(status_code=404, detail=f"Workflow not found: {workflow_name}")
     return read_json(workflow_path)
-
-def run_page_extraction(page_name: str, page_url: str):
-    script_path = BASE_DIR / "scripts" / "extract_page_model.py"
-    if not script_path.exists():
-        raise HTTPException(status_code=500, detail="Page extraction script not found.")
-
-    result = subprocess.run(
-        [
-            sys.executable,
-            str(script_path),
-            "--page-name",
-            page_name,
-            "--url",
-            page_url
-        ],
-        cwd=str(BASE_DIR),
-        capture_output=True,
-        text=True
-    )
-
-    if result.returncode != 0:
-        error_message = result.stderr.strip() or result.stdout.strip() or "Unknown extraction error."
-        raise HTTPException(status_code=500, detail=f"Page extraction failed: {error_message}")
-
-    return result.stdout.strip()
-
-def generate_manual_tests_for_workflow(workflow_name: str) -> dict:
-    workflow_input = load_workflow_or_404(workflow_name)
-    config = validate_manual_config(load_manual_config())
-    ai_cfg = config["ai"]
-
-    if not ai_cfg.get("enabled", False):
-        raise HTTPException(status_code=400, detail="AI is disabled in configuration.")
-
-    endpoint = ai_cfg.get("endpoint", "").strip()
-    token = get_manual_ai_token(ai_cfg)
-    if not endpoint or not token:
-        raise HTTPException(status_code=400, detail="Manual test AI endpoint/token missing in configuration.")
-
-    prompt = build_manual_prompt(workflow_input)
-    generated = call_devex_ai(endpoint=endpoint, token=token, prompt=prompt)
-    final_json = normalize_manual_test(generated, workflow_input)
-    write_json(MANUAL_DIR / f"{workflow_name}.json", final_json)
-    return final_json
-
-def generate_automation_for_workflow(workflow_name: str) -> str:
-    manual_path = MANUAL_DIR / f"{workflow_name}.json"
-    if not manual_path.exists():
-        raise HTTPException(status_code=404, detail=f"Manual tests not found for workflow: {workflow_name}")
-
-    config = validate_robot_config(load_robot_json(Path("config/page_model_config.json")))
-    ai_cfg = config["ai"]
-    if not ai_cfg.get("enabled", True):
-        raise HTTPException(status_code=400, detail="AI is disabled in configuration.")
-
-    endpoint = ai_cfg.get("endpoint", "").strip()
-    token = get_robot_ai_token(ai_cfg)
-    if not endpoint or not token:
-        raise HTTPException(status_code=400, detail="Automation AI endpoint/token missing in configuration.")
-
-    manual_data = load_robot_json(manual_path)
-    resource_files = manual_data.get("resourceFiles", [])
-    if not isinstance(resource_files, list) or not resource_files:
-        raise HTTPException(status_code=400, detail="Manual tests do not contain valid resourceFiles.")
-
-    pom_root = BASE_DIR / config["pom_output_dir"]
-    resource_context = []
-    for rel_path in resource_files:
-        resource_path = pom_root / str(rel_path).replace("\\", "/")
-        if not resource_path.exists():
-            raise HTTPException(status_code=400, detail=f"Resource file not found: {resource_path}")
-        resource_context.append(parse_resource_file(resource_path))
-
-    prompt = build_robot_prompt(manual_data, resource_context)
-    robot_content = call_ai_chat(
-        endpoint=endpoint,
-        token=token,
-        prompt=prompt,
-        timeout_seconds=ai_cfg.get("timeout_seconds", 120),
-        verify_ssl=ai_cfg.get("verify_ssl", False),
-    )
-
-    errors = validate_robot_content(robot_content, resource_files)
-    if errors:
-        raise HTTPException(status_code=400, detail="; ".join(errors))
-
-    target = TESTS_DIR / f"{workflow_name}_tests.robot"
-    target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(robot_content, encoding="utf-8")
-    return robot_content
 
 def build_workflow_payload(
     workflow_name: str,
@@ -182,6 +138,8 @@ def build_workflow_payload(
     fields_text: str,
     validations_text: str,
     scenario_intent_text: str,
+    valid_username: str,
+    valid_password: str,
 ):
     preconditions = [line.strip() for line in preconditions_text.splitlines() if line.strip()]
     steps = [line.strip() for line in steps_text.splitlines() if line.strip()]
@@ -223,88 +181,41 @@ def build_workflow_payload(
         "observedExpectedResult": expected_result,
         "fields": fields,
         "observedValidations": validations,
-        "testDataRefs": {},
+        "testData": {
+            "validUsername": valid_username.strip(),
+            "validPassword": valid_password.strip()
+        },
         "scenarioIntent": scenario_intent,
     }
 
-def extract_manual_test_cases(manual: dict) -> list[dict]:
-    if not manual:
-        return []
+# -------------------------------------------------------------------
+# Extraction handling
+# -------------------------------------------------------------------
 
-    candidates = []
-    for key in ("manualTests", "testCases", "tests", "cases"):
-        value = manual.get(key)
-        if isinstance(value, list):
-            candidates = value
-            break
+def run_page_extraction(page_name: str, page_url: str):
+    script_path = BASE_DIR / "scripts" / "extract_page_model.py"
+    if not script_path.exists():
+        raise HTTPException(status_code=500, detail="Page extraction script not found.")
 
-    normalized = []
-    for idx, case in enumerate(candidates, start=1):
-        if not isinstance(case, dict):
-            continue
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(script_path),
+            "--page-name",
+            page_name,
+            "--url",
+            page_url
+        ],
+        cwd=str(BASE_DIR),
+        capture_output=True,
+        text=True
+    )
 
-        preconditions = case.get("preconditions", [])
-        if isinstance(preconditions, str):
-            preconditions = [preconditions]
+    if result.returncode != 0:
+        error_message = result.stderr.strip() or result.stdout.strip() or "Unknown extraction error."
+        raise HTTPException(status_code=500, detail=f"Page extraction failed: {error_message}")
 
-        steps = case.get("steps", [])
-        if isinstance(steps, list):
-            step_lines = []
-            for step in steps:
-                if isinstance(step, dict):
-                    text = step.get("step") or step.get("action") or step.get("description") or ""
-                    if text:
-                        step_lines.append(str(text))
-                else:
-                    step_lines.append(str(step))
-            steps = step_lines
-        elif isinstance(steps, str):
-            steps = [steps]
-        else:
-            steps = []
-
-        expected_result = (
-            case.get("expectedResult")
-            or case.get("expected")
-            or case.get("expectedOutcome")
-            or ""
-        )
-
-        normalized.append({
-            "id": case.get("id") or case.get("testCaseId") or f"TC_{idx:03d}",
-            "title": case.get("title") or case.get("name") or f"Test Case {idx}",
-            "type": case.get("type") or case.get("scenarioType") or "General",
-            "priority": case.get("priority") or "Medium",
-            "preconditions": preconditions,
-            "steps": steps,
-            "expectedResult": expected_result,
-            "approved": True,
-        })
-    return normalized
-
-def update_manual_with_ui_cases(original: dict, cases: list[dict]) -> dict:
-    target_key = None
-    for key in ("manualTests", "testCases", "tests", "cases"):
-        if isinstance(original.get(key), list):
-            target_key = key
-            break
-
-    if target_key is None:
-        target_key = "manualTests"
-
-    original[target_key] = [
-        {
-            "id": case["id"],
-            "title": case["title"],
-            "type": case["type"],
-            "priority": case["priority"],
-            "preconditions": case["preconditions"],
-            "steps": case["steps"],
-            "expectedResult": case["expectedResult"],
-        }
-        for case in cases
-    ]
-    return original
+    return result.stdout.strip()
 
 def infer_type_from_raw_item(item: dict) -> str:
     tag = (item.get("tag") or "").lower()
@@ -415,21 +326,20 @@ def get_page_review_data(workflow: dict):
     page_dir = POM_DIR / page_name
     elements_path = page_dir / f"{page_name}.elements.json"
     screenshot_path = page_dir / f"{page_name}.png"
-    approved_path = page_dir / f"{page_name}.approved.json"
 
-    raw_elements = []
+    elements_data = []
     if elements_path.exists():
         try:
             data = read_json(elements_path)
             if isinstance(data, list):
-                raw_elements = data
+                elements_data = data
             elif isinstance(data, dict):
-                raw_elements = data.get("elements", [])
+                elements_data = data.get("elements", [])
         except Exception:
-            raw_elements = []
+            elements_data = []
 
     normalized_elements = []
-    for idx, item in enumerate(raw_elements):
+    for idx, item in enumerate(elements_data):
         if not isinstance(item, dict):
             continue
         if "approvedName" in item and "locator" in item and "type" in item:
@@ -446,33 +356,36 @@ def get_page_review_data(workflow: dict):
     if screenshot_path.exists():
         screenshot_web_path = f"/static-artifacts/{page_name}/{page_name}.png"
 
-    approved_elements = []
-    if approved_path.exists():
-        try:
-            approved_data = read_json(approved_path)
-            approved_elements = approved_data.get("elements", [])
-        except Exception:
-            approved_elements = []
-
     return {
         "page_name": page_name,
         "page_url": page_url,
-        "elements": approved_elements if approved_elements else normalized_elements,
+        "elements": normalized_elements,
         "screenshot_web_path": screenshot_web_path,
         "raw_elements_count": len(normalized_elements),
-        "approved_path": approved_path,
+        "elements_path": elements_path,
     }
+
+# -------------------------------------------------------------------
+# Keyword handling
+# -------------------------------------------------------------------
 
 def get_keywords_path(page_name: str) -> Path:
     return POM_DIR / page_name / f"{page_name}.keywords.json"
 
+def get_resource_path(page_name: str) -> Path:
+    return POM_DIR / page_name / f"{page_name}.resource"
+
 def load_approved_elements_for_workflow(workflow: dict) -> list[dict]:
     review_data = get_page_review_data(workflow)
-    approved_path = review_data["approved_path"]
-    if not approved_path.exists():
+    elements_path = review_data["elements_path"]
+    if not elements_path.exists():
         return []
-    approved_data = read_json(approved_path)
-    return approved_data.get("elements", [])
+    data = read_json(elements_path)
+    if isinstance(data, dict):
+        return data.get("elements", [])
+    if isinstance(data, list):
+        return data
+    return []
 
 def build_keywords_from_elements(elements: list[dict]) -> list[dict]:
     keywords = []
@@ -489,44 +402,40 @@ def build_keywords_from_elements(elements: list[dict]) -> list[dict]:
         if element_type == "textbox":
             keyword_name = f"Enter {keyword_title}"
             implementation = [
-                f"Wait Until Element Is Visible    ${{{element_name.upper()}}}    10s",
-                f"Input Text    ${{{element_name.upper()}}}    ${{text}}"
+                f"Wait Until Element Is Visible    ${{{to_robot_variable_name(element_name)}}}    10s",
+                f"Input Text    ${{{to_robot_variable_name(element_name)}}}    ${{text}}"
             ]
             arguments = ["text"]
             action = "input"
-
         elif element_type == "button":
             keyword_name = f"Click {keyword_title}"
             implementation = [
-                f"Wait Until Element Is Visible    ${{{element_name.upper()}}}    10s",
-                f"Click Element    ${{{element_name.upper()}}}"
+                f"Wait Until Element Is Visible    ${{{to_robot_variable_name(element_name)}}}    10s",
+                f"Click Element    ${{{to_robot_variable_name(element_name)}}}"
             ]
             arguments = []
             action = "click"
-
         elif element_type == "dropdown":
             keyword_name = f"Select {keyword_title}"
             implementation = [
-                f"Wait Until Element Is Visible    ${{{element_name.upper()}}}    10s",
-                f"Select From List By Label    ${{{element_name.upper()}}}    ${{value}}"
+                f"Wait Until Element Is Visible    ${{{to_robot_variable_name(element_name)}}}    10s",
+                f"Select From List By Label    ${{{to_robot_variable_name(element_name)}}}    ${{value}}"
             ]
             arguments = ["value"]
             action = "select"
-
         elif element_type == "link":
             keyword_name = f"Click {keyword_title}"
             implementation = [
-                f"Wait Until Element Is Visible    ${{{element_name.upper()}}}    10s",
-                f"Click Element    ${{{element_name.upper()}}}"
+                f"Wait Until Element Is Visible    ${{{to_robot_variable_name(element_name)}}}    10s",
+                f"Click Element    ${{{to_robot_variable_name(element_name)}}}"
             ]
             arguments = []
             action = "click"
-
         else:
             keyword_name = f"Use {keyword_title}"
             implementation = [
-                f"Wait Until Element Is Visible    ${{{element_name.upper()}}}    10s",
-                f"Click Element    ${{{element_name.upper()}}}"
+                f"Wait Until Element Is Visible    ${{{to_robot_variable_name(element_name)}}}    10s",
+                f"Click Element    ${{{to_robot_variable_name(element_name)}}}"
             ]
             arguments = []
             action = "generic"
@@ -575,35 +484,309 @@ def save_keywords_for_workflow(workflow: dict, keywords: list[dict]):
     }
     write_json(get_keywords_path(page_name), payload)
 
-def get_workflow_status(workflow_name: str) -> dict:
-    workflow_path = WORKFLOW_DIR / f"{workflow_name}.json"
-    workflow = read_json(workflow_path) if workflow_path.exists() else {}
-    pages = workflow.get("pages", [])
-    page_name = pages[0].get("name") if pages else ""
+# -------------------------------------------------------------------
+# AI-driven resource generation
+# -------------------------------------------------------------------
 
-    page_reviewed = False
-    keywords_reviewed = False
-
-    if page_name:
-        approved_page_path = POM_DIR / page_name / f"{page_name}.approved.json"
-        page_reviewed = approved_page_path.exists()
-
-        keywords_path = POM_DIR / page_name / f"{page_name}.keywords.json"
-        keywords_reviewed = keywords_path.exists()
-
-    manual_approved = (MANUAL_DIR / f"{workflow_name}.json").exists()
-    automation_generated = (TESTS_DIR / f"{workflow_name}_tests.robot").exists()
-
-    return {
-        "page_reviewed": page_reviewed,
-        "keywords_reviewed": keywords_reviewed,
-        "manual_approved": manual_approved,
-        "automation_generated": automation_generated,
+def build_resource_generation_prompt(workflow: dict, approved_elements: list[dict], approved_keywords: list[dict]) -> str:
+    payload = {
+        "workflow": workflow,
+        "approved_elements": approved_elements,
+        "approved_keywords": approved_keywords
     }
+
+    return (
+        "You are an expert Robot Framework resource-file designer.\n"
+        "Generate exactly one valid Robot Framework .resource file.\n\n"
+        "Rules:\n"
+        "- Return only Robot Framework resource code.\n"
+        "- Do not include markdown fences.\n"
+        "- Include only these sections if needed: *** Settings ***, *** Variables ***, *** Keywords ***.\n"
+        "- Use SeleniumLibrary in Settings.\n"
+        "- Build the final approved page resource file from the provided workflow, approved elements, and approved keywords.\n"
+        "- Use the approved elements to create locator variables.\n"
+        "- Use the approved keywords to create keyword implementations.\n"
+        "- Create only relevant data variables.\n"
+        "- Valid business data should come from workflow.testData if present.\n"
+        "- Invalid, edge, or long input variables should only be created if truly needed by the approved keywords/workflow/manual-test context.\n"
+        "- Do NOT define Robot Framework built-in variables like ${None} or ${SPACE}.\n"
+        "- The resource file must be reusable and aligned with real Robot Framework framework standards.\n"
+        "- Keep naming clean and maintainable.\n"
+        "- Do not invent unnecessary variables or keywords.\n"
+        "- Preserve a clean resource file structure.\n"
+        "- Use AI intelligence instead of hardcoded assumptions.\n\n"
+        f"Input JSON:\n{json.dumps(payload, indent=2)}"
+    )
+
+def generate_resource_for_workflow(workflow: dict, approved_keywords: list[dict]):
+    review_data = get_page_review_data(workflow)
+    page_name = review_data["page_name"]
+    approved_elements = load_approved_elements_for_workflow(workflow)
+
+    config = validate_robot_config(load_robot_ai_json(CONFIG_PATH))
+    ai_cfg = config["ai"]
+
+    if not ai_cfg.get("enabled", True):
+        raise HTTPException(status_code=400, detail="AI is disabled in configuration.")
+
+    endpoint = ai_cfg.get("endpoint", "").strip()
+    token = get_robot_ai_token(ai_cfg)
+    if not endpoint or not token:
+        raise HTTPException(status_code=400, detail="AI endpoint/token missing for resource generation.")
+
+    prompt = build_resource_generation_prompt(workflow, approved_elements, approved_keywords)
+    resource_content = call_ai_chat(
+        endpoint=endpoint,
+        token=token,
+        prompt=prompt,
+        timeout_seconds=ai_cfg.get("timeout_seconds", 120),
+        verify_ssl=ai_cfg.get("verify_ssl", False),
+    )
+
+    resource_content = strip_markdown_fences(resource_content).strip() + "\n"
+
+    resource_path = get_resource_path(page_name)
+    resource_path.write_text(resource_content, encoding="utf-8")
+
+# -------------------------------------------------------------------
+# Manual tests handling
+# -------------------------------------------------------------------
+
+def generate_manual_tests_for_workflow(workflow_name: str) -> dict:
+    workflow_input = load_workflow_or_404(workflow_name)
+    config = validate_manual_config(load_manual_config())
+    ai_cfg = config["ai"]
+
+    if not ai_cfg.get("enabled", False):
+        raise HTTPException(status_code=400, detail="AI is disabled in configuration.")
+
+    endpoint = ai_cfg.get("endpoint", "").strip()
+    token = get_manual_ai_token(ai_cfg)
+    if not endpoint or not token:
+        raise HTTPException(status_code=400, detail="Manual test AI endpoint/token missing in configuration.")
+
+    prompt = build_manual_prompt(workflow_input)
+    generated = call_devex_ai(endpoint=endpoint, token=token, prompt=prompt)
+    final_json = normalize_manual_test(generated, workflow_input)
+    write_json(MANUAL_DIR / f"{workflow_name}.json", final_json)
+    return final_json
+
+def extract_manual_test_cases(manual: dict) -> list[dict]:
+    if not manual:
+        return []
+
+    candidates = []
+    for key in ("manualTests", "testCases", "tests", "cases"):
+        value = manual.get(key)
+        if isinstance(value, list):
+            candidates = value
+            break
+
+    normalized = []
+    for idx, case in enumerate(candidates, start=1):
+        if not isinstance(case, dict):
+            continue
+
+        preconditions = case.get("preconditions", [])
+        if isinstance(preconditions, str):
+            preconditions = [preconditions]
+
+        steps = case.get("steps", [])
+        if isinstance(steps, list):
+            step_lines = []
+            for step in steps:
+                if isinstance(step, dict):
+                    text = step.get("step") or step.get("action") or step.get("description") or ""
+                    if text:
+                        step_lines.append(str(text))
+                else:
+                    step_lines.append(str(step))
+            steps = step_lines
+        elif isinstance(steps, str):
+            steps = [steps]
+        else:
+            steps = []
+
+        expected_result = (
+            case.get("expectedResult")
+            or case.get("expected")
+            or case.get("expectedOutcome")
+            or ""
+        )
+
+        normalized.append({
+            "id": case.get("id") or case.get("testCaseId") or f"TC_{idx:03d}",
+            "title": case.get("title") or case.get("name") or f"Test Case {idx}",
+            "type": case.get("type") or case.get("scenarioType") or "General",
+            "priority": case.get("priority") or "Medium",
+            "preconditions": preconditions,
+            "steps": steps,
+            "expectedResult": expected_result,
+            "approved": True,
+        })
+    return normalized
+
+def update_manual_with_ui_cases(original: dict, cases: list[dict]) -> dict:
+    target_key = None
+    for key in ("manualTests", "testCases", "tests", "cases"):
+        if isinstance(original.get(key), list):
+            target_key = key
+            break
+
+    if target_key is None:
+        target_key = "manualTests"
+
+    original[target_key] = [
+        {
+            "id": case["id"],
+            "title": case["title"],
+            "type": case["type"],
+            "priority": case["priority"],
+            "preconditions": case["preconditions"],
+            "steps": case["steps"],
+            "expectedResult": case["expectedResult"],
+        }
+        for case in cases
+    ]
+    return original
+
+# -------------------------------------------------------------------
+# Automation handling
+# -------------------------------------------------------------------
+
+def strip_markdown_fences(content: str) -> str:
+    content = content.strip()
+
+    fenced_pattern = re.compile(r"^```[a-zA-Z0-9_-]*\s*\n(.*?)\n```$", re.DOTALL)
+    match = fenced_pattern.match(content)
+    if match:
+        return match.group(1).strip()
+
+    content = re.sub(r"^```[a-zA-Z0-9_-]*\s*\n", "", content, flags=re.MULTILINE)
+    content = re.sub(r"\n```$", "", content, flags=re.MULTILINE)
+    return content.strip()
+
+def normalize_robot_content_spacing(content: str) -> str:
+    lines = content.splitlines()
+
+    cleaned = []
+    blank_count = 0
+    for line in lines:
+        if line.strip() == "":
+            blank_count += 1
+            if blank_count <= 1:
+                cleaned.append("")
+        else:
+            blank_count = 0
+            cleaned.append(line.rstrip())
+
+    section_indices = [i for i, line in enumerate(cleaned) if line.strip().startswith("*** ")]
+    result = []
+    for idx, line in enumerate(cleaned):
+        if idx in section_indices and result:
+            if result[-1] != "":
+                result.append("")
+        result.append(line)
+
+    return "\n".join(result).strip() + "\n"
+
+def normalize_robot_blank_and_space_arguments(content: str) -> str:
+    lines = content.splitlines()
+    normalized = []
+
+    keyword_patterns = [
+        r"^\s*Enter\s+.*",
+        r"^\s*Input\s+.*",
+        r"^\s*Type\s+.*"
+    ]
+
+    blank_case_patterns = [
+        r"(\s{2,})''(\s*)$",
+        r'(\s{2,})""(\s*)$',
+        r"(\s{2,})blank(\s*)$",
+        r"(\s{2,})none(\s*)$"
+    ]
+
+    space_case_patterns = [
+        r"(\s{2,})space(\s*)$",
+        r"(\s{2,})whitespace(\s*)$",
+        r"(\s{2,})whitespace_only(\s*)$",
+        r"(\s{2,})' '(\s*)$",
+        r'(\s{2,})" "(\s*)$'
+    ]
+
+    for line in lines:
+        if any(re.match(pattern, line) for pattern in keyword_patterns):
+            for pattern in blank_case_patterns:
+                line = re.sub(pattern, r"\1${None}\2", line, flags=re.IGNORECASE)
+            for pattern in space_case_patterns:
+                line = re.sub(pattern, r"\1${SPACE}\2", line, flags=re.IGNORECASE)
+
+        normalized.append(line)
+
+    return "\n".join(normalized)
+
+def normalize_robot_content(content: str) -> str:
+    content = strip_markdown_fences(content)
+    content = normalize_robot_blank_and_space_arguments(content)
+    content = normalize_robot_content_spacing(content)
+    return content
+
+def generate_automation_for_workflow(workflow_name: str) -> str:
+    manual_path = MANUAL_DIR / f"{workflow_name}.json"
+    if not manual_path.exists():
+        raise HTTPException(status_code=404, detail=f"Manual tests not found for workflow: {workflow_name}")
+
+    config = validate_robot_config(load_robot_ai_json(CONFIG_PATH))
+    ai_cfg = config["ai"]
+    if not ai_cfg.get("enabled", True):
+        raise HTTPException(status_code=400, detail="AI is disabled in configuration.")
+
+    endpoint = ai_cfg.get("endpoint", "").strip()
+    token = get_robot_ai_token(ai_cfg)
+    if not endpoint or not token:
+        raise HTTPException(status_code=400, detail="Automation AI endpoint/token missing in configuration.")
+
+    manual_data = load_robot_ai_json(manual_path)
+    resource_files = manual_data.get("resourceFiles", [])
+    if not isinstance(resource_files, list) or not resource_files:
+        raise HTTPException(status_code=400, detail="Manual tests do not contain valid resourceFiles.")
+
+    pom_root = BASE_DIR / config["pom_output_dir"]
+    resource_context = []
+    for rel_path in resource_files:
+        resource_path = pom_root / str(rel_path).replace("\\", "/")
+        if not resource_path.exists():
+            raise HTTPException(status_code=400, detail=f"Resource file not found: {resource_path}")
+        resource_context.append(parse_resource_file(resource_path))
+
+    prompt = build_robot_prompt(manual_data, resource_context)
+    robot_content = call_ai_chat(
+        endpoint=endpoint,
+        token=token,
+        prompt=prompt,
+        timeout_seconds=ai_cfg.get("timeout_seconds", 120),
+        verify_ssl=ai_cfg.get("verify_ssl", False),
+    )
+
+    robot_content = normalize_robot_content(robot_content)
+
+    errors = validate_robot_content(robot_content, resource_files)
+    if errors:
+        raise HTTPException(status_code=400, detail="; ".join(errors))
+
+    target = TESTS_DIR / f"{workflow_name}_tests.robot"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(robot_content, encoding="utf-8")
+    return robot_content
+
+# -------------------------------------------------------------------
+# Routes
+# -------------------------------------------------------------------
 
 @app.get("/")
 def home(request: Request):
-    workflows = sorted([p.stem for p in WORKFLOW_DIR.glob("*.json")])
+    workflows = sorted([p.stem for p in WORKFLOW_DIR.glob("*.json") if not p.name.endswith(".status.json")])
     manuals = sorted([p.stem for p in MANUAL_DIR.glob("*.json")])
     tests = sorted([p.name for p in TESTS_DIR.glob("*.robot")])
 
@@ -615,7 +798,6 @@ def home(request: Request):
         })
 
     return render_template(request, "index.html", {
-        "workflows": workflows,
         "workflow_rows": workflow_rows,
         "manuals": manuals,
         "tests": tests,
@@ -625,7 +807,20 @@ def home(request: Request):
 def workflow_form(request: Request):
     existing = WORKFLOW_DIR / "login.json"
     data = read_json(existing) if existing.exists() else {}
-    return render_template(request, "workflow_form.html", {"data": data})
+    return render_template(request, "workflow_form.html", {
+        "data": data,
+        "edit_mode": False,
+        "workflow_slug": ""
+    })
+
+@app.get("/workflow/edit/{workflow_name}")
+def edit_workflow(request: Request, workflow_name: str):
+    workflow = load_workflow_or_404(workflow_name)
+    return render_template(request, "workflow_form.html", {
+        "data": workflow,
+        "edit_mode": True,
+        "workflow_slug": workflow_name
+    })
 
 @app.post("/workflow/save")
 def save_workflow(
@@ -641,6 +836,9 @@ def save_workflow(
     fields_text: str = Form(""),
     validations_text: str = Form(""),
     scenario_intent_text: str = Form("positive,negative,edge,ui"),
+    valid_username: str = Form(""),
+    valid_password: str = Form(""),
+    existing_workflow_slug: str = Form(""),
 ):
     payload = build_workflow_payload(
         workflow_name,
@@ -655,10 +853,24 @@ def save_workflow(
         fields_text,
         validations_text,
         scenario_intent_text,
+        valid_username,
+        valid_password,
     )
-    target = WORKFLOW_DIR / f"{slugify(workflow_name)}.json"
+
+    target_slug = existing_workflow_slug.strip() or slugify(workflow_name)
+    target = WORKFLOW_DIR / f"{target_slug}.json"
     write_json(target, payload)
-    return RedirectResponse(url=f"/page-review/{target.stem}", status_code=303)
+
+    if not existing_workflow_slug.strip():
+        update_workflow_status(
+            target_slug,
+            page_reviewed=False,
+            keywords_reviewed=False,
+            manual_approved=False,
+            automation_generated=False
+        )
+
+    return RedirectResponse(url=f"/page-review/{target_slug}", status_code=303)
 
 @app.get("/page-review/{workflow_name}")
 def page_review(request: Request, workflow_name: str):
@@ -754,7 +966,9 @@ async def save_page_review(request: Request, workflow_name: str):
         "pageUrl": review_data["page_url"],
         "elements": approved_elements,
     }
-    write_json(review_data["approved_path"], payload)
+    write_json(review_data["elements_path"], payload)
+
+    update_workflow_status(workflow_name, page_reviewed=True)
 
     return RedirectResponse(url=f"/keywords/{workflow_name}", status_code=HTTP_303_SEE_OTHER)
 
@@ -796,6 +1010,10 @@ async def save_keyword_review(request: Request, workflow_name: str):
         })
 
     save_keywords_for_workflow(workflow, approved_keywords)
+    generate_resource_for_workflow(workflow, approved_keywords)
+
+    update_workflow_status(workflow_name, keywords_reviewed=True)
+
     return RedirectResponse(url=f"/manual-tests/{workflow_name}", status_code=HTTP_303_SEE_OTHER)
 
 @app.get("/manual-tests/{workflow_name}")
@@ -900,6 +1118,7 @@ async def save_manual_tests(request: Request, workflow_name: str):
 
         updated = update_manual_with_ui_cases(original, cases)
         write_json(manual_path, updated)
+        update_workflow_status(workflow_name, manual_approved=True)
         return RedirectResponse(url=f"/automation/{workflow_name}", status_code=HTTP_303_SEE_OTHER)
 
     except Exception as exc:
@@ -926,6 +1145,7 @@ def generate_automation_route(request: Request, workflow_name: str):
     existing_content = read_text(TESTS_DIR / f"{workflow_name}_tests.robot")
     try:
         robot_content = generate_automation_for_workflow(workflow_name)
+        update_workflow_status(workflow_name, automation_generated=True)
         return render_template(request, "automation.html", {
             "workflow_name": workflow_name,
             "robot_content": robot_content,
@@ -943,7 +1163,9 @@ def save_automation(request: Request, workflow_name: str, robot_content: str = F
     try:
         target = TESTS_DIR / f"{workflow_name}_tests.robot"
         target.parent.mkdir(parents=True, exist_ok=True)
+        robot_content = normalize_robot_content(robot_content)
         target.write_text(robot_content, encoding="utf-8")
+        update_workflow_status(workflow_name, automation_generated=True)
         return render_template(request, "automation.html", {
             "workflow_name": workflow_name,
             "robot_content": robot_content,

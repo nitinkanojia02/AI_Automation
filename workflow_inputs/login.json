@@ -17,7 +17,10 @@
       "url": "http://172.21.166.115/washtabui/login?data=undefined"
     }
   ],
-  "observedPreconditions": [],
+  "observedPreconditions": [
+    "Valid username is haklarr",
+    "valid password is Icstunnel1"
+  ],
   "observedSteps": [],
   "observedExpectedResult": "",
   "fields": [
@@ -50,7 +53,10 @@
     "Login failed when incorrect username or password",
     "Login failed when username and password is blank"
   ],
-  "testDataRefs": {},
+  "testData": {
+    "validUsername": "",
+    "validPassword": ""
+  },
   "scenarioIntent": [
     "positive",
     "negative",

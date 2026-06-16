@@ -30,7 +30,7 @@
                 <p class="text-muted">
                     A simple MVP UI for exploratory input, page extraction review, keyword review, manual test review, and automation review.
                 </p>
-                <a href="/workflow/new" class="btn btn-primary">Create / Edit Workflow</a>
+                <a href="/workflow/new" class="btn btn-primary">Create Workflow</a>
             </div>
         </div>
     </div>
@@ -72,6 +72,7 @@
                                 </td>
                                 <td>
                                     <div class="d-flex gap-2 flex-wrap">
+                                        <a href="/workflow/edit/{{ row.name }}" class="btn btn-outline-warning btn-sm">Edit Workflow</a>
                                         <a href="/page-review/{{ row.name }}" class="btn btn-outline-primary btn-sm">Page Review</a>
                                         <a href="/keywords/{{ row.name }}" class="btn btn-outline-info btn-sm">Keywords</a>
                                         <a href="/manual-tests/{{ row.name }}" class="btn btn-outline-secondary btn-sm">Manual Tests</a>

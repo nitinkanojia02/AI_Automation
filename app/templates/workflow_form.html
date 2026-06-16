@@ -2,8 +2,10 @@
 {% block content %}
 <div class="card">
     <div class="card-body">
-        <h3 class="mb-3">Test Design Input</h3>
+        <h3 class="mb-3">{% if edit_mode %}Edit Workflow{% else %}Test Design Input{% endif %}</h3>
         <form method="post" action="/workflow/save">
+            <input type="hidden" name="existing_workflow_slug" value="{{ workflow_slug if workflow_slug else '' }}">
+
             <div class="row g-3">
                 <div class="col-md-4">
                     <label class="form-label">Workflow Name</label>
@@ -54,9 +56,21 @@
                     <label class="form-label">Scenario Intent (comma separated)</label>
                     <input class="form-control" name="scenario_intent_text" value="{% if data and data.scenarioIntent %}{{ data.scenarioIntent | join(',') }}{% else %}positive,negative,edge,ui{% endif %}">
                 </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Valid Username</label>
+                    <input class="form-control" name="valid_username" value="{{ data.testData.validUsername if data and data.testData else '' }}">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Valid Password</label>
+                    <input class="form-control" name="valid_password" value="{{ data.testData.validPassword if data and data.testData else '' }}">
+                </div>
             </div>
+
             <div class="mt-4 d-flex gap-2">
-                <button class="btn btn-primary" type="submit">Save and Continue</button>
+                <button class="btn btn-primary" type="submit">
+                    {% if edit_mode %}Update Workflow and Continue{% else %}Save and Continue{% endif %}
+                </button>
                 <a href="/" class="btn btn-outline-secondary">Back</a>
             </div>
         </form>
