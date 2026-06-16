@@ -45,7 +45,12 @@ templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 def render_template(request: Request, template_name: str, context: dict, status_code: int = 200):
     payload = {"request": request, "success_message": None, "error_message": None}
     payload.update(context)
-    return templates.TemplateResponse(template_name, payload, status_code=status_code)
+    return templates.TemplateResponse(
+        request=request,
+        name=template_name,
+        context=payload,
+        status_code=status_code,
+    )
 
 def read_json(path: Path):
     return json.loads(path.read_text(encoding="utf-8"))

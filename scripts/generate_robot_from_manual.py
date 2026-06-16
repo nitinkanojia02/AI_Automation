@@ -122,36 +122,28 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
     }
 
     return (
-        "You are an expert Robot Framework automation engineer.\n"
-        "Generate exactly one valid Robot Framework .robot file.\n\n"
-        "Rules:\n"
-        "- Use only the provided approved resource files and available framework resources.\n"
-        "- Import only the page resource files listed in manual_test.resourceFiles.\n"
-        "- If common reusable framework keywords exist in resources/common_keywords.resource, prefer using them rather than creating duplicate browser/navigation keywords.\n"
+        "You are an expert Robot Framework automation engineer working in a strict POM-based framework.\n"
+        "Generate exactly one valid Robot Framework .robot test suite file.\n\n"
+        "Framework architecture rules:\n"
+        "- Page object resource files are the single source of truth for locators, reusable UI action keywords, page-open keywords, and reusable test data variables.\n"
+        "- The generated .robot suite must remain thin and contain only suite-level settings and executable test cases.\n"
+        "- Any navigation/open-page/wait-for-page-ready keyword already belongs in the resource file and must be reused from there.\n"
+        "- Any reusable test data such as usernames, passwords, long strings, SQL injection payloads, or whitespace variants belongs in the resource file, not in the test suite.\n\n"
+        "Mandatory output rules:\n"
+        "- Use only the provided resource files.\n"
+        "- Import only the resource files listed in manual_test.resourceFiles.\n"
+        "- Use provided keyword names from resource_context wherever possible.\n"
         "- Prefer existing keywords from resource_context over inventing new ones.\n"
-        "- Prefer variables from the provided resource files over hardcoded literal values.\n"
-        "- If a valid username/password variable exists in resource files, use it instead of hardcoding raw credential text.\n"
-        "- If a long text variable exists in resource files, use it instead of hardcoding a long literal.\n"
-        "- Use resource import paths with prefix ../pom_pages/ for page resources.\n"
-        "- You may also import ../resources/common_keywords.resource if common reusable setup/navigation keywords are needed.\n"
-        "- Do not create duplicate utility keywords if suitable common keywords already exist.\n"
         "- Include *** Settings *** and *** Test Cases *** sections.\n"
+        "- Do NOT include a *** Variables *** section in the generated .robot file.\n"
+        "- Do NOT include a *** Keywords *** section in the generated .robot file unless a test-specific helper is absolutely unavoidable; navigation/page-open/page-ready/data keywords must never be defined in the suite.\n"
+        "- Do NOT define keywords such as Open Browser To Login Page, Open Browser To Page, Open Page, Wait Until Login Page Loads, or any equivalent wrapper if the resource file already provides page-open/navigation capability.\n"
+        "- If test data is reused across test cases, reference a variable from the resource file rather than declaring suite variables.\n"
+        "- Keep the suite focused on calling resource keywords and assertions only.\n"
         "- Do not include markdown fences.\n"
         "- Return only Robot Framework code.\n"
-        "- Do not add explanation text before or after the Robot code.\n"
-        "- Follow Robot Framework syntax strictly.\n"
-        "- Do not generate invalid or incomplete keyword calls.\n"
-        "- Never leave an argument position blank.\n"
-        "- If an empty value is intended, use the Robot Framework built-in variable ${None}.\n"
-        "- If a whitespace-only value is intended, use the Robot Framework built-in variable ${SPACE}.\n"
-        "- Do NOT define ${None} or ${SPACE} in Variables because they are built-in Robot Framework variables.\n"
-        "- Use Suite Setup and Suite Teardown.\n"
-        "- Suite Teardown must close the browser.\n"
-        "- Prefer a common reusable browser-opening keyword from common resource if available.\n"
-        "- Only create local browser setup keywords if no suitable shared/common keyword exists.\n"
-        "- Keep formatting clean and avoid excessive blank lines inside individual test cases.\n"
-        "- The generated test file must reflect the approved manual tests and approved resource files.\n"
-        "- The generated automation should look like a real maintainable Robot Framework project artifact, not a one-off script.\n\n"
+        "- Use resource import paths with prefix ../pom_pages/.\n"
+        "- Do not add explanation text before or after the Robot code.\n\n"
         f"Input JSON:\n{json.dumps(payload, indent=2)}"
     )
 
@@ -212,33 +204,40 @@ def call_ai_chat(
 
     return extract_response_text(resp)
 
-def validate_robot_content(content: str, declared_resource_files: List[str]) -> List[str]:
-    errors = []
+def validate_robot_content(content: str, allowed_resources: list[str]) -> tuple[bool, str]:
+    errors: list[str] = []
 
     if "*** Settings ***" not in content:
-        errors.append("Missing *** Settings ***")
+        errors.append("Missing *** Settings *** section")
     if "*** Test Cases ***" not in content:
-        errors.append("Missing *** Test Cases ***")
-    if "```" in content:
-        errors.append("Markdown code fence found")
+        errors.append("Missing *** Test Cases *** section")
 
-    imported = []
-    for line in content.splitlines():
-        s = line.strip()
-        if s.startswith("Resource"):
-            parts = re.split(r"\s{2,}|\t+", s)
-            if len(parts) > 1:
-                imported.append(parts[1].replace("\\", "/"))
+    if "*** Variables ***" in content:
+        errors.append("Suite-level *** Variables *** section is not allowed; move reusable test data into the POM resource file")
+    if "*** Keywords ***" in content:
+        errors.append("Suite-level *** Keywords *** section is not allowed for generated automation; use POM resource keywords instead")
 
-    declared_resource_files = [r.replace("\\", "/") for r in declared_resource_files]
-    allowed_direct = set(declared_resource_files)
-    allowed_prefixed = {f"../pom_pages/{r}" for r in declared_resource_files}
+    resource_lines = re.findall(r"(?im)^\s*Resource\s+(.+?)\s*$", content)
+    normalized_allowed = {f"../pom_pages/{name}" for name in allowed_resources}
 
-    for res in imported:
-        if res not in allowed_direct and res not in allowed_prefixed:
-            errors.append(f"Disallowed resource import: {res}")
+    for resource in resource_lines:
+        cleaned = resource.strip()
+        if cleaned not in normalized_allowed:
+            errors.append(f"Unauthorized resource import: {cleaned}")
 
-    return errors
+    forbidden_keyword_patterns = [
+        r"(?im)^\s*Open Browser To Login Page\s*$",
+        r"(?im)^\s*Open Browser To Page\s*$",
+        r"(?im)^\s*Open Page\s*$",
+        r"(?im)^\s*Wait Until .* (?:Page|Textbox|Field) .*Visible\s*$",
+    ]
+    for pattern in forbidden_keyword_patterns:
+        if re.search(pattern, content):
+            errors.append("Generated suite contains navigation/wait helper definitions that should live in the POM resource file")
+            break
+
+    is_valid = len(errors) == 0
+    return is_valid, "\n".join(errors)
 
 def derive_module_name(manual_data: dict, manual_json_path: Path) -> str:
     if manual_data.get("workflowName"):
