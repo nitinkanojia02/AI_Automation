@@ -1,173 +1,166 @@
-# WashTab Automation Framework
+# AI Automation Framework
 
-AI-assisted, human-in-the-loop test automation generation framework for WashTab UI workflows.
+AI-assisted, human-in-the-loop test automation generation framework for web UI workflows.
 
 ## Executive Summary
 
-WashTab Automation Framework is a staged automation generation solution that transforms workflow input and live web page understanding into reusable automation assets and executable Robot Framework test suites.
+This repository contains a FastAPI-based MVP that helps users turn workflow input and live page understanding into reviewable automation artifacts and Robot Framework tests.
 
-Instead of asking AI to generate a final test script in one step, the framework breaks automation creation into controlled stages:
+Rather than generating a final test script in one step, the framework breaks the process into controlled stages:
 - workflow definition
-- page inspection and DOM understanding
-- locator and POM/resource generation
+- page inspection and element extraction
+- locator and resource generation
+- keyword review
 - manual test generation
-- automation script generation
-- human review and refinement at every critical stage
+- automation generation
+- human review at each critical stage
 
-This approach improves traceability, reviewability, maintainability, and confidence in generated automation.
-
-The current repository represents a working MVP focused on demonstrating the framework using a login workflow.
+The current repo is a working MVP and is primarily demonstrated with a login workflow.
 
 ---
 
-## Problem Statement
+## What the Repository Currently Contains
 
-Creating UI automation manually is time-consuming and repetitive. Teams often spend significant effort on:
-- understanding application pages
-- identifying stable locators
-- creating and maintaining page object files
-- writing manual test coverage from exploratory findings or requirements
-- converting those tests into maintainable automation scripts
-- fixing weak generated scripts after one-shot AI generation
+```text
+app/                 FastAPI application and HTML templates
+config/              Framework configuration
+docs/                Architecture, capability matrix, and roadmap
+resources/           Shared Robot Framework resources
+scripts/             Extraction and generation scripts
+workflow_inputs/     Saved workflow definitions
+README.md            Repository overview and quick start
+requirements.txt     Python dependencies
+```
 
-A direct AI-to-script approach is often unreliable because the model may not understand the real page, may invent locators, or may generate automation that does not follow framework standards.
-
-This framework exists to solve that problem through staged generation, real UI grounding, and human review checkpoints.
+Some additional folders such as `pom_pages/`, `manual_tests/`, and `tests/` are created at runtime when the pipeline is used. They are part of the framework design, but they may not be present in a clean checkout until artifacts are generated.
 
 ---
 
-## Vision
+## Current Architecture in Practice
 
-The long-term vision of this framework is to become a governed AI-assisted automation platform that can:
-- understand workflows and page structure
-- explore live web pages and infer relevant UI controls
-- generate maintainable POM/resource files
-- generate meaningful manual tests from workflow intent
-- generate framework-compliant Robot Framework automation
-- support execution feedback, repair, and future self-healing capabilities
-- retain reusable knowledge across workflows and pages
+The current implementation is centered around `app/main.py`, which provides a staged UI flow:
 
-The goal is not blind automation generation. The goal is AI-assisted acceleration under engineering control.
+1. create or edit a workflow
+2. extract page information from a live URL
+3. review extracted page elements and locators
+4. review generated page keywords/resources
+5. generate and review manual tests
+6. generate and review Robot Framework automation
+
+So the repo is best understood as a review-driven orchestration app layered on top of extraction and AI-backed generation scripts.
+
+---
+
+## Main Components
+
+### `app/main.py`
+FastAPI application entry point and orchestration layer.
+
+Responsibilities include:
+- workflow CRUD through the UI
+- page extraction orchestration
+- page review persistence
+- keyword review persistence
+- manual test generation/review
+- Robot Framework generation/review
+
+### `scripts/extract_page_model.py`
+Uses Playwright to inspect a target page and generate page artifacts.
+
+Typical outputs:
+- `pom_pages/<page>/<page>.elements.json`
+- `pom_pages/<page>/<page>.resource`
+- `pom_pages/<page>/<page>.png`
+- `pom_pages/<page>/<page>.debug.html`
+
+### `scripts/generate_manual_tests_json.py`
+Uses workflow input plus AI to generate structured manual test JSON.
+
+Typical output:
+- `manual_tests/<workflow>.json`
+
+### `scripts/generate_robot_from_manual.py`
+Uses approved manual tests plus approved resource context to generate a Robot Framework suite.
+
+Typical output:
+- `tests/<workflow>_tests.robot`
+
+### `config/page_model_config.json`
+Central configuration for:
+- artifact output directories
+- browser settings
+- AI endpoint settings
+- generation control options
+- configured pages
+
+### `resources/common_keywords.resource`
+Shared common Robot keywords used across generated resources/tests.
+
+---
+
+## High-Level Workflow
+
+### Stage 1: Workflow definition
+A workflow is created through the UI and stored under `workflow_inputs/`.
+
+### Stage 2: Page extraction
+The extraction script opens the target page with Playwright, inspects the DOM, and generates page-level artifacts under `pom_pages/`.
+
+### Stage 3: Page and keyword review
+The UI allows users to review extracted elements, update names/locators, and approve generated page keywords/resources.
+
+### Stage 4: Manual test generation
+AI generates manual test cases based on the workflow input, and the user reviews/approves them.
+
+### Stage 5: Automation generation
+AI generates Robot Framework automation using approved manual tests and available resource files.
+
+### Stage 6: Final review
+The generated Robot suite is reviewed and saved through the UI.
+
+---
+
+## Technology Stack
+
+- Python
+- FastAPI
+- Jinja2 templates
+- Playwright
+- Requests
+- Robot Framework
+- SeleniumLibrary
+- Pabot
+- JSON-based artifact exchange
 
 ---
 
 ## Current Scope and Status
 
 The current implementation supports:
-- workflow input capture and editing through the FastAPI UI
-- page inspection and page model extraction through scripts
-- POM/resource generation
-- manual test generation using AI
-- Robot Framework generation using AI and available resource context
-- review of generated artifacts through the MVP UI
-- local Robot execution and result artifacts
+- workflow input capture and editing
+- page extraction from a live application page
+- page element/locator review
+- keyword/resource review
+- AI-assisted manual test generation
+- AI-assisted Robot Framework generation
+- final automation review and save
 
 Current maturity:
 - architecture: strong
 - implementation: working MVP
-- usability: good for internal demos and engineering use
 - production readiness: early stage
-
----
-
-## Core Capabilities
-
-- **Workflow-driven test design input**
-- **Live page inspection and element extraction**
-- **Locator generation and page object resource creation**
-- **AI-assisted manual test generation**
-- **AI-assisted Robot Framework generation**
-- **POM-based automation reuse**
-- **Human review at every key stage**
-- **Execution artifact generation through Robot Framework**
-
----
-
-## High-Level Workflow
-
-1. Define a workflow in `workflow_inputs/`
-2. Configure the target page in `config/page_model_config.json`
-3. Run page extraction to generate page artifacts in `pom_pages/`
-4. Review and refine generated POM/resource files
-5. Generate manual test cases into `manual_tests/`
-6. Review and refine manual tests
-7. Generate Robot Framework automation into `tests/`
-8. Review the generated automation
-9. Execute tests and inspect results in `log/`
-
----
-
-## Repository Structure
-
-```text
-app/                 FastAPI web application and HTML templates
-config/              Framework configuration
-docs/                Documentation
-log/                 Robot Framework execution outputs
-manual_tests/        Generated manual test artifacts
-pom_pages/           Extracted page artifacts and Robot resource files
-scripts/             Generation and extraction scripts
-tests/               Generated Robot Framework test suites
-workflow_inputs/     Workflow definition inputs
-ARCHITECTURE.md      Detailed architecture narrative
-README.md            Repository overview and quick start
-```
-
----
-
-## Important Modules
-
-### `app/main.py`
-FastAPI application entry point and orchestration layer for the MVP UI.
-
-### `scripts/extract_page_model.py`
-Inspects configured pages, extracts element information, and generates page artifacts including resource files.
-
-### `scripts/generate_manual_tests_json.py`
-Uses workflow input to generate manual test case JSON.
-
-### `scripts/generate_robot_from_manual.py`
-Uses approved manual test JSON and resource context to generate Robot Framework suites.
-
----
-
-## Technology Stack
-
-- **Python** — main implementation language
-- **FastAPI** — orchestration UI backend
-- **Jinja2 / Starlette templates** — server-side HTML rendering
-- **Playwright** — page inspection and DOM-driven extraction
-- **Requests** — AI endpoint integration
-- **Robot Framework** — automation suite format
-- **SeleniumLibrary** — browser automation execution layer
-- **Pabot** — parallel execution support
-- **JSON** — workflow and intermediate artifact format
-
----
-
-## Generated Artifacts
-
-The framework currently produces and uses these artifact types:
-- workflow input JSON
-- page elements inventory JSON
-- screenshot and debug HTML evidence
-- Robot Framework `.resource` POM files
-- manual test JSON
-- generated Robot test suites
-- Robot execution logs and reports
 
 ---
 
 ## Documentation
 
-See the following files for detailed documentation:
-- `ARCHITECTURE.md`
-- `docs/README.md`
-- `docs/PLATFORM_VISION.md`
-- `docs/PRESENTATION_GUIDE.md`
-- `docs/RUN_PIPELINE.md`
+Available documentation in this repo:
+- `README.md`
+- `docs/ARCHITECTURE.md`
 - `docs/CAPABILITY_MATRIX.md`
 - `docs/ROADMAP.md`
+
+These documents have been aligned to the current repository contents and actual implementation behavior.
 
 ---
 
@@ -184,12 +177,12 @@ playwright install
 ```
 
 ### 3. Configure AI access
-Set the token expected in configuration, for example:
+Set the token expected by `config/page_model_config.json`:
 ```bash
 export DEVEX_AI_TOKEN=<your_token>
 ```
 
-### 4. Start the MVP UI
+### 4. Start the UI
 ```bash
 uvicorn app.main:app --reload
 ```
@@ -199,87 +192,34 @@ uvicorn app.main:app --reload
 http://127.0.0.1:8000
 ```
 
-### Optional script-based flow
+---
+
+## Optional Script-Level Usage
+
+Depending on your local setup and generated artifacts, the pipeline scripts can also be run directly:
+
 ```bash
 python scripts/extract_page_model.py
 python scripts/generate_manual_tests_json.py
 python scripts/generate_robot_from_manual.py
-robot -d log tests/
 ```
 
----
-
-## How Teams Can Use It Today
-
-### QA Teams
-- capture exploratory workflow inputs
-- generate and review manual tests faster
-- validate coverage before automation is created
-
-### Automation Engineers
-- bootstrap page resources and Robot suites
-- review and harden generated locators and automation logic
-- reuse approved page objects and keywords
-
-### Engineering Teams
-- convert known business workflows into reusable test assets
-- accelerate first-draft test automation creation
-
-### Leadership and Stakeholders
-- understand the staged automation model
-- review generated artifacts and governance points
-- evaluate future platform potential
+If Robot tests have been generated into `tests/`, they can then be executed with standard Robot Framework commands.
 
 ---
 
 ## Current Limitations
 
-The repository already demonstrates a useful framework foundation, but several areas are still evolving:
-- the repository demo is centered primarily on the login flow
-- AI output still requires validation and review
-- generated automation can still need additional framework hardening
-- structured test data reuse is not yet fully mature
-- execution feedback, healing, and knowledge retention are not yet fully realized
-- broader multi-page workflow orchestration remains a future enhancement area
-
----
-
-## Maturity Assessment
-
-This framework is currently best described as:
-- a strong concept
-- a working MVP
-- suitable for demos and controlled internal usage
-- not yet a production-hardened platform
-
-### Summary rating
-- architecture: strong
-- test asset generation: implemented
-- governance: emerging
-- automation reliability: moderate with review
-- production readiness: early stage
-
----
-
-## Recommended Next Steps
-
-1. Strengthen validation and repair of generated Robot automation
-2. Deepen semantic understanding of resource/POM files
-3. Introduce a stronger test data abstraction layer
-4. Expand generated POM content with richer validation and assertion keywords
-5. Improve stage approval tracking and governance
-6. Extend support to broader multi-page workflows
-7. Evolve the MVP UI into a more guided platform experience
+- the sample workflow is primarily login-oriented
+- many artifact directories are generated only after pipeline usage
+- AI outputs still require human review and validation
+- broader multi-page workflow orchestration is still limited
+- governance, validation, and execution feedback loops can be expanded significantly
 
 ---
 
 ## Key Value Proposition
 
-The primary value of this framework is not that AI writes tests alone.
+The value of this framework is not one-shot AI script generation.
 
-The value is that it helps teams generate the right automation artifacts in the right order, with human review gates in between, so test automation becomes:
-- faster to create
-- easier to review
-- more reusable
-- more maintainable
-- better aligned to real application structure
+The value is a staged, review-driven process that helps teams generate better automation artifacts in the right order, with human control between stages.
