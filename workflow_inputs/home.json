@@ -1,0 +1,60 @@
+{
+  "inputType": "exploratory_workflow",
+  "workflowId": "HOME_001",
+  "workflowName": "Home",
+  "module": "Dashboard",
+  "feature": "Home Page",
+  "source": {
+    "createdBy": "UI user",
+    "notes": "Workflow entered from MVP UI."
+  },
+  "resourceFiles": [
+    "home_page/home_page.resource"
+  ],
+  "pages": [
+    {
+      "name": "home_page",
+      "url": "http://172.21.166.115/washtabui/home"
+    }
+  ],
+  "observedPreconditions": [],
+  "observedSteps": [],
+  "observedExpectedResult": "",
+  "fields": [
+    {
+      "name": "",
+      "label": "",
+      "type": "",
+      "required": false
+    },
+    {
+      "name": "",
+      "label": "",
+      "type": "",
+      "required": false
+    },
+    {
+      "name": "",
+      "label": "",
+      "type": "",
+      "required": false
+    },
+    {
+      "name": "",
+      "label": "",
+      "type": "",
+      "required": false
+    }
+  ],
+  "observedValidations": [
+    "Login failed when incorrect username or password",
+    "Login failed when username and password is blank"
+  ],
+  "testDataRefs": {},
+  "scenarioIntent": [
+    "positive",
+    "negative",
+    "edge",
+    "ui"
+  ]
+}
