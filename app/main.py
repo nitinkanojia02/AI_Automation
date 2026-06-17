@@ -132,6 +132,40 @@ def load_workflow_or_404(workflow_name: str) -> dict:
         raise HTTPException(status_code=404, detail=f"Workflow not found: {workflow_name}")
     return read_json(workflow_path)
 
+def clean_workflow_for_prompting(workflow: dict) -> dict:
+    cleaned = json.loads(json.dumps(workflow))
+
+    fields = cleaned.get("fields", [])
+    if isinstance(fields, list):
+        cleaned_fields = []
+        for field in fields:
+            if not isinstance(field, dict):
+                continue
+            name = clean_text(str(field.get("name", "")))
+            label = clean_text(str(field.get("label", "")))
+            field_type = clean_text(str(field.get("type", "")))
+            required = bool(field.get("required", False))
+            if not any([name, label, field_type, required]):
+                continue
+            cleaned_fields.append({
+                "name": name,
+                "label": label,
+                "type": field_type,
+                "required": required,
+            })
+        cleaned["fields"] = cleaned_fields
+
+    test_data = cleaned.get("testData", {})
+    if isinstance(test_data, dict):
+        cleaned["testData"] = {
+            key: clean_text(str(value))
+            for key, value in test_data.items()
+            if clean_text(str(value))
+        }
+
+    return cleaned
+
+
 def build_workflow_payload(
     workflow_name: str,
     module: str,
@@ -159,12 +193,14 @@ def build_workflow_payload(
         if not line:
             continue
         parts = [p.strip() for p in line.split("|")]
-        fields.append({
+        field = {
             "name": parts[0] if len(parts) > 0 else "",
             "label": parts[1] if len(parts) > 1 else parts[0] if parts else "",
             "type": parts[2] if len(parts) > 2 else "textbox",
             "required": (parts[3].lower() == "true") if len(parts) > 3 else False,
-        })
+        }
+        if any([clean_text(field["name"]), clean_text(field["label"]), clean_text(field["type"]), field["required"]]):
+            fields.append(field)
 
     return {
         "inputType": "exploratory_workflow",
@@ -503,8 +539,9 @@ def build_resource_generation_prompt(
     common_resource_context: list[dict] | None = None,
     existing_page_resource: str = "",
 ) -> str:
+    prompt_ready_workflow = clean_workflow_for_prompting(workflow)
     payload = {
-        "workflow": workflow,
+        "workflow": prompt_ready_workflow,
         "approved_elements": approved_elements,
         "approved_keywords": approved_keywords,
         "approved_manual_tests": approved_manual_tests or [],
@@ -526,8 +563,9 @@ def build_resource_generation_prompt(
         "- Use SeleniumLibrary in Settings only if truly needed in this page resource.\n"
         "- Use the approved elements to create locator variables.\n"
         "- Use the approved keywords as the foundation for reusable keyword implementations.\n"
+        "- Treat empty placeholder rows in workflow.fields as noise and ignore them.\n"
         "- Create reusable test-data variables based on approved manual tests, not just workflow.testData.\n"
-        "- If approved manual tests imply data such as invalid username, invalid password, blank username, blank password, whitespace-only username, whitespace-only password, long username, long password, special-character inputs, or boundary-value inputs, define them as page-resource variables when useful for this page.\n"
+        "- If approved manual tests imply data such as invalid username, invalid password, blank username, blank password, whitespace-only username, whitespace-only password, username/password with leading or trailing spaces, long username, long password, special-character inputs, uppercase/lowercase variants, copy-paste inputs, or boundary-value inputs, define them as page-resource variables when useful for this page.\n"
         "- Valid business data should come from workflow.testData if present.\n"
         "- Invalid, edge, or long input variables should be created in the page resource file whenever the approved manual tests suggest they are relevant.\n"
         "- Do NOT define Robot Framework built-in variables like ${EMPTY}, ${SPACE}, ${True}, ${False}, or ${None}; reference them directly only where needed.\n"
@@ -543,6 +581,7 @@ def build_resource_generation_prompt(
         "- Generic or common keywords belong in resources/common_keywords.resource, not in the page resource. Examples include Open Browser To Url, Go To Url, Open Login Page, Open Browser Session, Close Browser Session, Wait For Element To Be Ready, Click When Ready, Input Text When Ready, generic click/input wrappers, and other cross-page/browser lifecycle helpers.\n"
         "- If a common/shared keyword already exists or is strongly implied by common_resource_context, do not recreate it in the page resource. Instead, design the page resource to rely on the shared/common resource layer.\n"
         "- The page resource should contain only page-specific behavior such as entering credentials into this page, clicking page-specific buttons, and validating page-specific messages or field behavior.\n"
+        "- Page-specific action keywords should prefer shared/common helpers such as Input Text When Ready, Click When Ready, and Wait For Element To Be Ready whenever those helpers fit the action. Avoid raw SeleniumLibrary calls in page keywords when an appropriate common helper exists.\n"
         "- Prefer atomic page-object keywords over workflow/business-flow orchestration. Good examples are Enter Username, Enter Password, Click Sign In Button, Verify Login Error Message, Verify Password Field Is Masked, Verify Login Page Loaded.\n"
         "- Avoid business-flow keywords that merely orchestrate a whole login scenario when they are not truly page-specific. Avoid keywords such as Login With Valid Credentials, Login With Credentials, Submit Login, Perform Successful Login, or other scenario wrappers unless there is a compelling page-specific reason.\n"
         "- Do not duplicate keywords that already exist in common/shared resources.\n\n"
@@ -552,7 +591,8 @@ def build_resource_generation_prompt(
         "- Remove unnecessary, duplicate, or weak variables if they are not clearly supported by approved manual tests.\n"
         "- The Keywords section should contain reusable business-friendly page actions and validations rather than low-level one-off steps only.\n"
         "- If approved manual tests mention password masking, create a reusable page-specific keyword to verify password masking behavior if feasible in the framework.\n"
-        "- If approved manual tests mention validation messages, incorrect credentials, blocked login, or rejection behavior, create reusable page-specific validation/assertion keywords where feasible instead of relying only on page-loaded checks.\n"
+        "- If approved manual tests mention validation messages, incorrect credentials, blocked login, rejection behavior, required-field behavior, whitespace handling, case sensitivity, duplicate submission behavior, copy-paste behavior, or successful navigation, create reusable page-specific validation/assertion keywords where feasible instead of relying only on page-loaded checks.\n"
+        "- Prefer creating page validation keywords such as Verify Authentication Error Message, Verify Username Required Validation, Verify Password Required Validation, Verify Login Rejected, Verify Successful Login Redirect, Verify Duplicate Submission Prevented, or other grounded page-specific assertions when approved manual tests justify them.\n"
         "- Do not create generic browser open/close keywords here if those belong in common/shared resources.\n"
         "- Keep formatting compact with no excessive blank lines and use modern Robot syntax only.\n\n"
         f"Input JSON:\n{json.dumps(payload, indent=2)}"
@@ -588,8 +628,9 @@ def build_resource_review_prompt(
     common_resource_context: list[dict],
     generated_resource: str,
 ) -> str:
+    prompt_ready_workflow = clean_workflow_for_prompting(workflow)
     payload = {
-        "workflow": workflow,
+        "workflow": prompt_ready_workflow,
         "approved_elements": approved_elements,
         "approved_keywords": approved_keywords,
         "approved_manual_tests": approved_manual_tests,
@@ -608,6 +649,7 @@ def build_resource_review_prompt(
         "Mandatory repair rules:\n"
         "- Return only Robot Framework resource code with no markdown fences and no explanation.\n"
         "- Keep the file page-specific. Generic browser lifecycle, generic navigation, generic waits, generic click/input wrappers, ${BROWSER}, ${DEFAULT_TIMEOUT}, and other cross-page concerns belong in resources/common_keywords.resource, not here.\n"
+        "- Page action keywords should reuse shared/common helpers such as Input Text When Ready, Click When Ready, and Wait For Element To Be Ready when applicable instead of directly repeating raw SeleniumLibrary interaction patterns.\n"
         "- If a common/shared keyword already exists or is implied by common_resource_context, do not recreate it here.\n"
         "- Remove business-flow keywords that are too generic or duplicate shared/common behavior.\n"
         "- Keep reusable page-specific actions and page-specific validations.\n"

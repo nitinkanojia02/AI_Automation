@@ -114,8 +114,15 @@ def parse_resource_file(resource_path: Path) -> Dict:
     }
 
 def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
+    prompt_manual_data = json.loads(json.dumps(manual_data))
+    if isinstance(prompt_manual_data.get("fields"), list):
+        prompt_manual_data["fields"] = [
+            field for field in prompt_manual_data["fields"]
+            if isinstance(field, dict) and any(clean_text(str(field.get(k, ""))) for k in ("name", "label", "type"))
+        ]
+
     payload = {
-        "manual_test": manual_data,
+        "manual_test": prompt_manual_data,
         "resource_context": resource_context,
         "resource_import_prefix": "../pom_pages/",
         "common_resource_hint": "../resources/common_keywords.resource"
@@ -148,7 +155,7 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
         "- Prefer reusable setup/teardown from shared/common resources for opening and closing browser or preparing generic page state.\n"
         "- If the resource layer appears to provide page-open, page-ready, browser-open, browser-close, or cleanup keywords, use them intelligently in suite/test setup and teardown rather than repeating those actions inside every test.\n"
         "- If test data is reused across test cases, reference a variable from the resource file rather than declaring suite variables.\n"
-        "- Use resource variables for valid, invalid, blank, whitespace, boundary, and long-input data whenever suitable variables exist in the resource context.\n"
+        "- Use resource variables for valid, invalid, blank, whitespace-only, leading/trailing-space, boundary, long-input, special-character, uppercase/lowercase, and other approved edge-case data whenever suitable variables exist in the resource context.\n"
         "- For intentionally blank input use Robot built-in ${EMPTY}; for a single blank space use ${SPACE}; do not leave argument positions visually empty.\n"
         "- Never hardcode reusable credential and negative/edge data values directly in tests when a resource variable is available or clearly implied by the resource context.\n"
         "- For masking, visibility, error message, disabled state, enabled state, page navigation, redirection, and UI behavior expectations, include explicit assertion/verification steps that satisfy expectedResult.\n"
@@ -163,10 +170,11 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
         "- Do not leave missing data arguments blank in a keyword call; use an explicit built-in or resource variable.\n"
         "- Each test case should have a clear final verification aligned to its expectedResult.\n"
         "- If a manual test is about password masking, generate an explicit verification for masking behavior instead of only entering data.\n"
-        "- If a manual test expects an error message, validation message, rejection, blocked login, or failed authentication, generate an explicit verification for that result, not only a page-loaded check. Prefer dedicated page validation keywords such as Verify Login Error Message or Verify Validation Message if the resource context supports them or clearly implies them.\n"
+        "- If a manual test expects an error message, validation message, rejection, blocked login, or failed authentication, generate an explicit verification for that result, not only a page-loaded check. Prefer dedicated page validation keywords such as Verify Login Error Message, Verify Authentication Error Message, Verify Username Required Validation, Verify Password Required Validation, or Verify Validation Message if the resource context supports them or clearly implies them.\n"
         "- For negative authentication scenarios, do not rely solely on Verify Login Page Loaded. Include at least one stronger observable assertion such as an error message check, validation message check, no-navigation check, or protected-area-not-visible check.\n"
-        "- If a manual test expects successful navigation or successful login, generate an explicit verification for landing page, URL change, success state, or another observable post-condition.\n"
-        "- If a manual test expects field-level behavior such as required validation, character masking, disabled state, visibility, duplicate submission prevention, or no duplicate request behavior, include a corresponding verification step and do not stop at action steps only.\n"
+        "- If a manual test expects successful navigation or successful login, generate an explicit verification for landing page, URL change, success state, dashboard/home visibility, or another observable post-condition. Prefer page validation keywords such as Verify Successful Login Redirect when available.\n"
+        "- If a manual test expects field-level behavior such as required validation, character masking, disabled state, visibility, duplicate submission prevention, copy-paste behavior, keyboard submission behavior, or no duplicate request behavior, include a corresponding verification step and do not stop at action steps only.\n"
+        "- Preserve specialized manual intent. If the approved manual test is specifically about copy-paste, Enter key submission, repeated clicking, whitespace handling, case sensitivity, or duplicate prevention, the generated automation should reflect that interaction intent instead of collapsing it into a generic login flow.\n"
         "- Prefer business-readable test cases that call reusable resource keywords over low-level keyword chains when the resource context supports that style.\n\n"
         f"Input JSON:\n{json.dumps(payload, indent=2)}"
     )
@@ -195,8 +203,15 @@ def extract_response_text(resp: requests.Response) -> str:
 
 
 def build_review_prompt(manual_data: dict, resource_context: List[Dict], generated_robot: str) -> str:
+    prompt_manual_data = json.loads(json.dumps(manual_data))
+    if isinstance(prompt_manual_data.get("fields"), list):
+        prompt_manual_data["fields"] = [
+            field for field in prompt_manual_data["fields"]
+            if isinstance(field, dict) and any(clean_text(str(field.get(k, ""))) for k in ("name", "label", "type"))
+        ]
+
     payload = {
-        "manual_test": manual_data,
+        "manual_test": prompt_manual_data,
         "resource_context": resource_context,
         "generated_robot": generated_robot,
         "resource_import_prefix": "../pom_pages/",
@@ -225,7 +240,8 @@ def build_review_prompt(manual_data: dict, resource_context: List[Dict], generat
         "- Every test must contain explicit validation aligned to expectedResult.\n"
         "- If a test is about password masking, ensure there is an explicit masking verification.\n"
         "- If a test is about validation messages, blocked login, rejection behavior, or failed authentication, ensure there is an explicit assertion for that behavior and not only a page-loaded check. For negative authentication scenarios, include at least one stronger observable assertion such as an error message check, validation message check, no-navigation check, or protected-area-not-visible check.\n"
-        "- If a test is about successful login or navigation, ensure there is an explicit post-condition verification.\n"
+        "- If a test is about successful login or navigation, ensure there is an explicit post-condition verification such as dashboard/home visibility, URL change, success state, or a dedicated page validation keyword.\n"
+        "- Preserve specialized interaction intent such as copy-paste, Enter key submission, repeated clicking, whitespace handling, or duplicate submission prevention; do not simplify these into a generic login-only sequence.\n"
         "- Prefer business-readable resource keyword calls over low-level one-off steps.\n"
         "- Do not compensate for duplicated common/page keywords by creating additional duplicates; prefer the shared/common resource keyword when the intent is generic.\n\n"
         "Repair focus areas:\n"
