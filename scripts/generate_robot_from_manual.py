@@ -128,12 +128,13 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
         "- Page object resource files are the single source of truth for locators, reusable UI action keywords, page-open keywords, setup/teardown keywords, validation keywords, and reusable test data variables.\n"
         "- The generated .robot suite must remain thin and contain only suite-level settings and executable test cases.\n"
         "- Any navigation/open-page/wait-for-page-ready keyword already belongs in the resource file and must be reused from there.\n"
-        "- Any reusable test data such as usernames, passwords, long strings, invalid variants, SQL injection payloads, or whitespace variants belongs in the resource file, not in the test suite.\n"
-        "- Every generated test must align with the manual test title, steps, and expectedResult; do not skip the expected validation.\n\n"
+        "- Any reusable test data such as usernames, passwords, long strings, invalid variants, SQL injection payloads, whitespace variants, and boundary values belongs in the resource file, not in the test suite.\n"
+        "- Every generated test must align with the manual test title, steps, and expectedResult; do not skip the expected validation.\n"
+        "- Prefer resource validation keywords and resource variables whenever the resource file suggests they exist or should be reused.\n\n"
         "Mandatory output rules:\n"
         "- Use only the provided resource files.\n"
         "- Import only the resource files listed in manual_test.resourceFiles.\n"
-        "- Use provided keyword names from resource_context wherever possible.\n"
+        "- Use provided keyword names and variable names from resource_context wherever possible.\n"
         "- Prefer existing keywords from resource_context over inventing new ones.\n"
         "- Include *** Settings *** and *** Test Cases *** sections.\n"
         "- Do NOT include a *** Variables *** section in the generated .robot file.\n"
@@ -141,10 +142,12 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
         "- Do NOT define keywords such as Open Browser To Login Page, Open Browser To Page, Open Page, Wait Until Login Page Loads, or any equivalent wrapper if the resource file already provides page-open/navigation capability.\n"
         "- If the resource file provides browser/page setup or teardown keywords, use them as Test Setup, Suite Setup, Test Teardown, or Suite Teardown as appropriate.\n"
         "- Prefer reusable setup/teardown from the resource file for opening and closing browser or preparing page state.\n"
+        "- If the resource file appears to provide page-open, page-ready, browser-open, browser-close, or cleanup keywords, use them intelligently in suite/test setup and teardown rather than repeating those actions inside every test.\n"
         "- If test data is reused across test cases, reference a variable from the resource file rather than declaring suite variables.\n"
+        "- Use resource variables for valid, invalid, blank, whitespace, boundary, and long-input data whenever suitable variables exist in the resource context.\n"
         "- For intentionally blank input use Robot built-in ${EMPTY}; for a single blank space use ${SPACE}; do not leave argument positions visually empty.\n"
-        "- Never hardcode reusable credential and negative/edge data values directly in tests when a resource variable is available.\n"
-        "- For masking, visibility, error message, disabled state, or UI behavior expectations, include explicit assertion/verification steps that satisfy expectedResult.\n"
+        "- Never hardcode reusable credential and negative/edge data values directly in tests when a resource variable is available or clearly implied by the resource context.\n"
+        "- For masking, visibility, error message, disabled state, enabled state, page navigation, redirection, and UI behavior expectations, include explicit assertion/verification steps that satisfy expectedResult.\n"
         "- Keep the suite focused on calling resource keywords and assertions only.\n"
         "- Do not include markdown fences.\n"
         "- Return only Robot Framework code.\n"
@@ -155,7 +158,11 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
         "- Use built-in variables correctly: ${EMPTY}, ${SPACE}, ${True}, ${False}, ${None} only when semantically correct.\n"
         "- Do not leave missing data arguments blank in a keyword call; use an explicit built-in or resource variable.\n"
         "- Each test case should have a clear final verification aligned to its expectedResult.\n"
-        "- If a manual test is about password masking, generate an explicit verification for masking behavior instead of only entering data.\n\n"
+        "- If a manual test is about password masking, generate an explicit verification for masking behavior instead of only entering data.\n"
+        "- If a manual test expects an error message, validation message, rejection, or blocked login, generate an explicit verification for that result.\n"
+        "- If a manual test expects successful navigation or successful login, generate an explicit verification for landing page, URL change, success state, or another observable post-condition.\n"
+        "- If a manual test expects field-level behavior such as required validation, character masking, disabled state, or visibility, include a corresponding verification step and do not stop at action steps only.\n"
+        "- Prefer business-readable test cases that call reusable resource keywords over low-level keyword chains when the resource context supports that style.\n\n"
         f"Input JSON:\n{json.dumps(payload, indent=2)}"
     )
 
@@ -218,6 +225,7 @@ def call_ai_chat(
 
 def validate_robot_content(content: str, allowed_resources: list[str]) -> tuple[bool, str]:
     errors: list[str] = []
+    warnings: list[str] = []
 
     if "*** Settings ***" not in content:
         errors.append("Missing *** Settings *** section")
@@ -257,8 +265,22 @@ def validate_robot_content(content: str, allowed_resources: list[str]) -> tuple[
     if re.search(r"\$\{Space\}", content):
         errors.append("Use Robot built-in ${SPACE} instead of ${Space}")
 
+    if not re.search(r"(?im)^\s*(?:Suite Setup|Test Setup)\s+.+$", content):
+        warnings.append("Generated suite does not include Suite Setup or Test Setup; prefer reusable setup keywords when resource context supports them")
+
+    if not re.search(r"(?im)^\s*(?:Suite Teardown|Test Teardown)\s+.+$", content):
+        warnings.append("Generated suite does not include Suite Teardown or Test Teardown; prefer reusable teardown keywords when resource context supports them")
+
+    if not re.search(r"\$\{[A-Z0-9_]+\}", content):
+        warnings.append("Generated suite does not appear to use reusable resource variables; prefer resource-file test data over hardcoded inline data")
+
     is_valid = len(errors) == 0
-    return is_valid, "\n".join(errors)
+    message_parts = []
+    if errors:
+        message_parts.append("\n".join(errors))
+    if warnings:
+        message_parts.append("Warnings:\n" + "\n".join(warnings))
+    return is_valid, "\n\n".join(part for part in message_parts if part)
 
 def derive_module_name(manual_data: dict, manual_json_path: Path) -> str:
     if manual_data.get("workflowName"):

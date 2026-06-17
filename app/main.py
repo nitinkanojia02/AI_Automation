@@ -493,33 +493,45 @@ def save_keywords_for_workflow(workflow: dict, keywords: list[dict]):
 # AI-driven resource generation
 # -------------------------------------------------------------------
 
-def build_resource_generation_prompt(workflow: dict, approved_elements: list[dict], approved_keywords: list[dict]) -> str:
+def build_resource_generation_prompt(workflow: dict, approved_elements: list[dict], approved_keywords: list[dict], approved_manual_tests: list[dict] | None = None) -> str:
     payload = {
         "workflow": workflow,
         "approved_elements": approved_elements,
-        "approved_keywords": approved_keywords
+        "approved_keywords": approved_keywords,
+        "approved_manual_tests": approved_manual_tests or []
     }
 
     return (
-        "You are an expert Robot Framework resource-file designer.\n"
+        "You are an expert Robot Framework resource-file designer working on a maintainable enterprise UI automation framework.\n"
         "Generate exactly one valid Robot Framework .resource file.\n\n"
-        "Rules:\n"
+        "Primary objective:\n"
+        "- Build a reusable page resource file that contains page locators, reusable action keywords, reusable validation keywords, reusable setup/teardown keywords when appropriate, and reusable test-data variables inferred from approved workflow and approved manual tests.\n\n"
+        "Mandatory output rules:\n"
         "- Return only Robot Framework resource code.\n"
         "- Do not include markdown fences.\n"
         "- Include only these sections if needed: *** Settings ***, *** Variables ***, *** Keywords ***.\n"
         "- Use SeleniumLibrary in Settings.\n"
-        "- Build the final approved page resource file from the provided workflow, approved elements, and approved keywords.\n"
         "- Use the approved elements to create locator variables.\n"
-        "- Use the approved keywords to create keyword implementations.\n"
-        "- Create only relevant data variables.\n"
+        "- Use the approved keywords as the foundation for reusable keyword implementations.\n"
+        "- Create reusable test-data variables based on approved manual tests, not just workflow.testData.\n"
+        "- If approved manual tests imply data such as invalid username, invalid password, blank username, blank password, whitespace-only username, whitespace-only password, long username, long password, special-character inputs, or boundary-value inputs, define them as resource variables when useful.\n"
         "- Valid business data should come from workflow.testData if present.\n"
-        "- Invalid, edge, or long input variables should only be created if truly needed by the approved keywords/workflow/manual-test context.\n"
-        "- Do NOT define Robot Framework built-in variables like ${None} or ${SPACE}.\n"
+        "- Invalid, edge, or long input variables should be created in the resource file whenever the approved manual tests suggest they are relevant.\n"
+        "- Do NOT define Robot Framework built-in variables like ${EMPTY}, ${SPACE}, ${True}, ${False}, or ${None}; reference them directly only where needed.\n"
         "- The resource file must be reusable and aligned with real Robot Framework framework standards.\n"
         "- Keep naming clean and maintainable.\n"
+        "- Prefer clear reusable variable names such as ${VALID_USERNAME}, ${INVALID_USERNAME}, ${BLANK_USERNAME}, ${SPACE_USERNAME}, ${LONG_USERNAME}, and similar names for passwords or other fields where justified by approved manual tests.\n"
+        "- Prefer reusable validation keywords when expected results mention UI messages, masking, redirection, visibility, enabled/disabled state, or validation behavior.\n"
+        "- If the workflow clearly needs browser/page lifecycle handling, create reusable setup/teardown keywords in the resource file, such as opening the relevant page and closing the browser, but only if these are appropriate for the page model.\n"
         "- Do not invent unnecessary variables or keywords.\n"
         "- Preserve a clean resource file structure.\n"
         "- Use AI intelligence instead of hardcoded assumptions.\n\n"
+        "Resource quality requirements:\n"
+        "- The Variables section should centralize reusable test data so generated .robot test suites do not hardcode those values.\n"
+        "- The Keywords section should contain reusable business-friendly actions and validations rather than low-level one-off steps only.\n"
+        "- If approved manual tests mention password masking, create a reusable keyword to verify password masking behavior if feasible in the framework.\n"
+        "- If approved manual tests mention validation messages or rejection behavior, create reusable validation/assertion keywords where feasible.\n"
+        "- If approved manual tests imply open-page, login-page-ready, or browser-close lifecycle behavior, create reusable keywords for those behaviors when appropriate.\n\n"
         f"Input JSON:\n{json.dumps(payload, indent=2)}"
     )
 
@@ -527,6 +539,15 @@ def generate_resource_for_workflow(workflow: dict, approved_keywords: list[dict]
     review_data = get_page_review_data(workflow)
     page_name = review_data["page_name"]
     approved_elements = load_approved_elements_for_workflow(workflow)
+
+    approved_manual_tests = []
+    workflow_name = slugify(str(workflow.get("workflowName", "")))
+    manual_path = MANUAL_DIR / f"{workflow_name}.json"
+    if manual_path.exists():
+        try:
+            approved_manual_tests = extract_manual_test_cases(read_json(manual_path))
+        except Exception:
+            approved_manual_tests = []
 
     config = validate_robot_config(load_robot_ai_json(CONFIG_PATH))
     ai_cfg = config["ai"]
@@ -539,7 +560,7 @@ def generate_resource_for_workflow(workflow: dict, approved_keywords: list[dict]
     if not endpoint or not token:
         raise HTTPException(status_code=400, detail="AI endpoint/token missing for resource generation.")
 
-    prompt = build_resource_generation_prompt(workflow, approved_elements, approved_keywords)
+    prompt = build_resource_generation_prompt(workflow, approved_elements, approved_keywords, approved_manual_tests)
     resource_content = call_ai_chat(
         endpoint=endpoint,
         token=token,
@@ -741,125 +762,6 @@ def normalize_robot_content(content: str) -> str:
     content = normalize_robot_content_spacing(content)
     return content
 
-def _split_robot_sections(resource_content: str) -> dict[str, list[str]]:
-    sections: dict[str, list[str]] = {}
-    current = None
-    for line in resource_content.splitlines():
-        stripped = line.strip()
-        if stripped.startswith("***") and stripped.endswith("***"):
-            current = stripped.lower()
-            sections.setdefault(current, []).append(line)
-        elif current:
-            sections[current].append(line)
-    return sections
-
-def _serialize_robot_sections(sections: dict[str, list[str]]) -> str:
-    ordered_names = ["*** settings ***", "*** variables ***", "*** keywords ***"]
-    chunks: list[str] = []
-    for name in ordered_names:
-        lines = sections.get(name, [])
-        if not lines:
-            continue
-        text = "\n".join(line.rstrip() for line in lines).strip()
-        if text:
-            chunks.append(text)
-    return "\n\n".join(chunks).strip() + "\n"
-
-def _derive_variable_name_from_title(title: str) -> str:
-    text = slugify(title).upper()
-    replacements = {
-        "USERNAME": "USERNAME",
-        "PASSWORD": "PASSWORD",
-        "USER_NAME": "USERNAME",
-    }
-    for source, target in replacements.items():
-        text = text.replace(source, target)
-    return text or "TEST_DATA_VALUE"
-
-def _derive_variable_entries_from_manual_cases(cases: list[dict]) -> list[tuple[str, str]]:
-    entries: list[tuple[str, str]] = []
-    seen: set[str] = set()
-
-    for case in cases:
-        title = str(case.get("title", "")).strip()
-        expected = str(case.get("expectedResult", "")).strip()
-        combined = f"{title} {expected}".lower()
-
-        candidate_names: list[str] = []
-        if "invalid username" in combined:
-            candidate_names.append("INVALID_USERNAME")
-        if "invalid password" in combined:
-            candidate_names.append("INVALID_PASSWORD")
-        if "blank username" in combined or "username is blank" in combined or "without username" in combined:
-            candidate_names.append("BLANK_USERNAME")
-        if "blank password" in combined or "password is blank" in combined or "without password" in combined:
-            candidate_names.append("BLANK_PASSWORD")
-        if "long username" in combined or "maximum length" in combined and "username" in combined:
-            candidate_names.append("LONG_USERNAME")
-        if "long password" in combined or "maximum length" in combined and "password" in combined:
-            candidate_names.append("LONG_PASSWORD")
-        if "whitespace" in combined and "username" in combined:
-            candidate_names.append("SPACE_USERNAME")
-        if "whitespace" in combined and "password" in combined:
-            candidate_names.append("SPACE_PASSWORD")
-
-        if not candidate_names and title:
-            candidate_names.append(_derive_variable_name_from_title(title))
-
-        for name in candidate_names:
-            if name in seen:
-                continue
-            seen.add(name)
-            value = ""
-            if name.startswith("BLANK_"):
-                value = "${EMPTY}"
-            elif name.startswith("SPACE_"):
-                value = "${SPACE}"
-            elif name.startswith("LONG_"):
-                value = "TestAutomationData_1234567890_ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-            elif name.startswith("INVALID_"):
-                value = f"invalid_{name.split('_', 1)[1].lower()}"
-            else:
-                continue
-            entries.append((name, value))
-
-    return entries
-
-def sync_resource_variables_from_manual_tests(workflow_name: str):
-    workflow = load_workflow_or_404(workflow_name)
-    manual_path = MANUAL_DIR / f"{workflow_name}.json"
-    if not manual_path.exists():
-        return
-
-    manual = read_json(manual_path)
-    cases = extract_manual_test_cases(manual)
-    variable_entries = _derive_variable_entries_from_manual_cases(cases)
-    if not variable_entries:
-        return
-
-    resource_files = workflow.get("resourceFiles", [])
-    if not resource_files:
-        return
-
-    resource_path = POM_DIR / str(resource_files[0]).replace("\\", "/")
-    if not resource_path.exists():
-        return
-
-    existing_content = read_text(resource_path)
-    sections = _split_robot_sections(existing_content)
-    variables_section = sections.get("*** variables ***", ["*** Variables ***"])
-    existing_names = {
-        match.group(1)
-        for match in re.finditer(r"^\$\{([^}]+)\}", "\n".join(variables_section), flags=re.MULTILINE)
-    }
-
-    for name, value in variable_entries:
-        if name in existing_names:
-            continue
-        variables_section.append(f"${{{name}}}    {value}")
-
-    sections["*** variables ***"] = variables_section
-    resource_path.write_text(_serialize_robot_sections(sections), encoding="utf-8")
 
 def generate_automation_for_workflow(workflow_name: str) -> str:
     manual_path = MANUAL_DIR / f"{workflow_name}.json"
@@ -1247,7 +1149,14 @@ async def save_manual_tests(request: Request, workflow_name: str):
 
         updated = update_manual_with_ui_cases(original, cases)
         write_json(manual_path, updated)
-        sync_resource_variables_from_manual_tests(workflow_name)
+
+        try:
+            if workflow:
+                approved_keywords = get_keyword_review_data(workflow).get("keywords", [])
+                generate_resource_for_workflow(workflow, approved_keywords)
+        except Exception:
+            pass
+
         update_workflow_status(workflow_name, manual_approved=True)
         return RedirectResponse(url=f"/automation/{workflow_name}", status_code=HTTP_303_SEE_OTHER)
 
