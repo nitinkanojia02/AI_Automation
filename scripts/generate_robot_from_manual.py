@@ -126,24 +126,27 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
         "Generate exactly one valid Robot Framework .robot test suite file.\n\n"
         "Framework architecture rules:\n"
         "- Page object resource files are the single source of truth for locators, reusable UI action keywords, page-open keywords, setup/teardown keywords, validation keywords, and reusable test data variables.\n"
+        "- Shared framework behavior belongs in common resources such as ../resources/common_keywords.resource. This includes browser lifecycle, generic navigation, generic waits, and generic interaction wrappers.\n"
         "- The generated .robot suite must remain thin and contain only suite-level settings and executable test cases.\n"
-        "- Any navigation/open-page/wait-for-page-ready keyword already belongs in the resource file and must be reused from there.\n"
-        "- Any reusable test data such as usernames, passwords, long strings, invalid variants, SQL injection payloads, whitespace variants, and boundary values belongs in the resource file, not in the test suite.\n"
+        "- Any navigation/open-page/wait-for-page-ready keyword already belongs in the resource layer and must be reused from there.\n"
+        "- Any reusable test data such as usernames, passwords, long strings, invalid variants, SQL injection payloads, whitespace variants, and boundary values belongs in the resource layer, not in the test suite.\n"
         "- Every generated test must align with the manual test title, steps, and expectedResult; do not skip the expected validation.\n"
         "- Prefer resource validation keywords and resource variables whenever the resource file suggests they exist or should be reused.\n\n"
         "Mandatory output rules:\n"
-        "- Use only the provided resource files.\n"
-        "- Import only the resource files listed in manual_test.resourceFiles.\n"
+        "- Use only the provided resource files and the shared common resource hint.\n"
+        "- Always import ../resources/common_keywords.resource in the suite Settings section.\n"
+        "- Also import the page resource files listed in manual_test.resourceFiles.\n"
         "- Use provided keyword names and variable names from resource_context wherever possible.\n"
         "- Prefer existing keywords from resource_context over inventing new ones.\n"
         "- Treat resource_context as including both page-specific resources and shared/common resources. Use common/shared keywords for generic browser lifecycle, navigation, and waiting behaviors, and avoid duplicating them in suite logic.\n"
         "- Include *** Settings *** and *** Test Cases *** sections.\n"
         "- Do NOT include a *** Variables *** section in the generated .robot file.\n"
         "- Do NOT include a *** Keywords *** section in the generated .robot file unless a test-specific helper is absolutely unavoidable; navigation/page-open/page-ready/data keywords must never be defined in the suite.\n"
-        "- Do NOT define keywords such as Open Browser To Login Page, Open Browser To Page, Open Page, Wait Until Login Page Loads, or any equivalent wrapper if the resource file already provides page-open/navigation capability.\n"
-        "- If the resource file provides browser/page setup or teardown keywords, use them as Test Setup, Suite Setup, Test Teardown, or Suite Teardown as appropriate.\n"
+        "- Do NOT define keywords such as Open Browser To Login Page, Open Browser To Page, Open Page, Wait Until Login Page Loads, or any equivalent wrapper if the resource layer already provides page-open/navigation capability.\n"
+        "- Prefer shared/common resource keywords such as Open Browser Session, Close Browser Session, Open Browser To Url, Open Login Page, Go To Url, Wait For Element To Be Ready, Click When Ready, and Input Text When Ready whenever they fit the intent.\n"
+        "- If the resource layer provides browser/page setup or teardown keywords, use them as Test Setup, Suite Setup, Test Teardown, or Suite Teardown as appropriate.\n"
         "- Prefer reusable setup/teardown from shared/common resources for opening and closing browser or preparing generic page state.\n"
-        "- If the resource file appears to provide page-open, page-ready, browser-open, browser-close, or cleanup keywords, use them intelligently in suite/test setup and teardown rather than repeating those actions inside every test.\n"
+        "- If the resource layer appears to provide page-open, page-ready, browser-open, browser-close, or cleanup keywords, use them intelligently in suite/test setup and teardown rather than repeating those actions inside every test.\n"
         "- If test data is reused across test cases, reference a variable from the resource file rather than declaring suite variables.\n"
         "- Use resource variables for valid, invalid, blank, whitespace, boundary, and long-input data whenever suitable variables exist in the resource context.\n"
         "- For intentionally blank input use Robot built-in ${EMPTY}; for a single blank space use ${SPACE}; do not leave argument positions visually empty.\n"
@@ -152,7 +155,7 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
         "- Keep the suite focused on calling resource keywords and assertions only.\n"
         "- Do not include markdown fences.\n"
         "- Return only Robot Framework code.\n"
-        "- Use resource import paths with prefix ../pom_pages/.\n"
+        "- Use resource import paths with prefix ../pom_pages/ for page resources and import ../resources/common_keywords.resource explicitly for shared resources.\n"
         "- Do not add explanation text before or after the Robot code.\n\n"
         "Robot quality requirements:\n"
         "- Use valid Robot Framework syntax with two-or-more-space separation between keyword and arguments.\n"
@@ -160,7 +163,7 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
         "- Do not leave missing data arguments blank in a keyword call; use an explicit built-in or resource variable.\n"
         "- Each test case should have a clear final verification aligned to its expectedResult.\n"
         "- If a manual test is about password masking, generate an explicit verification for masking behavior instead of only entering data.\n"
-        "- If a manual test expects an error message, validation message, rejection, or blocked login, generate an explicit verification for that result.\n"
+        "- If a manual test expects an error message, validation message, rejection, blocked login, or failed authentication, generate an explicit verification for that result, not only a page-loaded check.\n"
         "- If a manual test expects successful navigation or successful login, generate an explicit verification for landing page, URL change, success state, or another observable post-condition.\n"
         "- If a manual test expects field-level behavior such as required validation, character masking, disabled state, or visibility, include a corresponding verification step and do not stop at action steps only.\n"
         "- Prefer business-readable test cases that call reusable resource keywords over low-level keyword chains when the resource context supports that style.\n\n"
@@ -206,23 +209,26 @@ def build_review_prompt(manual_data: dict, resource_context: List[Dict], generat
         "- Preserve the intent and coverage of the approved manual tests.\n"
         "- Correct Robot Framework syntax and framework alignment issues.\n"
         "- Improve reuse of resource keywords, resource variables, setup/teardown, and validation steps.\n"
-        "- Ensure the output remains a thin suite that relies on the provided page resource files.\n\n"
+        "- Ensure the output remains a thin suite that relies on the provided page resource files and the shared common resource layer.\n\n"
         "Mandatory repair rules:\n"
         "- Return only Robot Framework code, with no markdown fences and no explanation.\n"
         "- Keep only the suite file; do not generate resource content.\n"
-        "- Use only the provided resource files from manual_test.resourceFiles.\n"
+        "- Use only the provided resource files from manual_test.resourceFiles plus ../resources/common_keywords.resource as the shared common layer.\n"
+        "- Ensure ../resources/common_keywords.resource is imported in the suite Settings section.\n"
         "- Do not add a *** Variables *** section.\n"
         "- Do not add a *** Keywords *** section unless a tiny test-specific helper is absolutely unavoidable; prefer resource keywords instead.\n"
         "- Replace bad blank handling with ${EMPTY} and single-space handling with ${SPACE}. Never leave input arguments visually empty.\n"
         "- Replace hardcoded reusable test data with resource variables whenever the resource context supports it or clearly implies it.\n"
+        "- Prefer common/shared resource keywords for generic browser lifecycle, page opening, navigation, waiting, clicking, and text entry when suitable.\n"
         "- If resource keywords suggest page lifecycle operations, use Suite/Test Setup and Teardown intelligently.\n"
         "- Every test must contain explicit validation aligned to expectedResult.\n"
         "- If a test is about password masking, ensure there is an explicit masking verification.\n"
-        "- If a test is about validation messages, blocked login, or rejection behavior, ensure there is an explicit assertion for that behavior.\n"
+        "- If a test is about validation messages, blocked login, rejection behavior, or failed authentication, ensure there is an explicit assertion for that behavior and not only a page-loaded check.\n"
         "- If a test is about successful login or navigation, ensure there is an explicit post-condition verification.\n"
         "- Prefer business-readable resource keyword calls over low-level one-off steps.\n"
         "- Do not compensate for duplicated common/page keywords by creating additional duplicates; prefer the shared/common resource keyword when the intent is generic.\n\n"
         "Repair focus areas:\n"
+        "- common resource import and reuse\n"
         "- built-in variables (${EMPTY}, ${SPACE})\n"
         "- resource variable reuse instead of hardcoded inline data\n"
         "- setup and teardown usage\n"
@@ -318,11 +324,15 @@ def validate_robot_content(content: str, allowed_resources: list[str]) -> tuple[
 
     resource_lines = re.findall(r"(?im)^\s*Resource\s+(.+?)\s*$", content)
     normalized_allowed = {f"../pom_pages/{name}" for name in allowed_resources}
+    normalized_allowed.add("../resources/common_keywords.resource")
 
     for resource in resource_lines:
         cleaned = resource.strip()
         if cleaned not in normalized_allowed:
             errors.append(f"Unauthorized resource import: {cleaned}")
+
+    if "../resources/common_keywords.resource" not in {line.strip() for line in resource_lines}:
+        warnings.append("Generated suite does not import ../resources/common_keywords.resource; prefer the shared common layer for browser lifecycle and generic helpers")
 
     forbidden_keyword_patterns = [
         r"(?im)^\s*Open Browser To Login Page\s*$",

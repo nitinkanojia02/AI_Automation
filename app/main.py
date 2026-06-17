@@ -501,6 +501,7 @@ def build_resource_generation_prompt(
     approved_keywords: list[dict],
     approved_manual_tests: list[dict] | None = None,
     common_resource_context: list[dict] | None = None,
+    existing_page_resource: str = "",
 ) -> str:
     payload = {
         "workflow": workflow,
@@ -508,6 +509,7 @@ def build_resource_generation_prompt(
         "approved_keywords": approved_keywords,
         "approved_manual_tests": approved_manual_tests or [],
         "common_resource_context": common_resource_context or [],
+        "existing_page_resource": existing_page_resource,
     }
 
     return (
@@ -515,7 +517,8 @@ def build_resource_generation_prompt(
         "Generate exactly one valid page-specific Robot Framework .resource file.\n\n"
         "Primary objective:\n"
         "- Build a reusable page resource file that contains only page-specific locators, page-specific action keywords, page-specific validation keywords, and page-specific test-data variables inferred from approved workflow and approved manual tests.\n"
-        "- You are also given common/shared resource context. Reuse that knowledge and avoid duplicating common keywords, browser lifecycle keywords, and generic variables already suitable for shared resources.\n\n"
+        "- You are also given common/shared resource context. Reuse that knowledge and avoid duplicating common keywords, browser lifecycle keywords, generic navigation keywords, and generic variables already suitable for shared resources.\n"
+        "- If an existing page resource is provided, treat this as a review-and-repair task as well: preserve good page-specific content, remove duplicated common concerns, tighten formatting, and improve Robot syntax and maintainability.\n\n"
         "Mandatory output rules:\n"
         "- Return only Robot Framework resource code.\n"
         "- Do not include markdown fences.\n"
@@ -536,17 +539,21 @@ def build_resource_generation_prompt(
         "- Use modern Robot Framework syntax only. Do NOT use deprecated loop syntax such as ': FOR' or backslash-prefixed loop bodies. Use 'FOR ... END' syntax if a loop is truly necessary.\n"
         "- Use AI intelligence instead of hardcoded assumptions.\n\n"
         "Shared-vs-page resource rules:\n"
-        "- Generic or common variables belong in resources/common_keywords.resource, not in the page resource. Examples include browser selection such as ${BROWSER}, generic timeout variables, generic environment/base-url variables, and other cross-page defaults.\n"
-        "- Generic or common keywords belong in resources/common_keywords.resource, not in the page resource. Examples include Open Browser To Url, Go To Url, Open Login Page, Open Browser Session, Close Browser Session, Wait For Element To Be Ready, generic click/input wrappers, and other cross-page/browser lifecycle helpers.\n"
+        "- Generic or common variables belong in resources/common_keywords.resource, not in the page resource. Examples include browser selection such as ${BROWSER}, generic timeout variables, generic environment/base-url variables, shared credential defaults used across suites, and other cross-page defaults.\n"
+        "- Generic or common keywords belong in resources/common_keywords.resource, not in the page resource. Examples include Open Browser To Url, Go To Url, Open Login Page, Open Browser Session, Close Browser Session, Wait For Element To Be Ready, Click When Ready, Input Text When Ready, generic click/input wrappers, and other cross-page/browser lifecycle helpers.\n"
         "- If a common/shared keyword already exists or is strongly implied by common_resource_context, do not recreate it in the page resource. Instead, design the page resource to rely on the shared/common resource layer.\n"
-        "- The page resource should contain only page-specific behavior such as entering credentials, clicking page-specific buttons, and validating page-specific messages or field behavior.\n"
+        "- The page resource should contain only page-specific behavior such as entering credentials into this page, clicking page-specific buttons, and validating page-specific messages or field behavior.\n"
+        "- Avoid business-flow keywords that merely orchestrate a whole login scenario when they are not truly page-specific. Prefer smaller reusable page actions and page validations.\n"
         "- Do not duplicate keywords that already exist in common/shared resources.\n\n"
         "Resource quality requirements:\n"
         "- The Variables section should centralize reusable page-level test data so generated .robot test suites do not hardcode those values.\n"
+        "- Keep the Variables section semantically clean: variable names must accurately match the actual values. For example, a variable named WITH_SPACES must really contain spaces; otherwise do not create it.\n"
+        "- Remove unnecessary, duplicate, or weak variables if they are not clearly supported by approved manual tests.\n"
         "- The Keywords section should contain reusable business-friendly page actions and validations rather than low-level one-off steps only.\n"
         "- If approved manual tests mention password masking, create a reusable page-specific keyword to verify password masking behavior if feasible in the framework.\n"
-        "- If approved manual tests mention validation messages or rejection behavior, create reusable page-specific validation/assertion keywords where feasible.\n"
-        "- Do not create generic browser open/close keywords here if those belong in common/shared resources.\n\n"
+        "- If approved manual tests mention validation messages, incorrect credentials, blocked login, or rejection behavior, create reusable page-specific validation/assertion keywords where feasible instead of relying only on page-loaded checks.\n"
+        "- Do not create generic browser open/close keywords here if those belong in common/shared resources.\n"
+        "- Keep formatting compact with no excessive blank lines and use modern Robot syntax only.\n\n"
         f"Input JSON:\n{json.dumps(payload, indent=2)}"
     )
 
@@ -570,6 +577,47 @@ def normalize_resource_content(content: str) -> str:
     content = re.sub(r"(?m)^\s*: FOR\b", "FOR", content)
     content = re.sub(r"(?m)^\s*\\\s+", "    ", content)
     return content
+
+
+def build_resource_review_prompt(
+    workflow: dict,
+    approved_elements: list[dict],
+    approved_keywords: list[dict],
+    approved_manual_tests: list[dict],
+    common_resource_context: list[dict],
+    generated_resource: str,
+) -> str:
+    payload = {
+        "workflow": workflow,
+        "approved_elements": approved_elements,
+        "approved_keywords": approved_keywords,
+        "approved_manual_tests": approved_manual_tests,
+        "common_resource_context": common_resource_context,
+        "generated_page_resource": generated_resource,
+    }
+
+    return (
+        "You are a senior Robot Framework resource-file reviewer and repair specialist.\n"
+        "Your task is to review an already generated page-specific .resource file and return a corrected version of the same file.\n\n"
+        "Review objectives:\n"
+        "- Keep only page-specific locators, page-specific actions, page-specific validations, and page-specific test-data variables.\n"
+        "- Remove or avoid duplicated common/shared variables and keywords that belong in resources/common_keywords.resource.\n"
+        "- Improve formatting, Robot syntax quality, and maintainability.\n"
+        "- Preserve useful page-specific content grounded in approved elements, approved keywords, and approved manual tests.\n\n"
+        "Mandatory repair rules:\n"
+        "- Return only Robot Framework resource code with no markdown fences and no explanation.\n"
+        "- Keep the file page-specific. Generic browser lifecycle, generic navigation, generic waits, generic click/input wrappers, ${BROWSER}, ${DEFAULT_TIMEOUT}, and other cross-page concerns belong in resources/common_keywords.resource, not here.\n"
+        "- If a common/shared keyword already exists or is implied by common_resource_context, do not recreate it here.\n"
+        "- Remove business-flow keywords that are too generic or duplicate shared/common behavior.\n"
+        "- Keep reusable page-specific actions and page-specific validations.\n"
+        "- Keep page-specific test-data variables only when they are clearly useful and semantically accurate.\n"
+        "- If a variable name implies spaces, blanks, long text, invalid credentials, or another property, ensure the value really matches that meaning; otherwise repair or remove it.\n"
+        "- Use compact formatting with minimal blank lines.\n"
+        "- Use modern Robot Framework syntax only. Do not use deprecated ': FOR' syntax or backslash-prefixed loop bodies.\n"
+        "- Prefer page-specific validation keywords for incorrect credentials, validation messages, blocked login, and password masking when approved manual tests imply them.\n"
+        "- Do not create generic browser open/close keywords here.\n\n"
+        f"Input JSON:\n{json.dumps(payload, indent=2)}"
+    )
 
 
 def generate_resource_for_workflow(workflow: dict, approved_keywords: list[dict]):
@@ -606,12 +654,16 @@ def generate_resource_for_workflow(workflow: dict, approved_keywords: list[dict]
     if not endpoint or not token:
         raise HTTPException(status_code=400, detail="AI endpoint/token missing for resource generation.")
 
+    resource_path = get_resource_path(page_name)
+    existing_page_resource = read_text(resource_path)
+
     prompt = build_resource_generation_prompt(
         workflow,
         approved_elements,
         approved_keywords,
         approved_manual_tests,
         common_resource_context,
+        existing_page_resource,
     )
     resource_content = call_ai_chat(
         endpoint=endpoint,
@@ -623,7 +675,25 @@ def generate_resource_for_workflow(workflow: dict, approved_keywords: list[dict]
 
     resource_content = normalize_resource_content(resource_content)
 
-    resource_path = get_resource_path(page_name)
+    review_prompt = build_resource_review_prompt(
+        workflow,
+        approved_elements,
+        approved_keywords,
+        approved_manual_tests,
+        common_resource_context,
+        resource_content,
+    )
+    reviewed_resource_content = call_ai_chat(
+        endpoint=endpoint,
+        token=token,
+        prompt=review_prompt,
+        timeout_seconds=ai_cfg.get("timeout_seconds", 120),
+        verify_ssl=ai_cfg.get("verify_ssl", False),
+    )
+    reviewed_resource_content = normalize_resource_content(reviewed_resource_content)
+    if reviewed_resource_content:
+        resource_content = reviewed_resource_content
+
     is_valid, validation_message = validate_resource_content(resource_content, common_resource_context)
     if not is_valid:
         raise HTTPException(status_code=400, detail=validation_message)
