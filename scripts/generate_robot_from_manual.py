@@ -305,6 +305,13 @@ def validate_resource_content(content: str, common_resource_context: List[Dict] 
     if re.search(r"\n{3,}", content):
         warnings.append("Generated resource contains excessive blank lines; keep formatting compact")
 
+    variables_match = re.search(r"(?is)\*\*\*\s*variables\s*\*\*\*(.*?)(?:\n\*\*\*|\Z)", content)
+    if variables_match and re.search(r"\n\s*\n\s*\$\{", variables_match.group(1)):
+        warnings.append("Generated resource contains blank lines between consecutive variable definitions; keep variable blocks compact")
+
+    if re.search(r"(?im)^\s*Resource\s+\.\./\.\./resources/common_keywords\.resource\s*$", content) is None:
+        warnings.append("Generated page resource does not import ../../resources/common_keywords.resource; import the shared common layer when common helpers are used or expected")
+
     common_keyword_names = set()
     for item in common_resource_context or []:
         for kw in item.get("keywords", []):

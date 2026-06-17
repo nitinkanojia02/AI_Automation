@@ -573,7 +573,7 @@ def build_resource_generation_prompt(
         "- Prefer clear reusable variable names such as ${VALID_USERNAME}, ${INVALID_USERNAME}, ${BLANK_USERNAME}, ${SPACE_USERNAME}, ${LONG_USERNAME}, and similar names for passwords or other fields where justified by approved manual tests.\n"
         "- Prefer reusable validation keywords when expected results mention UI messages, masking, redirection, visibility, enabled/disabled state, or validation behavior.\n"
         "- Do not invent unnecessary variables or keywords.\n"
-        "- Preserve a clean resource file structure with minimal blank lines: at most one blank line between variables and at most one blank line between keyword blocks.\n"
+        "- Preserve a clean resource file structure with compact formatting: no blank lines between consecutive variable definitions, at most one blank line between major sections, and at most one blank line between keyword blocks.\n"
         "- Use modern Robot Framework syntax only. Do NOT use deprecated loop syntax such as ': FOR' or backslash-prefixed loop bodies. Use 'FOR ... END' syntax if a loop is truly necessary.\n"
         "- Use AI intelligence instead of hardcoded assumptions.\n\n"
         "Shared-vs-page resource rules:\n"
@@ -581,6 +581,7 @@ def build_resource_generation_prompt(
         "- Generic or common keywords belong in resources/common_keywords.resource, not in the page resource. Examples include Open Browser To Url, Go To Url, Open Login Page, Open Browser Session, Close Browser Session, Wait For Element To Be Ready, Click When Ready, Input Text When Ready, generic click/input wrappers, and other cross-page/browser lifecycle helpers.\n"
         "- If a common/shared keyword already exists or is strongly implied by common_resource_context, do not recreate it in the page resource. Instead, design the page resource to rely on the shared/common resource layer.\n"
         "- The page resource should contain only page-specific behavior such as entering credentials into this page, clicking page-specific buttons, and validating page-specific messages or field behavior.\n"
+        "- The page resource must import ../../resources/common_keywords.resource in its *** Settings *** section whenever it uses shared/common helpers.\n"
         "- Page-specific action keywords should prefer shared/common helpers such as Input Text When Ready, Click When Ready, and Wait For Element To Be Ready whenever those helpers fit the action. Avoid raw SeleniumLibrary calls in page keywords when an appropriate common helper exists.\n"
         "- Prefer atomic page-object keywords over workflow/business-flow orchestration. Good examples are Enter Username, Enter Password, Click Sign In Button, Verify Login Error Message, Verify Password Field Is Masked, Verify Login Page Loaded.\n"
         "- Avoid business-flow keywords that merely orchestrate a whole login scenario when they are not truly page-specific. Avoid keywords such as Login With Valid Credentials, Login With Credentials, Submit Login, Perform Successful Login, or other scenario wrappers unless there is a compelling page-specific reason.\n"
@@ -604,15 +605,35 @@ def normalize_resource_content(content: str) -> str:
 
     cleaned: list[str] = []
     blank_count = 0
+    in_variables_section = False
+    previous_was_variable = False
+
     for line in lines:
         normalized_line = line.rstrip()
-        if normalized_line.strip() == "":
+        stripped = normalized_line.strip()
+        lower = stripped.lower()
+
+        if stripped.startswith("***"):
+            in_variables_section = lower == "*** variables ***"
+            previous_was_variable = False
+            blank_count = 0
+            cleaned.append(stripped)
+            continue
+
+        if stripped == "":
+            if in_variables_section and previous_was_variable:
+                continue
             blank_count += 1
             if blank_count <= 1:
                 cleaned.append("")
+            continue
+
+        blank_count = 0
+        if in_variables_section:
+            previous_was_variable = bool(re.match(r"^\$\{[^}]+\}\s{2,}.+", stripped))
         else:
-            blank_count = 0
-            cleaned.append(normalized_line)
+            previous_was_variable = False
+        cleaned.append(normalized_line)
 
     content = "\n".join(cleaned).strip() + "\n"
     content = re.sub(r"(?m)^\s*: FOR\b", "FOR", content)
@@ -657,7 +678,8 @@ def build_resource_review_prompt(
         "- Keep page-specific test-data variables only when they are clearly useful, reusable, and semantically accurate.\n"
         "- Remove unused, duplicate, overly noisy, or weak one-off variables when they are not justified by approved manual tests. Merge similar variables where appropriate.\n"
         "- If a variable name implies spaces, blanks, long text, invalid credentials, or another property, ensure the value really matches that meaning; otherwise repair or remove it.\n"
-        "- Use compact formatting with minimal blank lines.\n"
+        "- Ensure the page resource imports ../../resources/common_keywords.resource in *** Settings *** when shared/common helper keywords are used.\n"
+        "- Use compact formatting with minimal blank lines and no blank lines between consecutive variable definitions.\n"
         "- Use modern Robot Framework syntax only. Do not use deprecated ': FOR' syntax or backslash-prefixed loop bodies.\n"
         "- Prefer page-specific validation keywords for incorrect credentials, validation messages, blocked login, and password masking when approved manual tests imply them.\n"
         "- Do not create generic browser open/close keywords here.\n\n"
