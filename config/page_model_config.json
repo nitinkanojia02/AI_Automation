@@ -16,6 +16,8 @@
     "token_env_var": "DEVEX_AI_TOKEN"
   },
 
+  "application_code": "WT",
+
   "generation_control": {
     "regenerate_pom_pages": true,
     "overwrite_pom_pages": false,

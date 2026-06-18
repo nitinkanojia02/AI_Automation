@@ -37,6 +37,7 @@ TESTS_DIR = BASE_DIR / "tests"
 POM_DIR = BASE_DIR / "pom_pages"
 TEMPLATES_DIR = BASE_DIR / "app" / "templates"
 CONFIG_PATH = BASE_DIR / "config" / "page_model_config.json"
+CONFIG = read_json(CONFIG_PATH) if CONFIG_PATH.exists() else {}
 
 app = FastAPI(title="WashTab Automation MVP")
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
@@ -150,8 +151,18 @@ def compact_code(value: str) -> str:
 
 
 def derive_app_code(workflow: dict | None, workflow_name: str) -> str:
-    module = compact_code((workflow or {}).get("module", ""))
-    workflow_code = compact_code((workflow or {}).get("workflowName", workflow_name))
+    workflow = workflow or {}
+    explicit_code = compact_code(
+        workflow.get("applicationCode")
+        or workflow.get("appCode")
+        or workflow.get("moduleCode")
+        or workflow.get("moduleAbbreviation")
+    )
+    if explicit_code:
+        return explicit_code
+
+    module = compact_code(workflow.get("module", ""))
+    workflow_code = compact_code(workflow.get("workflowName", workflow_name))
     if module:
         if len(module) <= 4:
             return module
@@ -263,6 +274,7 @@ def build_workflow_payload(
     scenario_intent_text: str,
     valid_username: str,
     valid_password: str,
+    application_code: str = "",
 ):
     preconditions = [line.strip() for line in preconditions_text.splitlines() if line.strip()]
     steps = [line.strip() for line in steps_text.splitlines() if line.strip()]
@@ -290,6 +302,7 @@ def build_workflow_payload(
         "workflowName": workflow_name,
         "module": module,
         "feature": feature,
+        "applicationCode": application_code.strip(),
         "source": {
             "createdBy": "UI user",
             "notes": "Workflow entered from MVP UI."
@@ -1302,6 +1315,7 @@ def save_workflow(
         scenario_intent_text,
         valid_username,
         valid_password,
+        str(CONFIG.get("application_code", "")),
     ))
 
     target_slug = existing_workflow_slug.strip() or slugify(workflow_name)

@@ -90,8 +90,12 @@ Central configuration for:
 - artifact output directories
 - browser settings
 - AI endpoint settings
+- application abbreviation settings used in generated automation naming/tagging
 - generation control options
 - configured pages
+
+Example:
+- `application_code: "WT"` ensures generated tests and tags use the stable application abbreviation `WT`
 
 ### `resources/common_keywords.resource`
 Shared common Robot keywords and variables used across generated resources/tests.
