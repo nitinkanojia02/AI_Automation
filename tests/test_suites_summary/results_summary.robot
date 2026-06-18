@@ -17,7 +17,7 @@ Print Robot Execution Summary From Results Folder
     ${pass_tests_count}=    Get Summary Value    PASSED=    @{summary_lines}
     ${fail_tests_count}=    Get Summary Value    FAILED=    @{summary_lines}
 
-    Log To Console    Total Tests---->${total_tests_count}
+    Log To Console    \nTotal Tests---->${total_tests_count}
     Log To Console    Passed Tests--->${pass_tests_count}
     Log To Console    Failed Tests--->${fail_tests_count}
     Log Failure Messages Section    @{summary_lines}
@@ -50,7 +50,7 @@ Log Failure Messages Section
     [Arguments]    @{summary_lines}
     ${capture}=    Set Variable    ${False}
     ${current_test_name}=    Set Variable    ${EMPTY}
-    Log To Console    Error Messages Section:
+    Log To Console    \nError Messages Section:
     FOR    ${line}    IN    @{summary_lines}
         IF    $line == 'ERROR_MESSAGES_START'
             ${capture}=    Set Variable    ${True}
