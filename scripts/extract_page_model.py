@@ -464,26 +464,16 @@ def generate_resource(url: str, elements: List[dict]) -> str:
         keywords.append(generate_keyword(var_name, label, role))
 
     settings_block = """*** Settings ***
-Library    SeleniumLibrary"""
+Resource    ../../resources/common_keywords.resource"""
 
     variables_block = "*** Variables ***"
     if variables:
         variables_block += "\n" + "\n".join(variables)
 
-    keywords_block = f"""*** Keywords ***
-Open Page
-    [Documentation]    Navigates current browser session to page URL.
-    Go To    {url}
-
-Open Browser To Page
-    [Documentation]    Opens browser, maximizes window, and navigates to page URL.
-    [Arguments]    ${{browser}}=chrome
-    Open Browser    about:blank    ${{browser}}
-    Maximize Browser Window
-    Open Page"""
+    keywords_block = "*** Keywords ***"
 
     if keywords:
-        keywords_block += "\n\n" + "\n\n".join(keywords)
+        keywords_block += "\n" + "\n\n".join(keywords)
 
     return f"{settings_block}\n\n{variables_block}\n\n{keywords_block}\n"
 

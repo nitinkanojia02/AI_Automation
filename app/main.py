@@ -867,11 +867,23 @@ def save_keywords_for_workflow(workflow: dict, keywords: list[dict]):
     pages = workflow.get("pages", [])
     page_name = pages[0].get("name") if pages else "page"
     keywords_path = get_keywords_path(page_name)
+    resource_path = get_resource_path(page_name)
 
     disallowed_resource_keywords = {
         "open page",
         "open browser to page",
     }
+
+    resource_keywords_by_name = {}
+    if resource_path.exists():
+        try:
+            resource_context = parse_resource_file(resource_path)
+            for resource_keyword in resource_context.get("keywords", []):
+                resource_keyword_name = clean_text(str(resource_keyword.get("name", "")))
+                if resource_keyword_name:
+                    resource_keywords_by_name[resource_keyword_name.lower()] = resource_keyword
+        except Exception:
+            resource_keywords_by_name = {}
 
     normalized_keywords = []
     for idx, keyword in enumerate(keywords, start=1):
@@ -879,14 +891,17 @@ def save_keywords_for_workflow(workflow: dict, keywords: list[dict]):
         if not keyword_name or keyword_name.lower() in disallowed_resource_keywords:
             continue
 
-        implementation = keyword.get("implementation", [])
+        resource_keyword = resource_keywords_by_name.get(keyword_name.lower(), {})
+
+        implementation = resource_keyword.get("body") or keyword.get("implementation", [])
         if isinstance(implementation, str):
             implementation = [line.rstrip() for line in implementation.splitlines() if line.strip()]
         implementation = [str(line).rstrip() for line in implementation if clean_text(str(line))]
 
-        arguments = keyword.get("arguments", [])
+        arguments = resource_keyword.get("args") or keyword.get("arguments", [])
         if isinstance(arguments, str):
             arguments = [arg.strip() for arg in arguments.split(",") if arg.strip()]
+        arguments = [str(arg).replace("${", "").replace("}", "").strip() for arg in arguments if clean_text(str(arg))]
 
         normalized_keywords.append({
             "keywordId": clean_text(str(keyword.get("keywordId", ""))) or f"KW_{idx:03d}",
