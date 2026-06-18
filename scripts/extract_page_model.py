@@ -113,7 +113,7 @@ def infer_role(item: dict) -> str:
     shadow_tag = clean_text(shadow.get("tag", "")).lower()
     input_type = (attrs.get("type") or shadow.get("type") or "").lower()
 
-    if tag in {"button", "ion-button", "ion-fab-button", "app-main-button"} or shadow_tag == "button":
+    if tag in {"button", "ion-button", "ion-fab-button", "app-main-button"}:
         return "button"
     if tag == "a":
         return "link"
@@ -129,6 +129,8 @@ def infer_role(item: dict) -> str:
         if input_type == "radio":
             return "radio"
         return "textbox"
+    if shadow_tag == "button" and clean_text(attrs.get("id", "")):
+        return "button"
     return "element"
 
 def infer_label(item: dict) -> str:
@@ -137,22 +139,25 @@ def infer_label(item: dict) -> str:
     tag = (item.get("tag") or "").lower()
     locator_hint = build_best_locator(item).lower()
 
-    candidates = [
+    primary_candidates = [
         item.get("label", ""),
         attrs.get("aria-label", ""),
-        shadow.get("aria_label", ""),
         attrs.get("placeholder", ""),
-        shadow.get("placeholder", ""),
         attrs.get("name", ""),
         attrs.get("id", ""),
         attrs.get("data-testid", ""),
         attrs.get("icsicon", ""),
-        shadow.get("icon_aria_label", ""),
         item.get("text", "")
+    ]
+    shadow_candidates = [
+        shadow.get("aria_label", ""),
+        shadow.get("placeholder", ""),
+        shadow.get("icon_aria_label", ""),
+        shadow.get("text", "")
     ]
 
     raw_label = ""
-    for c in candidates:
+    for c in primary_candidates + shadow_candidates:
         c = clean_text(c)
         if c and not is_meaningless_label(c):
             raw_label = c
@@ -165,8 +170,6 @@ def infer_label(item: dict) -> str:
     normalized = re.sub(r"_(outline|icon)$", "", normalized)
     if normalized in {"person", "profile", "user"}:
         normalized = "profile"
-    if normalized == "notifications":
-        normalized = "notifications"
 
     button_like = tag in {"button", "ion-button", "ion-fab-button", "app-main-button"}
     button_like = button_like or "btn_" in locator_hint or "button" in locator_hint or attrs.get("tappable") is not None
@@ -176,13 +179,14 @@ def infer_label(item: dict) -> str:
 
     return normalized or "element"
 
-def best_identity(item: dict) -> Tuple[str, str, str, str]:
+def best_identity(item: dict) -> Tuple[str, str, str, str, str]:
     attrs = item.get("attributes", {}) or {}
     return (
         infer_role(item),
         clean_text(attrs.get("id", "")),
         clean_text(attrs.get("name", "")),
         clean_text(attrs.get("placeholder", "")),
+        infer_label(item),
     )
 
 def make_var_name(label: str, role: str, used_names: set) -> str:
@@ -260,54 +264,55 @@ def build_best_locator(item: dict) -> str:
 def should_skip_item(item: dict) -> bool:
     tag = (item.get("tag") or "").lower()
     attrs = item.get("attributes", {}) or {}
+    shadow = item.get("shadow", {}) or {}
     text = clean_text(item.get("text", ""))
     label = clean_text(item.get("label", ""))
-    placeholder = clean_text(attrs.get("placeholder", ""))
-    aria = clean_text(attrs.get("aria-label", ""))
+    placeholder = clean_text(attrs.get("placeholder", "") or shadow.get("placeholder", ""))
+    aria = clean_text(attrs.get("aria-label", "") or shadow.get("aria_label", "") or shadow.get("icon_aria_label", ""))
     name = clean_text(attrs.get("name", ""))
     el_id = clean_text(attrs.get("id", ""))
     formcontrolname = clean_text(attrs.get("formcontrolname", ""))
     data_testid = clean_text(attrs.get("data-testid", ""))
     role_attr = clean_text(attrs.get("role", ""))
     visibility = item.get("visibility", {}) or {}
+    shadow_disabled = bool(shadow.get("disabled", False))
 
-    allowed = {
+    interactive_tags = {
         "input", "textarea", "select", "button", "a",
-        "ion-button", "ion-input", "ion-select",
-        "ion-fab-button", "app-main-button",
-        "div", "span", "label", "p", "h1", "h2", "h3", "h4", "h5", "h6"
+        "ion-button", "ion-input", "ion-select", "ion-fab-button", "app-main-button"
     }
+    allowed = interactive_tags | {"label", "p", "h1", "h2", "h3", "h4", "h5", "h6", "div", "span"}
     if tag not in allowed:
         return True
 
     if not visibility.get("is_visible", False):
         return True
 
-    meaningful_content = any([
-        text, label, placeholder, aria, name, el_id, formcontrolname, data_testid
-    ])
+    if shadow_disabled and tag in {"ion-button", "ion-fab-button", "app-main-button", "button"}:
+        return True
 
-    interactive_candidate = tag in {
-        "input", "textarea", "select", "button", "a",
-        "ion-button", "ion-input", "ion-select", "ion-fab-button", "app-main-button"
-    } or role_attr in {"button", "link", "textbox", "combobox"} or attrs.get("tappable") is not None or clean_text(attrs.get("onclick", ""))
+    meaningful_content = any([text, label, placeholder, aria, name, el_id, formcontrolname, data_testid])
 
+    interactive_candidate = tag in interactive_tags or role_attr in {"button", "link", "textbox", "combobox"} or attrs.get("tappable") is not None or clean_text(attrs.get("onclick", ""))
     static_candidate = tag in {"label", "p", "h1", "h2", "h3", "h4", "h5", "h6"}
     text_container_candidate = tag in {"div", "span"} and len(text) >= 2
 
     if not (interactive_candidate or static_candidate or text_container_candidate):
         return True
 
-    if not meaningful_content and not static_candidate:
+    if interactive_candidate:
+        if tag in {"input", "textarea", "select", "ion-input", "ion-select"}:
+            if not any([placeholder, aria, name, el_id, formcontrolname, data_testid, label, text]):
+                return True
+        elif tag in {"button", "a", "ion-button", "ion-fab-button", "app-main-button"}:
+            if not any([text, aria, name, el_id, label, data_testid]):
+                return True
+        elif not meaningful_content:
+            return True
+    elif not meaningful_content and not static_candidate:
         return True
 
     if tag == "a" and not text and not aria:
-        return True
-
-    if interactive_candidate and tag in {"ion-button", "ion-fab-button", "app-main-button", "div", "span"} and not text and not aria and not name and not el_id and not label:
-        return True
-
-    if visibility.get("is_covered", False) and not (tag == "app-main-button" or attrs.get("tappable") is not None):
         return True
 
     return False
@@ -317,6 +322,18 @@ def is_duplicate_item(item: dict, seen_identity: set, seen_locator: set) -> bool
     locator = build_best_locator(item).lower()
     if identity in seen_identity or locator in seen_locator:
         return True
+
+    role = infer_role(item)
+    if role in {"textbox", "password"}:
+        attrs = item.get("attributes", {}) or {}
+        placeholder = clean_text(attrs.get("placeholder", ""))
+        name = clean_text(attrs.get("name", ""))
+        el_id = clean_text(attrs.get("id", ""))
+        semantic_locator = f"{role}|{placeholder}|{name}|{el_id}"
+        if semantic_locator in seen_locator:
+            return True
+        seen_locator.add(semantic_locator)
+
     seen_identity.add(identity)
     seen_locator.add(locator)
     return False
@@ -393,15 +410,18 @@ def collect_elements(page) -> List[dict]:
       };
 
       const getText = (el) => {
+        const placeholder = (el.getAttribute('placeholder') || '').trim();
+        if (placeholder) return placeholder;
+
+        const aria = (el.getAttribute('aria-label') || '').trim();
+        if (aria) return aria;
+
         const hostText = getTextFromRoot(el);
         if (hostText) return hostText;
         if (el.shadowRoot) {
           const shadowText = getTextFromRoot(el.shadowRoot);
           if (shadowText) return shadowText;
         }
-
-        const aria = (el.getAttribute('aria-label') || '').trim();
-        if (aria) return aria;
 
         const id = (el.getAttribute('id') || '').trim();
         if (id) return id;
@@ -459,7 +479,8 @@ def collect_elements(page) -> List[dict]:
         'ion-input',
         'ion-select',
         'ion-fab-button',
-        'app-main-button'
+        'app-main-button',
+        'ion-item'
       ];
 
       const attrSelectors = [
