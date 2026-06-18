@@ -4,6 +4,7 @@
   "workflowName": "Home",
   "module": "Dashboard",
   "feature": "Home Page",
+  "applicationCode": "WT",
   "source": {
     "createdBy": "UI user",
     "notes": "Workflow entered from MVP UI."
@@ -20,37 +21,11 @@
   "observedPreconditions": [],
   "observedSteps": [],
   "observedExpectedResult": "",
-  "fields": [
-    {
-      "name": "",
-      "label": "",
-      "type": "",
-      "required": false
-    },
-    {
-      "name": "",
-      "label": "",
-      "type": "",
-      "required": false
-    },
-    {
-      "name": "",
-      "label": "",
-      "type": "",
-      "required": false
-    },
-    {
-      "name": "",
-      "label": "",
-      "type": "",
-      "required": false
-    }
-  ],
+  "fields": [],
   "observedValidations": [
-    "Login failed when incorrect username or password",
-    "Login failed when username and password is blank"
+    "Home page should contain notification, user and home button"
   ],
-  "testDataRefs": {},
+  "testData": {},
   "scenarioIntent": [
     "positive",
     "negative",

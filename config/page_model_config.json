@@ -21,7 +21,7 @@
   "generation_control": {
     "regenerate_pom_pages": true,
     "overwrite_pom_pages": false,
-    "excluded_pom_modules": ["home_page"],
+    "excluded_pom_modules": [""],
     "overwrite_manual_tests": false,
     "excluded_workflows": [],
     "overwrite_robot_tests": false,
