@@ -261,6 +261,7 @@ def should_skip_item(item: dict) -> bool:
     el_id = clean_text(attrs.get("id", ""))
     formcontrolname = clean_text(attrs.get("formcontrolname", ""))
     data_testid = clean_text(attrs.get("data-testid", ""))
+    visibility = item.get("visibility", {}) or {}
 
     allowed = {
         "input", "textarea", "select", "button", "a",
@@ -268,6 +269,12 @@ def should_skip_item(item: dict) -> bool:
         "ion-fab-button", "app-main-button"
     }
     if tag not in allowed:
+        return True
+
+    if not visibility.get("is_visible", False):
+        return True
+
+    if visibility.get("is_covered", False):
         return True
 
     meaningful_content = any([
@@ -297,17 +304,36 @@ def is_duplicate_item(item: dict, seen_identity: set, seen_locator: set) -> bool
 def collect_elements(page) -> List[dict]:
     js = """
     () => {
-      const isVisible = (el) => {
+      const hasVisibleStyle = (el) => {
+        if (!el) return false;
         const s = window.getComputedStyle(el);
+        if (!s) return false;
+        if (s.visibility === 'hidden' || s.display === 'none') return false;
+        if (Number.parseFloat(s.opacity || '1') === 0) return false;
+        if (s.pointerEvents === 'none') return false;
+        if (el.hasAttribute('hidden') || el.getAttribute('aria-hidden') === 'true') return false;
+        return true;
+      };
+
+      const isActuallyVisible = (el) => {
+        if (!el || !el.isConnected) return false;
+        let current = el;
+        while (current && current.nodeType === Node.ELEMENT_NODE) {
+          if (!hasVisibleStyle(current)) return false;
+          current = current.parentElement;
+        }
         const r = el.getBoundingClientRect();
-        const hiddenByAttr = el.hasAttribute('hidden') || el.getAttribute('aria-hidden') === 'true';
-        return s &&
-               s.visibility !== 'hidden' &&
-               s.display !== 'none' &&
-               s.opacity !== '0' &&
-               !hiddenByAttr &&
-               r.width > 0 &&
-               r.height > 0;
+        if (r.width <= 0 || r.height <= 0) return false;
+        return true;
+      };
+
+      const isCoveredAtCenter = (el) => {
+        const r = el.getBoundingClientRect();
+        const cx = r.left + (r.width / 2);
+        const cy = r.top + (r.height / 2);
+        if (cx < 0 || cy < 0 || cx > window.innerWidth || cy > window.innerHeight) return false;
+        const topEl = document.elementFromPoint(cx, cy);
+        return !!topEl && topEl !== el && !el.contains(topEl) && !topEl.contains(el);
       };
 
       const getText = (el) => {
@@ -352,6 +378,7 @@ def collect_elements(page) -> List[dict]:
         '[tappable]',
         '[role="button"]',
         '[onclick]',
+        '[tabindex]',
         '[id^="btn_"]'
       ];
 
@@ -361,7 +388,6 @@ def collect_elements(page) -> List[dict]:
       ]));
 
       return nodes
-        .filter(isVisible)
         .map(el => {
           const attrs = {};
           for (const a of el.attributes) attrs[a.name] = a.value;
@@ -377,13 +403,26 @@ def collect_elements(page) -> List[dict]:
             if (parent) label = (parent.innerText || parent.textContent || '').trim();
           }
 
+          const rect = el.getBoundingClientRect();
+          const visibility = {
+            is_visible: isActuallyVisible(el),
+            is_in_viewport: rect.bottom > 0 && rect.right > 0 && rect.top < window.innerHeight && rect.left < window.innerWidth,
+            is_covered: isCoveredAtCenter(el),
+            width: rect.width,
+            height: rect.height,
+            x: rect.x,
+            y: rect.y
+          };
+
           return {
             tag: (el.tagName || '').toLowerCase(),
             text: getText(el),
             attributes: attrs,
-            label: label
+            label: label,
+            visibility: visibility
           };
-        });
+        })
+        .filter(item => item.visibility && item.visibility.is_visible);
     }
     """
     raw = page.evaluate(js)
