@@ -95,7 +95,9 @@ Central configuration for:
 - configured pages
 
 Example:
-- `application_code: "WT"` ensures generated tests and tags use the stable application abbreviation `WT`
+- `application_code: "WT"` ensures generated testcase IDs use the stable application abbreviation `WT`
+- generated testcase naming follows the standard `<APPCODE>-<FEATURECODE><NN>`, for example `WT-LOGIN01`
+- generated Robot `[Tags]` are intentionally minimal and include only the testcase ID and the scenario type, for example `[Tags]    WT-LOGIN01    positive`
 
 ### `resources/common_keywords.resource`
 Shared common Robot keywords and variables used across generated resources/tests.

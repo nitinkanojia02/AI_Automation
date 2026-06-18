@@ -154,6 +154,11 @@ def compact_code(value: str) -> str:
 
 def derive_app_code(workflow: dict | None, workflow_name: str) -> str:
     workflow = workflow or {}
+
+    config_code = compact_code(str(CONFIG.get("application_code", "")))
+    if config_code:
+        return config_code
+
     explicit_code = compact_code(
         workflow.get("applicationCode")
         or workflow.get("appCode")
@@ -1108,7 +1113,6 @@ def apply_robot_test_naming_and_tags(content: str, workflow: dict | None, workfl
     result: list[str] = []
     in_test_cases = False
     current_index = 0
-    pending_primary_tag = None
 
     def build_codes(existing_name: str, sequence: int) -> tuple[str, str]:
         match = re.search(r"([A-Z]+)_TC_(\d+)", existing_name.upper())
@@ -1118,7 +1122,21 @@ def apply_robot_test_naming_and_tags(content: str, workflow: dict | None, workfl
             match = re.search(r"(\d+)", existing_name)
             number = int(match.group(1)) if match else sequence
         nn = f"{number:02d}"
-        return f"AUT-{feature_code}{nn}", f"{app_code}-{feature_code}{nn}"
+        testcase_id = f"{app_code}-{feature_code}{nn}"
+        return testcase_id, testcase_id
+
+    def detect_scenario_type(title: str, existing_tags: list[str]) -> str:
+        for tag in existing_tags:
+            normalized = clean_text(tag).lower()
+            if normalized in {"positive", "negative", "edge"}:
+                return normalized
+
+        title_lower = clean_text(title).lower()
+        if any(token in title_lower for token in ["invalid", "error", "fail", "reject", "required", "blank", "empty", "incorrect", "unauthorized", "denied"]):
+            return "negative"
+        if any(token in title_lower for token in ["edge", "boundary", "max", "min", "length", "whitespace", "spaces", "special character", "copy paste", "case sensitivity"]):
+            return "edge"
+        return "positive"
 
     i = 0
     while i < len(lines):
@@ -1128,32 +1146,33 @@ def apply_robot_test_naming_and_tags(content: str, workflow: dict | None, workfl
 
         if stripped.startswith("***"):
             in_test_cases = lower == "*** test cases ***"
-            pending_primary_tag = None
             result.append(stripped)
             i += 1
             continue
 
         if in_test_cases and stripped and not line.startswith((" ", "\t")):
             current_index += 1
-            prefix, primary_tag = build_codes(stripped, current_index)
+            testcase_id, primary_tag = build_codes(stripped, current_index)
             title = stripped
             title = re.sub(r"^[A-Z]+_TC_\d+\s*", "", title)
             title = re.sub(r"^AUT-[A-Z0-9]+\s*:\s*", "", title)
+            title = re.sub(r"^[A-Z0-9]+-[A-Z0-9]+\s*:\s*", "", title)
             title = clean_text(title)
-            result.append(f"{prefix}: {title}")
-            pending_primary_tag = primary_tag
 
+            existing_tags: list[str] = []
             if i + 1 < len(lines) and lines[i + 1].strip().startswith("[Tags]"):
                 existing_tags_line = lines[i + 1].strip()
                 tag_tokens = re.split(r"\s{2,}|\t+", existing_tags_line)
                 existing_tags = [t for t in tag_tokens[1:] if t.strip()]
-                filtered = [t for t in existing_tags if t.upper() != primary_tag.upper()]
-                new_tags = [primary_tag] + filtered
-                result.append("    [Tags]    " + "    ".join(new_tags))
+
+            scenario_type = detect_scenario_type(title, existing_tags)
+            result.append(f"{testcase_id}: {title}")
+            result.append(f"    [Tags]    {primary_tag}    {scenario_type}")
+
+            if existing_tags:
                 i += 2
                 continue
 
-            result.append(f"    [Tags]    {primary_tag}")
             i += 1
             continue
 
