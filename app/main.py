@@ -886,32 +886,81 @@ def save_keywords_for_workflow(workflow: dict, keywords: list[dict]):
             resource_keywords_by_name = {}
 
     normalized_keywords = []
-    for idx, keyword in enumerate(keywords, start=1):
-        keyword_name = clean_text(str(keyword.get("keywordName", "")))
-        if not keyword_name or keyword_name.lower() in disallowed_resource_keywords:
-            continue
+    if resource_keywords_by_name:
+        approved_keywords_by_name = {
+            clean_text(str(item.get("keywordName", ""))).lower(): item
+            for item in keywords
+            if clean_text(str(item.get("keywordName", "")))
+        }
 
-        resource_keyword = resource_keywords_by_name.get(keyword_name.lower(), {})
+        for idx, (keyword_name_lower, resource_keyword) in enumerate(resource_keywords_by_name.items(), start=1):
+            if keyword_name_lower in disallowed_resource_keywords:
+                continue
 
-        implementation = resource_keyword.get("body") or keyword.get("implementation", [])
-        if isinstance(implementation, str):
-            implementation = [line.rstrip() for line in implementation.splitlines() if line.strip()]
-        implementation = [str(line).rstrip() for line in implementation if clean_text(str(line))]
+            resource_keyword_name = clean_text(str(resource_keyword.get("name", "")))
+            approved_keyword = approved_keywords_by_name.get(keyword_name_lower, {})
+            implementation = resource_keyword.get("body") or []
+            implementation = [str(line).rstrip() for line in implementation if clean_text(str(line))]
 
-        arguments = resource_keyword.get("args") or keyword.get("arguments", [])
-        if isinstance(arguments, str):
-            arguments = [arg.strip() for arg in arguments.split(",") if arg.strip()]
-        arguments = [str(arg).replace("${", "").replace("}", "").strip() for arg in arguments if clean_text(str(arg))]
+            arguments = resource_keyword.get("args") or []
+            arguments = [str(arg).replace("${", "").replace("}", "").strip() for arg in arguments if clean_text(str(arg))]
 
-        normalized_keywords.append({
-            "keywordId": clean_text(str(keyword.get("keywordId", ""))) or f"KW_{idx:03d}",
-            "keywordName": keyword_name,
-            "targetElement": clean_text(str(keyword.get("targetElement", ""))),
-            "action": clean_text(str(keyword.get("action", ""))),
-            "arguments": arguments,
-            "implementation": implementation,
-            "approved": bool(keyword.get("approved", True)),
-        })
+            target_element = clean_text(str(approved_keyword.get("targetElement", "")))
+            if not target_element:
+                lowered_name = resource_keyword_name.lower()
+                for suffix in ("click ", "enter ", "select ", "verify "):
+                    if lowered_name.startswith(suffix):
+                        target_element = slugify(resource_keyword_name[len(suffix):])
+                        break
+
+            action = clean_text(str(approved_keyword.get("action", "")))
+            if not action:
+                lowered_name = resource_keyword_name.lower()
+                if lowered_name.startswith("click "):
+                    action = "click"
+                elif lowered_name.startswith("enter ") or lowered_name.startswith("input "):
+                    action = "input"
+                elif lowered_name.startswith("select "):
+                    action = "select"
+                elif lowered_name.startswith("verify "):
+                    action = "verify"
+                else:
+                    action = "generic"
+
+            normalized_keywords.append({
+                "keywordId": clean_text(str(approved_keyword.get("keywordId", ""))) or f"KW_{idx:03d}",
+                "keywordName": resource_keyword_name,
+                "targetElement": target_element,
+                "action": action,
+                "arguments": arguments,
+                "implementation": implementation,
+                "approved": bool(approved_keyword.get("approved", True)),
+            })
+    else:
+        for idx, keyword in enumerate(keywords, start=1):
+            keyword_name = clean_text(str(keyword.get("keywordName", "")))
+            if not keyword_name or keyword_name.lower() in disallowed_resource_keywords:
+                continue
+
+            implementation = keyword.get("implementation", [])
+            if isinstance(implementation, str):
+                implementation = [line.rstrip() for line in implementation.splitlines() if line.strip()]
+            implementation = [str(line).rstrip() for line in implementation if clean_text(str(line))]
+
+            arguments = keyword.get("arguments", [])
+            if isinstance(arguments, str):
+                arguments = [arg.strip() for arg in arguments.split(",") if arg.strip()]
+            arguments = [str(arg).replace("${", "").replace("}", "").strip() for arg in arguments if clean_text(str(arg))]
+
+            normalized_keywords.append({
+                "keywordId": clean_text(str(keyword.get("keywordId", ""))) or f"KW_{idx:03d}",
+                "keywordName": keyword_name,
+                "targetElement": clean_text(str(keyword.get("targetElement", ""))),
+                "action": clean_text(str(keyword.get("action", ""))),
+                "arguments": arguments,
+                "implementation": implementation,
+                "approved": bool(keyword.get("approved", True)),
+            })
 
     payload = {
         "pageName": page_name,
