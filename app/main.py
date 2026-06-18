@@ -492,7 +492,7 @@ def infer_type_from_raw_item(item: dict) -> str:
     attrs = item.get("attributes", {}) or {}
     input_type = clean_text(attrs.get("type", "")).lower()
 
-    if tag in {"button", "ion-button"}:
+    if tag in {"button", "ion-button", "ion-fab-button", "app-main-button"}:
         return "button"
     if tag == "a":
         return "link"
@@ -522,26 +522,31 @@ def infer_label_from_raw_item(item: dict) -> str:
             return value
     return ""
 
+def normalize_ui_element_name(label: str, role: str) -> str:
+    base = slugify(label)
+    base = re.sub(r"^(btn|button)_", "", base)
+    base = re.sub(r"_(outline|icon)$", "", base)
+    if base in {"person", "profile", "user"}:
+        base = "profile"
+    if role == "textbox" and not base.endswith("textbox"):
+        return f"{base}_textbox"
+    if role == "password_textbox" and not base.endswith("textbox"):
+        return f"{base}_textbox"
+    if role == "button" and not base.endswith("button"):
+        return f"{base}_button"
+    if role == "dropdown" and not base.endswith("dropdown"):
+        return f"{base}_dropdown"
+    if role == "link" and not base.endswith("link"):
+        return f"{base}_link"
+    return base or role or "element"
+
 def infer_name_from_raw_item(item: dict, index: int) -> str:
     role = infer_type_from_raw_item(item)
     label = infer_label_from_raw_item(item)
 
     if label:
-        base = slugify(label)
-    else:
-        base = f"element_{index+1}"
-
-    if role == "textbox":
-        return f"{base}_textbox"
-    if role == "password_textbox":
-        return f"{base}_textbox"
-    if role == "button":
-        return f"{base}_button"
-    if role == "dropdown":
-        return f"{base}_dropdown"
-    if role == "link":
-        return f"{base}_link"
-    return base
+        return normalize_ui_element_name(label, role)
+    return f"element_{index+1}"
 
 def build_locator_from_raw_item(item: dict) -> str:
     tag = (item.get("tag") or "").lower()
@@ -562,13 +567,19 @@ def build_locator_from_raw_item(item: dict) -> str:
 
     if el_id:
         return f"id={el_id}"
+    if tag == "ion-fab-button":
+        if text:
+            return f"xpath=//ion-fab-button[.//ion-icon[@aria-label={xpath_literal(text)}] or normalize-space(.)={xpath_literal(text)}]"
+        if aria:
+            return f"xpath=//ion-fab-button[@aria-label={xpath_literal(aria)}]"
+        return "xpath=//ion-fab-button"
     if placeholder and tag in {"input", "textarea"}:
         return f"xpath=//{tag}[@placeholder={xpath_literal(placeholder)}]"
     if name and tag in {"input", "textarea", "select"}:
         return f"xpath=//{tag}[@name={xpath_literal(name)}]"
     if aria:
         return f"xpath=//{tag}[@aria-label={xpath_literal(aria)}]"
-    if text and tag in {"button", "a", "ion-button"}:
+    if text and tag in {"button", "a", "ion-button", "app-main-button"}:
         return f"xpath=//{tag}[normalize-space(.)={xpath_literal(text)}]"
     return f"xpath=//{tag}"
 
@@ -597,30 +608,62 @@ def get_page_review_data(workflow: dict):
     elements_path = page_dir / f"{page_name}.elements.json"
     screenshot_path = page_dir / f"{page_name}.png"
 
-    elements_data = []
+    extracted_elements_data = []
+    approved_elements_data = []
     if elements_path.exists():
         try:
             data = read_json(elements_path)
             if isinstance(data, list):
-                elements_data = data
+                extracted_elements_data = data
             elif isinstance(data, dict):
-                elements_data = data.get("elements", [])
+                approved_elements_data = data.get("elements", [])
+                extracted_elements_data = data.get("rawElements", approved_elements_data)
         except Exception:
-            elements_data = []
+            extracted_elements_data = []
+            approved_elements_data = []
 
+    source_elements = approved_elements_data or extracted_elements_data
     normalized_elements = []
-    for idx, item in enumerate(elements_data):
+
+    resource_elements_by_locator = {}
+    resource_path = page_dir / f"{page_name}.resource"
+    if resource_path.exists():
+        try:
+            resource_context = parse_resource_file(resource_path)
+            for variable in resource_context.get("variables", []):
+                locator = clean_text(str(variable.get("value", "")))
+                variable_name = clean_text(str(variable.get("name", "")))
+                if not locator or not variable_name:
+                    continue
+                normalized_name = normalize_ui_element_name(variable_name.lower(), "button" if variable_name.upper().endswith("_BUTTON") else "element")
+                resource_elements_by_locator[locator] = {
+                    "approvedName": normalized_name,
+                    "type": "button" if normalized_name.endswith("_button") else "element",
+                    "locator": locator,
+                    "approved": True,
+                }
+        except Exception:
+            resource_elements_by_locator = {}
+
+    for idx, item in enumerate(source_elements):
         if not isinstance(item, dict):
             continue
         if "approvedName" in item and "locator" in item and "type" in item:
-            normalized_elements.append({
-                "approvedName": item.get("approvedName") or f"element_{idx+1}",
-                "type": item.get("type", "element"),
-                "locator": item.get("locator", ""),
-                "approved": item.get("approved", True),
-            })
+            locator = clean_text(item.get("locator", ""))
+            stronger = resource_elements_by_locator.get(locator)
+            if stronger:
+                normalized_elements.append(stronger)
+            else:
+                normalized_elements.append({
+                    "approvedName": item.get("approvedName") or f"element_{idx+1}",
+                    "type": item.get("type", "element"),
+                    "locator": locator,
+                    "approved": item.get("approved", True),
+                })
         else:
-            normalized_elements.append(normalize_extracted_element(item, idx))
+            inferred = normalize_extracted_element(item, idx)
+            stronger = resource_elements_by_locator.get(inferred.get("locator", ""))
+            normalized_elements.append(stronger or inferred)
 
     screenshot_web_path = None
     if screenshot_path.exists():
@@ -631,8 +674,10 @@ def get_page_review_data(workflow: dict):
         "page_url": page_url,
         "elements": normalized_elements,
         "screenshot_web_path": screenshot_web_path,
-        "raw_elements_count": len(normalized_elements),
+        "raw_elements_count": len(extracted_elements_data or normalized_elements),
         "elements_path": elements_path,
+        "raw_elements": extracted_elements_data,
+        "approved_elements": approved_elements_data,
     }
 
 # -------------------------------------------------------------------
@@ -647,15 +692,9 @@ def get_resource_path(page_name: str) -> Path:
 
 def load_approved_elements_for_workflow(workflow: dict) -> list[dict]:
     review_data = get_page_review_data(workflow)
-    elements_path = review_data["elements_path"]
-    if not elements_path.exists():
-        return []
-    data = read_json(elements_path)
-    if isinstance(data, dict):
-        return data.get("elements", [])
-    if isinstance(data, list):
-        return data
-    return []
+    if review_data.get("approved_elements"):
+        return review_data.get("approved_elements", [])
+    return review_data.get("elements", [])
 
 def build_keywords_from_elements(elements: list[dict]) -> list[dict]:
     keywords = []
@@ -726,6 +765,7 @@ def get_keyword_review_data(workflow: dict):
     pages = workflow.get("pages", [])
     page_name = pages[0].get("name") if pages else "page"
     keywords_path = get_keywords_path(page_name)
+    resource_path = get_resource_path(page_name)
 
     keywords = []
     if keywords_path.exists():
@@ -735,14 +775,16 @@ def get_keyword_review_data(workflow: dict):
         except Exception:
             keywords = []
 
+    approved_elements = load_approved_elements_for_workflow(workflow)
     if not keywords:
-        approved_elements = load_approved_elements_for_workflow(workflow)
         keywords = build_keywords_from_elements(approved_elements)
 
     return {
         "page_name": page_name,
         "keywords_path": keywords_path,
+        "resource_path": resource_path,
         "keywords": keywords,
+        "approved_elements": approved_elements,
     }
 
 def save_keywords_for_workflow(workflow: dict, keywords: list[dict]):
@@ -1626,6 +1668,7 @@ async def save_page_review(request: Request, workflow_name: str):
     payload = {
         "pageName": review_data["page_name"],
         "pageUrl": review_data["page_url"],
+        "rawElements": review_data.get("raw_elements", []),
         "elements": approved_elements,
     }
     write_json(review_data["elements_path"], payload)
