@@ -3,6 +3,7 @@ import json
 import re
 import subprocess
 import sys
+from openpyxl import Workbook
 
 from fastapi import FastAPI, Form, HTTPException, Request
 from fastapi.responses import RedirectResponse
@@ -61,6 +62,63 @@ def write_json(path: Path, data):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
 
+
+def export_manual_tests_to_excel(workflow_name: str, workflow: dict | None, manual_data: dict) -> Path:
+    app_code = derive_app_code(workflow, workflow_name)
+    feature_code = derive_feature_code(workflow, workflow_name)
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Manual Tests"
+
+    headers = [
+        "Automation Test Name",
+        "Tag",
+        "Manual Test ID",
+        "Title",
+        "Type",
+        "Priority",
+        "Preconditions",
+        "Steps",
+        "Expected Result",
+    ]
+    sheet.append(headers)
+
+    cases = manual_data.get("testCases") or manual_data.get("manualTests") or []
+    for index, case in enumerate(cases, start=1):
+        case_id = str(case.get("id", "")).strip()
+        match = re.search(r"(\d+)$", case_id)
+        number = int(match.group(1)) if match else index
+        nn = f"{number:02d}"
+        aut_name = f"AUT-{feature_code}{nn}: {clean_text(str(case.get('title', f'Test Case {index}')))}"
+        tag = f"{app_code}-{feature_code}{nn}"
+        preconditions = "\n".join(str(item).strip() for item in case.get("preconditions", []) if str(item).strip())
+        steps = "\n".join(str(item).strip() for item in case.get("steps", []) if str(item).strip())
+        expected = clean_text(str(case.get("expectedResult", "")))
+        sheet.append([
+            aut_name,
+            tag,
+            case_id,
+            clean_text(str(case.get("title", ""))),
+            clean_text(str(case.get("type", ""))),
+            clean_text(str(case.get("priority", ""))),
+            preconditions,
+            steps,
+            expected,
+        ])
+
+    for column_cells in sheet.columns:
+        max_length = 0
+        column_letter = column_cells[0].column_letter
+        for cell in column_cells:
+            value = "" if cell.value is None else str(cell.value)
+            max_length = max(max_length, len(value))
+        sheet.column_dimensions[column_letter].width = min(max(max_length + 2, 14), 60)
+
+    output_path = MANUAL_DIR / f"{workflow_name}_approved_manual_tests.xlsx"
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    workbook.save(output_path)
+    return output_path
+
 def read_text(path: Path) -> str:
     return path.read_text(encoding="utf-8") if path.exists() else ""
 
@@ -85,6 +143,26 @@ def slugify(value: str) -> str:
 
 def clean_text(value: str) -> str:
     return re.sub(r"\s+", " ", (value or "").strip())
+
+
+def compact_code(value: str) -> str:
+    return re.sub(r"[^A-Za-z0-9]+", "", clean_text(value)).upper()
+
+
+def derive_app_code(workflow: dict | None, workflow_name: str) -> str:
+    module = compact_code((workflow or {}).get("module", ""))
+    workflow_code = compact_code((workflow or {}).get("workflowName", workflow_name))
+    if module:
+        if len(module) <= 4:
+            return module
+        return module[:2]
+    return workflow_code[:2] or "APP"
+
+
+def derive_feature_code(workflow: dict | None, workflow_name: str) -> str:
+    feature = compact_code((workflow or {}).get("feature", ""))
+    workflow_code = compact_code((workflow or {}).get("workflowName", workflow_name))
+    return feature or workflow_code or "FLOW"
 
 def to_keyword_title(element_name: str) -> str:
     base = clean_text(element_name).replace("_", " ")
@@ -1007,10 +1085,76 @@ def normalize_robot_blank_and_space_arguments(content: str) -> str:
 
     return "\n".join(normalized)
 
-def normalize_robot_content(content: str) -> str:
+def apply_robot_test_naming_and_tags(content: str, workflow: dict | None, workflow_name: str) -> str:
+    app_code = derive_app_code(workflow, workflow_name)
+    feature_code = derive_feature_code(workflow, workflow_name)
+
+    lines = content.splitlines()
+    result: list[str] = []
+    in_test_cases = False
+    current_index = 0
+    pending_primary_tag = None
+
+    def build_codes(existing_name: str, sequence: int) -> tuple[str, str]:
+        match = re.search(r"([A-Z]+)_TC_(\d+)", existing_name.upper())
+        if match:
+            number = int(match.group(2))
+        else:
+            match = re.search(r"(\d+)", existing_name)
+            number = int(match.group(1)) if match else sequence
+        nn = f"{number:02d}"
+        return f"AUT-{feature_code}{nn}", f"{app_code}-{feature_code}{nn}"
+
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        stripped = line.strip()
+        lower = stripped.lower()
+
+        if stripped.startswith("***"):
+            in_test_cases = lower == "*** test cases ***"
+            pending_primary_tag = None
+            result.append(stripped)
+            i += 1
+            continue
+
+        if in_test_cases and stripped and not line.startswith((" ", "\t")):
+            current_index += 1
+            prefix, primary_tag = build_codes(stripped, current_index)
+            title = stripped
+            title = re.sub(r"^[A-Z]+_TC_\d+\s*", "", title)
+            title = re.sub(r"^AUT-[A-Z0-9]+\s*:\s*", "", title)
+            title = clean_text(title)
+            result.append(f"{prefix}: {title}")
+            pending_primary_tag = primary_tag
+
+            if i + 1 < len(lines) and lines[i + 1].strip().startswith("[Tags]"):
+                existing_tags_line = lines[i + 1].strip()
+                tag_tokens = re.split(r"\s{2,}|\t+", existing_tags_line)
+                existing_tags = [t for t in tag_tokens[1:] if t.strip()]
+                filtered = [t for t in existing_tags if t.upper() != primary_tag.upper()]
+                new_tags = [primary_tag] + filtered
+                result.append("    [Tags]    " + "    ".join(new_tags))
+                i += 2
+                continue
+
+            result.append(f"    [Tags]    {primary_tag}")
+            i += 1
+            continue
+
+        result.append(line.rstrip())
+        i += 1
+
+    return "\n".join(result)
+
+
+def normalize_robot_content(content: str, workflow: dict | None = None, workflow_name: str = "") -> str:
     content = strip_markdown_fences(content)
     content = normalize_robot_blank_and_space_arguments(content)
     content = normalize_robot_content_spacing(content)
+    if workflow_name:
+        content = apply_robot_test_naming_and_tags(content, workflow, workflow_name)
+        content = normalize_robot_content_spacing(content)
     return content
 
 
@@ -1059,7 +1203,8 @@ def generate_automation_for_workflow(workflow_name: str) -> str:
         verify_ssl=ai_cfg.get("verify_ssl", False),
     )
 
-    robot_content = normalize_robot_content(robot_content)
+    workflow = load_workflow_or_404(workflow_name)
+    robot_content = normalize_robot_content(robot_content, workflow, workflow_name)
 
     review_prompt = build_review_prompt(manual_data, resource_context, robot_content)
     reviewed_robot_content = call_ai_chat(
@@ -1069,7 +1214,7 @@ def generate_automation_for_workflow(workflow_name: str) -> str:
         timeout_seconds=ai_cfg.get("timeout_seconds", 120),
         verify_ssl=ai_cfg.get("verify_ssl", False),
     )
-    reviewed_robot_content = normalize_robot_content(reviewed_robot_content)
+    reviewed_robot_content = normalize_robot_content(reviewed_robot_content, workflow, workflow_name)
     if reviewed_robot_content:
         robot_content = reviewed_robot_content
 
@@ -1420,6 +1565,7 @@ async def save_manual_tests(request: Request, workflow_name: str):
 
         updated = update_manual_with_ui_cases(original, cases)
         write_json(manual_path, updated)
+        export_manual_tests_to_excel(workflow_name, workflow, updated)
 
         try:
             if workflow:
@@ -1473,7 +1619,8 @@ def save_automation(request: Request, workflow_name: str, robot_content: str = F
     try:
         target = TESTS_DIR / f"{workflow_name}_tests.robot"
         target.parent.mkdir(parents=True, exist_ok=True)
-        robot_content = normalize_robot_content(robot_content)
+        workflow = read_json(WORKFLOW_DIR / f"{workflow_name}.json") if (WORKFLOW_DIR / f"{workflow_name}.json").exists() else None
+        robot_content = normalize_robot_content(robot_content, workflow, workflow_name)
         target.write_text(robot_content, encoding="utf-8")
         update_workflow_status(workflow_name, automation_generated=True)
         return render_template(request, "automation.html", {

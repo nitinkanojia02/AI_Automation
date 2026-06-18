@@ -36,6 +36,10 @@ def slugify(text: str) -> str:
     text = re.sub(r"_+", "_", text).strip("_")
     return text or "module"
 
+
+def compact_code(text: str) -> str:
+    return re.sub(r"[^A-Za-z0-9]+", "", clean_text(text)).upper()
+
 def get_ai_token(ai_cfg: dict) -> str:
     token = str(ai_cfg.get("token", "")).strip()
     if token:
@@ -149,8 +153,11 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
         "- Include *** Settings *** and *** Test Cases *** sections.\n"
         "- Do NOT include a *** Variables *** section in the generated .robot file.\n"
         "- Use compact formatting: no blank lines inside the Settings section, exactly one blank line between major sections, and exactly one blank line between test cases.\n"
-        "- Every generated test case name must start with the prefix AUT.\n"
-        "- Every generated test case must include a [Tags] line immediately after the test case name. Include at least AUT, the workflow/module tag, and a scenario tag such as positive, negative, edge, ui, validation, security, or accessibility when appropriate.\n"
+        "- Every generated test case name must start with AUT- and follow the pattern AUT-<FEATURECODE><NN>: <Title>. Example: AUT-LOGIN01: Verify login page loads successfully.\n"
+        "- <FEATURECODE> should be derived from the feature name in the input (uppercase alphanumeric, no spaces), and <NN> should be a two-digit sequence aligned to the test order or test case id when possible.\n"
+        "- Every generated test case must include a [Tags] line immediately after the test case name. The primary tag must follow the pattern <APPCODE>-<FEATURECODE><NN>. Example: [Tags]    WT-LOGIN01.\n"
+        "- <APPCODE> should be the uppercase abbreviated application code derived from the module if available, otherwise from the workflow/module context. Use a short stable abbreviation.\n"
+        "- Additional tags may include AUT, positive, negative, edge, ui, validation, security, accessibility, or the feature name when appropriate, but the primary <APPCODE>-<FEATURECODE><NN> tag is mandatory.\n"
         "- Do NOT include a *** Keywords *** section in the generated .robot file unless a test-specific helper is absolutely unavoidable; navigation/page-open/page-ready/data keywords must never be defined in the suite.\n"
         "- Do NOT define keywords such as Open Browser To Login Page, Open Browser To Page, Open Page, Wait Until Login Page Loads, or any equivalent wrapper if the resource layer already provides page-open/navigation capability.\n"
         "- Prefer shared/common resource keywords such as Open Browser Session, Close Browser Session, Open Browser To Url, Open Login Page, Go To Url, Wait For Element To Be Ready, Click When Ready, and Input Text When Ready whenever they fit the intent. Raw SeleniumLibrary keywords in the suite should be a last resort, not the default.\n"
@@ -232,8 +239,10 @@ def build_review_prompt(manual_data: dict, resource_context: List[Dict], generat
         "Mandatory repair rules:\n"
         "- Return only Robot Framework code, with no markdown fences and no explanation.\n"
         "- Preserve compact formatting: no blank lines inside the Settings section, exactly one blank line between major sections, and exactly one blank line between test cases.\n"
-        "- Ensure every test case name starts with AUT.\n"
-        "- Ensure every test case includes a [Tags] line immediately after the test case name. Include at least AUT, the workflow/module tag, and a scenario tag that fits the test intent.\n"
+        "- Ensure every test case name starts with AUT- and follows the pattern AUT-<FEATURECODE><NN>: <Title>. Example: AUT-LOGIN01: Verify login page loads successfully.\n"
+        "- Ensure every test case includes a [Tags] line immediately after the test case name. The primary tag must follow the pattern <APPCODE>-<FEATURECODE><NN>. Example: [Tags]    WT-LOGIN01.\n"
+        "- Preserve or repair the numbering so it is stable and aligned to the approved manual test order or id when possible.\n"
+        "- Additional tags may include AUT, positive, negative, edge, ui, validation, security, accessibility, or the feature name when appropriate, but the primary <APPCODE>-<FEATURECODE><NN> tag is mandatory.\n"
         "- Keep only the suite file; do not generate resource content.\n"
         "- Use only the provided resource files from manual_test.resourceFiles plus ../resources/common_keywords.resource as the shared common layer.\n"
         "- Ensure ../resources/common_keywords.resource is imported in the suite Settings section.\n"
