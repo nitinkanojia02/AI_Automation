@@ -96,17 +96,37 @@ def extract_keywords_from_resource(resource_text: str) -> List[Dict]:
             current = None
             continue
 
-        if not in_keywords or not stripped:
+        if not in_keywords:
+            continue
+
+        if not stripped:
+            if current and current.get("body"):
+                current["body"].append("")
             continue
 
         if not line.startswith((" ", "\t")):
-            current = {"name": stripped, "args": []}
+            current = {"name": stripped, "args": [], "body": []}
             keywords.append(current)
             continue
 
-        if current and stripped.startswith("[Arguments]"):
+        if not current:
+            continue
+
+        if stripped.startswith("[Arguments]"):
             parts = re.split(r"\s{2,}|\t+", stripped)
             current["args"] = parts[1:] if len(parts) > 1 else []
+            continue
+
+        current["body"].append(line.rstrip())
+
+    while keywords and keywords[-1].get("body") == [""]:
+        keywords[-1]["body"] = []
+
+    for keyword in keywords:
+        body = keyword.get("body", [])
+        while body and body[-1] == "":
+            body.pop()
+        keyword["body"] = body
 
     return keywords
 

@@ -857,34 +857,32 @@ def get_keyword_review_data(workflow: dict):
 def save_keywords_for_workflow(workflow: dict, keywords: list[dict]):
     pages = workflow.get("pages", [])
     page_name = pages[0].get("name") if pages else "page"
-    existing_keywords = []
     keywords_path = get_keywords_path(page_name)
-    if keywords_path.exists():
-        try:
-            existing_payload = read_json(keywords_path)
-            existing_keywords = existing_payload.get("keywords", [])
-        except Exception:
-            existing_keywords = []
 
-    existing_by_name = {
-        clean_text(str(item.get("keywordName", ""))): item
-        for item in existing_keywords
-        if clean_text(str(item.get("keywordName", "")))
-    }
+    normalized_keywords = []
+    for idx, keyword in enumerate(keywords, start=1):
+        implementation = keyword.get("implementation", [])
+        if isinstance(implementation, str):
+            implementation = [line.rstrip() for line in implementation.splitlines() if line.strip()]
+        implementation = [str(line).rstrip() for line in implementation if clean_text(str(line))]
 
-    preserved_keywords = []
-    for keyword in keywords:
-        name = clean_text(str(keyword.get("keywordName", "")))
-        existing = existing_by_name.get(name)
-        merged = dict(existing) if isinstance(existing, dict) else {}
-        merged.update(keyword)
-        if existing and existing.get("implementation") and not merged.get("implementation"):
-            merged["implementation"] = existing.get("implementation", [])
-        preserved_keywords.append(merged)
+        arguments = keyword.get("arguments", [])
+        if isinstance(arguments, str):
+            arguments = [arg.strip() for arg in arguments.split(",") if arg.strip()]
+
+        normalized_keywords.append({
+            "keywordId": clean_text(str(keyword.get("keywordId", ""))) or f"KW_{idx:03d}",
+            "keywordName": clean_text(str(keyword.get("keywordName", ""))),
+            "targetElement": clean_text(str(keyword.get("targetElement", ""))),
+            "action": clean_text(str(keyword.get("action", ""))),
+            "arguments": arguments,
+            "implementation": implementation,
+            "approved": bool(keyword.get("approved", True)),
+        })
 
     payload = {
         "pageName": page_name,
-        "keywords": preserved_keywords,
+        "keywords": normalized_keywords,
     }
     write_json(keywords_path, payload)
 
@@ -1657,15 +1655,6 @@ def save_workflow(
     target = WORKFLOW_DIR / f"{target_slug}.json"
     write_json(target, payload)
 
-    if not existing_workflow_slug.strip():
-        update_workflow_status(
-            target_slug,
-            page_reviewed=False,
-            keywords_reviewed=False,
-            manual_approved=False,
-            automation_generated=False
-        )
-
     return RedirectResponse(url=f"/page-review/{target_slug}", status_code=303)
 
 @app.get("/page-review/{workflow_name}")
@@ -1765,8 +1754,6 @@ async def save_page_review(request: Request, workflow_name: str):
     }
     write_json(review_data["elements_path"], payload)
 
-    update_workflow_status(workflow_name, page_reviewed=True)
-
     return RedirectResponse(url=f"/keywords/{workflow_name}", status_code=HTTP_303_SEE_OTHER)
 
 @app.get("/keywords/{workflow_name}")
@@ -1808,8 +1795,6 @@ async def save_keyword_review(request: Request, workflow_name: str):
 
     save_keywords_for_workflow(workflow, approved_keywords)
     generate_resource_for_workflow(workflow, approved_keywords)
-
-    update_workflow_status(workflow_name, keywords_reviewed=True)
 
     return RedirectResponse(url=f"/manual-tests/{workflow_name}", status_code=HTTP_303_SEE_OTHER)
 
@@ -1925,7 +1910,6 @@ async def save_manual_tests(request: Request, workflow_name: str):
         except Exception:
             pass
 
-        update_workflow_status(workflow_name, manual_approved=True)
         return RedirectResponse(url=f"/automation/{workflow_name}", status_code=HTTP_303_SEE_OTHER)
 
     except Exception as exc:
@@ -1953,7 +1937,6 @@ def generate_automation_route(request: Request, workflow_name: str):
     ensure_workflow_run(workflow_name)
     try:
         robot_content = generate_automation_for_workflow(workflow_name)
-        update_workflow_status(workflow_name, automation_generated=True)
         return render_template(request, "automation.html", {
             "workflow_name": workflow_name,
             "robot_content": robot_content,
@@ -1974,7 +1957,6 @@ def save_automation(request: Request, workflow_name: str, robot_content: str = F
         workflow = read_json(WORKFLOW_DIR / f"{workflow_name}.json") if (WORKFLOW_DIR / f"{workflow_name}.json").exists() else None
         robot_content = normalize_robot_content(robot_content, workflow, workflow_name)
         target.write_text(robot_content, encoding="utf-8")
-        update_workflow_status(workflow_name, automation_generated=True)
         return render_template(request, "automation.html", {
             "workflow_name": workflow_name,
             "robot_content": robot_content,
