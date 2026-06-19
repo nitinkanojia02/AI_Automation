@@ -264,7 +264,6 @@ def get_workflow_status(workflow_name: str) -> dict:
     automation_path = TESTS_DIR / f"{workflow_name}_tests.robot"
 
     page_reviewed = bool(elements_path and elements_path.exists())
-    keywords_reviewed = bool(resource_path and resource_path.exists() and keywords_path and keywords_path.exists())
 
     manual_approved = False
     if manual_path.exists():
@@ -275,12 +274,18 @@ def get_workflow_status(workflow_name: str) -> dict:
         except Exception:
             manual_approved = False
 
+    keywords_reviewed = bool(
+        manual_approved
+        and resource_path and resource_path.exists()
+        and keywords_path and keywords_path.exists()
+    )
+
     automation_generated = bool(automation_path.exists() and clean_text(read_text(automation_path)))
 
     return {
         "page_reviewed": page_reviewed,
-        "keywords_reviewed": keywords_reviewed,
         "manual_approved": manual_approved,
+        "keywords_reviewed": keywords_reviewed,
         "automation_generated": automation_generated,
     }
 
@@ -823,10 +828,7 @@ def build_keywords_from_elements(elements: list[dict]) -> list[dict]:
             action = "input"
         elif element_type == "password":
             keyword_name = f"Enter {keyword_title}"
-            implementation = [
-                f"Wait For Element To Be Ready    ${{{variable_name}}}",
-                f"Input Password    ${{{variable_name}}}    ${{password}}"
-            ]
+            implementation = [f"Input Text When Ready    ${{{variable_name}}}    ${{password}}"]
             arguments = ["password"]
             action = "input"
         elif element_type == "button":
@@ -869,6 +871,62 @@ def build_keywords_from_elements(elements: list[dict]) -> list[dict]:
         })
 
     return keywords
+
+
+def get_manual_tests_for_workflow(workflow: dict) -> list[dict]:
+    workflow_name = slugify(str(workflow.get("workflowName", "")))
+    if not workflow_name:
+        return []
+    manual_path = MANUAL_DIR / f"{workflow_name}.json"
+    if not manual_path.exists():
+        return []
+    try:
+        return extract_manual_test_cases(read_json(manual_path))
+    except Exception:
+        return []
+
+
+def build_keyword_generation_prompt(
+    workflow: dict,
+    approved_elements: list[dict],
+    approved_manual_tests: list[dict],
+    existing_keywords: list[dict],
+    existing_resource_content: str,
+) -> str:
+    payload = {
+        "workflow": clean_workflow_for_prompting(workflow),
+        "approved_elements": approved_elements,
+        "approved_manual_tests": approved_manual_tests,
+        "existing_keywords": existing_keywords,
+        "existing_page_resource": existing_resource_content,
+    }
+    return (
+        "You are AI Layer K1: a Robot Framework page-keyword designer in a staged AI automation framework.\n"
+        "Your job is to generate the approved keyword model for a single page after manual tests have already been approved.\n\n"
+        "Primary objective:\n"
+        "- Produce a compact but complete page-keyword model that supports the approved manual tests.\n"
+        "- Use approved elements as the UI source of truth.\n"
+        "- Use approved manual tests as the scenario source of truth.\n"
+        "- Prefer reusable page actions and reusable page validations over scenario-specific one-off keywords.\n"
+        "- Include only keywords that are grounded in approved elements and justified by approved manual scenarios.\n\n"
+        "Mandatory rules:\n"
+        "- Return only a valid JSON array.\n"
+        "- Each array item must be an object with exactly these keys: keywordId, keywordName, targetElement, action, arguments, implementation, approved.\n"
+        "- action should be one of click, input, select, verify, generic.\n"
+        "- approved must be true.\n"
+        "- targetElement must map to an approved element whenever the keyword directly acts on or validates a specific element.\n"
+        "- implementation must be an array of Robot Framework keyword lines only.\n"
+        "- Do not return markdown fences or explanation text.\n"
+        "- Do not invent unsupported keywords, locators, fields, messages, or workflows.\n\n"
+        "Design guidance:\n"
+        "- Prefer semantic reusable page-object keywords such as Enter Username, Enter Password, Click Sign In Button, Verify Password Field Is Masked, Verify Login Form Loaded, Verify Login Failed And Still On Login Page, Verify Successful Login Redirect, or similarly grounded page-specific validations.\n"
+        "- Avoid generating scenario-wrapper keywords that merely encode one approved manual test case, unless a concise page-level composite action is clearly justified.\n"
+        "- Avoid overfitting keywords to one test variation such as blank username, wrong password, or whitespace username when reusable atomic keywords plus resource variables can support those scenarios.\n"
+        "- If approved manual tests imply reusable validations for required fields, authentication rejection, redirect success, page readiness, masking, navigation controls, or visible messages, include those validations when grounded in the approved elements or existing resource content.\n"
+        "- Preserve useful existing page keywords when they are still aligned with the approved manual tests.\n"
+        "- Keep the keyword set thin, maintainable, and sufficient for downstream resource generation and automation generation.\n\n"
+        f"Input JSON:\n{json.dumps(payload, indent=2)}"
+    )
 
 def review_and_refine_page_elements(workflow: dict, review_data: dict) -> tuple[list[dict], dict | None]:
     workflow_name = clean_text(str(workflow.get("workflowName", ""))) or review_data["page_name"]
@@ -978,6 +1036,7 @@ def get_keyword_review_data(workflow: dict):
     resource_path = get_resource_path(page_name)
 
     approved_elements = load_approved_elements_for_workflow(workflow)
+    approved_manual_tests = get_manual_tests_for_workflow(workflow)
     approved_elements_by_name = {
         clean_text(str(item.get("approvedName", ""))): item
         for item in approved_elements
@@ -1001,7 +1060,38 @@ def get_keyword_review_data(workflow: dict):
         return ""
 
     keywords = []
-    if resource_path.exists() and approved_elements_by_name:
+    if keywords_path.exists() and approved_elements_by_name:
+        try:
+            payload = read_json(keywords_path)
+            raw_keywords = payload.get("keywords", [])
+            filtered_keywords = []
+            for item in raw_keywords:
+                keyword_name = clean_text(str(item.get("keywordName", "")))
+                if not keyword_name or keyword_name.lower() in disallowed_resource_keywords:
+                    continue
+                target_element = clean_text(str(item.get("targetElement", ""))) or resolve_target_element(keyword_name)
+                implementation = item.get("implementation", [])
+                if isinstance(implementation, str):
+                    implementation = [line.rstrip() for line in implementation.splitlines() if clean_text(line)]
+                implementation = [str(line).rstrip() for line in implementation if clean_text(str(line))]
+                arguments = item.get("arguments", [])
+                if isinstance(arguments, str):
+                    arguments = [arg.strip() for arg in arguments.split(",") if arg.strip()]
+                arguments = [str(arg).replace("${", "").replace("}", "").strip() for arg in arguments if clean_text(str(arg))]
+                filtered_keywords.append({
+                    "keywordId": clean_text(str(item.get("keywordId", ""))) or f"KW_{len(filtered_keywords)+1:03d}",
+                    "keywordName": keyword_name,
+                    "targetElement": target_element,
+                    "action": clean_text(str(item.get("action", ""))) or "generic",
+                    "arguments": arguments,
+                    "implementation": implementation,
+                    "approved": bool(item.get("approved", True)),
+                })
+            keywords = filtered_keywords
+        except Exception:
+            keywords = []
+
+    if not keywords and resource_path.exists() and approved_elements_by_name:
         try:
             resource_context = parse_resource_file(resource_path)
             for idx, keyword in enumerate(resource_context.get("keywords", []), start=1):
@@ -1011,9 +1101,6 @@ def get_keyword_review_data(workflow: dict):
                     continue
 
                 target_element = resolve_target_element(keyword_name)
-                if not target_element:
-                    continue
-
                 action = "generic"
                 if lowered_name.startswith("click "):
                     action = "click"
@@ -1037,31 +1124,10 @@ def get_keyword_review_data(workflow: dict):
         except Exception:
             keywords = []
 
-    if not keywords and keywords_path.exists() and approved_elements_by_name:
-        try:
-            payload = read_json(keywords_path)
-            raw_keywords = payload.get("keywords", [])
-            filtered_keywords = []
-            for item in raw_keywords:
-                keyword_name = clean_text(str(item.get("keywordName", "")))
-                if not keyword_name or keyword_name.lower() in disallowed_resource_keywords:
-                    continue
-                target_element = clean_text(str(item.get("targetElement", ""))) or resolve_target_element(keyword_name)
-                if target_element not in approved_elements_by_name:
-                    continue
-                normalized_item = dict(item)
-                normalized_item["targetElement"] = target_element
-                if not normalized_item.get("implementation"):
-                    normalized_item["implementation"] = []
-                filtered_keywords.append(normalized_item)
-            keywords = filtered_keywords
-        except Exception:
-            keywords = []
-
     if not keywords:
         keywords = build_keywords_from_elements(approved_elements)
 
-    if resource_path.exists() and approved_elements_by_name:
+    if approved_elements and approved_manual_tests:
         try:
             workflow_name = clean_text(str(workflow.get("workflowName", ""))) or page_name
             config = validate_robot_config(load_robot_ai_json(CONFIG_PATH))
@@ -1069,29 +1135,19 @@ def get_keyword_review_data(workflow: dict):
             if ai_cfg.get("enabled", True):
                 endpoint = ai_cfg.get("endpoint", "").strip()
                 token = get_robot_ai_token(ai_cfg)
-                if endpoint and token and keywords:
-                    resource_context = parse_resource_file(resource_path)
-                    ai_payload = {
-                        "workflow": clean_workflow_for_prompting(workflow),
-                        "approved_elements": approved_elements,
-                        "resource_keywords": keywords,
-                        "resource_file": resource_context,
-                        "goal": "Review and refine the provided page-specific keyword models for MVP UI display. Keep only approved-element-backed keywords, preserve implementation from the current resource file, improve naming/action classification if needed, and return only valid JSON as an array of keyword objects with keys keywordId, keywordName, targetElement, action, arguments, implementation, approved. Do not invent keywords not grounded in the current resource file and approved elements."
-                    }
-                    ai_prompt = (
-                        "You are AI Layer K1: a keyword-review refinement specialist for an AI-first automation framework.\n"
-                        "Return only valid JSON array data.\n"
-                        "Preserve the current resource-backed implementations.\n"
-                        "Use approved elements as the source of truth for targetElement mapping.\n"
-                        "Keep the keyword list thin, readable, and page-specific.\n\n"
-                        f"Input JSON:\n{json.dumps(ai_payload, indent=2)}"
-                    )
+                if endpoint and token:
                     reviewed_keywords_raw = call_ai_with_workflow_session(
                         workflow_name=workflow_name,
                         stage="keyword_ui_review",
                         endpoint=endpoint,
                         token=token,
-                        prompt=ai_prompt,
+                        prompt=build_keyword_generation_prompt(
+                            workflow,
+                            approved_elements,
+                            approved_manual_tests,
+                            keywords,
+                            read_text(resource_path),
+                        ),
                         timeout_seconds=ai_cfg.get("timeout_seconds", 120),
                         verify_ssl=ai_cfg.get("verify_ssl", False),
                     )
@@ -1105,7 +1161,7 @@ def get_keyword_review_data(workflow: dict):
                             if not keyword_name or keyword_name.lower() in disallowed_resource_keywords:
                                 continue
                             target_element = clean_text(str(item.get("targetElement", ""))) or resolve_target_element(keyword_name)
-                            if target_element not in approved_elements_by_name:
+                            if target_element and target_element not in approved_elements_by_name:
                                 continue
                             implementation = item.get("implementation", [])
                             if isinstance(implementation, str):
@@ -1713,6 +1769,13 @@ def generate_resource_for_workflow(workflow: dict, approved_keywords: list[dict]
 def generate_manual_tests_for_workflow(workflow_name: str) -> dict:
     ensure_workflow_run(workflow_name)
     workflow_input = load_workflow_or_404(workflow_name)
+    approved_elements = load_approved_elements_for_workflow(workflow_input)
+    if not approved_elements:
+        raise HTTPException(status_code=400, detail="Approved page elements are required before generating manual tests.")
+
+    workflow_with_elements = json.loads(json.dumps(workflow_input))
+    workflow_with_elements["approvedElements"] = approved_elements
+
     config = validate_manual_config(load_manual_config())
     ai_cfg = config["ai"]
 
@@ -1724,7 +1787,7 @@ def generate_manual_tests_for_workflow(workflow_name: str) -> dict:
     if not endpoint or not token:
         raise HTTPException(status_code=400, detail="Manual test AI endpoint/token missing in configuration.")
 
-    prompt = build_manual_prompt(workflow_input)
+    prompt = build_manual_prompt(workflow_with_elements)
     generated = call_manual_ai_with_workflow_session(
         workflow_name=workflow_name,
         stage="manual_generation",
@@ -2305,7 +2368,7 @@ async def save_page_review(request: Request, workflow_name: str):
     }
     write_json(review_data["elements_path"], payload)
 
-    return RedirectResponse(url=f"/keywords/{workflow_name}", status_code=HTTP_303_SEE_OTHER)
+    return RedirectResponse(url=f"/manual-tests/{workflow_name}", status_code=HTTP_303_SEE_OTHER)
 
 @app.get("/keywords/{workflow_name}")
 def keyword_review(request: Request, workflow_name: str):
@@ -2346,10 +2409,30 @@ async def save_keyword_review(request: Request, workflow_name: str):
             "approved": True,
         })
 
+    manual_path = MANUAL_DIR / f"{workflow_name}.json"
+    if not manual_path.exists():
+        return render_template(request, "keyword_review.html", {
+            "workflow_name": workflow_name,
+            "page_name": get_keyword_review_data(workflow)["page_name"],
+            "keywords": get_keyword_review_data(workflow)["keywords"],
+            "review_summary": None,
+            "error_message": "Approved manual tests are required before keyword approval and resource generation.",
+        }, status_code=400)
+
+    approved_manual_tests = extract_manual_test_cases(read_json(manual_path))
+    if not approved_manual_tests:
+        return render_template(request, "keyword_review.html", {
+            "workflow_name": workflow_name,
+            "page_name": get_keyword_review_data(workflow)["page_name"],
+            "keywords": get_keyword_review_data(workflow)["keywords"],
+            "review_summary": None,
+            "error_message": "Approve at least one manual test before generating the page resource and keywords.",
+        }, status_code=400)
+
     save_keywords_for_workflow(workflow, approved_keywords)
     generate_resource_for_workflow(workflow, approved_keywords)
 
-    return RedirectResponse(url=f"/manual-tests/{workflow_name}", status_code=HTTP_303_SEE_OTHER)
+    return RedirectResponse(url=f"/automation/{workflow_name}", status_code=HTTP_303_SEE_OTHER)
 
 @app.get("/manual-tests/{workflow_name}")
 def manual_tests_page(request: Request, workflow_name: str):
@@ -2456,15 +2539,7 @@ async def save_manual_tests(request: Request, workflow_name: str):
         write_json(manual_path, updated)
         export_manual_tests_to_excel(workflow_name, workflow, updated)
 
-        try:
-            if workflow:
-                approved_keywords = get_keyword_review_data(workflow).get("keywords", [])
-                generate_resource_for_workflow(workflow, approved_keywords)
-                enrich_resource_with_manual_test_variables(workflow, approved_keywords)
-        except Exception:
-            pass
-
-        return RedirectResponse(url=f"/automation/{workflow_name}", status_code=HTTP_303_SEE_OTHER)
+        return RedirectResponse(url=f"/keywords/{workflow_name}", status_code=HTTP_303_SEE_OTHER)
 
     except Exception as exc:
         existing_manual = read_json(manual_path) if manual_path.exists() else None

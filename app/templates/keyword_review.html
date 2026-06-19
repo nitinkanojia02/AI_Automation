@@ -78,7 +78,7 @@
             <h3 class="mb-0">Keyword Review</h3>
             <div class="text-muted">Workflow: {{ workflow_name }} | Page: {{ page_name }}</div>
         </div>
-        <span class="badge text-bg-secondary">Stage 2: Page Keywords Review</span>
+        <span class="badge text-bg-secondary">Stage 3: Page Keywords Review</span>
     </div>
 
     {% if review_summary %}
@@ -96,7 +96,7 @@
             <div class="card-body">
                 <h5 class="mb-1">Generated Keywords</h5>
                 <div class="text-muted small">
-                    Review the generated keywords, edit if needed, and approve the ones that should be used in downstream manual test and automation generation.
+                    Review the generated keywords, edit if needed, and approve the ones that should be used in downstream resource finalization and automation generation.
                 </div>
             </div>
         </div>
@@ -148,7 +148,7 @@
     </form>
     {% else %}
     <div class="alert alert-info">
-        No keywords available yet. Complete Page Elements Review first so the system can generate keywords here.
+        No keywords available yet. Complete Page Elements Review and approve Manual Tests first so the system can generate keywords here.
     </div>
     <div class="d-flex gap-2 flex-wrap">
         <a href="/" class="btn btn-outline-dark">Back to Dashboard</a>

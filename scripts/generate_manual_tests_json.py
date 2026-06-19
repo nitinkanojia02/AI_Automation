@@ -128,9 +128,9 @@ def make_test_id_prefix(workflow_name: str) -> str:
 def build_prompt(workflow_input: Dict[str, Any]) -> str:
     return f"""
 You are AI Layer 1: a senior QA test designer operating inside a multi-layer AI-assisted automation framework.
-Your output is a reviewable manual-test artifact that will feed downstream Robot generation plus additional AI review and governance layers.
+Your output is a reviewable manual-test artifact that will feed downstream keyword/resource generation, Robot generation, and additional AI review and governance layers.
 
-Your goal is not just to list tests, but to produce high-signal manual tests with explicit observable outcomes so later AI layers can generate strong assertions instead of action-only automation.
+Your goal is not just to list tests, but to produce high-signal manual tests with explicit observable outcomes so later AI layers can generate strong assertions and the exact reusable page keywords needed for approved scenarios.
 
 Analyze the workflow input and generate a practical manual test suite JSON.
 
@@ -141,6 +141,14 @@ Return ONLY a valid JSON object with exactly these top-level keys:
 - testCases
 
 Return ONLY test cases in JSON form. Do not include commentary, markdown, notes, headings, or explanations.
+
+Context usage requirements:
+1. Treat approvedElements as the approved UI ground truth for this workflow.
+2. Use observedPreconditions, observedSteps, observedExpectedResult, observedValidations, testData, scenarioIntent, fields, resourceFiles, and approvedElements together.
+3. Use approved elements to infer realistic UI actions, visible validations, control-state checks, navigation checks, and field-level scenarios.
+4. Use user-supplied testData and workflow context to infer positive, negative, and edge data combinations.
+5. Use expected observations and validations to derive concrete observable expectedResult values.
+6. Do not limit generation to only explicitly listed workflow steps if the approved page elements clearly support additional meaningful scenarios.
 
 Mandatory coverage requirements:
 1. testCases must be a non-empty array.
@@ -153,9 +161,9 @@ Mandatory coverage requirements:
    - UI test cases
    - Field validation test cases
    - Suggested additional edge test cases
-6. Use workflow steps, fields, observedValidations, preconditions, resourceFiles, and expectedResult to infer additional scenarios.
+6. Use workflow steps, approvedElements, fields, observedValidations, preconditions, resourceFiles, testData, and observedExpectedResult to infer additional scenarios.
 7. Convert every explicit validation into one or more concrete test cases.
-8. If fields imply likely validations, generate those test cases too even if not explicitly listed.
+8. If approved elements or fields imply likely validations, generate those test cases too even if not explicitly listed.
 9. Prefer high coverage and realistic manual execution scenarios over minimal output.
 10. Avoid duplicate or redundant test cases.
 
@@ -220,15 +228,16 @@ Important behavior:
 - Generate all practical tests the workflow supports on its own.
 - Do not stop after a minimum number of cases.
 - Infer as many useful UI, validation, negative, and edge scenarios as possible.
-- If the workflow is form-based, expand test cases heavily around each field.
+- If the workflow is form-based, expand test cases heavily around each field and approved control.
 - If multiple fields exist, include combination-based validation scenarios where useful.
+- If approvedElements expose navigation controls, action buttons, messages, masked fields, or other meaningful UI states, generate grounded manual tests for them where relevant.
 - If observedValidations exist, transform them into concrete manual test cases, not summary text.
-- Write expectedResult values so downstream automation can create observable assertions, not vague outcomes.
+- Write expectedResult values so downstream automation and keyword generation can create observable assertions and reusable validations, not vague outcomes.
 - For positive authentication/navigation cases, expectedResult should explicitly mention authenticated state, landing page, redirect, dashboard/home visibility, URL change, or equivalent observable outcome.
-- For negative authentication or validation cases, expectedResult should explicitly mention observable rejection, validation messaging, no navigation, protected-area denial, or continued presence of the login/form state where applicable.
-- For edge interaction scenarios such as Enter key, repeated clicking, whitespace handling, and long input, expectedResult should describe the exact observable behavior that automation must verify.
+- For negative authentication or validation cases, expectedResult should explicitly mention observable rejection, validation messaging, no navigation, protected-area denial, disabled submission, or continued presence of the login/form state where applicable.
+- For edge interaction scenarios such as Enter key, repeated clicking, whitespace handling, copy-paste, and long input, expectedResult should describe the exact observable behavior that automation must verify.
 - Avoid producing shallow variants that differ only in wording but not in observable intent.
-- Prefer tests whose expectedResult can be validated by visible UI state, message, field behavior, redirect behavior, enabled/disabled state, or other observable outcomes.
+- Prefer tests whose expectedResult can be validated by visible UI state, message, field behavior, redirect behavior, enabled/disabled state, masking behavior, or other observable outcomes.
 - Do not write weak expected results like 'system works correctly', 'login should happen', or 'validation should appear' without specifying what exactly must be observed.
 - When generating authentication tests, ensure at least one positive case explicitly expects successful login state and at least one negative case explicitly expects failed login state with an observable rejection condition.
 

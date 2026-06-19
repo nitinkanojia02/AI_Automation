@@ -59,11 +59,11 @@
                                         <span class="status-pill {% if row.status.page_reviewed %}status-done{% else %}status-pending{% endif %}">
                                             Page Reviewed: {% if row.status.page_reviewed %}Yes{% else %}No{% endif %}
                                         </span>
-                                        <span class="status-pill {% if row.status.keywords_reviewed %}status-done{% else %}status-pending{% endif %}">
-                                            Keywords Approved: {% if row.status.keywords_reviewed %}Yes{% else %}No{% endif %}
-                                        </span>
                                         <span class="status-pill {% if row.status.manual_approved %}status-done{% else %}status-pending{% endif %}">
                                             Manual Tests Approved: {% if row.status.manual_approved %}Yes{% else %}No{% endif %}
+                                        </span>
+                                        <span class="status-pill {% if row.status.keywords_reviewed %}status-done{% else %}status-pending{% endif %}">
+                                            Keywords Approved: {% if row.status.keywords_reviewed %}Yes{% else %}No{% endif %}
                                         </span>
                                         <span class="status-pill {% if row.status.automation_generated %}status-done{% else %}status-pending{% endif %}">
                                             Automation Generated: {% if row.status.automation_generated %}Yes{% else %}No{% endif %}

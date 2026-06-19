@@ -42,13 +42,15 @@ Workflow Input
     ↓
 Page Inspection and Extraction
     ↓
-Elements and Resource Drafts
+Elements Draft
     ↓
 Human Review
     ↓
-Keyword / Resource Review
-    ↓
 Manual Test Generation
+    ↓
+Human Review
+    ↓
+Keyword / Resource Generation and Review
     ↓
 Human Review
     ↓
@@ -182,12 +184,13 @@ This review stage is an important part of the current framework and should be co
 1. A workflow is created or edited through the UI.
 2. Workflow data is stored under `workflow_inputs/`.
 3. A target page is extracted using `scripts/extract_page_model.py`.
-4. Extracted elements and resource content are reviewed and saved.
-5. Keyword/resource content is reviewed and saved.
-6. Manual test generation is triggered.
-7. Manual tests are reviewed and approved.
-8. Robot suite generation is triggered.
-9. Generated automation is reviewed and saved.
+4. Extracted elements are reviewed and saved.
+5. Manual test generation is triggered using workflow input plus approved page elements.
+6. Manual tests are reviewed and approved.
+7. Keyword/resource generation is triggered using approved elements and approved manual tests.
+8. Keyword/resource content is reviewed and saved.
+9. Robot suite generation is triggered.
+10. Generated automation is reviewed and saved.
 
 This sequence reflects the current repository behavior more accurately than documents that assume all runtime artifact folders already exist in the repo.
 
