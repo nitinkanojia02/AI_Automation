@@ -15,24 +15,24 @@ Improve the framework across five dimensions:
 
 ## Near-Term Priorities
 
-### 1. Fix current correctness issues
+### 1. Consolidate recent quality improvements
 Focus areas:
-- align workflow status handling in the UI
-- fix Robot validation return-value handling
-- normalize workflow/manual test field usage
-- improve error handling around generation stages
+- keep approved-artifact alignment validation generic and reusable
+- continue strengthening Robot keyword/signature validation and unsupported-keyword detection
+- improve warning clarity and error handling around generation stages
+- verify documentation and UI messaging stay aligned with implemented validation behavior
 
-### 2. Strengthen Robot generation quality
+### 2. Strengthen Robot generation quality further
 Focus areas:
-- stronger validation of generated Robot suites
-- prevention of framework violations in generated output
-- improved prompt constraints for resource-first generation
-- automatic repair or regeneration when validation fails
+- improve repair/regeneration loops when validation fails
+- deepen evidence-backed assertion guidance for negative and state-validation scenarios
+- keep generated suites thin and resource-first
+- reduce low-level interaction leakage when approved page/common abstractions exist
 
 ### 3. Deepen resource/POM intelligence
 Focus areas:
 - better parsing of resource files
-- classification of open, action, and validation keywords
+- clearer classification of open, action, and validation keywords
 - richer page object generation patterns
 - stronger reuse of existing keywords during automation generation
 
@@ -41,6 +41,7 @@ Focus areas:
 - central reusable test data definitions
 - reduced hardcoded values in generated automation
 - improved separation of data from test logic
+- clearer handling of canonical semantic variables for reusable negative and role-based data
 
 ### 5. Improve governance and artifact review
 Focus areas:
@@ -48,6 +49,7 @@ Focus areas:
 - workflow and artifact status visibility
 - clearer review feedback in the UI
 - version-aware artifact handling
+- better surfacing of lineage and warning metadata across stages
 
 ---
 
@@ -82,7 +84,7 @@ Focus areas:
 Focus areas:
 - use execution failures to suggest automation updates
 - detect likely locator breakage
-- connect failed steps back to resources and test assets
+- connect failed steps back to resources and approved artifacts
 - improve regeneration based on runtime feedback
 
 ### 10. Add self-healing capabilities
@@ -110,10 +112,10 @@ Focus areas:
 
 ## Recommended Immediate Sequence
 
-1. fix current correctness bugs
-2. strengthen `scripts/generate_robot_from_manual.py`
+1. keep documentation, prompts, and validation behavior aligned
+2. continue strengthening `scripts/generate_robot_from_manual.py`
 3. improve resource parsing and semantic understanding
-4. introduce a formal test data layer
+4. introduce a formal reusable test-data layer
 5. strengthen validation and regeneration loops
 6. improve workflow and artifact status visibility in the UI
 7. expand support beyond the current demo workflow shape

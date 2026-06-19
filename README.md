@@ -43,7 +43,8 @@ The current implementation is centered around `app/main.py`, which provides a st
 AI orchestration now uses a hybrid context model:
 - one workflow-scoped AI session per feature/workflow run
 - separate stages inside that workflow session for manual generation, resource generation/review, and Robot generation/review
-- persisted artifacts remain the source of truth
+- persisted approved artifacts remain the source of truth
+- approved artifact lineage is carried forward so downstream generation preserves approved names, semantics, and reusable intent
 - lightweight session history is used only to carry forward prior AI decisions and reviewer feedback within the same workflow during the current run
 
 This means context is shared within a single workflow run such as `login`, but isolated across different workflows. In the intended flow, a fresh AI session is created once at the start of a new workflow run and then reused across the actions in that run so stale AI memory does not pollute future executions.
@@ -86,11 +87,21 @@ Typical outputs:
 ### `scripts/generate_manual_tests_json.py`
 Uses workflow input plus AI to generate structured manual test JSON.
 
+Current behavior also enriches manual artifacts with AI-guidance metadata, including inferred interaction intent where useful. That metadata is intended to preserve behavioral nuance such as keyboard submission, paste-like input, repeated-click behavior, whitespace handling, and special-character scenarios without hardcoding workflow-specific routing in Python.
+
 Typical output:
 - `manual_tests/<workflow>.json`
 
 ### `scripts/generate_robot_from_manual.py`
 Uses approved manual tests plus approved resource context to generate a Robot Framework suite.
+
+Current generation and review behavior is stricter than a simple text-to-Robot conversion. The pipeline now:
+- carries approved artifact lineage into downstream prompts and refinement
+- preserves manual interaction intent as AI guidance
+- prefers canonical reusable variables over duplicate inline data variants
+- expects stronger observable, evidence-backed assertions when supported by approved manual expected outcomes and resource validations
+- validates keyword invocation quality, including alignment with imported resource keywords and mandatory `[Arguments]` signatures
+- emits warnings when generated suites drift from approved resource/common-layer usage, assertion strength, naming conventions, setup/teardown reuse, or reusable test-data patterns
 
 Typical output:
 - `tests/<workflow>_tests.robot`
@@ -166,8 +177,11 @@ The current implementation supports:
 - page extraction from a live application page
 - page element/locator review
 - keyword/resource review
-- AI-assisted manual test generation
-- AI-assisted Robot Framework generation
+- approved-artifact alignment validation during downstream generation
+- AI-assisted manual test generation with intent enrichment
+- AI-assisted Robot Framework generation with lineage-aware refinement
+- Robot keyword/signature and resource-alignment validation
+- evidence-oriented assertion guidance and warning surfacing
 - final automation review and save
 
 Current maturity:

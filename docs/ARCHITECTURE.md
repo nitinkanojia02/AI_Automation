@@ -78,6 +78,8 @@ This reflects the current UI and script flow in the repository more accurately t
 - read and write workflow and generated artifacts
 - trigger extraction and AI-assisted generation steps
 - persist review decisions back to repository files
+- validate generated resources against approved reviewed artifacts before downstream use
+- enrich reviewed manual artifacts with generic interaction-intent metadata used as AI guidance in later stages
 
 ### Templates
 - `app/templates/base.html`
@@ -155,6 +157,7 @@ This review stage is an important part of the current framework and should be co
 - call the configured AI endpoint
 - normalize and standardize returned content
 - persist manual test artifacts for review
+- preserve reviewer-approved scenario coverage while enriching manual artifacts with downstream-friendly semantics such as stronger expected outcomes and interaction-intent cues
 
 ### Typical output
 - `manual_tests/<workflow>.json`
@@ -173,6 +176,10 @@ This review stage is an important part of the current framework and should be co
 - build a constrained AI prompt using resource and manual test context
 - generate a Robot Framework suite
 - validate structure and imports before save
+- preserve approved artifact lineage so downstream suite generation stays aligned with approved names and semantics
+- guide the AI to preserve manual interaction intent without introducing Python-side scenario routing tables
+- validate resource-keyword invocation quality, including mandatory argument/signature compliance
+- warn when suites drift away from shared/common abstractions, canonical reusable variables, or evidence-backed assertion expectations
 
 ### Typical output
 - `tests/<workflow>_tests.robot`
@@ -235,16 +242,19 @@ Runtime-generated folders commonly include:
 AI is used as a controlled generation mechanism rather than an unrestricted code author.
 
 Current AI-assisted areas:
-- manual test generation
-- Robot Framework suite generation
+- manual test generation and review/refinement
+- page resource refinement
+- Robot Framework suite generation and review/refinement
 
 Design pattern:
 1. create structured input payload
-2. build a constrained prompt
-3. call the configured AI endpoint
-4. normalize returned output
-5. validate structure and framework rules
-6. save artifact for human review
+2. include approved-artifact lineage and prior reviewed context where relevant
+3. build a constrained prompt
+4. call the configured AI endpoint
+5. normalize returned output
+6. validate structure, framework rules, resource alignment, and signature correctness
+7. surface warnings for weak assertions or drift from reusable abstractions
+8. save artifact for human review
 
 ---
 
