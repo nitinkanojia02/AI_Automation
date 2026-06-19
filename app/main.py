@@ -629,6 +629,7 @@ def get_page_review_data(workflow: dict):
     page_dir = POM_DIR / page_name
     elements_path = page_dir / f"{page_name}.elements.json"
     screenshot_path = page_dir / f"{page_name}.png"
+    resource_path = page_dir / f"{page_name}.resource"
 
     extracted_elements_data = []
     approved_elements_data = []
@@ -648,7 +649,6 @@ def get_page_review_data(workflow: dict):
     normalized_elements = []
 
     resource_elements_by_locator = {}
-    resource_path = page_dir / f"{page_name}.resource"
     if resource_path.exists():
         try:
             resource_context = parse_resource_file(resource_path)
@@ -686,6 +686,61 @@ def get_page_review_data(workflow: dict):
             inferred = normalize_extracted_element(item, idx)
             stronger = resource_elements_by_locator.get(inferred.get("locator", ""))
             normalized_elements.append(stronger or inferred)
+
+    if resource_path.exists() and normalized_elements:
+        try:
+            workflow_name = clean_text(str(workflow.get("workflowName", ""))) or page_name
+            config = validate_robot_config(load_robot_ai_json(CONFIG_PATH))
+            ai_cfg = config.get("ai", {})
+            if ai_cfg.get("enabled", True):
+                endpoint = ai_cfg.get("endpoint", "").strip()
+                token = get_robot_ai_token(ai_cfg)
+                if endpoint and token:
+                    resource_context = parse_resource_file(resource_path)
+                    ai_payload = {
+                        "workflow": clean_workflow_for_prompting(workflow),
+                        "raw_elements": extracted_elements_data,
+                        "approved_elements": approved_elements_data,
+                        "ui_elements": normalized_elements,
+                        "resource_file": resource_context,
+                        "goal": "Review and refine the page review UI model for display. Prefer approved elements and resource-backed variables, preserve strong locator choices already present, keep only meaningful visible page elements, and return only valid JSON as an array of objects with keys approvedName, type, locator, approved. Do not invent elements that are not grounded in the extracted data, approved elements, or current resource file."
+                    }
+                    ai_prompt = (
+                        "You are AI Layer P1: a page-model refinement specialist for an AI-first automation framework.\n"
+                        "Return only valid JSON array data.\n"
+                        "Preserve strong resource-backed semantics and approved element decisions when available.\n"
+                        "Keep the page model meaningful, visible, and review-friendly.\n\n"
+                        f"Input JSON:\n{json.dumps(ai_payload, indent=2)}"
+                    )
+                    reviewed_elements_raw = call_ai_with_workflow_session(
+                        workflow_name=workflow_name,
+                        stage="page_ui_review",
+                        endpoint=endpoint,
+                        token=token,
+                        prompt=ai_prompt,
+                        timeout_seconds=ai_cfg.get("timeout_seconds", 120),
+                        verify_ssl=ai_cfg.get("verify_ssl", False),
+                    )
+                    reviewed_elements = json.loads(strip_markdown_fences(reviewed_elements_raw))
+                    if isinstance(reviewed_elements, list):
+                        normalized_reviewed = []
+                        for idx, item in enumerate(reviewed_elements, start=1):
+                            if not isinstance(item, dict):
+                                continue
+                            approved_name = clean_text(str(item.get("approvedName", ""))) or f"element_{idx}"
+                            locator = clean_text(str(item.get("locator", "")))
+                            if not locator:
+                                continue
+                            normalized_reviewed.append({
+                                "approvedName": approved_name,
+                                "type": clean_text(str(item.get("type", "element"))).lower() or "element",
+                                "locator": locator,
+                                "approved": bool(item.get("approved", True)),
+                            })
+                        if normalized_reviewed:
+                            normalized_elements = normalized_reviewed
+        except Exception:
+            pass
 
     screenshot_web_path = None
     if screenshot_path.exists():
