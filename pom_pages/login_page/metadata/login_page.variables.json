@@ -34,7 +34,7 @@
     },
     {
       "variableName": "HOME_NAVIGATION_BUTTON",
-      "value": "xpath=//ion-fab-button[.//ion-icon[@aria-label='home'] or normalize-space()='home']",
+      "value": "xpath=//ion-fab-button[.//ion-icon[@aria-label='home']]",
       "source": "approved_element",
       "kind": "locator",
       "approvedName": "home_navigation_button",
@@ -42,7 +42,7 @@
     },
     {
       "variableName": "BACK_NAVIGATION_BUTTON",
-      "value": "xpath=//ion-fab-button[.//ion-icon[@aria-label='arrow back'] or normalize-space()='arrow back']",
+      "value": "xpath=//ion-fab-button[.//ion-icon[@aria-label='arrow back']]",
       "source": "approved_element",
       "kind": "locator",
       "approvedName": "back_navigation_button",

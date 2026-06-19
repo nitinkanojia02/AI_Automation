@@ -61,7 +61,7 @@
       "tag": "ion-input",
       "text": "password",
       "attributes": {
-        "_ngcontent-hqw-c151": "",
+        "_ngcontent-xst-c151": "",
         "type": "password",
         "id": "password",
         "clearonedit": "true",
@@ -86,7 +86,7 @@
       "tag": "ion-fab-button",
       "text": "home",
       "attributes": {
-        "_ngcontent-hqw-c151": "",
+        "_ngcontent-xst-c151": "",
         "tappable": "",
         "color": "light",
         "class": "ion-color ion-color-light md fab-button-in-list ion-activatable ion-focusable hydrated fab-button-show"
@@ -118,7 +118,7 @@
       "tag": "ion-fab-button",
       "text": "arrow back",
       "attributes": {
-        "_ngcontent-hqw-c151": "",
+        "_ngcontent-xst-c151": "",
         "tappable": "",
         "color": "light",
         "class": "ion-color ion-color-light md fab-button-in-list ion-activatable ion-focusable hydrated fab-button-show"
@@ -150,7 +150,7 @@
       "tag": "ion-button",
       "text": "SIGN IN",
       "attributes": {
-        "_ngcontent-hqw-c151": "",
+        "_ngcontent-xst-c151": "",
         "text": "Login",
         "shape": "round",
         "class": "ion-button-style md button button-round button-solid ion-activatable ion-focusable hydrated"
@@ -185,35 +185,35 @@
       "type": "textbox",
       "locator": "xpath=//input[@name='ion-input-0']",
       "approved": true,
-      "description": "Textbox where the user enters their username for authentication."
+      "description": "Textbox used to enter the username during login."
     },
     {
       "approvedName": "password_textbox",
       "type": "password",
       "locator": "id=password",
       "approved": true,
-      "description": "Password field where the user enters their account password."
+      "description": "Password field used to enter the account password during login."
     },
     {
       "approvedName": "sign_in_button",
       "type": "button",
       "locator": "xpath=//ion-button[normalize-space()='SIGN IN']",
       "approved": true,
-      "description": "Primary action button used to submit the login form."
+      "description": "Primary action button used to submit login credentials."
     },
     {
       "approvedName": "home_navigation_button",
       "type": "button",
-      "locator": "xpath=//ion-fab-button[.//ion-icon[@aria-label='home'] or normalize-space()='home']",
+      "locator": "xpath=//ion-fab-button[.//ion-icon[@aria-label='home']]",
       "approved": true,
-      "description": "Floating navigation button that redirects the user to the application home page."
+      "description": "Floating navigation button that redirects the user to the home page."
     },
     {
       "approvedName": "back_navigation_button",
       "type": "button",
-      "locator": "xpath=//ion-fab-button[.//ion-icon[@aria-label='arrow back'] or normalize-space()='arrow back']",
+      "locator": "xpath=//ion-fab-button[.//ion-icon[@aria-label='arrow back']]",
       "approved": true,
-      "description": "Navigation button that returns the user to the previous or home page."
+      "description": "Floating navigation button that navigates the user back to the home page."
     }
   ]
 }
