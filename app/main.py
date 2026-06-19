@@ -1076,14 +1076,14 @@ def save_keywords_for_workflow(workflow: dict, keywords: list[dict]):
         except Exception:
             resource_keywords_by_name = {}
 
+    approved_keywords_by_name = {
+        clean_text(str(item.get("keywordName", ""))).lower(): item
+        for item in keywords
+        if clean_text(str(item.get("keywordName", "")))
+    }
+
     normalized_keywords = []
     if resource_keywords_by_name and approved_elements_by_name:
-        approved_keywords_by_name = {
-            clean_text(str(item.get("keywordName", ""))).lower(): item
-            for item in keywords
-            if clean_text(str(item.get("keywordName", "")))
-        }
-
         for idx, (keyword_name_lower, resource_keyword) in enumerate(resource_keywords_by_name.items(), start=1):
             if keyword_name_lower in disallowed_resource_keywords:
                 continue
@@ -1147,7 +1147,7 @@ def save_keywords_for_workflow(workflow: dict, keywords: list[dict]):
                 "keywordId": clean_text(str(keyword.get("keywordId", ""))) or f"KW_{idx:03d}",
                 "keywordName": keyword_name,
                 "targetElement": target_element,
-                "action": clean_text(str(keyword.get("action", ""))),
+                "action": clean_text(str(keyword.get("action", ""))) or "generic",
                 "arguments": arguments,
                 "implementation": implementation,
                 "approved": bool(keyword.get("approved", True)),
@@ -1350,6 +1350,32 @@ def build_resource_review_prompt(
     )
 
 
+def build_resource_alignment_prompt(
+    workflow: dict,
+    approved_elements: list[dict],
+    approved_keywords: list[dict],
+    parsed_resource_keywords: list[dict],
+    parsed_resource_variables: list[dict],
+) -> str:
+    payload = {
+        "workflow": clean_workflow_for_prompting(workflow),
+        "approved_elements": approved_elements,
+        "approved_keywords": approved_keywords,
+        "parsed_resource_keywords": parsed_resource_keywords,
+        "parsed_resource_variables": parsed_resource_variables,
+        "goal": "Review the generated page resource artifacts for alignment. Use approved elements as the canonical source of truth for what element-backed variables and action keywords are allowed. Preserve practical, user-friendly keyword names when they remain semantically aligned to approved elements. Remove any variable or keyword that is not grounded in approved elements or approved keyword intent. Return only valid JSON with keys allowed_variables and allowed_keywords, where allowed_variables is a list of variable names and allowed_keywords is a list of keyword names that should remain in UI and derivative artifacts."
+    }
+    return (
+        "You are AI Layer R1: a page-resource alignment reviewer for an end-to-end AI automation framework.\n"
+        "Return only valid JSON.\n"
+        "Use approved elements as the canonical page model.\n"
+        "Use approved keyword intent to preserve practical business-friendly names where appropriate.\n"
+        "Do not invent new variables or keywords.\n"
+        "Remove anything not grounded in approved elements or approved keyword intent.\n\n"
+        f"Input JSON:\n{json.dumps(payload, indent=2)}"
+    )
+
+
 def generate_resource_for_workflow(workflow: dict, approved_keywords: list[dict]):
     review_data = get_page_review_data(workflow)
     page_name = review_data["page_name"]
@@ -1465,7 +1491,93 @@ def generate_resource_for_workflow(workflow: dict, approved_keywords: list[dict]
     if not is_valid:
         raise HTTPException(status_code=400, detail=validation_message)
     resource_path.write_text(resource_content, encoding="utf-8")
-    save_keywords_for_workflow(workflow, approved_keywords)
+
+    refreshed_resource_context = parse_resource_file(resource_path)
+    allowed_variable_names = {clean_text(str(item.get("approvedName", ""))).upper() for item in approved_elements if clean_text(str(item.get("approvedName", "")))}
+    alignment_allowed_keywords: set[str] = set()
+
+    try:
+        alignment_prompt = build_resource_alignment_prompt(
+            workflow,
+            approved_elements,
+            approved_keywords,
+            refreshed_resource_context.get("keywords", []),
+            refreshed_resource_context.get("variables", []),
+        )
+        alignment_response = call_ai_with_workflow_session(
+            workflow_name=page_name,
+            stage="resource_keyword_alignment",
+            endpoint=endpoint,
+            token=token,
+            prompt=alignment_prompt,
+            timeout_seconds=ai_cfg.get("timeout_seconds", 120),
+            verify_ssl=ai_cfg.get("verify_ssl", False),
+        )
+        alignment_json = json.loads(strip_markdown_fences(alignment_response))
+        if isinstance(alignment_json, dict):
+            raw_allowed_variables = alignment_json.get("allowed_variables", [])
+            raw_allowed_keywords = alignment_json.get("allowed_keywords", [])
+            if isinstance(raw_allowed_variables, list):
+                ai_allowed_variables = {
+                    clean_text(str(item)).upper() for item in raw_allowed_variables if clean_text(str(item))
+                }
+                if ai_allowed_variables:
+                    allowed_variable_names = allowed_variable_names.intersection(ai_allowed_variables) or allowed_variable_names
+            if isinstance(raw_allowed_keywords, list):
+                alignment_allowed_keywords = {
+                    clean_text(str(item)).lower() for item in raw_allowed_keywords if clean_text(str(item))
+                }
+    except Exception:
+        pass
+
+    refreshed_keywords = []
+    seen_keyword_names = set()
+    for idx, resource_keyword in enumerate(refreshed_resource_context.get("keywords", []), start=1):
+        resource_keyword_name = clean_text(str(resource_keyword.get("name", "")))
+        if not resource_keyword_name:
+            continue
+        lowered_name = resource_keyword_name.lower()
+        if alignment_allowed_keywords and lowered_name not in alignment_allowed_keywords:
+            continue
+
+        implementation_lines = [str(line).rstrip() for line in resource_keyword.get("body", []) if clean_text(str(line))]
+        referenced_vars = {
+            match.upper()
+            for line in implementation_lines
+            for match in re.findall(r"\$\{([A-Z0-9_]+)\}", line)
+        }
+        referenced_vars.update(arg.replace("${", "").replace("}", "").strip().upper() for arg in resource_keyword.get("args", []) if clean_text(str(arg)))
+        referenced_vars.discard("")
+
+        element_backed_reference = bool(referenced_vars.intersection(allowed_variable_names)) if referenced_vars else False
+        verification_keyword = lowered_name.startswith("verify ")
+        if not element_backed_reference and not verification_keyword:
+            continue
+        if lowered_name in seen_keyword_names:
+            continue
+        seen_keyword_names.add(lowered_name)
+
+        action = "generic"
+        if lowered_name.startswith("click "):
+            action = "click"
+        elif lowered_name.startswith("enter ") or lowered_name.startswith("input "):
+            action = "input"
+        elif lowered_name.startswith("select "):
+            action = "select"
+        elif lowered_name.startswith("verify "):
+            action = "verify"
+
+        refreshed_keywords.append({
+            "keywordId": f"KW_{idx:03d}",
+            "keywordName": resource_keyword_name,
+            "targetElement": "",
+            "action": action,
+            "arguments": [arg.replace("${", "").replace("}", "") for arg in resource_keyword.get("args", [])],
+            "implementation": implementation_lines,
+            "approved": True,
+        })
+
+    save_keywords_for_workflow(workflow, refreshed_keywords)
 
 # -------------------------------------------------------------------
 # Manual tests handling
