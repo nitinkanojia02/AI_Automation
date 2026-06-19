@@ -1,0 +1,51 @@
+{
+  "pageName": "login_page",
+  "variables": [
+    {
+      "variableName": "PAGE_URL",
+      "value": "http://172.21.166.115/washtabui/login?data=undefined",
+      "source": "approved_page",
+      "kind": "page_url"
+    },
+    {
+      "variableName": "USER_NAME_TEXTBOX",
+      "value": "xpath=//input[@placeholder='User Name']",
+      "source": "approved_element",
+      "kind": "locator",
+      "approvedName": "user_name_textbox",
+      "type": "textbox"
+    },
+    {
+      "variableName": "PASSWORD",
+      "value": "xpath=//input[@placeholder='Password']",
+      "source": "approved_element",
+      "kind": "locator",
+      "approvedName": "password",
+      "type": "textbox"
+    },
+    {
+      "variableName": "HOME_BUTTON",
+      "value": "xpath=//ion-fab-button[.//ion-icon[@aria-label='home'] or normalize-space(.)='home']",
+      "source": "approved_element",
+      "kind": "locator",
+      "approvedName": "home_button",
+      "type": "button"
+    },
+    {
+      "variableName": "ARROW_BACK_BUTTON",
+      "value": "xpath=//ion-fab-button[.//ion-icon[@aria-label='arrow back'] or normalize-space(.)='arrow back']",
+      "source": "approved_element",
+      "kind": "locator",
+      "approvedName": "arrow_back_button",
+      "type": "button"
+    },
+    {
+      "variableName": "SIGN_IN_BUTTON",
+      "value": "xpath=//ion-button[normalize-space(.)='SIGN IN']",
+      "source": "approved_element",
+      "kind": "locator",
+      "approvedName": "sign_in_button",
+      "type": "button"
+    }
+  ]
+}

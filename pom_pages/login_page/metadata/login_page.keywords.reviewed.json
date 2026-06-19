@@ -4,29 +4,27 @@
     {
       "keywordId": "KW_001",
       "keywordName": "Enter Username",
-      "targetElement": "username_textbox",
+      "targetElement": "user_name_textbox",
       "action": "input",
       "arguments": [
-        "text"
+        "username"
       ],
       "implementation": [
         "Wait Until Element Is Visible    ${USER_NAME_TEXTBOX}    10s",
-        "Clear Element Text    ${USER_NAME_TEXTBOX}",
-        "Input Text    ${USER_NAME_TEXTBOX}    ${text}"
+        "Input Text    ${USER_NAME_TEXTBOX}    ${username}"
       ],
       "approved": true
     },
     {
       "keywordId": "KW_002",
       "keywordName": "Enter Password",
-      "targetElement": "password_textbox",
+      "targetElement": "password",
       "action": "input",
       "arguments": [
         "password"
       ],
       "implementation": [
         "Wait Until Element Is Visible    ${PASSWORD}    10s",
-        "Clear Element Text    ${PASSWORD}",
         "Input Password    ${PASSWORD}    ${password}"
       ],
       "approved": true
@@ -45,20 +43,8 @@
     },
     {
       "keywordId": "KW_004",
-      "keywordName": "Click Back Navigation Button",
-      "targetElement": "back_navigation_button",
-      "action": "click",
-      "arguments": [],
-      "implementation": [
-        "Wait Until Element Is Visible    ${ARROW_BACK_BUTTON}    10s",
-        "Click Element    ${ARROW_BACK_BUTTON}"
-      ],
-      "approved": true
-    },
-    {
-      "keywordId": "KW_005",
-      "keywordName": "Click Home Navigation Button",
-      "targetElement": "home_navigation_button",
+      "keywordName": "Click Home Button",
+      "targetElement": "home_button",
       "action": "click",
       "arguments": [],
       "implementation": [
@@ -68,53 +54,66 @@
       "approved": true
     },
     {
+      "keywordId": "KW_005",
+      "keywordName": "Click Arrow Back Button",
+      "targetElement": "arrow_back_button",
+      "action": "click",
+      "arguments": [],
+      "implementation": [
+        "Wait Until Element Is Visible    ${ARROW_BACK_BUTTON}    10s",
+        "Click Element    ${ARROW_BACK_BUTTON}"
+      ],
+      "approved": true
+    },
+    {
       "keywordId": "KW_006",
       "keywordName": "Verify Login Page Loaded",
-      "targetElement": "username_textbox",
+      "targetElement": "user_name_textbox",
       "action": "verify",
       "arguments": [],
       "implementation": [
-        "Wait Until Element Is Visible    ${USER_NAME_TEXTBOX}    10s",
+        "Wait Until Location Contains    ${LOGIN_PAGE_URL}    10s",
+        "Element Should Be Visible    ${USER_NAME_TEXTBOX}",
         "Element Should Be Visible    ${PASSWORD}",
         "Element Should Be Visible    ${SIGN_IN_BUTTON}",
-        "Element Should Be Visible    ${ARROW_BACK_BUTTON}",
-        "Element Should Be Visible    ${HOME_BUTTON}"
+        "Element Should Be Visible    ${HOME_BUTTON}",
+        "Element Should Be Visible    ${ARROW_BACK_BUTTON}"
       ],
       "approved": true
     },
     {
       "keywordId": "KW_007",
       "keywordName": "Verify Password Field Is Masked",
-      "targetElement": "password_textbox",
+      "targetElement": "password",
       "action": "verify",
       "arguments": [],
       "implementation": [
         "Wait Until Element Is Visible    ${PASSWORD}    10s",
-        "Element Attribute Value Should Be    ${PASSWORD}    type    password"
+        "${type}=    Get Element Attribute    ${PASSWORD}    type",
+        "Should Be Equal    ${type}    password"
       ],
       "approved": true
     },
     {
       "keywordId": "KW_008",
-      "keywordName": "Verify Successful Login Redirect",
+      "keywordName": "Verify Successful Login Redirect To Home Page",
       "targetElement": "",
       "action": "verify",
       "arguments": [],
       "implementation": [
-        "Wait Until Location Contains    /washtabui/home    10s",
-        "Location Should Contain    /washtabui/home"
+        "Wait Until Location Contains    ${HOME_PAGE_URL}    10s"
       ],
       "approved": true
     },
     {
       "keywordId": "KW_009",
       "keywordName": "Verify Login Failed And Still On Login Page",
-      "targetElement": "sign_in_button",
+      "targetElement": "user_name_textbox",
       "action": "verify",
       "arguments": [],
       "implementation": [
-        "Wait Until Element Is Visible    ${SIGN_IN_BUTTON}    10s",
-        "Location Should Contain    /washtabui/login"
+        "Wait Until Location Contains    ${LOGIN_PAGE_URL}    10s",
+        "Element Should Be Visible    ${USER_NAME_TEXTBOX}"
       ],
       "approved": true
     }
