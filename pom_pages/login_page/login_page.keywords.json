@@ -2,15 +2,24 @@
   "pageName": "login_page",
   "keywords": [
     {
+      "keywordId": "KW_003",
+      "keywordName": "Click Sign In Button",
+      "targetElement": "sign_in_button",
+      "action": "click",
+      "arguments": [],
+      "implementation": [
+        "    Click When Ready    ${SIGN_IN_BUTTON}"
+      ],
+      "approved": true
+    },
+    {
       "keywordId": "KW_001",
       "keywordName": "Click Home Button",
       "targetElement": "home_button",
       "action": "click",
       "arguments": [],
       "implementation": [
-        "    [Documentation]    Click action for Home Button (button) using page object locator.",
-        "    Wait Until Element Is Visible    ${HOME_BUTTON}    10s",
-        "    Click Element    ${HOME_BUTTON}"
+        "    Click When Ready    ${HOME_BUTTON}"
       ],
       "approved": true
     },
@@ -21,37 +30,7 @@
       "action": "click",
       "arguments": [],
       "implementation": [
-        "    [Documentation]    Click action for Arrow Back Button (button) using page object locator.",
-        "    Wait Until Element Is Visible    ${ARROW_BACK_BUTTON}    10s",
-        "    Click Element    ${ARROW_BACK_BUTTON}"
-      ],
-      "approved": true
-    },
-    {
-      "keywordId": "KW_003",
-      "keywordName": "Enter User Name",
-      "targetElement": "user_name_textbox",
-      "action": "input_text",
-      "arguments": [
-        "text"
-      ],
-      "implementation": [
-        "    [Documentation]    Enter text action for User Name (textbox) using page object locator.",
-        "    Wait Until Element Is Visible    ${USER_NAME_TEXTBOX}    10s",
-        "    Input Text    ${USER_NAME_TEXTBOX}    ${text}"
-      ],
-      "approved": true
-    },
-    {
-      "keywordId": "KW_006",
-      "keywordName": "Click Sign In Button",
-      "targetElement": "sign_in_button",
-      "action": "click",
-      "arguments": [],
-      "implementation": [
-        "    [Documentation]    Click action for Sign In Button (button) using page object locator.",
-        "    Wait Until Element Is Visible    ${SIGN_IN_BUTTON}    10s",
-        "    Click Element    ${SIGN_IN_BUTTON}"
+        "    Click When Ready    ${ARROW_BACK_BUTTON}"
       ],
       "approved": true
     }

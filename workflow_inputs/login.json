@@ -4,6 +4,7 @@
   "workflowName": "Login",
   "module": "Authentication",
   "feature": "Login",
+  "applicationCode": "WT",
   "source": {
     "createdBy": "UI user",
     "notes": "Workflow entered from MVP UI."
@@ -19,44 +20,18 @@
   ],
   "observedPreconditions": [
     "Valid username is haklarr",
-    "valid password is Icstunnel1"
+    "valid password is Icstunnel1",
+    "User should be able to log in properly and should navigate to home page whose URL is http://172.21.166.115/washtabui/home",
+    "CLicking back and home button also takes the user to home page whose URL is http://172.21.166.115/washtabui/home"
   ],
   "observedSteps": [],
   "observedExpectedResult": "",
-  "fields": [
-    {
-      "name": "",
-      "label": "",
-      "type": "",
-      "required": false
-    },
-    {
-      "name": "",
-      "label": "",
-      "type": "",
-      "required": false
-    },
-    {
-      "name": "",
-      "label": "",
-      "type": "",
-      "required": false
-    },
-    {
-      "name": "",
-      "label": "",
-      "type": "",
-      "required": false
-    }
-  ],
+  "fields": [],
   "observedValidations": [
     "Login failed when incorrect username or password",
     "Login failed when username and password is blank"
   ],
-  "testData": {
-    "validUsername": "",
-    "validPassword": ""
-  },
+  "testData": {},
   "scenarioIntent": [
     "positive",
     "negative",
