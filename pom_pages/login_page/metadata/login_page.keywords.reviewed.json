@@ -7,11 +7,12 @@
       "targetElement": "username_textbox",
       "action": "input",
       "arguments": [
-        "text"
+        "username"
       ],
       "implementation": [
-        "Wait Until Element Is Visible    ${USER_NAME_TEXTBOX}    10s",
-        "Input Text    ${USER_NAME_TEXTBOX}    ${text}"
+        "    [Documentation]    Enter username into username textbox using page object locator.",
+        "    Wait Until Element Is Visible    ${USERNAME_TEXTBOX}    10s",
+        "    Input Text    ${USERNAME_TEXTBOX}    ${username}"
       ],
       "approved": true
     },
@@ -24,8 +25,9 @@
         "password"
       ],
       "implementation": [
-        "Wait Until Element Is Visible    ${PASSWORD}    10s",
-        "Input Password    ${PASSWORD}    ${password}"
+        "    [Documentation]    Enter password into password textbox using page object locator.",
+        "    Wait Until Element Is Visible    ${PASSWORD_TEXTBOX}    10s",
+        "    Input Password    ${PASSWORD_TEXTBOX}    ${password}"
       ],
       "approved": true
     },
@@ -36,32 +38,35 @@
       "action": "click",
       "arguments": [],
       "implementation": [
-        "Wait Until Element Is Visible    ${SIGN_IN_BUTTON}    10s",
-        "Click Element    ${SIGN_IN_BUTTON}"
+        "    [Documentation]    Click action for Sign In Button using page object locator.",
+        "    Wait Until Element Is Visible    ${SIGN_IN_BUTTON}    10s",
+        "    Click Element    ${SIGN_IN_BUTTON}"
       ],
       "approved": true
     },
     {
       "keywordId": "KW_004",
-      "keywordName": "Click Home Navigation Button",
+      "keywordName": "Click Home Button",
       "targetElement": "home_navigation_button",
       "action": "click",
       "arguments": [],
       "implementation": [
-        "Wait Until Element Is Visible    ${HOME_BUTTON}    10s",
-        "Click Element    ${HOME_BUTTON}"
+        "    [Documentation]    Click action for Home navigation button using page object locator.",
+        "    Wait Until Element Is Visible    ${HOME_BUTTON}    10s",
+        "    Click Element    ${HOME_BUTTON}"
       ],
       "approved": true
     },
     {
       "keywordId": "KW_005",
-      "keywordName": "Click Back Navigation Button",
+      "keywordName": "Click Arrow Back Button",
       "targetElement": "back_navigation_button",
       "action": "click",
       "arguments": [],
       "implementation": [
-        "Wait Until Element Is Visible    ${ARROW_BACK_BUTTON}    10s",
-        "Click Element    ${ARROW_BACK_BUTTON}"
+        "    [Documentation]    Click action for Back navigation button using page object locator.",
+        "    Wait Until Element Is Visible    ${ARROW_BACK_BUTTON}    10s",
+        "    Click Element    ${ARROW_BACK_BUTTON}"
       ],
       "approved": true
     },
@@ -72,48 +77,50 @@
       "action": "verify",
       "arguments": [],
       "implementation": [
-        "Wait Until Element Is Visible    ${USER_NAME_TEXTBOX}    10s",
-        "Element Should Be Visible    ${PASSWORD}",
-        "Element Should Be Visible    ${SIGN_IN_BUTTON}",
-        "Element Should Be Visible    ${HOME_BUTTON}",
-        "Element Should Be Visible    ${ARROW_BACK_BUTTON}"
+        "    [Documentation]    Verify login page loads with all required UI elements visible.",
+        "    Wait Until Element Is Visible    ${USERNAME_TEXTBOX}    10s",
+        "    Element Should Be Visible    ${PASSWORD_TEXTBOX}",
+        "    Element Should Be Visible    ${SIGN_IN_BUTTON}",
+        "    Element Should Be Visible    ${HOME_BUTTON}",
+        "    Element Should Be Visible    ${ARROW_BACK_BUTTON}"
       ],
       "approved": true
     },
     {
       "keywordId": "KW_007",
-      "keywordName": "Verify Password Field Is Masked",
-      "targetElement": "password_textbox",
+      "keywordName": "Verify Successful Login Redirect",
+      "targetElement": "",
       "action": "verify",
       "arguments": [],
       "implementation": [
-        "Wait Until Element Is Visible    ${PASSWORD}    10s",
-        "Element Attribute Value Should Be    ${PASSWORD}    type    password"
+        "    [Documentation]    Verify successful authentication redirects user to the home page.",
+        "    Wait Until Location Is    ${HOME_PAGE_URL}    10s"
       ],
       "approved": true
     },
     {
       "keywordId": "KW_008",
-      "keywordName": "Verify Successful Login Redirect",
-      "targetElement": "sign_in_button",
+      "keywordName": "Verify Login Failed And Remain On Login Page",
+      "targetElement": "",
       "action": "verify",
       "arguments": [],
       "implementation": [
-        "Wait Until Location Is    ${HOME_PAGE_URL}    10s"
+        "    [Documentation]    Verify authentication failure keeps the user on the login page.",
+        "    Wait Until Location Is    ${LOGIN_PAGE_URL}    10s",
+        "    Element Should Be Visible    ${SIGN_IN_BUTTON}"
       ],
       "approved": true
     },
     {
       "keywordId": "KW_009",
-      "keywordName": "Verify Login Failed And Still On Login Page",
-      "targetElement": "sign_in_button",
+      "keywordName": "Verify Password Field Is Masked",
+      "targetElement": "password_textbox",
       "action": "verify",
       "arguments": [],
       "implementation": [
-        "Wait Until Location Is    ${LOGIN_PAGE_URL}    10s",
-        "Element Should Be Visible    ${SIGN_IN_BUTTON}",
-        "Element Should Be Visible    ${USER_NAME_TEXTBOX}",
-        "Element Should Be Visible    ${PASSWORD}"
+        "    [Documentation]    Verify password textbox masks entered characters.",
+        "    ${type}=    Get Element Attribute    ${PASSWORD_TEXTBOX}    type",
+        "    Should Be Equal    ${type}    password"
       ],
       "approved": true
     }

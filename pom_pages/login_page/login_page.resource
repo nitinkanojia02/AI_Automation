@@ -2,77 +2,70 @@
 Resource    ../../resources/common_keywords.resource
 
 *** Variables ***
-${LOGIN_PAGE_URL}    http://172.21.166.115/washtabui/login?data=undefined
-${HOME_PAGE_URL}    http://172.21.166.115/washtabui/home
-${LOGIN_PATH_FRAGMENT}    /washtabui/login
-${HOME_PATH_FRAGMENT}    /washtabui/home
-${VALID_USERNAME}    hacklarr
-${VALID_PASSWORD}    Icstunnel1
-${INVALID_USERNAME}    invalidUser
-${INVALID_PASSWORD}    invalidPassword
-${INCORRECT_PASSWORD}    WrongPassword123
-${USERNAME_TEXTBOX}    xpath=//input[@name='ion-input-0']
-${PASSWORD_TEXTBOX}    id=password
-${SIGN_IN_BUTTON}    xpath=//ion-button[normalize-space()='SIGN IN']
-${HOME_NAVIGATION_BUTTON}    xpath=//ion-fab-button[.//ion-icon[@aria-label='home']]
-${BACK_NAVIGATION_BUTTON}    xpath=//ion-fab-button[.//ion-icon[@aria-label='arrow back']]
+${LOGIN_PAGE_URL}              http://172.21.166.115/washtabui/login?data=undefined
+${HOME_PAGE_URL}               http://172.21.166.115/washtabui/home
+${VALID_USERNAME}              hacklarr
+${VALID_PASSWORD}              Icstunnel1
+${INVALID_USERNAME}            invaliduser
+${INVALID_PASSWORD}            WrongPassword123
+${ALT_INVALID_USERNAME}        wronguser
+${ALT_INVALID_PASSWORD}        wrongpass
+${SPECIAL_CHAR_USERNAME}       user!@#
+${USERNAME_TEXTBOX}            xpath=//input[@name='ion-input-0']
+${PASSWORD_TEXTBOX}            id=password
+${SIGN_IN_BUTTON}              xpath=//ion-button[normalize-space()='SIGN IN']
+${HOME_NAVIGATION_BUTTON}      xpath=//ion-fab-button[.//ion-icon[@aria-label='home']]
+${BACK_NAVIGATION_BUTTON}      xpath=//ion-fab-button[.//ion-icon[@aria-label='arrow back']]
 
 *** Keywords ***
 Verify Login Page Loaded
-    [Documentation]    Verify login page URL and required login controls are visible.
-    Location Should Contain    ${LOGIN_PATH_FRAGMENT}
-    Wait For Element To Be Ready    ${USERNAME_TEXTBOX}
-    Wait For Element To Be Ready    ${PASSWORD_TEXTBOX}
-    Wait For Element To Be Ready    ${SIGN_IN_BUTTON}
-    Wait For Element To Be Ready    ${HOME_NAVIGATION_BUTTON}
-    Wait For Element To Be Ready    ${BACK_NAVIGATION_BUTTON}
+    [Documentation]    Verify login page loads and required UI elements are visible.
+    Wait Until Location Is    ${LOGIN_PAGE_URL}    10s
+    Wait Until Element Is Visible    ${USERNAME_TEXTBOX}    10s
+    Element Should Be Visible    ${PASSWORD_TEXTBOX}
+    Element Should Be Visible    ${SIGN_IN_BUTTON}
+    Element Should Be Visible    ${HOME_NAVIGATION_BUTTON}
+    Element Should Be Visible    ${BACK_NAVIGATION_BUTTON}
 
 Enter Username
-    [Documentation]    Enter value into username textbox.
+    [Documentation]    Enter username into username textbox.
     [Arguments]    ${username}
-    Input Text When Ready    ${USERNAME_TEXTBOX}    ${username}
+    Wait Until Element Is Visible    ${USERNAME_TEXTBOX}    10s
+    Input Text    ${USERNAME_TEXTBOX}    ${username}
 
 Enter Password
-    [Documentation]    Enter value into password textbox.
+    [Documentation]    Enter password into password textbox.
     [Arguments]    ${password}
-    Wait For Element To Be Ready    ${PASSWORD_TEXTBOX}
+    Wait Until Element Is Visible    ${PASSWORD_TEXTBOX}    10s
     Clear Element Text    ${PASSWORD_TEXTBOX}
     Input Password    ${PASSWORD_TEXTBOX}    ${password}
 
 Click Sign In Button
     [Documentation]    Click the SIGN IN button.
-    Click When Ready    ${SIGN_IN_BUTTON}
+    Wait Until Element Is Visible    ${SIGN_IN_BUTTON}    10s
+    Click Element    ${SIGN_IN_BUTTON}
 
 Click Home Navigation Button
     [Documentation]    Click the home navigation button.
-    Click When Ready    ${HOME_NAVIGATION_BUTTON}
+    Wait Until Element Is Visible    ${HOME_NAVIGATION_BUTTON}    10s
+    Click Element    ${HOME_NAVIGATION_BUTTON}
 
 Click Back Navigation Button
     [Documentation]    Click the back navigation button.
-    Click When Ready    ${BACK_NAVIGATION_BUTTON}
+    Wait Until Element Is Visible    ${BACK_NAVIGATION_BUTTON}    10s
+    Click Element    ${BACK_NAVIGATION_BUTTON}
 
 Verify Successful Login Redirect
     [Documentation]    Verify successful authentication redirects the user to the home page.
-    Wait Until Location Contains    ${HOME_PATH_FRAGMENT}    10s
-    Location Should Contain    ${HOME_PATH_FRAGMENT}
+    Wait Until Location Is    ${HOME_PAGE_URL}    10s
 
 Verify Login Rejected
-    [Documentation]    Verify authentication failure keeps user on the login page.
-    Location Should Contain    ${LOGIN_PATH_FRAGMENT}
-    Wait For Element To Be Ready    ${SIGN_IN_BUTTON}
-
-Verify Username Required Validation
-    [Documentation]    Verify login attempt without username keeps user on login page.
-    Location Should Contain    ${LOGIN_PATH_FRAGMENT}
-    Wait For Element To Be Ready    ${USERNAME_TEXTBOX}
-
-Verify Password Required Validation
-    [Documentation]    Verify login attempt without password keeps user on login page.
-    Location Should Contain    ${LOGIN_PATH_FRAGMENT}
-    Wait For Element To Be Ready    ${PASSWORD_TEXTBOX}
+    [Documentation]    Verify authentication failure keeps the user on the login page.
+    Wait Until Location Is    ${LOGIN_PAGE_URL}    10s
+    Element Should Be Visible    ${SIGN_IN_BUTTON}
 
 Verify Password Field Is Masked
-    [Documentation]    Verify password field masks entered characters.
-    Wait For Element To Be Ready    ${PASSWORD_TEXTBOX}
+    [Documentation]    Verify password textbox masks entered characters.
+    Wait Until Element Is Visible    ${PASSWORD_TEXTBOX}    10s
     ${type}=    Get Element Attribute    ${PASSWORD_TEXTBOX}    type
     Should Be Equal    ${type}    password
