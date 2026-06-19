@@ -2,37 +2,37 @@
   "pageName": "login_page",
   "keywords": [
     {
-      "keywordId": "KW_004",
+      "keywordId": "KW_005",
       "keywordName": "Click Sign In Button",
       "targetElement": "sign_in_button",
       "action": "click",
       "arguments": [],
       "implementation": [
-        "    [Documentation]    Click the Sign In button on the login page.",
+        "    [Documentation]    Submit the login form using the Sign In button.",
         "    Click When Ready    ${SIGN_IN_BUTTON}"
       ],
       "approved": true
     },
     {
-      "keywordId": "KW_005",
+      "keywordId": "KW_006",
       "keywordName": "Click Home Button",
       "targetElement": "home_button",
       "action": "click",
       "arguments": [],
       "implementation": [
-        "    [Documentation]    Click the Home button on the login page.",
+        "    [Documentation]    Navigate to the home page using the Home navigation button.",
         "    Click When Ready    ${HOME_BUTTON}"
       ],
       "approved": true
     },
     {
-      "keywordId": "KW_006",
-      "keywordName": "Click Back Button",
+      "keywordId": "KW_007",
+      "keywordName": "Click Arrow Back Button",
       "targetElement": "back_button",
       "action": "click",
       "arguments": [],
       "implementation": [
-        "    [Documentation]    Click the Arrow Back button on the login page.",
+        "    [Documentation]    Navigate using the Arrow Back navigation button.",
         "    Click When Ready    ${BACK_BUTTON}"
       ],
       "approved": true

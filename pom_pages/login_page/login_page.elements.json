@@ -4,34 +4,6 @@
   "rawElements": [
     {
       "tag": "input",
-      "text": "User Name",
-      "attributes": {
-        "class": "native-input sc-ion-input-md",
-        "aria-labelledby": "ion-input-0-lbl",
-        "autocapitalize": "off",
-        "autocomplete": "off",
-        "autocorrect": "off",
-        "autofocus": "",
-        "name": "ion-input-0",
-        "placeholder": "User Name",
-        "type": "text",
-        "style": ""
-      },
-      "label": "",
-      "visibility": {
-        "is_visible": true,
-        "is_in_viewport": true,
-        "is_covered": false,
-        "has_visible_descendant": false,
-        "width": 250,
-        "height": 44,
-        "x": 863,
-        "y": 447.953125
-      },
-      "shadow": null
-    },
-    {
-      "tag": "input",
       "text": "Password",
       "attributes": {
         "class": "native-input sc-ion-input-md",
@@ -61,7 +33,7 @@
       "tag": "ion-input",
       "text": "password",
       "attributes": {
-        "_ngcontent-rne-c151": "",
+        "_ngcontent-yun-c151": "",
         "type": "password",
         "id": "password",
         "clearonedit": "true",
@@ -86,7 +58,7 @@
       "tag": "ion-fab-button",
       "text": "home",
       "attributes": {
-        "_ngcontent-rne-c151": "",
+        "_ngcontent-yun-c151": "",
         "tappable": "",
         "color": "light",
         "class": "ion-color ion-color-light md fab-button-in-list ion-activatable ion-focusable hydrated fab-button-show"
@@ -118,7 +90,7 @@
       "tag": "ion-fab-button",
       "text": "arrow back",
       "attributes": {
-        "_ngcontent-rne-c151": "",
+        "_ngcontent-yun-c151": "",
         "tappable": "",
         "color": "light",
         "class": "ion-color ion-color-light md fab-button-in-list ion-activatable ion-focusable hydrated fab-button-show"
@@ -150,7 +122,7 @@
       "tag": "ion-button",
       "text": "SIGN IN",
       "attributes": {
-        "_ngcontent-rne-c151": "",
+        "_ngcontent-yun-c151": "",
         "text": "Login",
         "shape": "round",
         "class": "ion-button-style md button button-round button-solid ion-activatable ion-focusable hydrated"
@@ -195,7 +167,7 @@
     {
       "approvedName": "sign_in_button",
       "type": "button",
-      "locator": "xpath=//ion-button[.//text()[contains(.,'SIGN IN')] or @text='Login']",
+      "locator": "xpath=//ion-button[normalize-space(.)='SIGN IN']",
       "approved": true
     },
     {
