@@ -1,6 +1,7 @@
 from pathlib import Path
 import json
 import re
+import shutil
 import subprocess
 import sys
 from openpyxl import Workbook
@@ -64,6 +65,11 @@ def read_json(path: Path):
 def write_json(path: Path, data):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+
+
+def write_text_file(path: Path, content: str):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content, encoding="utf-8")
 
 
 CONFIG = read_json(CONFIG_PATH) if CONFIG_PATH.exists() else {}
@@ -625,122 +631,66 @@ def get_page_review_data(workflow: dict):
     pages = workflow.get("pages", [])
     page_name = pages[0].get("name") if pages else "page"
     page_url = pages[0].get("url") if pages else ""
-    workflow_name = clean_text(str(workflow.get("workflowName", ""))) or page_name
 
     page_dir = POM_DIR / page_name
     elements_path = page_dir / f"{page_name}.elements.json"
+    elements_draft_path = get_elements_draft_path(page_name)
+    elements_review_path = get_elements_review_path(page_name)
+    elements_refined_path = get_elements_refined_path(page_name)
     screenshot_path = page_dir / f"{page_name}.png"
-    resource_path = page_dir / f"{page_name}.resource"
 
     extracted_elements_data = []
     approved_elements_data = []
-    if elements_path.exists():
+    refined_elements_data = []
+    review_summary = None
+
+    source_path = elements_path
+    if elements_refined_path.exists():
+        source_path = elements_refined_path
+    elif elements_draft_path.exists():
+        source_path = elements_draft_path
+
+    if source_path.exists():
         try:
-            data = read_json(elements_path)
+            data = read_json(source_path)
             if isinstance(data, list):
                 extracted_elements_data = data
             elif isinstance(data, dict):
                 approved_elements_data = data.get("elements", [])
                 extracted_elements_data = data.get("rawElements", approved_elements_data)
+                refined_elements_data = data.get("elements", [])
         except Exception:
             extracted_elements_data = []
             approved_elements_data = []
+            refined_elements_data = []
 
-    source_elements = approved_elements_data or extracted_elements_data
-    normalized_elements = []
-
-    resource_elements_by_locator = {}
-    if resource_path.exists():
+    if elements_review_path.exists():
         try:
-            resource_context = parse_resource_file(resource_path)
-            for variable in resource_context.get("variables", []):
-                locator = clean_text(str(variable.get("value", "")))
-                variable_name = clean_text(str(variable.get("name", "")))
-                if not locator or not variable_name:
-                    continue
-                normalized_name = normalize_ui_element_name(variable_name.lower(), "button" if variable_name.upper().endswith("_BUTTON") else "element")
-                resource_elements_by_locator[locator] = {
-                    "approvedName": normalized_name,
-                    "type": "button" if normalized_name.endswith("_button") else "element",
-                    "locator": locator,
-                    "approved": True,
-                }
+            review_summary = read_json(elements_review_path)
         except Exception:
-            resource_elements_by_locator = {}
+            review_summary = None
 
+    source_elements = refined_elements_data or approved_elements_data or extracted_elements_data
+    normalized_elements = []
     for idx, item in enumerate(source_elements):
         if not isinstance(item, dict):
             continue
         if "approvedName" in item and "locator" in item and "type" in item:
-            locator = clean_text(item.get("locator", ""))
-            stronger = resource_elements_by_locator.get(locator)
-            if stronger:
-                normalized_elements.append(stronger)
-            else:
-                normalized_elements.append({
-                    "approvedName": item.get("approvedName") or f"element_{idx+1}",
-                    "type": item.get("type", "element"),
-                    "locator": locator,
-                    "approved": item.get("approved", True),
-                })
+            normalized_elements.append({
+                "approvedName": item.get("approvedName") or f"element_{idx+1}",
+                "type": item.get("type", "element"),
+                "locator": clean_text(item.get("locator", "")),
+                "approved": item.get("approved", True),
+            })
+        elif "name" in item and "locator" in item and "type" in item:
+            normalized_elements.append({
+                "approvedName": clean_text(str(item.get("name", ""))) or f"element_{idx+1}",
+                "type": clean_text(str(item.get("type", "element"))).lower() or "element",
+                "locator": clean_text(str(item.get("locator", ""))),
+                "approved": True,
+            })
         else:
-            inferred = normalize_extracted_element(item, idx)
-            stronger = resource_elements_by_locator.get(inferred.get("locator", ""))
-            normalized_elements.append(stronger or inferred)
-
-    if resource_path.exists() and normalized_elements:
-        try:
-            config = validate_robot_config(load_robot_ai_json(CONFIG_PATH))
-            ai_cfg = config.get("ai", {})
-            if ai_cfg.get("enabled", True):
-                endpoint = ai_cfg.get("endpoint", "").strip()
-                token = get_robot_ai_token(ai_cfg)
-                if endpoint and token:
-                    resource_context = parse_resource_file(resource_path)
-                    ai_payload = {
-                        "workflow": clean_workflow_for_prompting(workflow),
-                        "raw_elements": extracted_elements_data,
-                        "approved_elements": approved_elements_data,
-                        "ui_elements": normalized_elements,
-                        "resource_file": resource_context,
-                        "goal": "Review and refine the page review UI model for display. Prefer approved elements and resource-backed variables, preserve strong locator choices already present, keep only meaningful visible page elements, and return only valid JSON as an array of objects with keys approvedName, type, locator, approved. Do not invent elements that are not grounded in the extracted data, approved elements, or current resource file."
-                    }
-                    ai_prompt = (
-                        "You are AI Layer P1: a page-model refinement specialist for an AI-first automation framework.\n"
-                        "Return only valid JSON array data.\n"
-                        "Preserve strong resource-backed semantics and approved element decisions when available.\n"
-                        "Keep the page model meaningful, visible, and review-friendly.\n\n"
-                        f"Input JSON:\n{json.dumps(ai_payload, indent=2)}"
-                    )
-                    reviewed_elements_raw = call_ai_with_workflow_session(
-                        workflow_name=workflow_name,
-                        stage="page_ui_review",
-                        endpoint=endpoint,
-                        token=token,
-                        prompt=ai_prompt,
-                        timeout_seconds=ai_cfg.get("timeout_seconds", 120),
-                        verify_ssl=ai_cfg.get("verify_ssl", False),
-                    )
-                    reviewed_elements = json.loads(strip_markdown_fences(reviewed_elements_raw))
-                    if isinstance(reviewed_elements, list):
-                        normalized_reviewed = []
-                        for idx, item in enumerate(reviewed_elements, start=1):
-                            if not isinstance(item, dict):
-                                continue
-                            approved_name = clean_text(str(item.get("approvedName", ""))) or f"element_{idx}"
-                            locator = clean_text(str(item.get("locator", "")))
-                            if not locator:
-                                continue
-                            normalized_reviewed.append({
-                                "approvedName": approved_name,
-                                "type": clean_text(str(item.get("type", "element"))).lower() or "element",
-                                "locator": locator,
-                                "approved": bool(item.get("approved", True)),
-                            })
-                        if normalized_reviewed:
-                            normalized_elements = normalized_reviewed
-        except Exception:
-            pass
+            normalized_elements.append(normalize_extracted_element(item, idx))
 
     screenshot_web_path = None
     if screenshot_path.exists():
@@ -753,8 +703,12 @@ def get_page_review_data(workflow: dict):
         "screenshot_web_path": screenshot_web_path,
         "raw_elements_count": len(extracted_elements_data or normalized_elements),
         "elements_path": elements_path,
+        "elements_draft_path": elements_draft_path,
+        "elements_review_path": elements_review_path,
+        "elements_refined_path": elements_refined_path,
         "raw_elements": extracted_elements_data,
         "approved_elements": approved_elements_data,
+        "review_summary": review_summary,
     }
 
 # -------------------------------------------------------------------
@@ -766,6 +720,30 @@ def get_keywords_path(page_name: str) -> Path:
 
 def get_resource_path(page_name: str) -> Path:
     return POM_DIR / page_name / f"{page_name}.resource"
+
+
+def get_elements_draft_path(page_name: str) -> Path:
+    return POM_DIR / page_name / f"{page_name}.elements.draft.json"
+
+
+def get_elements_review_path(page_name: str) -> Path:
+    return POM_DIR / page_name / f"{page_name}.elements.review.json"
+
+
+def get_elements_refined_path(page_name: str) -> Path:
+    return POM_DIR / page_name / f"{page_name}.elements.refined.json"
+
+
+def get_resource_draft_path(page_name: str) -> Path:
+    return POM_DIR / page_name / f"{page_name}.resource.draft"
+
+
+def get_resource_review_path(page_name: str) -> Path:
+    return POM_DIR / page_name / f"{page_name}.resource.review.json"
+
+
+def get_resource_refined_path(page_name: str) -> Path:
+    return POM_DIR / page_name / f"{page_name}.resource.refined"
 
 def load_approved_elements_for_workflow(workflow: dict) -> list[dict]:
     pages = workflow.get("pages", [])
@@ -813,47 +791,54 @@ def build_keywords_from_elements(elements: list[dict]) -> list[dict]:
             continue
 
         keyword_title = to_keyword_title(element_name)
+        variable_name = to_robot_variable_name(element_name)
 
         if element_type == "textbox":
             keyword_name = f"Enter {keyword_title}"
             implementation = [
-                f"Wait Until Element Is Visible    ${{{to_robot_variable_name(element_name)}}}    10s",
-                f"Input Text    ${{{to_robot_variable_name(element_name)}}}    ${{text}}"
+                f"Input Text When Ready    ${{{variable_name}}}    ${{text}}"
             ]
             arguments = ["text"]
+            action = "input"
+        elif element_type == "password":
+            keyword_name = f"Enter {keyword_title}"
+            implementation = [
+                f"Wait For Element To Be Ready    ${{{variable_name}}}",
+                f"Input Password    ${{{variable_name}}}    ${{password}}"
+            ]
+            arguments = ["password"]
             action = "input"
         elif element_type == "button":
             keyword_name = f"Click {keyword_title}"
             implementation = [
-                f"Wait Until Element Is Visible    ${{{to_robot_variable_name(element_name)}}}    10s",
-                f"Click Element    ${{{to_robot_variable_name(element_name)}}}"
+                f"Click When Ready    ${{{variable_name}}}"
             ]
             arguments = []
             action = "click"
         elif element_type == "dropdown":
             keyword_name = f"Select {keyword_title}"
             implementation = [
-                f"Wait Until Element Is Visible    ${{{to_robot_variable_name(element_name)}}}    10s",
-                f"Select From List By Label    ${{{to_robot_variable_name(element_name)}}}    ${{value}}"
+                f"Wait For Element To Be Ready    ${{{variable_name}}}",
+                f"Select From List By Label    ${{{variable_name}}}    ${{value}}"
             ]
             arguments = ["value"]
             action = "select"
         elif element_type == "link":
             keyword_name = f"Click {keyword_title}"
             implementation = [
-                f"Wait Until Element Is Visible    ${{{to_robot_variable_name(element_name)}}}    10s",
-                f"Click Element    ${{{to_robot_variable_name(element_name)}}}"
+                f"Click When Ready    ${{{variable_name}}}"
             ]
             arguments = []
             action = "click"
-        else:
-            keyword_name = f"Use {keyword_title}"
+        elif element_type == "message":
+            keyword_name = f"Verify {keyword_title}"
             implementation = [
-                f"Wait Until Element Is Visible    ${{{to_robot_variable_name(element_name)}}}    10s",
-                f"Click Element    ${{{to_robot_variable_name(element_name)}}}"
+                f"Wait Until Element Is Visible    ${{{variable_name}}}    10s"
             ]
             arguments = []
-            action = "generic"
+            action = "verify"
+        else:
+            continue
 
         keywords.append({
             "keywordId": f"KW_{idx:03d}",
@@ -866,6 +851,110 @@ def build_keywords_from_elements(elements: list[dict]) -> list[dict]:
         })
 
     return keywords
+
+def review_and_refine_page_elements(workflow: dict, review_data: dict) -> tuple[list[dict], dict | None]:
+    workflow_name = clean_text(str(workflow.get("workflowName", ""))) or review_data["page_name"]
+    raw_elements = review_data.get("raw_elements", [])
+    if not raw_elements:
+        return review_data.get("elements", []), None
+
+    draft_elements = []
+    for idx, item in enumerate(raw_elements):
+        if not isinstance(item, dict):
+            continue
+        draft_elements.append(normalize_extracted_element(item, idx))
+
+    draft_payload = {
+        "pageName": review_data["page_name"],
+        "pageUrl": review_data["page_url"],
+        "rawElements": raw_elements,
+        "elements": draft_elements,
+    }
+    write_json(review_data["elements_draft_path"], draft_payload)
+
+    review_result = None
+    refined_elements = draft_elements
+    try:
+        config = validate_robot_config(load_robot_ai_json(CONFIG_PATH))
+        ai_cfg = config.get("ai", {})
+        endpoint = ai_cfg.get("endpoint", "").strip()
+        token = get_robot_ai_token(ai_cfg)
+        if ai_cfg.get("enabled", True) and endpoint and token:
+            reviewer_prompt = (
+                Path(BASE_DIR / "prompts" / "page_elements_reviewer.md").read_text(encoding="utf-8")
+                + "\n\nWorkflow Context:\n"
+                + json.dumps(clean_workflow_for_prompting(workflow), indent=2)
+                + "\n\nPage Name:\n"
+                + review_data["page_name"]
+                + "\n\nDraft Page Elements JSON:\n"
+                + json.dumps(draft_payload, indent=2)
+            )
+            review_raw = call_ai_with_workflow_session(
+                workflow_name=workflow_name,
+                stage="page_elements_review",
+                endpoint=endpoint,
+                token=token,
+                prompt=reviewer_prompt,
+                timeout_seconds=ai_cfg.get("timeout_seconds", 120),
+                verify_ssl=ai_cfg.get("verify_ssl", False),
+            )
+            review_result = json.loads(strip_markdown_fences(review_raw))
+            write_json(review_data["elements_review_path"], review_result)
+
+            refiner_prompt = (
+                Path(BASE_DIR / "prompts" / "page_elements_refiner.md").read_text(encoding="utf-8")
+                + "\n\nWorkflow Context:\n"
+                + json.dumps(clean_workflow_for_prompting(workflow), indent=2)
+                + "\n\nDraft Page Elements JSON:\n"
+                + json.dumps(draft_payload, indent=2)
+                + "\n\nReview Findings:\n"
+                + json.dumps(review_result, indent=2)
+            )
+            refined_raw = call_ai_with_workflow_session(
+                workflow_name=workflow_name,
+                stage="page_elements_refine",
+                endpoint=endpoint,
+                token=token,
+                prompt=refiner_prompt,
+                timeout_seconds=ai_cfg.get("timeout_seconds", 120),
+                verify_ssl=ai_cfg.get("verify_ssl", False),
+            )
+            refined_payload = json.loads(strip_markdown_fences(refined_raw))
+            candidate_elements = refined_payload.get("elements", []) if isinstance(refined_payload, dict) else []
+            normalized = []
+            for idx, item in enumerate(candidate_elements, start=1):
+                if not isinstance(item, dict):
+                    continue
+                name = clean_text(str(item.get("name", "")))
+                locator = clean_text(str(item.get("locator", "")))
+                if not name or not locator:
+                    continue
+                normalized.append({
+                    "approvedName": name,
+                    "type": clean_text(str(item.get("type", "element"))).lower() or "element",
+                    "locator": locator,
+                    "approved": True,
+                    "description": clean_text(str(item.get("description", ""))),
+                })
+            if normalized:
+                refined_elements = normalized
+                write_json(review_data["elements_refined_path"], {
+                    "pageName": review_data["page_name"],
+                    "pageUrl": review_data["page_url"],
+                    "rawElements": raw_elements,
+                    "elements": refined_elements,
+                })
+    except Exception as exc:
+        review_result = {
+            "overall_quality": "low",
+            "summary": f"AI refinement failed: {str(exc)}",
+            "issues": [],
+        }
+        write_json(review_data["elements_review_path"], review_result)
+        write_json(review_data["elements_refined_path"], draft_payload)
+
+    return refined_elements, review_result
+
 
 def get_keyword_review_data(workflow: dict):
     pages = workflow.get("pages", [])
@@ -1033,6 +1122,83 @@ def get_keyword_review_data(workflow: dict):
         "approved_elements": approved_elements,
     }
 
+def review_and_refine_resource_artifact(workflow: dict, page_name: str, elements: list[dict], draft_resource: str):
+    workflow_name = clean_text(str(workflow.get("workflowName", ""))) or page_name
+    draft_path = get_resource_draft_path(page_name)
+    review_path = get_resource_review_path(page_name)
+    refined_path = get_resource_refined_path(page_name)
+    write_text_file(draft_path, draft_resource)
+
+    review_result = None
+    refined_resource = draft_resource
+    try:
+        config = validate_robot_config(load_robot_ai_json(CONFIG_PATH))
+        ai_cfg = config.get("ai", {})
+        endpoint = ai_cfg.get("endpoint", "").strip()
+        token = get_robot_ai_token(ai_cfg)
+        common_resource = read_text(BASE_DIR / "resources" / "common_keywords.resource")
+        if ai_cfg.get("enabled", True) and endpoint and token and draft_resource.strip():
+            reviewer_prompt = (
+                Path(BASE_DIR / "prompts" / "resource_reviewer.md").read_text(encoding="utf-8")
+                + "\n\nWorkflow Context:\n"
+                + json.dumps(clean_workflow_for_prompting(workflow), indent=2)
+                + "\n\nPage Elements Artifact:\n"
+                + json.dumps(elements, indent=2)
+                + "\n\nCommon Shared Resource Content:\n"
+                + common_resource
+                + "\n\nGenerated Page Resource Draft:\n"
+                + draft_resource
+            )
+            review_raw = call_ai_with_workflow_session(
+                workflow_name=workflow_name,
+                stage="resource_review",
+                endpoint=endpoint,
+                token=token,
+                prompt=reviewer_prompt,
+                timeout_seconds=ai_cfg.get("timeout_seconds", 120),
+                verify_ssl=ai_cfg.get("verify_ssl", False),
+            )
+            review_result = json.loads(strip_markdown_fences(review_raw))
+            write_json(review_path, review_result)
+
+            refiner_prompt = (
+                Path(BASE_DIR / "prompts" / "resource_refiner.md").read_text(encoding="utf-8")
+                + "\n\nWorkflow Context:\n"
+                + json.dumps(clean_workflow_for_prompting(workflow), indent=2)
+                + "\n\nPage Elements Artifact:\n"
+                + json.dumps(elements, indent=2)
+                + "\n\nCommon Shared Resource Content:\n"
+                + common_resource
+                + "\n\nReviewer Findings:\n"
+                + json.dumps(review_result, indent=2)
+                + "\n\nOriginal Draft Resource:\n"
+                + draft_resource
+            )
+            refined_raw = call_ai_with_workflow_session(
+                workflow_name=workflow_name,
+                stage="resource_refine",
+                endpoint=endpoint,
+                token=token,
+                prompt=refiner_prompt,
+                timeout_seconds=ai_cfg.get("timeout_seconds", 120),
+                verify_ssl=ai_cfg.get("verify_ssl", False),
+            )
+            candidate = strip_markdown_fences(refined_raw).strip()
+            if candidate and "*** Keywords ***" in candidate and "*** Variables ***" in candidate and "*** Settings ***" in candidate:
+                refined_resource = candidate
+    except Exception as exc:
+        review_result = {
+            "overall_quality": "low",
+            "summary": f"AI refinement failed: {str(exc)}",
+            "issues": [],
+            "recommended_additions": [],
+        }
+        write_json(review_path, review_result)
+
+    write_text_file(refined_path, refined_resource)
+    return refined_resource, review_result
+
+
 def save_keywords_for_workflow(workflow: dict, keywords: list[dict]):
     pages = workflow.get("pages", [])
     page_name = pages[0].get("name") if pages else "page"
@@ -1158,6 +1324,15 @@ def save_keywords_for_workflow(workflow: dict, keywords: list[dict]):
         "keywords": normalized_keywords,
     }
     write_json(keywords_path, payload)
+
+    if resource_path.exists():
+        try:
+            draft_resource = read_text(resource_path)
+            refined_resource, _ = review_and_refine_resource_artifact(workflow, page_name, approved_elements, draft_resource)
+            if refined_resource.strip():
+                write_text_file(resource_path, refined_resource)
+        except Exception:
+            pass
 
 # -------------------------------------------------------------------
 # AI-driven resource generation
@@ -2088,6 +2263,7 @@ def page_review(request: Request, workflow_name: str):
         "elements": review_data["elements"],
         "screenshot_web_path": review_data["screenshot_web_path"],
         "raw_elements_count": review_data["raw_elements_count"],
+        "review_summary": review_data.get("review_summary"),
     })
 
 @app.post("/page-review/{workflow_name}/extract")
@@ -2097,15 +2273,18 @@ def run_page_review_extraction(request: Request, workflow_name: str):
     try:
         run_page_extraction(review_data["page_name"], review_data["page_url"])
         updated_review_data = get_page_review_data(workflow)
+        refined_elements, review_summary = review_and_refine_page_elements(workflow, updated_review_data)
+        updated_review_data = get_page_review_data(workflow)
         return render_template(request, "page_review.html", {
             "workflow_name": workflow_name,
             "workflow": workflow,
             "page_name": updated_review_data["page_name"],
             "page_url": updated_review_data["page_url"],
-            "elements": updated_review_data["elements"],
+            "elements": refined_elements or updated_review_data["elements"],
             "screenshot_web_path": updated_review_data["screenshot_web_path"],
             "raw_elements_count": updated_review_data["raw_elements_count"],
-            "success_message": "Page extraction completed successfully. Review the extracted elements below.",
+            "review_summary": review_summary,
+            "success_message": "Page extraction completed and AI review/refinement has been applied. Review the refined elements below.",
         })
     except Exception as exc:
         updated_review_data = get_page_review_data(workflow)
@@ -2117,6 +2296,7 @@ def run_page_review_extraction(request: Request, workflow_name: str):
             "elements": updated_review_data["elements"],
             "screenshot_web_path": updated_review_data["screenshot_web_path"],
             "raw_elements_count": updated_review_data["raw_elements_count"],
+            "review_summary": updated_review_data.get("review_summary"),
             "error_message": f"Page extraction failed: {str(exc)}",
         }, status_code=400)
 
@@ -2172,6 +2352,7 @@ async def save_page_review(request: Request, workflow_name: str):
         "elements": approved_elements,
     }
     write_json(review_data["elements_path"], payload)
+    write_json(review_data["elements_refined_path"], payload)
 
     return RedirectResponse(url=f"/keywords/{workflow_name}", status_code=HTTP_303_SEE_OTHER)
 
@@ -2179,10 +2360,19 @@ async def save_page_review(request: Request, workflow_name: str):
 def keyword_review(request: Request, workflow_name: str):
     workflow = load_workflow_or_404(workflow_name)
     keyword_data = get_keyword_review_data(workflow)
+    review_summary = None
+    page_name = keyword_data["page_name"]
+    review_path = get_resource_review_path(page_name)
+    if review_path.exists():
+        try:
+            review_summary = read_json(review_path)
+        except Exception:
+            review_summary = None
     return render_template(request, "keyword_review.html", {
         "workflow_name": workflow_name,
         "page_name": keyword_data["page_name"],
         "keywords": keyword_data["keywords"],
+        "review_summary": review_summary,
     })
 
 @app.post("/keywords/{workflow_name}/save")

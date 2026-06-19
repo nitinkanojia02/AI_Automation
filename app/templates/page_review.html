@@ -87,6 +87,13 @@
                     <p><strong>Page URL:</strong> {{ page_url }}</p>
                     <p><strong>Total Extracted Elements:</strong> {{ raw_elements_count }}</p>
 
+                    {% if review_summary %}
+                    <div class="alert alert-light border small">
+                        <div><strong>AI Review Quality:</strong> {{ review_summary.overall_quality or 'n/a' }}</div>
+                        <div><strong>Summary:</strong> {{ review_summary.summary or 'No summary available.' }}</div>
+                    </div>
+                    {% endif %}
+
                     <hr>
                     <div class="small text-muted mb-3">
                         Run extraction if needed, review the extracted elements, and save the approved locator model. Add missing elements if Playwright did not capture them.

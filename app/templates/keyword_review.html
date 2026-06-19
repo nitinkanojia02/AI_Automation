@@ -81,6 +81,13 @@
         <span class="badge text-bg-secondary">Stage 2: Page Keywords Review</span>
     </div>
 
+    {% if review_summary %}
+    <div class="alert alert-light border small mb-3">
+        <div><strong>AI Review Quality:</strong> {{ review_summary.overall_quality or 'n/a' }}</div>
+        <div><strong>Summary:</strong> {{ review_summary.summary or 'No summary available.' }}</div>
+    </div>
+    {% endif %}
+
     {% if keywords and keywords|length > 0 %}
     <form method="post" action="/keywords/{{ workflow_name }}/save" id="keyword-review-form">
         <input type="hidden" name="keyword_count" id="keyword_count" value="{{ keywords|length }}">
