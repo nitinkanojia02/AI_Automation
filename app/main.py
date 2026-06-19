@@ -728,6 +728,42 @@ def get_effective_resource_path(page_name: str) -> Path:
 def get_resource_review_path(page_name: str) -> Path:
     return POM_DIR / page_name / f"{page_name}.resource.review.json"
 
+
+def get_manual_tests_variable_enrichment_prompt(
+    workflow: dict,
+    approved_elements: list[dict],
+    approved_keywords: list[dict],
+    approved_manual_tests: list[dict],
+    current_resource_content: str,
+) -> str:
+    payload = {
+        "workflow": clean_workflow_for_prompting(workflow),
+        "approved_elements": approved_elements,
+        "approved_keywords": approved_keywords,
+        "approved_manual_tests": approved_manual_tests,
+        "current_page_resource": current_resource_content,
+    }
+    return (
+        "You are AI Layer R2: a Robot Framework page-resource data-abstraction specialist for an AI-first automation framework.\n"
+        "Your task is to refine the provided page resource so reusable literal data from approved manual tests is abstracted into the page resource Variables section and not left to be hardcoded in generated test suites.\n\n"
+        "Framework intent:\n"
+        "- The page resource is the canonical place for reusable page-level variables and page-specific reusable keywords.\n"
+        "- Generated .robot suites must stay thin and should reference semantic variables from the page resource instead of embedding reusable URLs, paths, usernames, passwords, expected validation texts, or other stable reusable literals directly.\n"
+        "- Use AI judgment from the workflow, approved manual tests, approved elements, approved keywords, and current page resource. Do not rely on hardcoded page assumptions.\n\n"
+        "Mandatory rules:\n"
+        "- Return only valid Robot Framework resource code.\n"
+        "- Do not return markdown fences or explanations.\n"
+        "- Preserve useful existing page resource content.\n"
+        "- Add or refine reusable semantic variables only when clearly grounded in approved manual tests, workflow context, or existing approved page understanding.\n"
+        "- Prefer semantic reusable variables for stable business data such as valid credentials, invalid credentials, page URLs, expected validation text, expected navigation targets, and other reusable test data.\n"
+        "- Do not create unnecessary alias variables for Robot built-ins such as ${EMPTY} or ${SPACE}.\n"
+        "- Do not invent unsupported data.\n"
+        "- Keep the Variables section concise, semantic, and reusable.\n"
+        "- Ensure resulting page keywords remain valid and maintainable.\n"
+        "- The output must support downstream robot test generation where tests reference resource variables instead of direct literal values whenever reusable abstraction is possible.\n\n"
+        f"Input JSON:\n{json.dumps(payload, indent=2)}"
+    )
+
 def load_approved_elements_for_workflow(workflow: dict) -> list[dict]:
     pages = workflow.get("pages", [])
     page_name = pages[0].get("name") if pages else "page"
@@ -1195,6 +1231,61 @@ def review_and_refine_resource_artifact(workflow: dict, page_name: str, elements
 
     write_text_file(get_resource_path(page_name), refined_resource)
     return refined_resource, review_result
+
+
+def enrich_resource_with_manual_test_variables(workflow: dict, approved_keywords: list[dict]) -> str:
+    pages = workflow.get("pages", [])
+    page_name = pages[0].get("name") if pages else "page"
+    resource_path = get_resource_path(page_name)
+    if not resource_path.exists():
+        return ""
+
+    workflow_name = clean_text(str(workflow.get("workflowName", ""))) or page_name
+    manual_path = MANUAL_DIR / f"{slugify(workflow_name)}.json"
+    if not manual_path.exists():
+        return read_text(resource_path)
+
+    approved_manual_tests = extract_manual_test_cases(read_json(manual_path))
+    if not approved_manual_tests:
+        return read_text(resource_path)
+
+    approved_elements = load_approved_elements_for_workflow(workflow)
+    current_resource = read_text(resource_path)
+
+    try:
+        config = validate_robot_config(load_robot_ai_json(CONFIG_PATH))
+        ai_cfg = config.get("ai", {})
+        endpoint = ai_cfg.get("endpoint", "").strip()
+        token = get_robot_ai_token(ai_cfg)
+        if not ai_cfg.get("enabled", True) or not endpoint or not token or not current_resource.strip():
+            return current_resource
+
+        enrichment_prompt = get_manual_tests_variable_enrichment_prompt(
+            workflow,
+            approved_elements,
+            approved_keywords,
+            approved_manual_tests,
+            current_resource,
+        )
+        enriched_raw = call_ai_with_workflow_session(
+            workflow_name=workflow_name,
+            stage="resource_variable_enrichment",
+            endpoint=endpoint,
+            token=token,
+            prompt=enrichment_prompt,
+            timeout_seconds=ai_cfg.get("timeout_seconds", 120),
+            verify_ssl=ai_cfg.get("verify_ssl", False),
+        )
+        candidate = normalize_resource_content(strip_markdown_fences(enriched_raw).strip())
+        if candidate and "*** Keywords ***" in candidate and "*** Variables ***" in candidate and "*** Settings ***" in candidate:
+            is_valid, _ = validate_resource_content(candidate, [])
+            if is_valid:
+                write_text_file(resource_path, candidate)
+                return candidate
+    except Exception:
+        pass
+
+    return current_resource
 
 
 def save_keywords_for_workflow(workflow: dict, keywords: list[dict]):
@@ -2506,6 +2597,7 @@ async def save_manual_tests(request: Request, workflow_name: str):
             if workflow:
                 approved_keywords = get_keyword_review_data(workflow).get("keywords", [])
                 generate_resource_for_workflow(workflow, approved_keywords)
+                enrich_resource_with_manual_test_variables(workflow, approved_keywords)
         except Exception:
             pass
 
