@@ -2296,6 +2296,26 @@ def generate_automation_for_workflow(workflow_name: str) -> str:
         robot_content = validated_robot_content
 
     is_valid, validation_message = validate_robot_content(robot_content, resource_files)
+    if not is_valid and validation_message:
+        repair_prompt = (
+            build_validation_review_prompt(manual_data, resource_context, robot_content)
+            + "\n\nAdditional strict validation errors that must be fixed exactly:\n"
+            + validation_message
+            + "\n\nReturn only corrected Robot Framework code. Preserve approved scenario intent."
+        )
+        repaired_robot_content = call_ai_with_workflow_session(
+            workflow_name=workflow_name,
+            stage="robot_signature_repair",
+            endpoint=endpoint,
+            token=token,
+            prompt=repair_prompt,
+            timeout_seconds=ai_cfg.get("timeout_seconds", 120),
+            verify_ssl=ai_cfg.get("verify_ssl", False),
+        )
+        repaired_robot_content = normalize_robot_content(repaired_robot_content, workflow, workflow_name)
+        if repaired_robot_content:
+            robot_content = repaired_robot_content
+        is_valid, validation_message = validate_robot_content(robot_content, resource_files)
     if not is_valid:
         raise HTTPException(status_code=400, detail=validation_message)
 

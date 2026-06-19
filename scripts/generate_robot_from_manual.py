@@ -221,6 +221,8 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
         "- Do NOT define keywords such as Open Browser To Login Page, Open Browser To Page, Open Page, Wait Until Login Page Loads, or any equivalent wrapper if the resource layer already provides page-open/navigation capability.\n"
         "- Prefer shared/common resource keywords such as Open Browser Session, Close Browser Session, Open Browser To Url, Open Login Page, Go To Url, Wait For Element To Be Ready, Click When Ready, and Input Text When Ready whenever they fit the intent. Raw SeleniumLibrary keywords in the suite should be a last resort, not the default.\n"
         "- If the resource layer provides browser/page setup or teardown keywords, use them as Test Setup, Suite Setup, Test Teardown, or Suite Teardown as appropriate.\n"
+        "- Respect the exact keyword signatures from the imported resource files. Never call a resource keyword without all mandatory arguments defined in its [Arguments] section.\n"
+        "- When a page-specific keyword such as Open Login Page is available and a page URL variable exists in the page resource, prefer a no-argument page keyword design or pass the required page URL variable explicitly if the keyword still requires an argument.\n"
         "- Prefer reusable setup/teardown from shared/common resources for opening and closing browser or preparing generic page state.\n"
         "- If the resource layer appears to provide page-open, page-ready, browser-open, browser-close, or cleanup keywords, use them intelligently in suite/test setup and teardown rather than repeating those actions inside every test. Repeated startup actions such as opening the page, opening the browser, navigating to the feature URL, or waiting for the page to be ready should be promoted into Test Setup or Suite Setup whenever that preserves test independence and intent.\n"
         "- If test data is reused across test cases, reference a variable from the resource file rather than declaring suite variables.\n"
@@ -393,6 +395,7 @@ def build_review_prompt(manual_data: dict, resource_context: List[Dict], generat
         "- Prefer business-readable resource keyword calls over low-level one-off steps.\n"
         "- Replace any unsupported or invented keyword with a valid existing Robot built-in, SeleniumLibrary keyword, or imported resource keyword.\n"
         "- Self-audit the final suite for keyword existence: every called keyword must come from Robot built-ins, SeleniumLibrary, or the imported resource files.\n"
+        "- Self-audit every imported resource keyword call against its required [Arguments] signature and fix any missing mandatory arguments before returning the suite.\n"
         "- Review the final suite for repetitive startup sequences. If multiple tests begin with the same open-page, navigate, or page-ready steps, refactor those repeated actions into Test Setup or Suite Setup unless a specific test intentionally requires a different startup flow.\n"
         "- Do not compensate for duplicated common/page keywords by creating additional duplicates; prefer the shared/common resource keyword when the intent is generic.\n\n"
         "Repair focus areas:\n"
@@ -562,6 +565,38 @@ def validate_resource_content(content: str, common_resource_context: List[Dict] 
     return is_valid, "\n\n".join(part for part in message_parts if part)
 
 
+def build_keyword_signature_map(allowed_resources: list[str]) -> dict[str, dict]:
+    signature_map: dict[str, dict] = {}
+
+    def add_keywords_from_resource(resource_path: Path):
+        if not resource_path.exists():
+            return
+        try:
+            parsed = parse_resource_file(resource_path)
+        except Exception:
+            return
+        for kw in parsed.get("keywords", []):
+            name = clean_text(str(kw.get("name", "")))
+            if not name:
+                continue
+            args = [clean_text(str(arg)) for arg in kw.get("args", []) if clean_text(str(arg))]
+            required_args = [arg for arg in args if "=" not in arg]
+            signature_map[name.lower()] = {
+                "name": name,
+                "args": args,
+                "required_args": required_args,
+                "source": str(resource_path.relative_to(BASE_DIR)).replace("\\", "/"),
+            }
+
+    for resource in allowed_resources:
+        resource_path = BASE_DIR / "pom_pages" / resource
+        add_keywords_from_resource(resource_path)
+
+    common_resource_path = BASE_DIR / "resources" / "common_keywords.resource"
+    add_keywords_from_resource(common_resource_path)
+    return signature_map
+
+
 def validate_robot_content(content: str, allowed_resources: list[str]) -> tuple[bool, str]:
     errors: list[str] = []
     warnings: list[str] = []
@@ -640,29 +675,8 @@ def validate_robot_content(content: str, allowed_resources: list[str]) -> tuple[
     if re.search(r"(?im)^\*\*\* Test Cases \*\*\*\n\s*\n", content):
         errors.append("Generated suite contains a blank line after *** Test Cases ***; the first test case must start immediately on the next line")
 
-    resource_keyword_names = set()
-    for resource in allowed_resources:
-        resource_path = BASE_DIR / "pom_pages" / resource
-        if resource_path.exists():
-            try:
-                parsed = parse_resource_file(resource_path)
-                for kw in parsed.get("keywords", []):
-                    name = clean_text(str(kw.get("name", ""))).lower()
-                    if name:
-                        resource_keyword_names.add(name)
-            except Exception:
-                continue
-
-    common_resource_path = BASE_DIR / "resources" / "common_keywords.resource"
-    if common_resource_path.exists():
-        try:
-            parsed_common = parse_resource_file(common_resource_path)
-            for kw in parsed_common.get("keywords", []):
-                name = clean_text(str(kw.get("name", ""))).lower()
-                if name:
-                    resource_keyword_names.add(name)
-        except Exception:
-            pass
+    keyword_signature_map = build_keyword_signature_map(allowed_resources)
+    resource_keyword_names = set(keyword_signature_map.keys())
 
     in_test_cases = False
     current_test_steps: list[str] = []
@@ -688,12 +702,21 @@ def validate_robot_content(content: str, allowed_resources: list[str]) -> tuple[
             current_test_steps = []
             continue
         if raw_line.startswith((" ", "\t")) and stripped and not stripped.startswith("["):
-            keyword_name = re.split(r"\s{2,}|\t+", stripped)[0].strip()
+            parts = re.split(r"\s{2,}|\t+", stripped)
+            keyword_name = parts[0].strip() if parts else ""
+            arguments = [part.strip() for part in parts[1:] if part.strip()]
             if keyword_name:
                 current_test_steps.append(keyword_name)
                 normalized_keyword = clean_text(keyword_name).lower()
                 if normalized_keyword not in builtin_keywords and normalized_keyword not in selenium_keywords and normalized_keyword not in resource_keyword_names:
                     warnings.append(f"Generated suite may use an unknown or unsupported keyword: {keyword_name}")
+                signature = keyword_signature_map.get(normalized_keyword)
+                if signature:
+                    required_count = len(signature.get("required_args", []))
+                    if len(arguments) < required_count:
+                        errors.append(
+                            f"Keyword '{signature.get('name', keyword_name)}' requires {required_count} argument(s) but was called with {len(arguments)} in the suite. Source: {signature.get('source', 'unknown')}"
+                        )
     if current_test_steps:
         all_test_steps.append(current_test_steps)
 
