@@ -350,6 +350,39 @@ def is_duplicate_item(item: dict, seen_identity: set, seen_locator: set) -> bool
     seen_locator.add(locator)
     return False
 
+def score_item(item: dict) -> int:
+    tag = (item.get("tag") or "").lower()
+    attrs = item.get("attributes", {}) or {}
+    text = clean_text(item.get("text", ""))
+    label = clean_text(item.get("label", ""))
+    placeholder = clean_text(attrs.get("placeholder", ""))
+    aria = clean_text(attrs.get("aria-label", ""))
+    name = clean_text(attrs.get("name", ""))
+    el_id = clean_text(attrs.get("id", ""))
+    role = infer_role(item)
+
+    score = 0
+    if tag in {"input", "ion-input", "textarea", "select", "ion-select", "button", "ion-button", "app-main-button", "ion-fab-button"}:
+        score += 40
+    if role in {"textbox", "password", "dropdown", "button", "link"}:
+        score += 25
+    if placeholder:
+        score += 30
+    if label:
+        score += 20
+    if aria:
+        score += 15
+    if text:
+        score += 15
+    if name:
+        score += 10
+    if el_id:
+        score += 10
+    if clean_text(attrs.get("data-shadow-host-tag", "")):
+        score -= 20
+    return score
+
+
 def collect_elements(page) -> List[dict]:
     js = """
     () => {
@@ -589,8 +622,10 @@ def collect_elements(page) -> List[dict]:
     raw = page.evaluate(js)
     logger.info("Raw extracted nodes count: %s", len(raw))
 
+    raw_sorted = sorted(raw, key=score_item, reverse=True)
+
     out, seen_id, seen_loc = [], set(), set()
-    for item in raw:
+    for item in raw_sorted:
         if should_skip_item(item):
             continue
         if is_duplicate_item(item, seen_id, seen_loc):
