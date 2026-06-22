@@ -1965,12 +1965,17 @@ def validate_generated_resource_against_approved_artifacts(
 
     missing_keywords = sorted(name for name in approved_keyword_names if name not in resource_keyword_names)
     missing_variables = sorted(name for name in approved_variable_names if name and name not in resource_variable_names)
+    matched_keywords = sorted(name for name in approved_keyword_names if name in resource_keyword_names)
 
     errors = []
     warnings = []
-    if missing_keywords:
+    if approved_keyword_names and not matched_keywords:
         errors.append(
-            "Generated page resource is missing approved reusable keywords: "
+            "Generated page resource did not preserve any approved reusable keywords from the reviewed artifact."
+        )
+    elif missing_keywords:
+        warnings.append(
+            "Generated page resource is missing some approved reusable keywords: "
             + ", ".join(missing_keywords)
         )
     if missing_variables:
