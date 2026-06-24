@@ -27,11 +27,6 @@ Go To Url
     [Arguments]    ${url}
     Go To    ${url}
 
-Open Login Page
-    [Documentation]    Opens the login page in a new browser session using the provided URL.
-    [Arguments]    ${url}    ${browser}=${BROWSER}
-    Open Browser To Url    ${url}    ${browser}
-
 Wait For Element To Be Ready
     [Documentation]    Waits until the provided locator is visible and enabled.
     [Arguments]    ${locator}    ${timeout}=${DEFAULT_TIMEOUT}
@@ -49,3 +44,8 @@ Input Text When Ready
     [Arguments]    ${locator}    ${text}    ${timeout}=${DEFAULT_TIMEOUT}
     Wait For Element To Be Ready    ${locator}    ${timeout}
     Input Text    ${locator}    ${text}
+
+Open Home Page And Click User Button
+    [Arguments]    ${url}    ${browser}=${BROWSER}
+    Open Browser To Url    ${url}
+    Click When Ready   //ion-icon[@aria-label='person']

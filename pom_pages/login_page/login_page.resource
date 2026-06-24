@@ -7,9 +7,11 @@ ${HOME_PAGE_URL}    http://172.21.166.115/washtabui/home
 ${VALID_USERNAME}    hacklarr
 ${VALID_PASSWORD}    Icstunnel1
 ${INVALID_USERNAME}    invaliduser
-${INVALID_PASSWORD}    IncorrectPass123
+${INVALID_PASSWORD}    invalidpassword
+${INCORRECT_PASSWORD}    WrongPassword1
+${UPPERCASE_USERNAME}    HACKLARR
 ${USERNAME_TEXTBOX}    xpath=//input[@name='ion-input-0']
-${PASSWORD_TEXTBOX}    id=password
+${PASSWORD_TEXTBOX}    xpath=//input[@name='ion-input-1']
 ${SIGN_IN_BUTTON}    xpath=//ion-button[normalize-space()='SIGN IN']
 ${HOME_NAVIGATION_BUTTON}    xpath=//ion-fab-button[.//ion-icon[@aria-label='home']]
 ${BACK_NAVIGATION_BUTTON}    xpath=//ion-fab-button[.//ion-icon[@aria-label='arrow back']]
@@ -30,11 +32,9 @@ Enter Username
     Input Text When Ready    ${USERNAME_TEXTBOX}    ${username}
 
 Enter Password
-    [Documentation]    Enter password into password textbox.
+    [Documentation]    Enter password into password textbox using password input.
     [Arguments]    ${password}
-    Wait For Element To Be Ready    ${PASSWORD_TEXTBOX}
-    Clear Element Text    ${PASSWORD_TEXTBOX}
-    Input Password    ${PASSWORD_TEXTBOX}    ${password}
+    Input Text When Ready     ${PASSWORD_TEXTBOX}    ${password}
 
 Click Sign In Button
     [Documentation]    Click the SIGN IN button.
