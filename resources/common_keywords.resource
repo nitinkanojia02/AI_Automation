@@ -43,9 +43,10 @@ Input Text When Ready
     [Documentation]    Waits for an element and then inputs the provided text.
     [Arguments]    ${locator}    ${text}    ${timeout}=${DEFAULT_TIMEOUT}
     Wait For Element To Be Ready    ${locator}    ${timeout}
+    Click Element    ${locator}
     Input Text    ${locator}    ${text}
 
 Open Home Page And Click User Button
     [Arguments]    ${url}    ${browser}=${BROWSER}
-    Open Browser To Url    ${url}
-    Click When Ready   //ion-icon[@aria-label='person']
+    Go To Url    ${url}
+    Click When Ready   //ion-button[@class='header-icon-btn ng-star-inserted ion-color ion-color-light md button button-solid in-toolbar ion-activatable ion-focusable hydrated']

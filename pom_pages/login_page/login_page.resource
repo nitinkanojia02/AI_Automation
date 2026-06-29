@@ -4,17 +4,17 @@ Resource    ../../resources/common_keywords.resource
 *** Variables ***
 ${LOGIN_PAGE_URL}    http://172.21.166.115/washtabui/login?data=undefined
 ${HOME_PAGE_URL}    http://172.21.166.115/washtabui/home
-${VALID_USERNAME}    hacklarr
+${VALID_USERNAME}    haklarr
 ${VALID_PASSWORD}    Icstunnel1
 ${INVALID_USERNAME}    invaliduser
 ${INVALID_PASSWORD}    invalidpassword
 ${INCORRECT_PASSWORD}    WrongPassword1
-${UPPERCASE_USERNAME}    HACKLARR
+${UPPERCASE_USERNAME}    HAKLARR
 ${USERNAME_TEXTBOX}    xpath=//input[@name='ion-input-0']
 ${PASSWORD_TEXTBOX}    xpath=//input[@name='ion-input-1']
 ${SIGN_IN_BUTTON}    xpath=//ion-button[normalize-space()='SIGN IN']
-${HOME_NAVIGATION_BUTTON}    xpath=//ion-fab-button[.//ion-icon[@aria-label='home']]
-${BACK_NAVIGATION_BUTTON}    xpath=//ion-fab-button[.//ion-icon[@aria-label='arrow back']]
+${HOME_NAVIGATION_BUTTON}    //ion-button[@class='header-icon-btn ion-color ion-color-light md button button-solid in-toolbar ion-activatable ion-focusable hydrated'][3]
+${BACK_NAVIGATION_BUTTON}    //ion-button[@class='header-icon-btn ion-color ion-color-light md button button-solid in-toolbar ion-activatable ion-focusable hydrated'][1]
 
 *** Keywords ***
 Verify Login Page Loaded

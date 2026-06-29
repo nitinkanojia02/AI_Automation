@@ -1,8 +1,9 @@
 *** Settings ***
 Resource    ../resources/common_keywords.resource
 Resource    ../pom_pages/login_page/login_page.resource
+Suite Setup   Open Browser Session
 Test Setup    Open Home Page And Click User Button    ${HOME_PAGE_URL}
-Test Teardown    Close Browser Session
+Suite Teardown     Close Browser Session
 
 *** Test Cases ***
 AUT-WT-LOGIN01: Verify successful login using valid username and valid password through SIGN IN button
