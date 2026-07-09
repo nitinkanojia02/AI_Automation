@@ -140,6 +140,34 @@
                     </div>
                 </div>
 
+                {% if raw_preview_elements and raw_preview_elements|length > 0 %}
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h6 class="mb-2">Raw Extracted Elements Preview</h6>
+                        <div class="table-responsive">
+                            <table class="review-table">
+                                <thead>
+                                    <tr>
+                                        <th>Detected Name</th>
+                                        <th class="type-col">Type</th>
+                                        <th>Locator</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for element in raw_preview_elements %}
+                                    <tr>
+                                        <td>{{ element.approvedName }}</td>
+                                        <td>{{ element.type }}</td>
+                                        <td><textarea class="form-control auto-fit" readonly>{{ element.locator }}</textarea></td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
                 <div class="table-responsive">
                     <table class="review-table" id="review-table">
                         <thead>

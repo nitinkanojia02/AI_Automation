@@ -375,11 +375,15 @@ def score_item(item: dict) -> int:
     aria = clean_text(attrs.get("aria-label", ""))
     name = clean_text(attrs.get("name", ""))
     el_id = clean_text(attrs.get("id", ""))
+    css_class = clean_text(attrs.get("class", ""))
+    href = clean_text(attrs.get("href", ""))
     role = infer_role(item)
 
     score = 0
-    if tag in {"input", "ion-input", "textarea", "select", "ion-select", "button", "ion-button", "app-main-button", "ion-fab-button"}:
+    if tag in {"input", "ion-input", "textarea", "select", "ion-select", "button", "ion-button", "app-main-button", "ion-fab-button", "a"}:
         score += 40
+    if tag in {"h1", "h2", "h3", "h4", "h5", "h6", "label", "p", "svg"}:
+        score += 20
     if role in {"textbox", "password", "dropdown", "button", "link"}:
         score += 25
     if placeholder:
@@ -393,6 +397,12 @@ def score_item(item: dict) -> int:
     if name:
         score += 10
     if el_id:
+        score += 10
+    if href:
+        score += 15
+    if "forgot" in text.lower() or "forgot" in css_class.lower():
+        score += 30
+    if any(token in css_class.lower() for token in {"title", "header", "link", "icon"}):
         score += 10
     if clean_text(attrs.get("data-shadow-host-tag", "")):
         score -= 20
@@ -477,6 +487,15 @@ def collect_elements(page) -> List[dict]:
         const aria = (el.getAttribute('aria-label') || '').trim();
         if (aria) return aria;
 
+        const href = (el.getAttribute('href') || '').trim();
+        if (!href) {
+          const cls = (el.getAttribute('class') || '').toLowerCase();
+          if (cls.includes('forgot') || cls.includes('link') || cls.includes('title') || cls.includes('header')) {
+            const clsText = getTextFromRoot(el);
+            if (clsText) return clsText;
+          }
+        }
+
         const hostText = getTextFromRoot(el);
         if (hostText) return hostText;
         if (el.shadowRoot) {
@@ -536,6 +555,7 @@ def collect_elements(page) -> List[dict]:
         'h6',
         'div',
         'span',
+        'svg',
         'ion-button',
         'ion-input',
         'ion-select',
