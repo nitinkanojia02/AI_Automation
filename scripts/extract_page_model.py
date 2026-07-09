@@ -273,7 +273,6 @@ def should_skip_item(item: dict) -> bool:
     attrs = item.get("attributes", {}) or {}
     shadow = item.get("shadow", {}) or {}
     text = clean_text(item.get("text", ""))
-    lowered_text = text.lower()
     label = clean_text(item.get("label", ""))
     placeholder = clean_text(attrs.get("placeholder", "") or shadow.get("placeholder", ""))
     aria = clean_text(attrs.get("aria-label", "") or shadow.get("aria_label", "") or shadow.get("icon_aria_label", ""))
@@ -284,6 +283,7 @@ def should_skip_item(item: dict) -> bool:
     role_attr = clean_text(attrs.get("role", ""))
     visibility = item.get("visibility", {}) or {}
     shadow_disabled = bool(shadow.get("disabled", False))
+    is_enabled = not bool(attrs.get("disabled")) and not shadow_disabled
 
     interactive_tags = {
         "input", "textarea", "select", "button", "a",
@@ -296,7 +296,7 @@ def should_skip_item(item: dict) -> bool:
     if not visibility.get("is_visible", False):
         return True
 
-    if shadow_disabled and tag in {"ion-button", "ion-fab-button", "app-main-button", "button"}:
+    if tag in interactive_tags and not is_enabled:
         return True
 
     if tag == "button":
@@ -305,30 +305,24 @@ def should_skip_item(item: dict) -> bool:
             return True
 
     meaningful_content = any([text, label, placeholder, aria, name, el_id, formcontrolname, data_testid])
+    interactive_candidate = (
+        tag in interactive_tags
+        or role_attr in {"button", "link", "textbox", "combobox", "menuitem"}
+        or attrs.get("tappable") is not None
+        or clean_text(attrs.get("onclick", ""))
+        or clean_text(attrs.get("tabindex", ""))
+    )
 
-    interactive_candidate = tag in interactive_tags or role_attr in {"button", "link", "textbox", "combobox"} or attrs.get("tappable") is not None or clean_text(attrs.get("onclick", ""))
-    static_candidate = tag in {"label", "p", "h1", "h2", "h3", "h4", "h5", "h6"}
-    text_container_candidate = tag in {"div", "span"} and len(text) >= 2
-
-    if not (interactive_candidate or static_candidate or text_container_candidate):
+    if not interactive_candidate:
         return True
 
-    if interactive_candidate:
-        if tag in {"input", "textarea", "select", "ion-input", "ion-select"}:
-            if not any([placeholder, aria, name, el_id, formcontrolname, data_testid, label, text]):
-                return True
-        elif tag in {"button", "a", "ion-button", "ion-fab-button", "app-main-button"}:
-            if not any([text, aria, name, el_id, label, data_testid]):
-                return True
-        elif not meaningful_content:
-            return True
-    elif not meaningful_content and not static_candidate:
-        return True
+    if tag in {"input", "textarea", "select", "ion-input", "ion-select"}:
+        return not any([placeholder, aria, name, el_id, formcontrolname, data_testid, label, text])
 
-    if tag == "a" and not text and not aria:
-        return True
+    if tag in {"button", "a", "ion-button", "ion-fab-button", "app-main-button"}:
+        return not any([text, aria, name, el_id, label, data_testid])
 
-    return False
+    return not meaningful_content
 
 def is_duplicate_item(item: dict, seen_identity: set, seen_locator: set) -> bool:
     identity = best_identity(item)

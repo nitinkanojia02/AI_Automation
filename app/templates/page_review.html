@@ -86,6 +86,7 @@
                     <p><strong>Page Name:</strong> {{ page_name }}</p>
                     <p><strong>Page URL:</strong> {{ page_url }}</p>
                     <p><strong>Total Extracted Elements:</strong> {{ raw_elements_count }}</p>
+                    <p><strong>Displayed In Review:</strong> {{ display_elements_count }}</p>
                     <p><strong>Review Source:</strong> {{ source_artifact|title }}</p>
 
                     {% if review_summary %}
@@ -97,7 +98,7 @@
 
                     <hr>
                     <div class="small text-muted mb-3">
-                        Run extraction if needed, review the extracted elements, and save the approved locator model. Add missing elements if Playwright did not capture them.
+                        Run extraction if needed, review the extracted visible and enabled elements, and save the approved locator model. Add missing elements only if a visible enabled page element was genuinely not captured.
                     </div>
 
                     <div class="d-grid gap-2">

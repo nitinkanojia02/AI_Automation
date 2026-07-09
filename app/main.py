@@ -796,17 +796,20 @@ def get_page_review_data(workflow: dict):
                 refined_elements_data = reviewed_data.get("elements", [])
                 if reviewed_data.get("reviewSummary"):
                     review_summary = reviewed_data.get("reviewSummary")
-                source_artifact = "approved" if approved_elements_data and approved_elements_data == refined_elements_data else "refined"
+                if approved_elements_data and approved_elements_data == refined_elements_data:
+                    source_artifact = "approved"
+                elif refined_elements_data:
+                    source_artifact = "refined"
         except Exception:
             refined_elements_data = []
 
     elif approved_elements_data:
         source_artifact = "approved"
 
-    source_elements = refined_elements_data or approved_elements_data or extracted_elements_data
-    normalized_elements = []
+    display_source_elements = refined_elements_data or approved_elements_data or extracted_elements_data
+    display_elements = []
     seen_name_locator: set[tuple[str, str]] = set()
-    for idx, item in enumerate(source_elements):
+    for idx, item in enumerate(display_source_elements):
         if not isinstance(item, dict):
             continue
         normalized_item = None
@@ -816,6 +819,7 @@ def get_page_review_data(workflow: dict):
                 "type": item.get("type", "element"),
                 "locator": clean_text(item.get("locator", "")),
                 "approved": item.get("approved", True),
+                "description": clean_text(str(item.get("description", ""))),
             }
         elif "name" in item and "locator" in item and "type" in item:
             normalized_item = {
@@ -823,9 +827,11 @@ def get_page_review_data(workflow: dict):
                 "type": clean_text(str(item.get("type", "element"))).lower() or "element",
                 "locator": clean_text(str(item.get("locator", ""))),
                 "approved": True,
+                "description": clean_text(str(item.get("description", ""))),
             }
         else:
             normalized_item = normalize_extracted_element(item, idx)
+            normalized_item["description"] = clean_text(str(item.get("description", "")))
 
         approved_name = clean_text(str(normalized_item.get("approvedName", "")))
         locator = clean_text(str(normalized_item.get("locator", "")))
@@ -834,7 +840,15 @@ def get_page_review_data(workflow: dict):
         if not approved_name or not locator or key in seen_name_locator:
             continue
         seen_name_locator.add(key)
-        normalized_elements.append(normalized_item)
+        display_elements.append(normalized_item)
+
+    raw_preview_elements = []
+    for idx, item in enumerate(extracted_elements_data):
+        if not isinstance(item, dict):
+            continue
+        preview_item = normalize_extracted_element(item, idx)
+        preview_item["description"] = clean_text(str(item.get("description", "")))
+        raw_preview_elements.append(preview_item)
 
     screenshot_web_path = None
     if screenshot_path.exists():
@@ -843,9 +857,12 @@ def get_page_review_data(workflow: dict):
     return {
         "page_name": page_name,
         "page_url": page_url,
-        "elements": normalized_elements,
+        "elements": display_elements,
+        "display_elements_count": len(display_elements),
+        "raw_preview_elements": raw_preview_elements,
+        "raw_preview_count": len(raw_preview_elements),
         "screenshot_web_path": screenshot_web_path,
-        "raw_elements_count": len(extracted_elements_data or normalized_elements),
+        "raw_elements_count": len(extracted_elements_data or display_elements),
         "elements_path": elements_path,
         "reviewed_elements_path": reviewed_elements_path,
         "raw_elements": extracted_elements_data,
