@@ -15,24 +15,24 @@
   "pages": [
     {
       "name": "login_page",
-      "url": " http://172.21.166.115/washtabui/login?data=undefined"
+      "url": "https://opensource-demo.orangehrmlive.com/web/index.php/auth/login"
     }
   ],
   "observedPreconditions": [
-    "Valid username is haklarr",
-    "Valid Password is Icstunnel1",
-    "Page should contain username, password, signin button, back button and home button",
-    "login page url is http://172.21.166.115/washtabui/login?data=undefined"
+    "Go to login Page: https://opensource-demo.orangehrmlive.com/web/index.php/auth/login",
+    "Username, password textbox, login button and forgot password link should be visible on this page",
+    "Valid Credentials are:",
+    "Username : Admin",
+    "Password : admin123"
   ],
   "observedSteps": [],
   "observedExpectedResult": "",
   "fields": [],
   "observedValidations": [
     "User should be able to login with valid credentials",
-    "Sign in failed with invalid or incorrect credentials",
-    "Successfull login should take to home page whose url is http://172.21.166.115/washtabui/home",
-    "click back button should take to home page",
-    "click home button should take to home page"
+    "Sign in failed with invalid or incorrect credentials with invalid credential message",
+    "Successful login take the user to dashboard page: https://opensource-demo.orangehrmlive.com/web/index.php/dashboard/index",
+    "Click on the manda user and then logout button should navigate back to login page"
   ],
   "testData": {},
   "scenarioIntent": [
