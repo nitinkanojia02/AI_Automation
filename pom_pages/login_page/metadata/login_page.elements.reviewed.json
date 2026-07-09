@@ -1,0 +1,236 @@
+{
+  "pageName": "login_page",
+  "pageUrl": "https://opensource-demo.orangehrmlive.com/web/index.php/auth/login",
+  "rawElements": [
+    {
+      "tag": "input",
+      "text": "Username",
+      "attributes": {
+        "data-v-1f99f73c": "",
+        "class": "oxd-input oxd-input--focus",
+        "name": "username",
+        "placeholder": "Username",
+        "autofocus": "",
+        "style": ""
+      },
+      "label": "",
+      "visibility": {
+        "is_visible": true,
+        "is_in_viewport": true,
+        "is_covered": false,
+        "has_visible_descendant": false,
+        "width": 485,
+        "height": 45,
+        "x": 525.5,
+        "y": 553.265625
+      },
+      "shadow": null
+    },
+    {
+      "tag": "input",
+      "text": "Password",
+      "attributes": {
+        "data-v-1f99f73c": "",
+        "class": "oxd-input oxd-input--active",
+        "type": "password",
+        "name": "password",
+        "placeholder": "Password",
+        "style": ""
+      },
+      "label": "",
+      "visibility": {
+        "is_visible": true,
+        "is_in_viewport": true,
+        "is_covered": false,
+        "has_visible_descendant": false,
+        "width": 485,
+        "height": 45,
+        "x": 525.5,
+        "y": 638.65625
+      },
+      "shadow": null
+    },
+    {
+      "tag": "button",
+      "text": "Login",
+      "attributes": {
+        "data-v-10d463b7": "",
+        "data-v-0af708be": "",
+        "type": "submit",
+        "class": "oxd-button oxd-button--medium oxd-button--main orangehrm-login-button"
+      },
+      "label": "",
+      "visibility": {
+        "is_visible": true,
+        "is_in_viewport": true,
+        "is_covered": false,
+        "has_visible_descendant": false,
+        "width": 485,
+        "height": 46,
+        "x": 525.5,
+        "y": 715.65625
+      },
+      "shadow": null
+    },
+    {
+      "tag": "a",
+      "text": "OrangeHRM, Inc",
+      "attributes": {
+        "href": "http://www.orangehrm.com",
+        "target": "_blank"
+      },
+      "label": "",
+      "visibility": {
+        "is_visible": true,
+        "is_in_viewport": true,
+        "is_covered": false,
+        "has_visible_descendant": false,
+        "width": 94.84375,
+        "height": 18,
+        "x": 709.125,
+        "y": 822.65625
+      },
+      "shadow": null
+    }
+  ],
+  "elements": [
+    {
+      "approvedName": "username_textbox",
+      "type": "textbox",
+      "locator": "xpath=//input[@name='username']",
+      "approved": true
+    },
+    {
+      "approvedName": "password_textbox",
+      "type": "password",
+      "locator": "xpath=//input[@name='password']",
+      "approved": true
+    },
+    {
+      "approvedName": "login_button",
+      "type": "button",
+      "locator": "xpath=//button[@type='submit']",
+      "approved": true
+    },
+    {
+      "approvedName": "login_page_title",
+      "type": "label",
+      "locator": "xpath=//h5[normalize-space()='Login']",
+      "approved": true
+    },
+    {
+      "approvedName": "demo_credentials_message",
+      "type": "label",
+      "locator": "xpath=//p[contains(normalize-space(.),'Username : Admin')]",
+      "approved": true
+    }
+  ],
+  "reviewSummary": {
+    "overall_quality": "medium",
+    "summary": "The draft includes the primary login controls but lacks important workflow navigation and validation elements while also containing weak naming and locator quality issues.",
+    "issues": [
+      {
+        "severity": "medium",
+        "type": "classification",
+        "element_name": "password",
+        "message": "Password field is incorrectly classified as textbox instead of password.",
+        "suggested_fix": "Change the element type to password for better semantic accuracy and downstream automation generation."
+      },
+      {
+        "severity": "medium",
+        "type": "naming",
+        "element_name": "password",
+        "message": "Element name is too generic and does not clearly describe the authentication field purpose.",
+        "suggested_fix": "Rename the element to password_textbox or password_input."
+      },
+      {
+        "severity": "medium",
+        "type": "locator",
+        "element_name": "username_textbox",
+        "message": "Locator relies on placeholder text which may change and is less stable than a unique attribute.",
+        "suggested_fix": "Use xpath=//input[@name='username'] for a more stable locator."
+      },
+      {
+        "severity": "medium",
+        "type": "locator",
+        "element_name": "password",
+        "message": "Locator relies on placeholder text which may change and is less stable than a unique attribute.",
+        "suggested_fix": "Use xpath=//input[@name='password'] for a more stable locator."
+      },
+      {
+        "severity": "medium",
+        "type": "locator",
+        "element_name": "login_button",
+        "message": "Locator depends only on visible text and may become brittle if button wording changes.",
+        "suggested_fix": "Use xpath=//button[@type='submit'] for a more stable locator."
+      },
+      {
+        "severity": "low",
+        "type": "noise",
+        "element_name": "orangehrm_inc_link",
+        "message": "Branding footer link is low-value for authentication workflow automation.",
+        "suggested_fix": "Remove the branding link from the approved page model."
+      },
+      {
+        "severity": "high",
+        "type": "missing_element",
+        "element_name": "",
+        "message": "Forgot password navigation link expected by workflow preconditions is missing from the approved elements.",
+        "suggested_fix": "Add a forgot_password_link element with a stable semantic locator."
+      },
+      {
+        "severity": "high",
+        "type": "validation_gap",
+        "element_name": "",
+        "message": "Invalid login error message element is missing even though negative authentication validation is part of the workflow.",
+        "suggested_fix": "Add a login_error_message element if observable in the application after failed login attempts."
+      },
+      {
+        "severity": "high",
+        "type": "validation_gap",
+        "element_name": "",
+        "message": "Required-field validation messages for empty username or password scenarios are not represented.",
+        "suggested_fix": "Add required field validation message elements if present in the UI."
+      },
+      {
+        "severity": "medium",
+        "type": "missing_element",
+        "element_name": "",
+        "message": "Page verification element such as the login title heading is missing from the approved element set.",
+        "suggested_fix": "Add a login_page_title label element for reliable page state verification."
+      }
+    ],
+    "approved_elements": [
+      {
+        "name": "username_textbox",
+        "type": "textbox",
+        "locator": "xpath=//input[@name='username']",
+        "description": "Username input field used for authentication."
+      },
+      {
+        "name": "password_textbox",
+        "type": "password",
+        "locator": "xpath=//input[@name='password']",
+        "description": "Password input field used for secure authentication."
+      },
+      {
+        "name": "login_button",
+        "type": "button",
+        "locator": "xpath=//button[@type='submit']",
+        "description": "Primary button used to submit login credentials."
+      },
+      {
+        "name": "login_page_title",
+        "type": "label",
+        "locator": "xpath=//h5[normalize-space()='Login']",
+        "description": "Login page title used for page verification."
+      },
+      {
+        "name": "demo_credentials_message",
+        "type": "label",
+        "locator": "xpath=//p[contains(normalize-space(.),'Username : Admin')]",
+        "description": "Displayed demo credentials reference information."
+      }
+    ]
+  }
+}

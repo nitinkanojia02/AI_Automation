@@ -1,0 +1,52 @@
+{
+  "pageName": "login_page",
+  "pageUrl": "https://opensource-demo.orangehrmlive.com/web/index.php/auth/login",
+  "variables": [
+    {
+      "variableName": "PAGE_URL",
+      "value": "https://opensource-demo.orangehrmlive.com/web/index.php/auth/login",
+      "source": "approved_page",
+      "kind": "page_url"
+    },
+    {
+      "variableName": "USERNAME_TEXTBOX",
+      "value": "xpath=//input[@name='username']",
+      "source": "approved_element",
+      "kind": "locator",
+      "approvedName": "username_textbox",
+      "type": "textbox"
+    },
+    {
+      "variableName": "PASSWORD_TEXTBOX",
+      "value": "xpath=//input[@name='password']",
+      "source": "approved_element",
+      "kind": "locator",
+      "approvedName": "password_textbox",
+      "type": "password"
+    },
+    {
+      "variableName": "LOGIN_BUTTON",
+      "value": "xpath=//button[@type='submit']",
+      "source": "approved_element",
+      "kind": "locator",
+      "approvedName": "login_button",
+      "type": "button"
+    },
+    {
+      "variableName": "LOGIN_PAGE_TITLE",
+      "value": "xpath=//h5[normalize-space()='Login']",
+      "source": "approved_element",
+      "kind": "locator",
+      "approvedName": "login_page_title",
+      "type": "label"
+    },
+    {
+      "variableName": "DEMO_CREDENTIALS_MESSAGE",
+      "value": "xpath=//p[contains(normalize-space(.),'Username : Admin')]",
+      "source": "approved_element",
+      "kind": "locator",
+      "approvedName": "demo_credentials_message",
+      "type": "label"
+    }
+  ]
+}
