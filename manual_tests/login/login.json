@@ -1,0 +1,368 @@
+{
+  "workflowName": "Login",
+  "resourceFiles": [
+    "login_page/login_page.resource"
+  ],
+  "preconditions": [
+    "Navigate to https://opensource-demo.orangehrmlive.com/web/index.php/auth/login",
+    "Login page is accessible",
+    "Valid credentials are available: Username = Admin and Password = admin123"
+  ],
+  "testCases": [
+    {
+      "id": "TC_LOGIN_001",
+      "title": "Verify login page displays all approved login controls and title",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the login page URL",
+        "Observe the login form without entering any data"
+      ],
+      "expectedResult": "Login page title 'Login' is visible along with username textbox, password textbox, login button, and forgot password link. All controls are visible, aligned correctly, enabled for interaction, and displayed without overlap or rendering issues."
+    },
+    {
+      "id": "TC_LOGIN_002",
+      "title": "Verify successful login using valid username and valid password",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the login page",
+        "Enter username as 'Admin'",
+        "Enter password as 'admin123'",
+        "Click the Login button"
+      ],
+      "expectedResult": "User is authenticated successfully and redirected to URL containing '/dashboard/index'. Dashboard content becomes visible and the login form is no longer displayed."
+    },
+    {
+      "id": "TC_LOGIN_003",
+      "title": "Verify login submission using Enter key from password field with valid credentials",
+      "type": "Edge",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the login page",
+        "Enter username as 'Admin'",
+        "Enter password as 'admin123'",
+        "Press Enter key while cursor is inside password textbox"
+      ],
+      "expectedResult": "Login form submits successfully using keyboard action without clicking the Login button and user is redirected to URL containing '/dashboard/index'."
+    },
+    {
+      "id": "TC_LOGIN_004",
+      "title": "Verify login fails with invalid username and valid password",
+      "type": "Negative",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the login page",
+        "Enter username as 'InvalidAdmin'",
+        "Enter password as 'admin123'",
+        "Click the Login button"
+      ],
+      "expectedResult": "Authentication is rejected, visible 'Invalid credentials' message is displayed, user remains on login page, and dashboard URL is not opened."
+    },
+    {
+      "id": "TC_LOGIN_005",
+      "title": "Verify login fails with valid username and invalid password",
+      "type": "Negative",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the login page",
+        "Enter username as 'Admin'",
+        "Enter password as 'wrongPassword123'",
+        "Click the Login button"
+      ],
+      "expectedResult": "Authentication fails with visible 'Invalid credentials' message, dashboard page is not displayed, and login form remains accessible."
+    },
+    {
+      "id": "TC_LOGIN_006",
+      "title": "Verify login fails with both username and password invalid",
+      "type": "Negative",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the login page",
+        "Enter username as 'WrongUser'",
+        "Enter password as 'WrongPassword'",
+        "Click the Login button"
+      ],
+      "expectedResult": "Application displays 'Invalid credentials' message, authentication is denied, and URL remains on the login page."
+    },
+    {
+      "id": "TC_LOGIN_007",
+      "title": "Verify required validation when username and password fields are empty",
+      "type": "Negative",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the login page",
+        "Leave username and password fields empty",
+        "Click the Login button"
+      ],
+      "expectedResult": "Required validation messages are displayed for username and password fields, login request is not submitted, and user remains on login page."
+    },
+    {
+      "id": "TC_LOGIN_008",
+      "title": "Verify required validation when password field is empty",
+      "type": "Negative",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the login page",
+        "Enter username as 'Admin'",
+        "Leave password field empty",
+        "Click the Login button"
+      ],
+      "expectedResult": "Password field displays required validation message, authentication request is blocked, and dashboard page is not opened."
+    },
+    {
+      "id": "TC_LOGIN_009",
+      "title": "Verify required validation when username field is empty",
+      "type": "Negative",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the login page",
+        "Leave username field empty",
+        "Enter password as 'admin123'",
+        "Click the Login button"
+      ],
+      "expectedResult": "Username field displays required validation message, login submission is prevented, and user remains on the login page."
+    },
+    {
+      "id": "TC_LOGIN_010",
+      "title": "Verify password characters are masked while typing",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the login page",
+        "Type password text into the password textbox"
+      ],
+      "expectedResult": "Typed password characters are masked with hidden symbols and actual password text is not visible on screen."
+    },
+    {
+      "id": "TC_LOGIN_011",
+      "title": "Verify forgot password link is visible and navigates to password recovery page",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the login page",
+        "Click the Forgot your password link"
+      ],
+      "expectedResult": "User is redirected away from the login page to a password recovery or reset page and recovery-related page content becomes visible."
+    },
+    {
+      "id": "TC_LOGIN_012",
+      "title": "Verify logout redirects authenticated user back to login page",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the login page",
+        "Login using valid credentials",
+        "Click the user profile menu in the application header",
+        "Click Logout option"
+      ],
+      "expectedResult": "Authenticated session is terminated, application redirects to the login page URL, and username textbox, password textbox, and Login button are visible again."
+    },
+    {
+      "id": "TC_LOGIN_013",
+      "title": "Verify login behavior with leading and trailing spaces in username field",
+      "type": "Edge",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the login page",
+        "Enter username as '  Admin  '",
+        "Enter password as 'admin123'",
+        "Click the Login button"
+      ],
+      "expectedResult": "Application handles leading and trailing spaces consistently by either authenticating successfully after trimming spaces or displaying visible authentication failure feedback. No broken layout, script error, or blank page appears."
+    },
+    {
+      "id": "TC_LOGIN_014",
+      "title": "Verify password field treats leading and trailing spaces as part of password value",
+      "type": "Edge",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the login page",
+        "Enter username as 'Admin'",
+        "Enter password as '  admin123  '",
+        "Click the Login button"
+      ],
+      "expectedResult": "Authentication fails with visible 'Invalid credentials' message because password value containing surrounding spaces does not match the stored password."
+    },
+    {
+      "id": "TC_LOGIN_015",
+      "title": "Verify whitespace-only input is rejected in username and password fields",
+      "type": "Negative",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the login page",
+        "Enter only spaces into username textbox",
+        "Enter only spaces into password textbox",
+        "Click the Login button"
+      ],
+      "expectedResult": "User is not authenticated, validation or invalid credential feedback is displayed, and application remains on login page without dashboard navigation."
+    },
+    {
+      "id": "TC_LOGIN_016",
+      "title": "Verify login is case-sensitive for username field",
+      "type": "Negative",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the login page",
+        "Enter username as 'admin'",
+        "Enter password as 'admin123'",
+        "Click the Login button"
+      ],
+      "expectedResult": "Authentication fails with visible 'Invalid credentials' message because username case does not match the valid credential."
+    },
+    {
+      "id": "TC_LOGIN_017",
+      "title": "Verify login is case-sensitive for password field",
+      "type": "Negative",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the login page",
+        "Enter username as 'Admin'",
+        "Enter password as 'Admin123'",
+        "Click the Login button"
+      ],
+      "expectedResult": "Authentication fails with visible 'Invalid credentials' message because password case does not match the valid password."
+    },
+    {
+      "id": "TC_LOGIN_018",
+      "title": "Verify special characters in username field are rejected",
+      "type": "Negative",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the login page",
+        "Enter username as '@@@###$$$'",
+        "Enter password as 'admin123'",
+        "Click the Login button"
+      ],
+      "expectedResult": "Login attempt is rejected with visible authentication failure feedback and dashboard page is not opened."
+    },
+    {
+      "id": "TC_LOGIN_019",
+      "title": "Verify very long username and password inputs do not break login form",
+      "type": "Edge",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the login page",
+        "Paste a very long string into username textbox",
+        "Paste a very long string into password textbox",
+        "Click the Login button"
+      ],
+      "expectedResult": "Application remains responsive, input fields continue functioning without layout corruption, and authentication failure is handled gracefully without browser crash or application error."
+    },
+    {
+      "id": "TC_LOGIN_020",
+      "title": "Verify repeated clicking of Login button with valid credentials does not create duplicate navigation behavior",
+      "type": "Edge",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the login page",
+        "Enter username as 'Admin'",
+        "Enter password as 'admin123'",
+        "Rapidly click the Login button multiple times"
+      ],
+      "expectedResult": "Only one authenticated session is created, user is redirected once to dashboard page, and no duplicate page loads, duplicate sessions, or UI instability occurs."
+    },
+    {
+      "id": "TC_LOGIN_021",
+      "title": "Verify repeated clicking of Login button with invalid credentials consistently shows rejection",
+      "type": "Edge",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the login page",
+        "Enter username as 'InvalidAdmin'",
+        "Enter password as 'wrongPassword'",
+        "Rapidly click the Login button multiple times"
+      ],
+      "expectedResult": "Application consistently rejects authentication, displays invalid credential feedback without duplicated error overlays, and remains stable on login page."
+    },
+    {
+      "id": "TC_LOGIN_022",
+      "title": "Verify copy-paste of valid credentials into login fields authenticates successfully",
+      "type": "Edge",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the login page",
+        "Copy and paste 'Admin' into username textbox",
+        "Copy and paste 'admin123' into password textbox",
+        "Click the Login button"
+      ],
+      "expectedResult": "Pasted credentials are accepted correctly, authentication succeeds, and user is redirected to URL containing '/dashboard/index'."
+    },
+    {
+      "id": "TC_LOGIN_023",
+      "title": "Verify login page remains accessible after failed login attempt",
+      "type": "Negative",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the login page",
+        "Attempt login using invalid credentials",
+        "Observe the login page after error message appears"
+      ],
+      "expectedResult": "Username textbox, password textbox, Login button, and Forgot your password link remain visible, enabled, and usable after failed authentication attempt."
+    },
+    {
+      "id": "TC_LOGIN_024",
+      "title": "Verify browser refresh on login page preserves application usability",
+      "type": "Edge",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the login page",
+        "Refresh the browser page",
+        "Observe the login form",
+        "Login using valid credentials"
+      ],
+      "expectedResult": "Login page reloads successfully with all approved controls visible, and valid authentication after refresh redirects user to dashboard page successfully."
+    },
+    {
+      "id": "TC_LOGIN_025",
+      "title": "Verify login button is visible and clickable on initial page load",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the login page",
+        "Observe the Login button",
+        "Click the Login button without entering credentials"
+      ],
+      "expectedResult": "Login button is visible and clickable, and clicking it without credentials displays required validation messages for mandatory fields."
+    },
+    {
+      "id": "TC_LOGIN_026",
+      "title": "Verify user cannot access dashboard URL directly after logout",
+      "type": "Negative",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the login page",
+        "Login using valid credentials",
+        "Logout from the application",
+        "Manually enter the dashboard URL in browser address bar"
+      ],
+      "expectedResult": "Application redirects user back to the login page or blocks access to dashboard content because the authenticated session has ended."
+    }
+  ]
+}

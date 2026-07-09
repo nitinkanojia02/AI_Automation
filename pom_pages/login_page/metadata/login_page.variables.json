@@ -33,19 +33,19 @@
       "type": "button"
     },
     {
+      "variableName": "FORGOT_PASSWORD_LINK",
+      "value": "xpath=//p[normalize-space()='Forgot your password?']",
+      "source": "approved_element",
+      "kind": "locator",
+      "approvedName": "forgot_password_link",
+      "type": "link"
+    },
+    {
       "variableName": "LOGIN_PAGE_TITLE",
       "value": "xpath=//h5[normalize-space()='Login']",
       "source": "approved_element",
       "kind": "locator",
       "approvedName": "login_page_title",
-      "type": "label"
-    },
-    {
-      "variableName": "DEMO_CREDENTIALS_MESSAGE",
-      "value": "xpath=//p[contains(normalize-space(.),'Username : Admin')]",
-      "source": "approved_element",
-      "kind": "locator",
-      "approvedName": "demo_credentials_message",
       "type": "label"
     }
   ]
