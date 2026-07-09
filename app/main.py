@@ -1,9 +1,14 @@
 from pathlib import Path
+from urllib.parse import urlparse
+import base64
 import json
+import os
 import re
 import shutil
 import subprocess
 import sys
+
+import requests
 from openpyxl import Workbook
 
 from fastapi import FastAPI, Form, HTTPException, Request
@@ -490,6 +495,22 @@ def collect_workflow_expected_outcomes(workflow: dict) -> list[str]:
 def clean_workflow_for_prompting(workflow: dict) -> dict:
     cleaned = json.loads(json.dumps(workflow))
 
+    source = cleaned.get("source")
+    if isinstance(source, dict):
+        cleaned["source"] = {
+            key: clean_text(str(value)) if not isinstance(value, (dict, list)) else value
+            for key, value in source.items()
+            if value not in (None, "")
+        }
+
+    external_context = cleaned.get("externalContext")
+    if isinstance(external_context, dict):
+        cleaned["externalContext"] = {
+            key: value
+            for key, value in external_context.items()
+            if value not in (None, "", [], {})
+        }
+
     fields = cleaned.get("fields", [])
     if isinstance(fields, list):
         cleaned_fields = []
@@ -541,6 +562,8 @@ def build_workflow_payload(
     valid_username: str,
     valid_password: str,
     application_code: str = "",
+    source: dict | None = None,
+    external_context: dict | None = None,
 ):
     preconditions = [line.strip() for line in preconditions_text.splitlines() if line.strip()]
     steps = [line.strip() for line in steps_text.splitlines() if line.strip()]
@@ -562,17 +585,19 @@ def build_workflow_payload(
         if any([clean_text(field["name"]), clean_text(field["label"]), clean_text(field["type"]), field["required"]]):
             fields.append(field)
 
-    return {
+    workflow_source = source or {
+        "createdBy": "UI user",
+        "notes": "Workflow entered from MVP UI."
+    }
+
+    payload = {
         "inputType": "exploratory_workflow",
         "workflowId": f"{slugify(workflow_name).upper()}_001",
         "workflowName": workflow_name,
         "module": module,
         "feature": feature,
         "applicationCode": application_code.strip(),
-        "source": {
-            "createdBy": "UI user",
-            "notes": "Workflow entered from MVP UI."
-        },
+        "source": workflow_source,
         "resourceFiles": [resource_file],
         "pages": [
             {
@@ -591,6 +616,11 @@ def build_workflow_payload(
         },
         "scenarioIntent": scenario_intent,
     }
+
+    if isinstance(external_context, dict) and external_context:
+        payload["externalContext"] = external_context
+
+    return payload
 
 # -------------------------------------------------------------------
 # Extraction handling
@@ -2896,19 +2926,31 @@ def delete_workflow(workflow_name: str):
 def workflow_form(request: Request):
     existing = WORKFLOW_DIR / "login.json"
     data = read_json(existing) if existing.exists() else {}
+    azure_defaults = {
+        "base_url": os.getenv("AZURE_DEVOPS_BASE_URL", "https://devtfs.dover-global.net"),
+        "collection": os.getenv("AZURE_DEVOPS_COLLECTION", "QA"),
+        "project": os.getenv("AZURE_DEVOPS_PROJECT", "AutomationProject"),
+    }
     return render_template(request, "workflow_form.html", {
         "data": data,
         "edit_mode": False,
-        "workflow_slug": ""
+        "workflow_slug": "",
+        "azure_defaults": azure_defaults,
     })
 
 @app.get("/workflow/edit/{workflow_name}")
 def edit_workflow(request: Request, workflow_name: str):
     workflow = load_workflow_or_404(workflow_name)
+    azure_defaults = {
+        "base_url": os.getenv("AZURE_DEVOPS_BASE_URL", "https://devtfs.dover-global.net"),
+        "collection": os.getenv("AZURE_DEVOPS_COLLECTION", "QA"),
+        "project": os.getenv("AZURE_DEVOPS_PROJECT", "AutomationProject"),
+    }
     return render_template(request, "workflow_form.html", {
         "data": workflow,
         "edit_mode": True,
-        "workflow_slug": workflow_name
+        "workflow_slug": workflow_name,
+        "azure_defaults": azure_defaults,
     })
 
 def normalize_resource_file_path(page_name: str, resource_file: str) -> str:
@@ -2931,10 +2973,170 @@ def normalize_url_value(value: str) -> str:
     return value.strip()
 
 
+def strip_html_tags(value: str) -> str:
+    text = re.sub(r"<br\s*/?>", "\n", value or "", flags=re.IGNORECASE)
+    text = re.sub(r"</p\s*>", "\n", text, flags=re.IGNORECASE)
+    text = re.sub(r"<[^>]+>", " ", text)
+    text = text.replace("&nbsp;", " ")
+    return re.sub(r"\n+", "\n", re.sub(r"[ \t]+", " ", text)).strip()
+
+
+def split_story_lines(value: str) -> list[str]:
+    cleaned = strip_html_tags(value)
+    lines = []
+    for part in re.split(r"\n+|(?:^|\s)[\-*•]\s+|\d+[\.)]\s+", cleaned):
+        item = clean_text(part)
+        if item:
+            lines.append(item)
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for item in lines:
+        lowered = item.lower()
+        if lowered in seen:
+            continue
+        seen.add(lowered)
+        deduped.append(item)
+    return deduped
+
+
+def build_azure_devops_auth_headers(pat: str) -> dict:
+    token = base64.b64encode(f":{pat}".encode("utf-8")).decode("ascii")
+    return {
+        "Authorization": f"Basic {token}",
+        "Content-Type": "application/json",
+    }
+
+
+def parse_azure_project_url(project_url: str) -> dict:
+    raw = clean_text(project_url)
+    if not raw:
+        return {"base_url": "", "collection": "", "project": ""}
+    parsed = urlparse(raw)
+    path_parts = [part for part in parsed.path.split("/") if part]
+    collection = path_parts[0] if len(path_parts) >= 1 else ""
+    project = path_parts[1] if len(path_parts) >= 2 else ""
+    base_url = f"{parsed.scheme}://{parsed.netloc}" if parsed.scheme and parsed.netloc else raw.rstrip("/")
+    return {
+        "base_url": base_url.rstrip("/"),
+        "collection": collection,
+        "project": project,
+    }
+
+
+def resolve_azure_connection_details(base_url: str, collection: str, project: str) -> tuple[str, str, str]:
+    parsed = parse_azure_project_url(base_url)
+    resolved_base = clean_text(base_url) or parsed.get("base_url", "")
+    resolved_collection = clean_text(collection) or parsed.get("collection", "")
+    resolved_project = clean_text(project) or parsed.get("project", "")
+    return resolved_base.rstrip("/"), resolved_collection.strip("/"), resolved_project.strip("/")
+
+
+def fetch_azure_work_item(base_url: str, collection: str, project: str, work_item_id: str, pat: str) -> dict:
+    base, collection, project = resolve_azure_connection_details(base_url, collection, project)
+    work_item_id = clean_text(str(work_item_id))
+    if not all([base, collection, project, work_item_id, pat]):
+        raise HTTPException(status_code=400, detail="Azure DevOps connection details are incomplete. Provide a project URL or base URL plus collection/project, and ensure AZURE_DEVOPS_PAT is configured.")
+
+    url = f"{base}/{collection}/{project}/_apis/wit/workitems/{work_item_id}?$expand=relations&api-version=7.0"
+    try:
+        response = requests.get(url, headers=build_azure_devops_auth_headers(pat), timeout=45, verify=False)
+        response.raise_for_status()
+        return response.json()
+    except requests.HTTPError as exc:
+        detail = exc.response.text.strip() if exc.response is not None and exc.response.text else str(exc)
+        raise HTTPException(status_code=400, detail=f"Azure DevOps work item fetch failed: {detail}") from exc
+    except requests.RequestException as exc:
+        raise HTTPException(status_code=400, detail=f"Azure DevOps work item fetch failed: {exc}") from exc
+
+
+def normalize_azure_work_item(base_url: str, collection: str, project: str, work_item: dict) -> dict:
+    base_url, collection, project = resolve_azure_connection_details(base_url, collection, project)
+    fields = work_item.get("fields", {}) if isinstance(work_item, dict) else {}
+    title = clean_text(str(fields.get("System.Title", ""))) or f"Work Item {work_item.get('id', '')}"
+    description = strip_html_tags(str(fields.get("System.Description", "")))
+    acceptance_raw = str(fields.get("Microsoft.VSTS.Common.AcceptanceCriteria", ""))
+    acceptance_criteria = split_story_lines(acceptance_raw)
+    if not acceptance_criteria and description:
+        acceptance_criteria = split_story_lines(description)
+
+    relations = work_item.get("relations", []) if isinstance(work_item, dict) else []
+    attachments = []
+    for relation in relations:
+        if not isinstance(relation, dict):
+            continue
+        rel = clean_text(str(relation.get("rel", ""))).lower()
+        url = clean_text(str(relation.get("url", "")))
+        if rel == "attachedfile" and url:
+            attachments.append(url)
+
+    return {
+        "source": "azure_devops",
+        "sourceId": str(work_item.get("id", "")),
+        "sourceUrl": f"{base_url.rstrip('/')}/{collection.strip('/')}/{project.strip('/')}/_workitems/edit/{work_item.get('id', '')}",
+        "title": title,
+        "description": description,
+        "acceptanceCriteria": acceptance_criteria,
+        "attachments": attachments,
+        "workItemType": clean_text(str(fields.get("System.WorkItemType", ""))),
+        "state": clean_text(str(fields.get("System.State", ""))),
+        "areaPath": clean_text(str(fields.get("System.AreaPath", ""))),
+        "iterationPath": clean_text(str(fields.get("System.IterationPath", ""))),
+        "assignedTo": clean_text(str(fields.get("System.AssignedTo", ""))),
+        "tags": split_story_lines(str(fields.get("System.Tags", "")).replace(";", "\n")),
+        "rawFields": {
+            "System.Title": title,
+            "System.Description": description,
+            "Microsoft.VSTS.Common.AcceptanceCriteria": strip_html_tags(acceptance_raw),
+        },
+    }
+
+
+def build_workflow_payload_from_azure_story(
+    azure_context: dict,
+    page_name: str,
+    page_url: str,
+    resource_file: str,
+    valid_username: str,
+    valid_password: str,
+) -> dict:
+    workflow_name = clean_text(str(azure_context.get("title", ""))) or "Imported Workflow"
+    description = clean_text(str(azure_context.get("description", "")))
+    acceptance_criteria = azure_context.get("acceptanceCriteria", []) if isinstance(azure_context.get("acceptanceCriteria"), list) else []
+    observed_steps = acceptance_criteria if acceptance_criteria else ([description] if description else [])
+    expected_result = acceptance_criteria[0] if acceptance_criteria else description
+
+    source = {
+        "createdBy": "Azure DevOps import",
+        "notes": f"Imported from Azure DevOps work item {azure_context.get('sourceId', '')}",
+        "provider": "azure_devops",
+        "sourceId": str(azure_context.get("sourceId", "")),
+        "sourceUrl": clean_text(str(azure_context.get("sourceUrl", ""))),
+    }
+
+    return build_workflow_payload(
+        workflow_name=workflow_name,
+        module="Imported",
+        feature=workflow_name,
+        page_name=page_name,
+        page_url=page_url,
+        resource_file=resource_file,
+        preconditions_text="",
+        steps_text="\n".join(observed_steps),
+        expected_result=expected_result,
+        fields_text="",
+        validations_text="\n".join(acceptance_criteria),
+        scenario_intent_text="positive,negative,edge,ui",
+        valid_username=valid_username,
+        valid_password=valid_password,
+        application_code=str(CONFIG.get("application_code", "")),
+        source=source,
+        external_context=azure_context,
+    )
+
 
 @app.post("/workflow/save")
 def save_workflow(
-    workflow_name: str = Form(...),
+    workflow_name: str = Form(""),
     module: str = Form("Authentication"),
     feature: str = Form("Login"),
     page_name: str = Form(...),
@@ -2949,25 +3151,54 @@ def save_workflow(
     valid_username: str = Form(""),
     valid_password: str = Form(""),
     existing_workflow_slug: str = Form(""),
+    input_source: str = Form("manual"),
+    azure_base_url: str = Form(""),
+    azure_collection: str = Form(""),
+    azure_project: str = Form(""),
+    azure_work_item_id: str = Form(""),
 ):
     page_url = normalize_url_value(page_url)
-    payload = clean_workflow_for_prompting(build_workflow_payload(
-        workflow_name,
-        module,
-        feature,
-        page_name,
-        page_url,
-        resource_file,
-        preconditions_text,
-        steps_text,
-        expected_result,
-        fields_text,
-        validations_text,
-        scenario_intent_text,
-        valid_username,
-        valid_password,
-        str(CONFIG.get("application_code", "")),
-    ))
+    input_source = clean_text(input_source).lower() or "manual"
+
+    if input_source == "azure_devops":
+        pat = os.getenv("AZURE_DEVOPS_PAT", "").strip()
+        if not pat:
+            raise HTTPException(status_code=400, detail="AZURE_DEVOPS_PAT environment variable is not configured.")
+        work_item = fetch_azure_work_item(
+            azure_base_url,
+            azure_collection,
+            azure_project,
+            azure_work_item_id,
+            pat,
+        )
+        azure_context = normalize_azure_work_item(azure_base_url, azure_collection, azure_project, work_item)
+        payload = clean_workflow_for_prompting(build_workflow_payload_from_azure_story(
+            azure_context=azure_context,
+            page_name=page_name,
+            page_url=page_url,
+            resource_file=resource_file,
+            valid_username=valid_username,
+            valid_password=valid_password,
+        ))
+        workflow_name = clean_text(str(payload.get("workflowName", workflow_name)))
+    else:
+        payload = clean_workflow_for_prompting(build_workflow_payload(
+            workflow_name,
+            module,
+            feature,
+            page_name,
+            page_url,
+            resource_file,
+            preconditions_text,
+            steps_text,
+            expected_result,
+            fields_text,
+            validations_text,
+            scenario_intent_text,
+            valid_username,
+            valid_password,
+            str(CONFIG.get("application_code", "")),
+        ))
 
     target_slug = existing_workflow_slug.strip() or slugify(workflow_name)
     target = WORKFLOW_DIR / f"{target_slug}.json"

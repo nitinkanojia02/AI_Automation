@@ -7,15 +7,44 @@
             <input type="hidden" name="existing_workflow_slug" value="{{ workflow_slug if workflow_slug else '' }}">
 
             <div class="row g-3">
-                <div class="col-md-4">
-                    <label class="form-label">Workflow Name</label>
-                    <input class="form-control" name="workflow_name" value="{{ data.workflowName if data else 'Login' }}" required>
+                <div class="col-md-12">
+                    <label class="form-label">Workflow Input Source</label>
+                    <select class="form-select" name="input_source" id="input_source" onchange="toggleWorkflowSource()">
+                        <option value="manual" {% if data and data.source and data.source.provider != 'azure_devops' %}selected{% endif %}>Manual workflow input</option>
+                        <option value="azure_devops" {% if data and data.source and data.source.provider == 'azure_devops' %}selected{% endif %}>Azure DevOps user story</option>
+                    </select>
                 </div>
-                <div class="col-md-4">
+
+                <div id="azure_input_block" class="row g-3" style="display:none; margin:0; padding:0;">
+                    <div class="col-md-12">
+                        <label class="form-label">Azure Project URL or Base URL</label>
+                        <input class="form-control" name="azure_base_url" value="{{ azure_defaults.base_url if azure_defaults else '' }}" placeholder="Example: https://devtfs.dover-global.net/QA/AutomationProject/">
+                        <div class="form-text">You can paste the full Azure/TFS project URL. The framework will infer collection and project automatically when possible.</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Collection</label>
+                        <input class="form-control" name="azure_collection" value="{{ azure_defaults.collection if azure_defaults else '' }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Project</label>
+                        <input class="form-control" name="azure_project" value="{{ azure_defaults.project if azure_defaults else '' }}">
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label">Azure Work Item ID</label>
+                        <input class="form-control" name="azure_work_item_id" value="{{ data.externalContext.sourceId if data and data.externalContext else '' }}" placeholder="Example: 6433">
+                        <div class="form-text">PAT is read from the <code>AZURE_DEVOPS_PAT</code> environment variable on the server.</div>
+                    </div>
+                </div>
+
+                <div class="col-md-4 manual-input-field">
+                    <label class="form-label">Workflow Name</label>
+                    <input class="form-control" name="workflow_name" value="{{ data.workflowName if data else 'Login' }}">
+                </div>
+                <div class="col-md-4 manual-input-field">
                     <label class="form-label">Module</label>
                     <input class="form-control" name="module" value="{{ data.module if data else 'Authentication' }}">
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-4 manual-input-field">
                     <label class="form-label">Feature</label>
                     <input class="form-control" name="feature" value="{{ data.feature if data else 'Login' }}">
                 </div>
@@ -32,28 +61,28 @@
                     <input class="form-control" name="resource_file" value="{{ data.resourceFiles[0] if data and data.resourceFiles else 'login_page/login_page.resource' }}" required>
                     <div class="form-text">Page resource stays directly under the page folder, for example <code>login_page/login_page.resource</code>. Other page artifacts are stored under <code>pom_pages/&lt;page&gt;/metadata</code>.</div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-6 manual-input-field">
                     <label class="form-label">Observed Preconditions (one per line)</label>
                     <textarea class="form-control" rows="6" name="preconditions_text">{% if data and data.observedPreconditions %}{{ data.observedPreconditions | join('\n') }}{% endif %}</textarea>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-6 manual-input-field">
                     <label class="form-label">Observed Steps (one per line)</label>
                     <textarea class="form-control" rows="6" name="steps_text">{% if data and data.observedSteps %}{{ data.observedSteps | join('\n') }}{% endif %}</textarea>
                 </div>
-                <div class="col-md-12">
+                <div class="col-md-12 manual-input-field">
                     <label class="form-label">Observed Expected Result</label>
                     <textarea class="form-control" rows="3" name="expected_result">{{ data.observedExpectedResult if data else '' }}</textarea>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-6 manual-input-field">
                     <label class="form-label">Fields (format: name|label|type|required)</label>
                     <textarea class="form-control" rows="8" name="fields_text">{% if data and data.fields %}{% for field in data.fields %}{{ field.name }}|{{ field.label }}|{{ field.type }}|{{ field.required }}
 {% endfor %}{% endif %}</textarea>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-6 manual-input-field">
                     <label class="form-label">Observed Validations (one per line)</label>
                     <textarea class="form-control" rows="8" name="validations_text">{% if data and data.observedValidations %}{{ data.observedValidations | join('\n') }}{% endif %}</textarea>
                 </div>
-                <div class="col-md-12">
+                <div class="col-md-12 manual-input-field">
                     <label class="form-label">Scenario Intent (comma separated)</label>
                     <input class="form-control" name="scenario_intent_text" value="{% if data and data.scenarioIntent %}{{ data.scenarioIntent | join(',') }}{% else %}positive,negative,edge,ui{% endif %}">
                 </div>
@@ -77,4 +106,19 @@
         </form>
     </div>
 </div>
+<script>
+function toggleWorkflowSource() {
+    const source = document.getElementById('input_source');
+    const azureBlock = document.getElementById('azure_input_block');
+    const manualFields = document.querySelectorAll('.manual-input-field');
+    const useAzure = source && source.value === 'azure_devops';
+    if (azureBlock) {
+        azureBlock.style.display = useAzure ? 'flex' : 'none';
+    }
+    manualFields.forEach((field) => {
+        field.style.display = useAzure ? 'none' : '';
+    });
+}
+window.addEventListener('DOMContentLoaded', toggleWorkflowSource);
+</script>
 {% endblock %}
