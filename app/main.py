@@ -3039,7 +3039,7 @@ def fetch_azure_work_item(base_url: str, collection: str, project: str, work_ite
     if not all([base, collection, project, work_item_id, pat]):
         raise HTTPException(status_code=400, detail="Azure DevOps connection details are incomplete. Provide a project URL or base URL plus collection/project, and ensure AZURE_DEVOPS_PAT is configured.")
 
-    url = f"{base}/{collection}/{project}/_apis/wit/workitems/{work_item_id}?$expand=relations&api-version=7.0"
+    url = f"{base}/{collection}/{project}/_apis/wit/workitems/{work_item_id}?$expand=relations&api-version=5.1"
     try:
         response = requests.get(url, headers=build_azure_devops_auth_headers(pat), timeout=45, verify=False)
         response.raise_for_status()
