@@ -1849,6 +1849,9 @@ def build_resource_generation_prompt(
         "- Valid business data should come from workflow.testData if present.\n"
         "- Use AI judgment to keep the Variables section minimal, semantic, and maintainable rather than exhaustively materializing every test-data variation.\n"
         "- Create explicit page-resource variables only for true reusable business data or semantically distinct data sets, such as ${VALID_USERNAME}, ${VALID_PASSWORD}, ${INVALID_USERNAME}, ${INVALID_PASSWORD}, locked-user credentials, role-specific credentials, or other clearly distinct business cases justified by approved manual tests.\n"
+        "- Do not create duplicate credential variables that represent the same invalid class with different names. If one invalid username and one invalid password are sufficient, reuse them. Avoid pairs such as ${INVALID_USERNAME_AND_PASSWORD_USERNAME} or ${INVALID_USERNAME_AND_PASSWORD_PASSWORD} when ${INVALID_USERNAME} and ${INVALID_PASSWORD} already cover the intent.\n"
+        "- Do not create text-value variables for messages or labels when a locator variable and a verification keyword already provide the needed assertion context, unless the expected literal text is reused across multiple independent assertions and materially improves maintainability. Avoid redundant variables like ${INVALID_CREDENTIALS_MESSAGE_TEXT}, ${REQUIRED_FIELD_MESSAGE_TEXT}, or ${FORGOT_PASSWORD_TEXT} when their locator variables already exist and the text is stable in the locator/keyword.\n"
+        "- Do not create weak container locator variables such as ${APP_ELEMENT}, ${ROOT_ELEMENT}, or other generic shell locators unless they are the only grounded way to verify a required post-login state. Prefer page-specific evidence and approved locators instead.\n"
         "- Do NOT create unnecessary wrapper or alias variables for Robot built-ins or simple compositions. For blank input use ${EMPTY} directly in test/keyword usage, and for whitespace use ${SPACE} directly or inline composition such as ${SPACE}${SPACE}${VALID_USERNAME}${SPACE}.\n"
         "- Do NOT define explicit variables such as ${BLANK_USERNAME}, ${BLANK_PASSWORD}, ${SPACE_USERNAME}, ${SPACE_PASSWORD}, ${USERNAME_WITH_SPACES}, ${PASSWORD_WITH_SPACES}, or similar derived aliases when the same intent can be expressed directly with built-ins and existing semantic variables.\n"
         "- Avoid duplicate semantic variables. If one ${INVALID_USERNAME} and one ${INVALID_PASSWORD} are sufficient for negative authentication scenarios, reuse them across those scenarios instead of inventing variants such as _ALT, _SECONDARY, _NEGATIVE, or other duplicates unless the approved manual tests clearly require truly different invalid data classes.\n"
@@ -1983,6 +1986,9 @@ def build_resource_review_prompt(
         "- Prefer atomic page-object keywords and validations. Remove or simplify scenario-wrapper keywords such as Login With Credentials, Login With Valid Credentials, Submit Login, Perform Login Flow, or other business-flow orchestration if they are not clearly necessary as page-level abstractions.\n"
         "- Keep page-specific test-data variables only when they are clearly useful, reusable, and semantically accurate.\n"
         "- Remove unused, duplicate, overly noisy, or weak one-off variables when they are not justified by approved manual tests. Merge similar variables where appropriate.\n"
+        "- Remove duplicate invalid credential aliases when a simpler semantic pair already exists. For example, prefer ${INVALID_USERNAME} and ${INVALID_PASSWORD} over additional names that encode the same invalid intent.\n"
+        "- Remove redundant text literal variables when a locator variable and page validation keyword already express the same message or label. Avoid keeping ${*_TEXT} aliases for UI labels/messages unless the literal is genuinely reused across multiple unrelated assertions.\n"
+        "- Remove weak generic shell/container locator variables such as ${APP_ELEMENT} unless they are strongly justified by approved page evidence and there is no page-specific locator alternative.\n"
         "- Eliminate unnecessary alias variables for Robot built-ins and simple compositions. Replace variables such as ${BLANK_*} that only equal ${EMPTY}, ${SPACE_*} that only equal whitespace, ${*_WITH_SPACES}, and similar wrapper aliases with direct built-in usage or inline composition whenever possible.\n"
         "- Collapse duplicate negative data into a single semantic variable when the intent is the same. For example, keep one ${INVALID_USERNAME} and one ${INVALID_PASSWORD} unless the approved manual tests clearly require distinct invalid classes. Remove suffix variants such as _ALT or other duplicates when they do not add meaning.\n"
         "- Prefer inline composition over dedicated derived variables. If a value can be expressed by combining ${SPACE}, ${EMPTY}, and existing semantic variables such as ${VALID_USERNAME} or ${VALID_PASSWORD}, do that instead of keeping a separate page variable.\n"
@@ -2149,6 +2155,11 @@ def validate_generated_resource_against_approved_artifacts(
         "go to",
         "open browser",
     ]
+    forbidden_builtin_assertion_keywords = [
+        "location should not contain",
+        "location should be",
+        "wait until location contains",
+    ]
     common_usage_patterns = [
         "click when ready",
         "input text when ready",
@@ -2165,6 +2176,16 @@ def validate_generated_resource_against_approved_artifacts(
             errors.append(
                 "Generated page resource does not reuse retrieved common/shared keywords even though common resource context is available; prefer common wrappers over raw SeleniumLibrary calls."
             )
+
+    forbidden_builtin_hits = [
+        keyword_name for keyword_name in forbidden_builtin_assertion_keywords
+        if re.search(rf"(?im)^\s*{re.escape(keyword_name)}\b", resource_content)
+    ]
+    if forbidden_builtin_hits:
+        warnings.append(
+            "Generated page resource uses raw Selenium/Browser assertion keywords instead of approved/common abstractions: "
+            + ", ".join(sorted(set(forbidden_builtin_hits)))
+        )
 
     is_valid = len(errors) == 0
     message_parts = []
@@ -3153,15 +3174,7 @@ async def save_keyword_review(request: Request, workflow_name: str):
     save_keywords_for_workflow(workflow, normalized_keywords)
     generate_resource_for_workflow(workflow, normalized_keywords)
 
-    return render_template(request, "keyword_review.html", {
-        "workflow_name": workflow_name,
-        "page_name": get_keyword_review_data(workflow)["page_name"],
-        "keywords": normalized_keywords,
-        "review_summary": get_keyword_review_data(workflow).get("review_summary"),
-        "source_artifact": get_keyword_review_data(workflow).get("source_artifact", "raw"),
-        "success_message": "Keywords approved and page resource regenerated.",
-        "grounding_warnings": keyword_warnings,
-    })
+    return RedirectResponse(url=f"/automation/{workflow_name}", status_code=HTTP_303_SEE_OTHER)
 
 @app.get("/manual-tests/{workflow_name}")
 def manual_tests_page(request: Request, workflow_name: str):
