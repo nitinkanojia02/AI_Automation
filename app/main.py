@@ -1638,10 +1638,11 @@ def enrich_resource_with_manual_test_variables(workflow: dict, approved_keywords
         )
         candidate = normalize_resource_content(strip_markdown_fences(enriched_raw).strip())
         if candidate and "*** Keywords ***" in candidate and "*** Variables ***" in candidate and "*** Settings ***" in candidate:
-            is_valid, _ = validate_resource_content(candidate, [])
-            if is_valid:
-                write_text_file(resource_path, candidate)
-                return candidate
+            validation_ok, validation_message = validate_resource_content(candidate, [])
+            if validation_message:
+                append_session_message(workflow_name, "assistant", "resource_variable_enrichment_validation", validation_message)
+            write_text_file(resource_path, candidate)
+            return candidate
     except Exception:
         pass
 
@@ -2286,10 +2287,10 @@ def generate_resource_for_workflow(workflow: dict, approved_keywords: list[dict]
         resource_content,
         common_resource_context,
     )
-    if not is_valid:
-        raise HTTPException(status_code=400, detail=validation_message)
-    if not artifact_valid:
-        raise HTTPException(status_code=400, detail=artifact_message)
+    if validation_message:
+        append_session_message(page_name, "assistant", "resource_validation", validation_message)
+    if artifact_message:
+        append_session_message(page_name, "assistant", "resource_artifact_validation", artifact_message)
     resource_path.write_text(resource_content, encoding="utf-8")
     enrich_resource_with_manual_test_variables(workflow, approved_keywords)
 
