@@ -8,9 +8,9 @@
       "action": "generic",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Navigate to the OrangeHRM login page.",
-        "    Go To    ${LOGIN_PAGE_URL}",
-        "    Wait Until Element Is Visible    ${LOGIN_PAGE_TITLE}    10s"
+        "[Documentation]    Navigate to OrangeHRM login page and wait for login form.",
+        "    Go To Url    ${LOGIN_PAGE_URL}",
+        "    Wait For Element To Be Ready    ${LOGIN_PAGE_TITLE}"
       ],
       "approved": true
     },
@@ -23,10 +23,8 @@
         "text"
       ],
       "implementation": [
-        "[Documentation]    Enter username into username textbox.",
-        "    Wait Until Element Is Visible    ${USERNAME_TEXTBOX}    10s",
-        "    Clear Element Text    ${USERNAME_TEXTBOX}",
-        "    Input Text    ${USERNAME_TEXTBOX}    ${text}"
+        "[Documentation]    Enter text into username textbox.",
+        "    Input Text When Ready    ${USERNAME_TEXTBOX}    ${text}"
       ],
       "approved": true
     },
@@ -40,8 +38,7 @@
       ],
       "implementation": [
         "[Documentation]    Enter password into password textbox.",
-        "    Wait Until Element Is Visible    ${PASSWORD_TEXTBOX}    10s",
-        "    Clear Element Text    ${PASSWORD_TEXTBOX}",
+        "    Wait For Element To Be Ready    ${PASSWORD_TEXTBOX}",
         "    Input Password    ${PASSWORD_TEXTBOX}    ${password}"
       ],
       "approved": true
@@ -53,81 +50,77 @@
       "action": "click",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Click the Login button.",
-        "    Wait Until Element Is Visible    ${LOGIN_BUTTON}    10s",
-        "    Click Element    ${LOGIN_BUTTON}"
+        "[Documentation]    Click Login button on login page.",
+        "    Click When Ready    ${LOGIN_BUTTON}"
       ],
       "approved": true
     },
     {
       "keywordId": "KW_005",
-      "keywordName": "Click Forgot Password Link",
+      "keywordName": "Click Forgot Your Password",
       "targetElement": "forgot_password_link",
       "action": "click",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Click the Forgot your password link.",
-        "    Wait Until Element Is Visible    ${FORGOT_PASSWORD_LINK}    10s",
-        "    Click Element    ${FORGOT_PASSWORD_LINK}"
+        "[Documentation]    Click Forgot your password link.",
+        "    Click When Ready    ${FORGOT_PASSWORD_LINK}"
       ],
       "approved": true
     },
     {
       "keywordId": "KW_006",
-      "keywordName": "Login With Credentials",
+      "keywordName": "Login With Valid Credentials",
       "targetElement": "",
       "action": "generic",
-      "arguments": [
-        "username",
-        "password"
-      ],
+      "arguments": [],
       "implementation": [
-        "[Documentation]    Perform login using provided username and password.",
-        "    Enter Username    ${username}",
-        "    Enter Password    ${password}",
+        "[Documentation]    Perform login using valid credentials.",
+        "    Enter Username    ${VALID_USERNAME}",
+        "    Enter Password    ${VALID_PASSWORD}",
         "    Click Login Button"
       ],
       "approved": true
     },
     {
       "keywordId": "KW_007",
-      "keywordName": "Login With Valid Credentials",
-      "targetElement": "",
-      "action": "generic",
-      "arguments": [],
-      "implementation": [
-        "[Documentation]    Perform login using valid application credentials.",
-        "    Login With Credentials    ${VALID_USERNAME}    ${VALID_PASSWORD}"
-      ],
-      "approved": true
-    },
-    {
-      "keywordId": "KW_008",
-      "keywordName": "Submit Login Using Enter Key",
-      "targetElement": "password_textbox",
-      "action": "generic",
-      "arguments": [],
-      "implementation": [
-        "[Documentation]    Submit login form using Enter key from password textbox.",
-        "    Wait Until Element Is Visible    ${PASSWORD_TEXTBOX}    10s",
-        "    Press Keys    ${PASSWORD_TEXTBOX}    ENTER"
-      ],
-      "approved": true
-    },
-    {
-      "keywordId": "KW_009",
       "keywordName": "Verify Login Page Is Displayed",
       "targetElement": "login_page_title",
       "action": "verify",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Verify login page controls and title are visible.",
-        "    Wait Until Element Is Visible    ${LOGIN_PAGE_TITLE}    10s",
+        "[Documentation]    Verify login page and all primary login controls are visible.",
+        "    Wait For Element To Be Ready    ${LOGIN_PAGE_TITLE}",
         "    Element Text Should Be    ${LOGIN_PAGE_TITLE}    ${LOGIN_PAGE_TITLE_TEXT}",
         "    Element Should Be Visible    ${USERNAME_TEXTBOX}",
         "    Element Should Be Visible    ${PASSWORD_TEXTBOX}",
         "    Element Should Be Visible    ${LOGIN_BUTTON}",
         "    Element Should Be Visible    ${FORGOT_PASSWORD_LINK}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_008",
+      "keywordName": "Verify Invalid Credentials Message",
+      "targetElement": "invalid_credentials_message",
+      "action": "verify",
+      "arguments": [],
+      "implementation": [
+        "[Documentation]    Verify invalid credentials message is displayed.",
+        "    Wait For Element To Be Ready    ${INVALID_CREDENTIALS_MESSAGE}",
+        "    Element Text Should Be    ${INVALID_CREDENTIALS_MESSAGE}    ${INVALID_CREDENTIALS_MESSAGE_TEXT}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_009",
+      "keywordName": "Verify Required Field Message",
+      "targetElement": "required_field_message",
+      "action": "verify",
+      "arguments": [],
+      "implementation": [
+        "[Documentation]    Verify required field validation message is displayed.",
+        "    Wait For Element To Be Ready    ${REQUIRED_FIELD_MESSAGE}",
+        "    Element Text Should Be    ${REQUIRED_FIELD_MESSAGE}    ${REQUIRED_FIELD_MESSAGE_TEXT}"
       ],
       "approved": true
     },
@@ -138,75 +131,67 @@
       "action": "verify",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Verify successful authentication redirects user to dashboard.",
-        "    Wait Until Location Contains    /dashboard/index    10s",
-        "    Location Should Be    ${DASHBOARD_URL}"
+        "[Documentation]    Verify successful login redirects user to dashboard page.",
+        "    Wait Until Location Contains    ${DASHBOARD_PAGE_URL}    ${DEFAULT_TIMEOUT}",
+        "    Location Should Be    ${DASHBOARD_PAGE_URL}",
+        "    Element Should Be Visible    ${APP_ELEMENT}"
       ],
       "approved": true
     },
     {
       "keywordId": "KW_011",
-      "keywordName": "Verify Invalid Credentials Message",
-      "targetElement": "",
+      "keywordName": "Verify Password Field Is Masked",
+      "targetElement": "password_textbox",
       "action": "verify",
-      "arguments": [],
+      "arguments": [
+        "password"
+      ],
       "implementation": [
-        "[Documentation]    Verify invalid credentials message is displayed.",
-        "    Wait Until Page Contains    ${INVALID_CREDENTIALS_MESSAGE}    10s",
-        "    Page Should Contain    ${INVALID_CREDENTIALS_MESSAGE}"
+        "[Documentation]    Verify password field masks entered characters.",
+        "    Enter Password    ${password}",
+        "    ${field_type}=    Get Element Attribute    ${PASSWORD_TEXTBOX}    type",
+        "    Should Be Equal    ${field_type}    password"
       ],
       "approved": true
     },
     {
       "keywordId": "KW_012",
-      "keywordName": "Verify Required Field Message",
-      "targetElement": "",
+      "keywordName": "Verify Login Page Remains Accessible",
+      "targetElement": "login_button",
       "action": "verify",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Verify required field validation message is displayed.",
-        "    Wait Until Page Contains    ${REQUIRED_FIELD_MESSAGE}    10s",
-        "    Page Should Contain    ${REQUIRED_FIELD_MESSAGE}"
+        "[Documentation]    Verify login form controls remain usable after failed authentication.",
+        "    Element Should Be Visible    ${USERNAME_TEXTBOX}",
+        "    Element Should Be Visible    ${PASSWORD_TEXTBOX}",
+        "    Element Should Be Visible    ${LOGIN_BUTTON}",
+        "    Element Should Be Visible    ${FORGOT_PASSWORD_LINK}",
+        "    Element Should Be Enabled    ${LOGIN_BUTTON}"
       ],
       "approved": true
     },
     {
       "keywordId": "KW_013",
-      "keywordName": "Verify Password Field Is Masked",
+      "keywordName": "Submit Login Form Using Enter Key",
       "targetElement": "password_textbox",
-      "action": "verify",
+      "action": "generic",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Verify password textbox masks entered characters.",
-        "    ${type}=    Get Element Attribute    ${PASSWORD_TEXTBOX}    type",
-        "    Should Be Equal    ${type}    password"
+        "[Documentation]    Submit login form using Enter key from password textbox.",
+        "    Wait For Element To Be Ready    ${PASSWORD_TEXTBOX}",
+        "    Press Keys    ${PASSWORD_TEXTBOX}    ENTER"
       ],
       "approved": true
     },
     {
       "keywordId": "KW_014",
-      "keywordName": "Verify User Remains On Login Page",
-      "targetElement": "login_page_title",
+      "keywordName": "Verify Invalid Credentials Message Is Cleared",
+      "targetElement": "invalid_credentials_message",
       "action": "verify",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Verify application remains on login page after failed authentication.",
-        "    Wait Until Element Is Visible    ${LOGIN_PAGE_TITLE}    10s",
-        "    Location Should Be    ${LOGIN_PAGE_URL}",
-        "    Element Should Be Visible    ${LOGIN_BUTTON}"
-      ],
-      "approved": true
-    },
-    {
-      "keywordId": "KW_015",
-      "keywordName": "Verify Forgot Password Navigation",
-      "targetElement": "forgot_password_link",
-      "action": "verify",
-      "arguments": [],
-      "implementation": [
-        "[Documentation]    Verify forgot password navigation succeeds.",
-        "    Wait Until Page Does Not Contain Element    ${LOGIN_BUTTON}    10s",
-        "    Location Should Not Be    ${LOGIN_PAGE_URL}"
+        "[Documentation]    Verify invalid credentials message is no longer visible.",
+        "    Element Should Not Be Visible    ${INVALID_CREDENTIALS_MESSAGE}"
       ],
       "approved": true
     }

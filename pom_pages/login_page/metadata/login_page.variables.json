@@ -9,6 +9,14 @@
       "kind": "page_url"
     },
     {
+      "variableName": "LOGIN_PAGE_TITLE",
+      "value": "xpath=//h5[normalize-space()='Login']",
+      "source": "approved_element",
+      "kind": "locator",
+      "approvedName": "login_page_title",
+      "type": "label"
+    },
+    {
       "variableName": "USERNAME_TEXTBOX",
       "value": "xpath=//input[@name='username']",
       "source": "approved_element",
@@ -41,12 +49,20 @@
       "type": "link"
     },
     {
-      "variableName": "LOGIN_PAGE_TITLE",
-      "value": "xpath=//h5[normalize-space()='Login']",
+      "variableName": "INVALID_CREDENTIALS_MESSAGE",
+      "value": "xpath=//p[normalize-space()='Invalid credentials']",
       "source": "approved_element",
       "kind": "locator",
-      "approvedName": "login_page_title",
-      "type": "label"
+      "approvedName": "invalid_credentials_message",
+      "type": "message"
+    },
+    {
+      "variableName": "REQUIRED_FIELD_MESSAGE",
+      "value": "xpath=//span[normalize-space()='Required']",
+      "source": "approved_element",
+      "kind": "locator",
+      "approvedName": "required_field_message",
+      "type": "message"
     }
   ]
 }

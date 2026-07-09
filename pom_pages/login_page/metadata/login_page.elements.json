@@ -220,6 +220,12 @@
   ],
   "elements": [
     {
+      "approvedName": "login_page_title",
+      "type": "label",
+      "locator": "xpath=//h5[normalize-space()='Login']",
+      "approved": true
+    },
+    {
       "approvedName": "username_textbox",
       "type": "textbox",
       "locator": "xpath=//input[@name='username']",
@@ -244,141 +250,132 @@
       "approved": true
     },
     {
-      "approvedName": "login_page_title",
-      "type": "label",
-      "locator": "xpath=//h5[normalize-space()='Login']",
+      "approvedName": "invalid_credentials_message",
+      "type": "message",
+      "locator": "xpath=//p[normalize-space()='Invalid credentials']",
+      "approved": true
+    },
+    {
+      "approvedName": "required_field_message",
+      "type": "message",
+      "locator": "xpath=//span[normalize-space()='Required']",
       "approved": true
     }
   ],
   "reviewSummary": {
     "overall_quality": "medium",
-    "summary": "The draft contains the primary authentication controls but still includes multiple noisy generic elements, weak semantic naming, brittle locators, and incomplete validation coverage for login workflows.",
+    "summary": "The draft captures core login controls but contains significant noise, weak generic locators, poor semantic naming, and missing validation elements needed for reliable downstream automation.",
     "issues": [
+      {
+        "severity": "high",
+        "type": "naming",
+        "element_name": "password",
+        "message": "Element name is too generic and does not clearly identify the control type or business purpose.",
+        "suggested_fix": "Rename to 'password_textbox' and classify as type 'password'."
+      },
+      {
+        "severity": "high",
+        "type": "locator",
+        "element_name": "element_5",
+        "message": "Locator 'xpath=//a' is overly generic and likely to match multiple elements.",
+        "suggested_fix": "Remove this element because it represents a decorative social-media link not required for workflow automation."
+      },
+      {
+        "severity": "high",
+        "type": "noise",
+        "element_name": "orangehrm_inc_link",
+        "message": "Branding/footer link is not relevant to login workflow automation and adds unnecessary noise.",
+        "suggested_fix": "Remove the branding link from approved elements."
+      },
+      {
+        "severity": "high",
+        "type": "locator",
+        "element_name": "forgot_your_password",
+        "message": "Locator 'xpath=//p' is overly generic and unreliable for automation.",
+        "suggested_fix": "Use a semantic name like 'forgot_password_link' with locator 'xpath=//p[normalize-space()='Forgot your password?']'."
+      },
+      {
+        "severity": "high",
+        "type": "classification",
+        "element_name": "forgot_your_password",
+        "message": "Element classified as generic 'element' even though it behaves as a navigational link.",
+        "suggested_fix": "Classify as type 'link'."
+      },
+      {
+        "severity": "critical",
+        "type": "noise",
+        "element_name": "login_username_admin_password_admin123_username_password_login_forgot_your_password_orangehrm_os_5_9_2005_2026_orangehrm_inc_all_rights_reserved",
+        "message": "Massive container text aggregation element is unusable for downstream automation and creates unstable page models.",
+        "suggested_fix": "Remove all aggregated container elements and retain only meaningful actionable controls."
+      },
+      {
+        "severity": "high",
+        "type": "locator",
+        "element_name": "username",
+        "message": "Locator 'xpath=//label' is too generic and may match multiple labels.",
+        "suggested_fix": "Either remove this duplicate label element or use a scoped locator such as 'xpath=//label[normalize-space()='Username']'."
+      },
+      {
+        "severity": "medium",
+        "type": "duplicate",
+        "element_name": "username",
+        "message": "Username label duplicates the username textbox purpose and provides limited additional automation value.",
+        "suggested_fix": "Remove the label unless explicit label verification is required."
+      },
+      {
+        "severity": "medium",
+        "type": "naming",
+        "element_name": "login",
+        "message": "Element name is ambiguous and does not communicate that this is the page title.",
+        "suggested_fix": "Rename to 'login_page_title'."
+      },
       {
         "severity": "medium",
         "type": "classification",
-        "element_name": "password",
-        "message": "Password field is incorrectly classified as textbox instead of password.",
-        "suggested_fix": "Change the element type to password and rename it to password_textbox."
-      },
-      {
-        "severity": "medium",
-        "type": "naming",
-        "element_name": "password",
-        "message": "Element name is too generic and does not clearly represent the authentication field purpose.",
-        "suggested_fix": "Rename the element to password_textbox."
-      },
-      {
-        "severity": "medium",
-        "type": "locator",
-        "element_name": "username_textbox",
-        "message": "Locator relies on placeholder text which is less stable than a dedicated attribute.",
-        "suggested_fix": "Use xpath=//input[@name='username']."
-      },
-      {
-        "severity": "medium",
-        "type": "locator",
-        "element_name": "password",
-        "message": "Locator relies on placeholder text which is less stable than a dedicated attribute.",
-        "suggested_fix": "Use xpath=//input[@name='password']."
-      },
-      {
-        "severity": "medium",
-        "type": "locator",
-        "element_name": "login_button",
-        "message": "Locator depends on visible button text which may become brittle if UI wording changes.",
-        "suggested_fix": "Use xpath=//button[@type='submit'] for a more stable locator."
-      },
-      {
-        "severity": "low",
-        "type": "noise",
-        "element_name": "orangehrm_inc_link",
-        "message": "Branding footer link is low-value for authentication workflow automation.",
-        "suggested_fix": "Remove the branding link from the approved page model."
-      },
-      {
-        "severity": "high",
-        "type": "noise",
-        "element_name": "element_5",
-        "message": "Generic unnamed link element with xpath=//a is overly broad and unsuitable for automation.",
-        "suggested_fix": "Remove the generic link element entirely."
-      },
-      {
-        "severity": "medium",
-        "type": "naming",
-        "element_name": "forgot_your_password",
-        "message": "Element name does not clearly indicate navigation purpose.",
-        "suggested_fix": "Rename to forgot_password_link."
-      },
-      {
-        "severity": "high",
-        "type": "locator",
-        "element_name": "forgot_your_password",
-        "message": "Locator xpath=//p is overly generic and may match unrelated paragraph elements.",
-        "suggested_fix": "Use xpath=//p[normalize-space()='Forgot your password?'] or a dedicated link locator if clickable."
-      },
-      {
-        "severity": "high",
-        "type": "noise",
-        "element_name": "login_username_admin_password_admin123_username_password_login_forgot_your_password_orangehrm_os_5_9_2005_2026_orangehrm_inc_all_rights_reserved",
-        "message": "Large container element names are noisy, unreadable, and unsuitable for downstream automation generation.",
-        "suggested_fix": "Remove generic container elements from the model."
-      },
-      {
-        "severity": "high",
-        "type": "locator",
-        "element_name": "login_username_admin_password_admin123_username_password_login_forgot_your_password_orangehrm_os_5_9_2005_2026_orangehrm_inc_all_rights_reserved",
-        "message": "Locators id=app and xpath=//div are overly generic and likely to match layout containers instead of meaningful controls.",
-        "suggested_fix": "Remove these container elements entirely."
-      },
-      {
-        "severity": "medium",
-        "type": "locator",
-        "element_name": "username",
-        "message": "Locator xpath=//label is overly broad and may match multiple labels.",
-        "suggested_fix": "Remove the element or use a text-specific locator only if label verification is required."
-      },
-      {
-        "severity": "low",
-        "type": "naming",
         "element_name": "login",
-        "message": "Element name is too generic and does not describe its verification purpose.",
-        "suggested_fix": "Rename to login_page_title."
+        "message": "Page title is classified as generic 'element' instead of a meaningful label/title type.",
+        "suggested_fix": "Classify as type 'label' or 'heading'."
       },
       {
         "severity": "medium",
         "type": "locator",
         "element_name": "login",
-        "message": "Locator xpath=//h5 is too broad and may match unrelated headings.",
-        "suggested_fix": "Use xpath=//h5[normalize-space()='Login']."
+        "message": "Locator 'xpath=//h5' is weak and may become unstable if additional headings appear.",
+        "suggested_fix": "Use 'xpath=//h5[normalize-space()='Login']'."
+      },
+      {
+        "severity": "critical",
+        "type": "validation_gap",
+        "element_name": "",
+        "message": "No explicit invalid credentials message element exists even though failed authentication validation is a major workflow requirement.",
+        "suggested_fix": "Add an 'invalid_credentials_message' element with a stable text-based locator."
       },
       {
         "severity": "high",
         "type": "validation_gap",
         "element_name": "",
-        "message": "Invalid credential error message element is missing despite failed login validation being part of the workflow.",
-        "suggested_fix": "Add a login_error_message element if observable after invalid authentication attempts."
-      },
-      {
-        "severity": "high",
-        "type": "validation_gap",
-        "element_name": "",
-        "message": "Required-field validation elements for blank username or password scenarios are not represented.",
-        "suggested_fix": "Add required field validation message elements if present in the UI."
+        "message": "Required field validation message element is missing despite mandatory-field scenarios in approved tests.",
+        "suggested_fix": "Add a reusable 'required_field_message' validation element."
       }
     ],
     "approved_elements": [
       {
+        "name": "login_page_title",
+        "type": "label",
+        "locator": "xpath=//h5[normalize-space()='Login']",
+        "description": "Primary login page heading used to verify page load."
+      },
+      {
         "name": "username_textbox",
         "type": "textbox",
         "locator": "xpath=//input[@name='username']",
-        "description": "Username input field used for authentication."
+        "description": "Username input field for authentication."
       },
       {
         "name": "password_textbox",
         "type": "password",
         "locator": "xpath=//input[@name='password']",
-        "description": "Password input field used for secure authentication."
+        "description": "Password input field for authentication."
       },
       {
         "name": "login_button",
@@ -390,13 +387,19 @@
         "name": "forgot_password_link",
         "type": "link",
         "locator": "xpath=//p[normalize-space()='Forgot your password?']",
-        "description": "Navigation control used to initiate password recovery."
+        "description": "Navigation link to password recovery flow."
       },
       {
-        "name": "login_page_title",
-        "type": "label",
-        "locator": "xpath=//h5[normalize-space()='Login']",
-        "description": "Login page heading used for page verification."
+        "name": "invalid_credentials_message",
+        "type": "message",
+        "locator": "xpath=//p[normalize-space()='Invalid credentials']",
+        "description": "Authentication failure message displayed for invalid login attempts."
+      },
+      {
+        "name": "required_field_message",
+        "type": "message",
+        "locator": "xpath=//span[normalize-space()='Required']",
+        "description": "Validation message displayed for mandatory empty fields."
       }
     ]
   }
