@@ -2715,7 +2715,6 @@ def edit_workflow(request: Request, workflow_name: str):
         "workflow_slug": workflow_name
     })
 
-@app.post("/workflow/save")
 def normalize_resource_file_path(page_name: str, resource_file: str) -> str:
     page_name = clean_text(page_name)
     if not page_name:
@@ -2737,6 +2736,7 @@ def normalize_url_value(value: str) -> str:
 
 
 
+@app.post("/workflow/save")
 def save_workflow(
     workflow_name: str = Form(...),
     module: str = Form("Authentication"),
