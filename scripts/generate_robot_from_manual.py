@@ -48,6 +48,45 @@ def slugify(text: str) -> str:
 def compact_code(text: str) -> str:
     return re.sub(r"[^A-Za-z0-9]+", "", clean_text(text)).upper()
 
+
+def derive_standard_test_identifier(manual_data: dict) -> dict:
+    app_code = compact_code(str(manual_data.get("applicationCode", "")))[:6] or "APP"
+    explicit_prefix = compact_code(str(manual_data.get("testIdentifierPrefix", "")))
+    if explicit_prefix:
+        feature_code = explicit_prefix[:16]
+    else:
+        candidates = [
+            str(manual_data.get("feature", "")),
+            str(manual_data.get("workflowName", "")),
+            str(manual_data.get("module", "")),
+        ]
+        stop_words = {
+            "a", "an", "and", "application", "auth", "authentication", "flow", "for", "from", "home", "in", "of", "on", "page",
+            "screen", "story", "test", "the", "to", "user", "users", "using", "validation", "verify", "workflow"
+        }
+        preferred_words = {
+            "login", "logout", "dashboard", "search", "cart", "checkout", "profile", "payment", "order", "admin", "report"
+        }
+        tokens: list[str] = []
+        for candidate in candidates:
+            words = re.findall(r"[A-Za-z0-9]+", clean_text(candidate).lower())
+            meaningful_words = [word for word in words if len(word) >= 3 and word not in stop_words]
+            preferred = [word for word in meaningful_words if word in preferred_words]
+            selected_words = preferred or meaningful_words
+            for word in selected_words[:2]:
+                code = compact_code(word)
+                if code and code not in tokens:
+                    tokens.append(code[:8])
+            if tokens:
+                break
+        feature_code = "_".join(tokens[:2])[:16] if tokens else "FLOW"
+    return {
+        "app_code": app_code,
+        "feature_code": feature_code or "FLOW",
+        "example_test_id": f"{app_code}-{feature_code or 'FLOW'}01",
+        "example_test_name": f"AUT-{app_code}-{feature_code or 'FLOW'}01: Verify workflow behavior",
+    }
+
 def get_ai_token(ai_cfg: dict) -> str:
     token = str(ai_cfg.get("token", "")).strip()
     if token:
@@ -211,6 +250,8 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
         if clean_text(str(variable.get("name", "")))
     })
 
+    identifier_policy = derive_standard_test_identifier(prompt_manual_data)
+
     payload = {
         "manual_test": prompt_manual_data,
         "resource_context": resource_context,
@@ -219,6 +260,7 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
         "retrieved_page_variables": retrieved_page_variables,
         "resource_import_prefix": "../pom_pages/",
         "common_resource_hint": "../resources/common_keywords.resource",
+        "identifier_policy": identifier_policy,
         "intent_preservation_notes": [
             "Preserve manual interaction intent from steps and any interactionIntent metadata.",
             "Use interactionIntent as AI guidance, not as a hardcoded routing table.",
@@ -253,10 +295,12 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
         "- Include *** Settings *** and *** Test Cases *** sections.\n"
         "- Do NOT include a *** Variables *** section in the generated .robot file.\n"
         "- Use compact formatting: no blank lines inside the Settings section, no blank line after *** Test Cases *** (the first test case must start immediately on the next line), exactly one blank line between major sections, and exactly one blank line between test cases.\n"
-        "- Every generated test case name must start with AUT- and follow the pattern AUT-<APPCODE>-<FEATURECODE><NN>: <Title>. Example: AUT-WT-LOGIN01: Verify login page loads successfully.\n"
-        "- <FEATURECODE> should be derived from the feature name in the input (uppercase alphanumeric, no spaces), and <NN> should be a two-digit sequence aligned to the test order or test case id when possible.\n"
-        "- Every generated test case must include a [Tags] line immediately after the test case name. Keep tags minimal: only the testcase id tag and the scenario type tag. Example: [Tags]    WT-LOGIN01    positive.\n"
-        "- <APPCODE> should be the uppercase abbreviated application code derived from the module if available, otherwise from the workflow/module context. Use a short stable abbreviation.\n"
+        "- Every generated test case name must start with AUT- and follow the pattern AUT-<APPCODE>-<FEATURECODE><NN>: <Title>.\n"
+        "- Use identifier_policy from the input JSON as the authoritative naming guide for <APPCODE>, <FEATURECODE>, and example formats.\n"
+        "- Follow a concise enterprise-style identifier standard: short stable application code, short stable feature code, then a two-digit sequence. Keep identifiers readable and bounded in length.\n"
+        "- <FEATURECODE> must be a compact semantic code, typically one or two meaningful tokens, uppercase alphanumeric with optional underscores only when needed for readability. Do not derive it by concatenating the full workflow or story title.\n"
+        "- Every generated test case must include a [Tags] line immediately after the test case name. Keep tags minimal: only the testcase id tag and the scenario type tag, for example [Tags]    WT-LOGIN01    positive.\n"
+        "- <APPCODE> should be the uppercase abbreviated application code from the input. Use a short stable abbreviation.\n"
         "- Do not add extra tags such as AUT, ui, validation, security, accessibility, or feature-name tags.\n"
         "- Do NOT include a *** Keywords *** section in the generated .robot file unless a test-specific helper is absolutely unavoidable; navigation/page-open/page-ready/data keywords must never be defined in the suite.\n"
         "- Do NOT define keywords such as Open Browser To Login Page, Open Browser To Page, Open Page, Wait Until Login Page Loads, or any equivalent wrapper if the resource layer already provides page-open/navigation capability.\n"
@@ -433,8 +477,9 @@ def build_review_prompt(manual_data: dict, resource_context: List[Dict], generat
         "Mandatory repair rules:\n"
         "- Return only Robot Framework code, with no markdown fences and no explanation.\n"
         "- Preserve compact formatting: no blank lines inside the Settings section, no blank line after *** Test Cases *** (the first test case must start immediately on the next line), exactly one blank line between major sections, and exactly one blank line between test cases.\n"
-        "- Ensure every test case name starts with AUT- and follows the pattern AUT-<APPCODE>-<FEATURECODE><NN>: <Title>. Example: AUT-WT-LOGIN01: Verify login page loads successfully.\n"
-        "- Ensure every test case includes a [Tags] line immediately after the test case name. Keep tags minimal: only the testcase id tag and the scenario type tag. Example: [Tags]    WT-LOGIN01    positive.\n"
+        "- Ensure every test case name starts with AUT- and follows the pattern AUT-<APPCODE>-<FEATURECODE><NN>: <Title>. Use identifier_policy from the input JSON as the authoritative naming guide.\n"
+        "- Ensure every test case includes a [Tags] line immediately after the test case name. Keep tags minimal: only the testcase id tag and the scenario type tag, for example [Tags]    WT-LOGIN01    positive.\n"
+        "- Ensure generated IDs stay concise and stable; never concatenate the full workflow or user-story title into <FEATURECODE>.\n"
         "- Preserve or repair the numbering so it is stable and aligned to the approved manual test order or id when possible.\n"
         "- Do not add extra tags such as AUT, ui, validation, security, accessibility, or feature-name tags.\n"
         "- Keep only the suite file; do not generate resource content.\n"
@@ -1040,8 +1085,12 @@ def validate_robot_content(content: str, allowed_resources: list[str]) -> tuple[
     if len(common_prefix) >= 2 and any(clean_text(step).lower() in repetitive_start_keywords for step in common_prefix):
         warnings.append("Generated suite repeats the same startup steps across tests; prefer moving repeated opening/navigation/wait steps into Test Setup or Suite Setup")
 
-    if not re.search(r"(?im)^AUT-[A-Z0-9]+-[A-Z0-9]+\d{2}:\s+.+$", content):
-        warnings.append("Generated suite test case names should follow the format AUT-<APPCODE>-<FEATURECODE><NN>: <Title>")
+    if not re.search(r"(?im)^AUT-[A-Z0-9]{2,8}-[A-Z0-9_]{3,20}\d{2}:\s+.+$", content):
+        warnings.append("Generated suite test case names should follow the concise format AUT-<APPCODE>-<FEATURECODE><NN>: <Title>")
+
+    verbose_identifier_matches = re.findall(r"(?im)^AUT-[A-Z0-9]{2,8}-([A-Z0-9_]{21,})\d{2}:", content)
+    if verbose_identifier_matches:
+        warnings.append("Generated suite test identifiers appear too verbose; use a concise stable feature code instead of a full workflow-title concatenation")
 
     if re.search(r"(?im)^(AUT.*)\n(?!\s+\[Tags\])", content):
         warnings.append("Each generated test case should include a [Tags] line immediately after the test case name")

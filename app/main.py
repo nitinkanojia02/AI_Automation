@@ -564,6 +564,7 @@ def build_workflow_payload(
     application_code: str = "",
     source: dict | None = None,
     external_context: dict | None = None,
+    test_identifier_prefix: str = "",
 ):
     preconditions = [line.strip() for line in preconditions_text.splitlines() if line.strip()]
     steps = [line.strip() for line in steps_text.splitlines() if line.strip()]
@@ -597,6 +598,7 @@ def build_workflow_payload(
         "module": module,
         "feature": feature,
         "applicationCode": application_code.strip(),
+        "testIdentifierPrefix": clean_text(test_identifier_prefix).upper(),
         "source": workflow_source,
         "resourceFiles": [resource_file],
         "pages": [
@@ -3091,6 +3093,48 @@ def normalize_azure_work_item(base_url: str, collection: str, project: str, work
     }
 
 
+def derive_test_identifier_prefix(source_context: dict | None) -> str:
+    if not isinstance(source_context, dict):
+        return ""
+
+    title = clean_text(str(source_context.get("title", "")))
+    description = clean_text(str(source_context.get("description", "")))
+    candidates = [title, description]
+
+    tags = source_context.get("tags", [])
+    if isinstance(tags, list):
+        candidates.extend(clean_text(str(tag)) for tag in tags if clean_text(str(tag)))
+
+    stop_words = {
+        "a", "an", "and", "application", "authentication", "flow", "for", "from", "in", "of", "on",
+        "page", "screen", "story", "test", "the", "to", "user", "users", "using", "validation", "verify",
+        "workflow"
+    }
+    preferred_terms = {
+        "login", "logout", "register", "registration", "search", "checkout", "payment", "cart", "order",
+        "profile", "dashboard", "reset", "password", "authentication", "authorization", "admin", "user"
+    }
+
+    seen: list[str] = []
+    for candidate in candidates:
+        words = re.findall(r"[A-Za-z0-9]+", candidate.lower())
+        for word in words:
+            if len(word) < 3 or word in stop_words:
+                continue
+            if word not in seen:
+                seen.append(word)
+
+    prioritized = [word for word in seen if word in preferred_terms]
+    remaining = [word for word in seen if word not in prioritized]
+    selected = (prioritized + remaining)[:2]
+    if not selected:
+        return "FLOW"
+
+    compact = "_".join(compact_code(word)[:8] for word in selected if compact_code(word))
+    compact = re.sub(r"_+", "_", compact).strip("_")
+    return compact[:20] or "FLOW"
+
+
 def build_workflow_payload_from_azure_story(
     azure_context: dict,
     page_name: str,
@@ -3098,6 +3142,7 @@ def build_workflow_payload_from_azure_story(
     resource_file: str,
     valid_username: str,
     valid_password: str,
+    test_identifier_prefix: str = "",
 ) -> dict:
     workflow_name = clean_text(str(azure_context.get("title", ""))) or "Imported Workflow"
     description = clean_text(str(azure_context.get("description", "")))
@@ -3131,6 +3176,7 @@ def build_workflow_payload_from_azure_story(
         application_code=str(CONFIG.get("application_code", "")),
         source=source,
         external_context=azure_context,
+        test_identifier_prefix=clean_text(test_identifier_prefix).upper() or derive_test_identifier_prefix(azure_context),
     )
 
 
@@ -3156,6 +3202,7 @@ def save_workflow(
     azure_collection: str = Form(""),
     azure_project: str = Form(""),
     azure_work_item_id: str = Form(""),
+    test_identifier_prefix: str = Form(""),
 ):
     page_url = normalize_url_value(page_url)
     input_source = clean_text(input_source).lower() or "manual"
@@ -3179,6 +3226,7 @@ def save_workflow(
             resource_file=resource_file,
             valid_username=valid_username,
             valid_password=valid_password,
+            test_identifier_prefix=test_identifier_prefix,
         ))
         workflow_name = clean_text(str(payload.get("workflowName", workflow_name)))
     else:

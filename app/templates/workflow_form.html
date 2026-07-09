@@ -87,13 +87,18 @@
                     <input class="form-control" name="scenario_intent_text" value="{% if data and data.scenarioIntent %}{{ data.scenarioIntent | join(',') }}{% else %}positive,negative,edge,ui{% endif %}">
                 </div>
 
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label class="form-label">Valid Username</label>
                     <input class="form-control" name="valid_username" value="{{ data.testData.validUsername if data and data.testData else '' }}">
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label class="form-label">Valid Password</label>
                     <input class="form-control" name="valid_password" value="{{ data.testData.validPassword if data and data.testData else '' }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Test Identifier Prefix</label>
+                    <input class="form-control" name="test_identifier_prefix" value="{{ data.testIdentifierPrefix if data else '' }}" placeholder="Example: LOGIN or AUTH_LOGIN">
+                    <div class="form-text">Optional short stable feature code used for generated test IDs and tags. Leave blank to let the framework derive a concise standard prefix automatically.</div>
                 </div>
             </div>
 
