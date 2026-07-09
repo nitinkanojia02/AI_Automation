@@ -620,32 +620,10 @@ def validate_resource_content(content: str, common_resource_context: List[Dict] 
         if re.search(rf"(?im)^\s*{re.escape(common_name)}\s*$", content):
             warnings.append(f"Generated resource appears to duplicate shared/common keyword: {common_name}")
 
-    discouraged_page_keywords = [
-        "Login With Credentials",
-        "Login With Valid Credentials",
-        "Submit Login",
-        "Perform Successful Login",
-        "Perform Login Flow",
-        "Location Should Not Contain",
-        "Location Should Be",
-    ]
-    for keyword_name in discouraged_page_keywords:
-        if re.search(rf"(?im)^\s*{re.escape(keyword_name)}\s*$", content):
-            warnings.append(
-                f"Generated resource contains a broad scenario-wrapper keyword '{keyword_name}'; prefer atomic page-object actions and validations"
-            )
-
     variable_names = re.findall(r"(?im)^\s*\$\{([A-Z0-9_]+)\}\s{2,}(.+?)\s*$", content)
-    invalid_alias_names = set()
-    has_invalid_username = False
-    has_invalid_password = False
     for var_name, var_value in variable_names:
         upper_name = var_name.upper()
         normalized_value = var_value.strip()
-        if upper_name == "INVALID_USERNAME":
-            has_invalid_username = True
-        if upper_name == "INVALID_PASSWORD":
-            has_invalid_password = True
         if "WITH_SPACES" in upper_name and " " not in normalized_value:
             warnings.append(f"Variable ${{{var_name}}} implies spaces but its value does not contain spaces")
         if "SPACE_" in upper_name and "${SPACE}" not in normalized_value and " " not in normalized_value:
@@ -654,15 +632,6 @@ def validate_resource_content(content: str, common_resource_context: List[Dict] 
             warnings.append(f"Variable ${{{var_name}}} implies a blank value but is not blank/${{EMPTY}}")
         if "LONG" in upper_name and len(normalized_value.replace("${SPACE}", " ")) < 16:
             warnings.append(f"Variable ${{{var_name}}} implies a long value but appears short")
-        if upper_name.endswith("_TEXT") and any(token in upper_name for token in ("MESSAGE", "LABEL", "TITLE", "FORGOT_PASSWORD")):
-            warnings.append(f"Variable ${{{var_name}}} looks like a redundant UI text alias; prefer locator-backed page validation keywords unless the literal is broadly reused")
-        if upper_name in {"APP_ELEMENT", "ROOT_ELEMENT", "PAGE_CONTAINER", "MAIN_CONTAINER"}:
-            warnings.append(f"Variable ${{{var_name}}} is a weak generic container locator; prefer page-specific evidence")
-        if "INVALID_USERNAME_AND_PASSWORD" in upper_name:
-            invalid_alias_names.add(upper_name)
-
-    if invalid_alias_names and has_invalid_username and has_invalid_password:
-        warnings.append("Generated resource contains duplicate invalid credential aliases even though INVALID_USERNAME and INVALID_PASSWORD already exist")
 
     is_valid = len(errors) == 0
     message_parts = []
