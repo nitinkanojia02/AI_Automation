@@ -281,6 +281,8 @@ def should_skip_item(item: dict) -> bool:
     formcontrolname = clean_text(attrs.get("formcontrolname", ""))
     data_testid = clean_text(attrs.get("data-testid", ""))
     role_attr = clean_text(attrs.get("role", ""))
+    css_class = clean_text(attrs.get("class", ""))
+    href = clean_text(attrs.get("href", ""))
     visibility = item.get("visibility", {}) or {}
     shadow_disabled = bool(shadow.get("disabled", False))
     is_enabled = not bool(attrs.get("disabled")) and not shadow_disabled
@@ -289,7 +291,8 @@ def should_skip_item(item: dict) -> bool:
         "input", "textarea", "select", "button", "a",
         "ion-button", "ion-input", "ion-select", "ion-fab-button", "app-main-button"
     }
-    allowed = interactive_tags | {"label", "p", "h1", "h2", "h3", "h4", "h5", "h6", "div", "span"}
+    semantic_text_tags = {"label", "p", "h1", "h2", "h3", "h4", "h5", "h6", "div", "span", "svg"}
+    allowed = interactive_tags | semantic_text_tags
     if tag not in allowed:
         return True
 
@@ -304,23 +307,41 @@ def should_skip_item(item: dict) -> bool:
         if parent_tag in {"ion-fab-button", "ion-button", "app-main-button", "ion-input"}:
             return True
 
-    meaningful_content = any([text, label, placeholder, aria, name, el_id, formcontrolname, data_testid])
+    meaningful_content = any([text, label, placeholder, aria, name, el_id, formcontrolname, data_testid, href])
     interactive_candidate = (
         tag in interactive_tags
         or role_attr in {"button", "link", "textbox", "combobox", "menuitem"}
         or attrs.get("tappable") is not None
         or clean_text(attrs.get("onclick", ""))
         or clean_text(attrs.get("tabindex", ""))
+        or bool(href)
+    )
+    semantic_candidate = (
+        tag in semantic_text_tags
+        and meaningful_content
+        and (
+            len(text) >= 3
+            or len(label) >= 3
+            or role_attr in {"heading", "link", "img", "button"}
+            or "forgot" in text.lower()
+            or "title" in css_class.lower()
+            or "header" in css_class.lower()
+            or "link" in css_class.lower()
+            or tag == "svg"
+        )
     )
 
-    if not interactive_candidate:
+    if not interactive_candidate and not semantic_candidate:
         return True
 
     if tag in {"input", "textarea", "select", "ion-input", "ion-select"}:
         return not any([placeholder, aria, name, el_id, formcontrolname, data_testid, label, text])
 
     if tag in {"button", "a", "ion-button", "ion-fab-button", "app-main-button"}:
-        return not any([text, aria, name, el_id, label, data_testid])
+        return not any([text, aria, name, el_id, label, data_testid, href])
+
+    if tag == "svg":
+        return not any([aria, label, text, css_class])
 
     return not meaningful_content
 

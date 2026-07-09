@@ -862,7 +862,7 @@ def get_page_review_data(workflow: dict):
         "raw_preview_elements": raw_preview_elements,
         "raw_preview_count": len(raw_preview_elements),
         "screenshot_web_path": screenshot_web_path,
-        "raw_elements_count": len(extracted_elements_data or display_elements),
+        "raw_elements_count": len(raw_preview_elements),
         "elements_path": elements_path,
         "reviewed_elements_path": reviewed_elements_path,
         "raw_elements": extracted_elements_data,
