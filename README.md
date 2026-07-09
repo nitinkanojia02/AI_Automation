@@ -139,6 +139,10 @@ Page-specific resource files under `pom_pages/<page>/` should avoid duplicating 
 ### Stage 1: Workflow definition
 A workflow is created through the UI and stored under `workflow_inputs/`.
 
+The MVP now supports two upstream workflow sources:
+- manual workflow entry in the UI
+- Azure DevOps/TFS user story import using a work item ID and server PAT
+
 ### Stage 2: Page extraction
 The extraction script opens the target page with Playwright, inspects the DOM, and generates page-level artifacts under `pom_pages/`.
 

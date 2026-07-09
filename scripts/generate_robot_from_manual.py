@@ -599,11 +599,13 @@ def get_framework_keyword_catalog() -> tuple[set[str], set[str]]:
     selenium_keywords = {
         "open browser", "close browser", "close all browsers", "go to", "reload page",
         "get location", "location should be", "title should be", "element should be visible",
-        "element should not be visible", "page should contain", "page should not contain",
-        "page should contain element", "page should not contain element", "wait until element is visible",
+        "element should not be visible", "element should be enabled", "element should be focused",
+        "page should contain", "page should not contain", "page should contain element", "page should not contain element",
+        "wait until element is visible", "wait until element is enabled",
         "wait until page contains", "wait until page contains element", "wait until page does not contain",
-        "wait until page does not contain element", "wait until location is", "click element", "input text",
-        "clear element text", "press keys", "get text", "get value", "element text should be",
+        "wait until page does not contain element", "wait until location is", "wait until location contains",
+        "click element", "input text", "input password", "clear element text", "press keys",
+        "get text", "get value", "get element attribute", "element text should be",
         "textfield value should be", "capture page screenshot", "select checkbox", "unselect checkbox",
         "select from list by label", "select from list by value", "select radio button",
         "handle alert", "alert should be present", "get title"
@@ -622,6 +624,10 @@ def validate_resource_content(content: str, common_resource_context: List[Dict] 
         stripped = raw_text.strip()
         parts = [part.strip() for part in re.split(r"\s{2,}|\t+", stripped) if part.strip()]
         if not parts:
+            return "", []
+        if parts[0].startswith("${") and parts[0].endswith("}="):
+            if len(parts) >= 2:
+                return parts[1], parts[2:]
             return "", []
         return parts[0], parts[1:]
 
