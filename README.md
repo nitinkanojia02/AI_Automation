@@ -233,6 +233,49 @@ http://127.0.0.1:8000
 
 ---
 
+## One-Click MVP Launchers
+
+Meaningful launcher scripts are stored under `tools/launchers/`.
+
+### Linux/macOS
+```bash
+chmod +x tools/launchers/run_mvp.sh
+./tools/launchers/run_mvp.sh
+```
+
+### Windows
+```bat
+tools\launchers\run_mvp.bat
+```
+
+### Optional environment variables
+```bash
+export DEVEX_AI_TOKEN=<your_token>
+export HOST=0.0.0.0
+export PORT=8000
+export PYTHON_BIN=python3
+export AUTO_OPEN_BROWSER=1
+./tools/launchers/run_mvp.sh
+```
+
+Windows equivalents can be set before running the batch file:
+```bat
+set DEVEX_AI_TOKEN=<your_token>
+set HOST=127.0.0.1
+set PORT=8000
+set PYTHON_BIN=python
+set AUTO_OPEN_BROWSER=1
+tools\launchers\run_mvp.bat
+```
+
+The launcher will:
+- create `.venv` if needed
+- install `requirements.txt`
+- install Playwright Chromium
+- start the FastAPI MVP with Uvicorn
+
+---
+
 ## Optional Script-Level Usage
 
 Depending on your local setup and generated artifacts, the pipeline scripts can also be run directly:
