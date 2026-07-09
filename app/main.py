@@ -26,6 +26,7 @@ from scripts.generate_robot_from_manual import (
     build_review_prompt,
     build_validation_review_prompt,
     call_ai_chat,
+    collect_resource_validation_keywords,
     extract_keywords_from_resource,
     extract_variables_from_resource,
     get_ai_token as get_robot_ai_token,
@@ -34,6 +35,7 @@ from scripts.generate_robot_from_manual import (
     validate_config as validate_robot_config,
     validate_manual_content,
     validate_resource_content,
+    validate_robot_alignment_with_resource_context,
     validate_robot_content,
 )
 
@@ -1125,13 +1127,50 @@ def build_keyword_generation_prompt(
     approved_manual_tests: list[dict],
     existing_keywords: list[dict],
     existing_resource_content: str,
+    common_resource_context: list[dict] | None = None,
 ) -> str:
+    common_resource_context = common_resource_context or []
+    common_keyword_names = sorted({
+        clean_text(str(keyword.get("name", "")))
+        for resource in common_resource_context
+        for keyword in resource.get("keywords", [])
+        if clean_text(str(keyword.get("name", "")))
+    })
+    common_variable_names = sorted({
+        clean_text(str(variable.get("name", "")))
+        for resource in common_resource_context
+        for variable in resource.get("variables", [])
+        if clean_text(str(variable.get("name", "")))
+    })
+    page_resource_context = parse_resource_file(get_resource_path(approved_elements[0].get("pageName", "") or workflow.get("pages", [{}])[0].get("name", "page"))) if approved_elements or workflow.get("pages") else None
+    approved_keyword_names = sorted({
+        clean_text(str(item.get("keywordName", "")))
+        for item in existing_keywords
+        if clean_text(str(item.get("keywordName", "")))
+    })
+    approved_element_names = sorted({
+        clean_text(str(item.get("approvedName", "")))
+        for item in approved_elements
+        if clean_text(str(item.get("approvedName", "")))
+    })
+    manual_expected_outcomes = sorted({
+        clean_text(str(item.get("expectedResult", "")))
+        for item in approved_manual_tests
+        if isinstance(item, dict) and clean_text(str(item.get("expectedResult", "")))
+    })
     payload = {
         "workflow": clean_workflow_for_prompting(workflow),
         "approved_elements": approved_elements,
+        "approved_element_names": approved_element_names,
         "approved_manual_tests": approved_manual_tests,
+        "approved_manual_expected_outcomes": manual_expected_outcomes,
         "existing_keywords": existing_keywords,
+        "approved_keyword_names": approved_keyword_names,
         "existing_page_resource": existing_resource_content,
+        "existing_page_resource_context": page_resource_context or {},
+        "common_resource_context": common_resource_context,
+        "retrieved_common_keyword_names": common_keyword_names,
+        "retrieved_common_variable_names": common_variable_names,
     }
     return (
         "You are AI Layer K1: a Robot Framework page-keyword designer in a staged AI automation framework.\n"
@@ -1140,8 +1179,17 @@ def build_keyword_generation_prompt(
         "- Produce a compact but complete page-keyword model that supports the approved manual tests.\n"
         "- Use approved elements as the UI source of truth.\n"
         "- Use approved manual tests as the scenario source of truth.\n"
+        "- Use retrieved common/shared resource context as the framework source of truth for generic reusable behavior.\n"
         "- Prefer reusable page actions and reusable page validations over scenario-specific one-off keywords.\n"
         "- Include only keywords that are grounded in approved elements and justified by approved manual scenarios.\n\n"
+        "Retrieval-grounding rules:\n"
+        "- Treat common_resource_context, existing_page_resource_context, approved_elements, and approved_manual_tests as retrieved context, similar to RAG grounding.\n"
+        "- Never recreate generic common/shared keywords that already exist in retrieved_common_keyword_names.\n"
+        "- Reuse approved keyword names from approved_keyword_names whenever they already express the needed page behavior.\n"
+        "- Reuse approved element names from approved_element_names exactly whenever a keyword targets one of those elements.\n"
+        "- If a keyword implementation needs waits, clicks, typing, or generic navigation, compose it from retrieved common keywords such as Click When Ready, Input Text When Ready, Wait For Element To Be Ready, Open Browser Session, Close Browser Session, Open Browser To Url, or Go To Url when those are present in common_resource_context.\n"
+        "- If existing_page_resource_context already contains a suitable page keyword or page variable, prefer preserving and refining it rather than inventing a parallel one.\n"
+        "- Keep page keywords page-specific and semantically grounded in approved_elements and approved_manual_tests; use common_resource_context for generic mechanics.\n\n"
         "Mandatory rules:\n"
         "- Return only a valid JSON array.\n"
         "- Each array item must be an object with exactly these keys: keywordId, keywordName, targetElement, action, arguments, implementation, approved.\n"
@@ -1149,6 +1197,8 @@ def build_keyword_generation_prompt(
         "- approved must be true.\n"
         "- targetElement must map to an approved element whenever the keyword directly acts on or validates a specific element.\n"
         "- implementation must be an array of Robot Framework keyword lines only.\n"
+        "- For generic interaction steps in implementation, prefer retrieved common/shared keywords over raw SeleniumLibrary calls whenever available in common_resource_context.\n"
+        "- Implementation lines should explicitly reuse common/shared helpers like Click When Ready, Input Text When Ready, and Wait For Element To Be Ready when applicable instead of raw Wait Until Element Is Visible / Click Element / Input Text.\n"
         "- Do not return markdown fences or explanation text.\n"
         "- Do not invent unsupported keywords, locators, fields, messages, or workflows.\n\n"
         "Design guidance:\n"
@@ -1282,6 +1332,14 @@ def get_keyword_review_data(workflow: dict):
 
     approved_elements = load_approved_elements_for_workflow(workflow)
     approved_manual_tests = get_manual_tests_for_workflow(workflow)
+    common_resource_context = []
+    resources_dir = BASE_DIR / "resources"
+    if resources_dir.exists():
+        for common_resource_path in sorted(resources_dir.glob("*.resource")):
+            try:
+                common_resource_context.append(parse_resource_file(common_resource_path))
+            except Exception:
+                continue
     approved_elements_by_name = {
         clean_text(str(item.get("approvedName", ""))): item
         for item in approved_elements
@@ -1392,6 +1450,7 @@ def get_keyword_review_data(workflow: dict):
                             approved_manual_tests,
                             keywords,
                             read_text(resource_path),
+                            common_resource_context,
                         ),
                         timeout_seconds=ai_cfg.get("timeout_seconds", 120),
                         verify_ssl=ai_cfg.get("verify_ssl", False),
@@ -1587,6 +1646,69 @@ def enrich_resource_with_manual_test_variables(workflow: dict, approved_keywords
         pass
 
     return current_resource
+
+
+def validate_keyword_grounding(workflow: dict, keywords: list[dict]) -> tuple[bool, list[str], list[dict]]:
+    pages = workflow.get("pages", [])
+    page_name = pages[0].get("name") if pages else "page"
+    warnings: list[str] = []
+
+    common_resource_context = []
+    resources_dir = BASE_DIR / "resources"
+    if resources_dir.exists():
+        for common_resource_path in sorted(resources_dir.glob("*.resource")):
+            try:
+                common_resource_context.append(parse_resource_file(common_resource_path))
+            except Exception:
+                continue
+
+    common_keyword_names = {
+        clean_text(str(keyword.get("name", ""))).lower()
+        for resource in common_resource_context
+        for keyword in resource.get("keywords", [])
+        if clean_text(str(keyword.get("name", "")))
+    }
+    approved_elements = load_approved_elements_for_workflow(workflow)
+    approved_element_names = {
+        clean_text(str(item.get("approvedName", "")))
+        for item in approved_elements
+        if clean_text(str(item.get("approvedName", "")))
+    }
+
+    normalized_keywords: list[dict] = []
+    reused_common_helper = False
+    validation_keywords = collect_resource_validation_keywords(common_resource_context)
+    if validation_keywords:
+        warnings.append(f"Retrieved common validation/helper context: {', '.join(validation_keywords[:8])}")
+
+    for keyword in keywords:
+        if not isinstance(keyword, dict):
+            continue
+        item = dict(keyword)
+        implementation = item.get("implementation", [])
+        if isinstance(implementation, str):
+            implementation = [line.rstrip() for line in implementation.splitlines() if clean_text(line)]
+        implementation = [str(line).rstrip() for line in implementation if clean_text(str(line))]
+        item["implementation"] = implementation
+
+        target_element = clean_text(str(item.get("targetElement", "")))
+        if target_element and target_element not in approved_element_names:
+            warnings.append(f"Keyword '{clean_text(str(item.get('keywordName', '')))}' references non-approved target element '{target_element}'")
+
+        for line in implementation:
+            lowered = clean_text(line).lower()
+            if any(helper in lowered for helper in common_keyword_names):
+                reused_common_helper = True
+            if re.match(r"^(Wait Until Element Is Visible|Click Element|Input Text|Input Password)\b", clean_text(line)):
+                warnings.append(
+                    f"Keyword '{clean_text(str(item.get('keywordName', '')))}' uses low-level step '{clean_text(line)}'; prefer common helper keywords when available"
+                )
+        normalized_keywords.append(item)
+
+    if common_keyword_names and not reused_common_helper:
+        warnings.append("Generated keywords do not appear to reuse retrieved common/shared helper keywords")
+
+    return len([w for w in warnings if "non-approved target element" in w]) == 0, warnings, normalized_keywords
 
 
 def save_keywords_for_workflow(workflow: dict, keywords: list[dict]):
@@ -1945,6 +2067,7 @@ def validate_generated_resource_against_approved_artifacts(
     workflow: dict,
     approved_keywords: list[dict],
     resource_content: str,
+    common_resource_context: list[dict] | None = None,
 ) -> tuple[bool, str]:
     approved_elements = load_approved_elements_for_workflow(workflow)
     approved_variable_names = {
@@ -1984,6 +2107,13 @@ def validate_generated_resource_against_approved_artifacts(
         if clean_text(str(item.get("name", "")))
     }
 
+    common_keyword_names = {
+        clean_text(str(keyword.get("name", ""))).lower()
+        for resource in (common_resource_context or [])
+        for keyword in resource.get("keywords", [])
+        if clean_text(str(keyword.get("name", "")))
+    }
+
     missing_keywords = sorted(name for name in approved_keyword_names if name not in resource_keyword_names)
     missing_variables = sorted(name for name in approved_variable_names if name and name not in resource_variable_names)
     matched_keywords = sorted(name for name in approved_keyword_names if name in resource_keyword_names)
@@ -2009,6 +2139,32 @@ def validate_generated_resource_against_approved_artifacts(
             "Approved composite/scenario keywords were not enforced as page-resource keywords: "
             + ", ".join(non_resource_keyword_names)
         )
+
+    direct_low_level_calls = [
+        "wait until element is visible",
+        "wait until element is enabled",
+        "click element",
+        "input text",
+        "input password",
+        "go to",
+        "open browser",
+    ]
+    common_usage_patterns = [
+        "click when ready",
+        "input text when ready",
+        "wait for element to be ready",
+        "open browser session",
+        "close browser session",
+        "open browser to url",
+        "go to url",
+    ]
+    if common_keyword_names:
+        low_level_hits = sum(len(re.findall(rf"(?im)^\s*{re.escape(name)}\b", resource_content)) for name in direct_low_level_calls)
+        common_hits = sum(len(re.findall(rf"(?im)^\s*{re.escape(name)}\b", resource_content)) for name in common_usage_patterns if name in common_keyword_names)
+        if low_level_hits >= 3 and common_hits == 0:
+            errors.append(
+                "Generated page resource does not reuse retrieved common/shared keywords even though common resource context is available; prefer common wrappers over raw SeleniumLibrary calls."
+            )
 
     is_valid = len(errors) == 0
     message_parts = []
@@ -2107,6 +2263,7 @@ def generate_resource_for_workflow(workflow: dict, approved_keywords: list[dict]
         workflow,
         approved_keywords,
         resource_content,
+        common_resource_context,
     )
     if not is_valid:
         raise HTTPException(status_code=400, detail=validation_message)
@@ -2980,10 +3137,31 @@ async def save_keyword_review(request: Request, workflow_name: str):
             "error_message": "Approve at least one manual test before generating the page resource and keywords.",
         }, status_code=400)
 
-    save_keywords_for_workflow(workflow, approved_keywords)
-    generate_resource_for_workflow(workflow, approved_keywords)
+    keywords_valid, keyword_warnings, normalized_keywords = validate_keyword_grounding(workflow, approved_keywords)
+    if not keywords_valid:
+        keyword_data = get_keyword_review_data(workflow)
+        return render_template(request, "keyword_review.html", {
+            "workflow_name": workflow_name,
+            "page_name": keyword_data["page_name"],
+            "keywords": normalized_keywords or keyword_data["keywords"],
+            "review_summary": keyword_data.get("review_summary"),
+            "source_artifact": keyword_data.get("source_artifact", "raw"),
+            "error_message": "Keyword review contains non-approved target element references. Please correct the highlighted keywords before continuing.",
+            "grounding_warnings": keyword_warnings,
+        }, status_code=400)
 
-    return RedirectResponse(url=f"/automation/{workflow_name}", status_code=HTTP_303_SEE_OTHER)
+    save_keywords_for_workflow(workflow, normalized_keywords)
+    generate_resource_for_workflow(workflow, normalized_keywords)
+
+    return render_template(request, "keyword_review.html", {
+        "workflow_name": workflow_name,
+        "page_name": get_keyword_review_data(workflow)["page_name"],
+        "keywords": normalized_keywords,
+        "review_summary": get_keyword_review_data(workflow).get("review_summary"),
+        "source_artifact": get_keyword_review_data(workflow).get("source_artifact", "raw"),
+        "success_message": "Keywords approved and page resource regenerated.",
+        "grounding_warnings": keyword_warnings,
+    })
 
 @app.get("/manual-tests/{workflow_name}")
 def manual_tests_page(request: Request, workflow_name: str):

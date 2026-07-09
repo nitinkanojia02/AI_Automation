@@ -88,6 +88,17 @@
     </div>
     {% endif %}
 
+    {% if grounding_warnings %}
+    <div class="alert alert-warning small mb-3">
+        <div><strong>Grounding Review:</strong></div>
+        <ul class="mb-0 mt-1">
+            {% for warning in grounding_warnings %}
+            <li>{{ warning }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
     {% if keywords and keywords|length > 0 %}
     <form method="post" action="/keywords/{{ workflow_name }}/save" id="keyword-review-form">
         <input type="hidden" name="keyword_count" id="keyword_count" value="{{ keywords|length }}">

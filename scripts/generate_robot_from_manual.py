@@ -169,10 +169,15 @@ def extract_variables_from_resource(resource_text: str) -> List[Dict]:
 
 def parse_resource_file(resource_path: Path) -> Dict:
     text = resource_path.read_text(encoding="utf-8")
+    rel_path = str(resource_path.relative_to(BASE_DIR)).replace("\\", "/")
+    resource_type = "common" if rel_path.startswith("resources/") else "page"
     return {
-        "file": str(resource_path.relative_to(BASE_DIR)).replace("\\", "/"),
+        "file": rel_path,
+        "type": resource_type,
         "variables": extract_variables_from_resource(text),
         "keywords": extract_keywords_from_resource(text),
+        "retrieved_keyword_names": [clean_text(str(item.get("name", ""))) for item in extract_keywords_from_resource(text) if clean_text(str(item.get("name", "")))],
+        "retrieved_variable_names": [clean_text(str(item.get("name", ""))) for item in extract_variables_from_resource(text) if clean_text(str(item.get("name", "")))],
         "source": text[:12000]
     }
 
@@ -184,9 +189,34 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
             if isinstance(field, dict) and any(clean_text(str(field.get(k, ""))) for k in ("name", "label", "type"))
         ]
 
+    retrieved_common_keywords = sorted({
+        clean_text(str(keyword.get("name", "")))
+        for resource in resource_context
+        if resource.get("type") == "common"
+        for keyword in resource.get("keywords", [])
+        if clean_text(str(keyword.get("name", "")))
+    })
+    retrieved_page_keywords = sorted({
+        clean_text(str(keyword.get("name", "")))
+        for resource in resource_context
+        if resource.get("type") == "page"
+        for keyword in resource.get("keywords", [])
+        if clean_text(str(keyword.get("name", "")))
+    })
+    retrieved_page_variables = sorted({
+        clean_text(str(variable.get("name", "")))
+        for resource in resource_context
+        if resource.get("type") == "page"
+        for variable in resource.get("variables", [])
+        if clean_text(str(variable.get("name", "")))
+    })
+
     payload = {
         "manual_test": prompt_manual_data,
         "resource_context": resource_context,
+        "retrieved_common_keywords": retrieved_common_keywords,
+        "retrieved_page_keywords": retrieved_page_keywords,
+        "retrieved_page_variables": retrieved_page_variables,
         "resource_import_prefix": "../pom_pages/",
         "common_resource_hint": "../resources/common_keywords.resource",
         "intent_preservation_notes": [
@@ -217,6 +247,9 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
         "- Use provided keyword names and variable names from resource_context wherever possible.\n"
         "- Prefer existing keywords from resource_context over inventing new ones.\n"
         "- Treat resource_context as including both page-specific resources and shared/common resources. Use common/shared keywords for generic browser lifecycle, navigation, and waiting behaviors, and avoid duplicating them in suite logic.\n"
+        "- Treat retrieved_common_keywords, retrieved_page_keywords, and retrieved_page_variables as RAG-like retrieved context. Reuse them explicitly instead of free-form invention.\n"
+        "- If a shared helper such as Open Browser Session, Close Browser Session, Open Browser To Url, Go To Url, Wait For Element To Be Ready, Click When Ready, or Input Text When Ready exists in retrieved_common_keywords, prefer that helper over raw SeleniumLibrary steps.\n"
+        "- If a page keyword or page variable already exists in retrieved_page_keywords or retrieved_page_variables, preserve and reuse it instead of creating a parallel name.\n"
         "- Include *** Settings *** and *** Test Cases *** sections.\n"
         "- Do NOT include a *** Variables *** section in the generated .robot file.\n"
         "- Use compact formatting: no blank lines inside the Settings section, no blank line after *** Test Cases *** (the first test case must start immediately on the next line), exactly one blank line between major sections, and exactly one blank line between test cases.\n"
@@ -683,10 +716,23 @@ def validate_robot_alignment_with_resource_context(content: str, resource_contex
             if parts:
                 suite_called_keywords.append(clean_text(parts[0]).lower())
 
+    common_helper_names = {
+        clean_text(str(keyword.get("name", ""))).lower()
+        for resource in resource_context
+        if resource.get("type") == "common"
+        for keyword in resource.get("keywords", [])
+        if clean_text(str(keyword.get("name", "")))
+    }
+
     if approved_resource_keyword_names:
         called_approved_keywords = [name for name in suite_called_keywords if name in approved_resource_keyword_names]
         if not called_approved_keywords:
             warnings.append("Generated suite does not appear to reuse approved page/common resource keywords from the provided resource context")
+
+    if common_helper_names:
+        called_common_helpers = [name for name in suite_called_keywords if name in common_helper_names]
+        if not called_common_helpers:
+            warnings.append("Generated suite does not appear to call retrieved common/shared helper keywords")
 
     return len(errors) == 0, ("Warnings:\n" + "\n".join(warnings)) if warnings else ""
 
