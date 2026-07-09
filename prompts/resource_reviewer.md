@@ -38,16 +38,21 @@ Framework expectations:
 - Include page-level or business-level actions when clearly supported by the provided context
 - Remove generic, duplicate, or low-value keywords
 - Keyword names should be clear, human-readable, and semantically meaningful
-- Variable names should be meaningful and consistent
+- Variable names should be meaningful, consistent, and canonical
 - Do not rely on hardcoded page-specific assumptions; infer only from the provided context
 - Prefer resource design that a tester or automation engineer could reuse across multiple scenarios on the same page
+- Prefer generic, future-ready framework design that stays valid across applications, workflows, and test types
+- Flag unsupported or invented Robot Framework/SeleniumLibrary/shared-resource APIs as major quality issues
+- Flag noisy derived variables when built-ins or inline composition would be sufficient
 
 Flag as a major quality issue if:
 - the resource is mostly one-element-one-keyword with little abstraction value
 - common wrapper keywords are not used where applicable
 - validation support is weak despite visible validation, message, or state elements
 - keyword naming is technically correct but not semantically useful
-- reusable semantic edge-case or credential-like data from approved manual tests is missing from the Variables section, causing likely hardcoding in downstream suites
+- unsupported or invented framework/library keywords are present in the resource
+- the Variables section contains duplicate, noisy, or trivially derived variables that reduce maintainability and should be replaced by canonical variables, built-ins, or inline composition
+- reusable semantic business data from approved manual tests is missing from the Variables section, causing likely hardcoding in downstream suites
 - negative or validation-focused approved manual expectations cannot be expressed through observable page validation keywords
 - the resource supports only same-page or URL-presence negative checks even though richer approved manual expectations clearly require visible rejection or validation evidence
 

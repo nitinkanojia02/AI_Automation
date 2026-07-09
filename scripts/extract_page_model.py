@@ -7,13 +7,17 @@ from pathlib import Path
 from typing import Dict, List, Tuple
 
 import requests
+import urllib3
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from playwright.sync_api import sync_playwright
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 CONFIG_PATH = BASE_DIR / "config" / "page_model_config.json"
+PROMPTS_DIR = BASE_DIR / "prompts"
 
 SUPPORTED_BROWSERS = {"chromium", "chrome", "edge", "firefox", "webkit"}
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -65,6 +69,149 @@ def get_ai_token(ai_cfg: dict) -> str:
         return os.getenv(token_env_var, "").strip()
 
     return ""
+
+def load_prompt_markdown(filename: str) -> str:
+    path = PROMPTS_DIR / filename
+    if not path.exists():
+        return ""
+    return path.read_text(encoding="utf-8").strip()
+
+def extract_json_object(text: str) -> dict:
+    raw = clean_text(text)
+    if not raw:
+        raise ValueError("AI response was empty")
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        match = re.search(r"\{.*\}", text, re.DOTALL)
+        if not match:
+            raise
+        return json.loads(match.group(0))
+
+def call_ai_chat(endpoint: str, token: str, messages: List[dict], temperature: float = 0.2, timeout_seconds: int = 120, verify_ssl: bool = False) -> str:
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    payload = {"messages": messages, "temperature": temperature}
+    resp = requests.post(endpoint, headers=headers, json=payload, timeout=timeout_seconds, verify=verify_ssl)
+    resp.raise_for_status()
+    data = resp.json() if "application/json" in resp.headers.get("Content-Type", "") else {"content": resp.text}
+
+    if isinstance(data, dict):
+        if data.get("choices"):
+            return data["choices"][0]["message"]["content"].strip()
+        if "content" in data:
+            return str(data["content"]).strip()
+        if "response" in data:
+            return str(data["response"]).strip()
+        if "answer" in data:
+            return str(data["answer"]).strip()
+
+    return json.dumps(data, indent=2)
+
+def build_page_elements_from_review(review_data: dict) -> dict:
+    approved = review_data.get("approved_elements", []) if isinstance(review_data, dict) else []
+    elements = []
+    for item in approved:
+        if not isinstance(item, dict):
+            continue
+        name = clean_text(str(item.get("name", "")))
+        element_type = clean_text(str(item.get("type", "")))
+        locator = clean_text(str(item.get("locator", "")))
+        description = clean_text(str(item.get("description", "")))
+        if name and element_type and locator:
+            elements.append({
+                "name": slugify(name),
+                "type": element_type,
+                "locator": locator,
+                "description": description,
+            })
+    return {"elements": elements}
+
+def refine_page_elements_with_ai(config: dict, page_name: str, url: str, elements: List[dict], screenshot_path: Path, html_path: Path, metadata_dir: Path) -> dict | None:
+    ai = config.get("ai", {})
+    if not ai.get("enabled", False):
+        return None
+
+    endpoint = ai.get("endpoint", "")
+    token = get_ai_token(ai)
+    if not endpoint or not token:
+        logger.warning("AI enabled but endpoint/token missing. Skipping page elements review/refinement.")
+        return None
+
+    reviewer_md = load_prompt_markdown("page_elements_reviewer.md")
+    refiner_md = load_prompt_markdown("page_elements_refiner.md")
+    if not reviewer_md or not refiner_md:
+        logger.warning("Page elements reviewer/refiner prompt missing. Skipping page elements AI stage.")
+        return None
+
+    timeout_seconds = int(ai.get("timeout_seconds", 120))
+    verify_ssl = bool(ai.get("verify_ssl", False))
+    temperature = float(ai.get("temperature", 0.2))
+    workflow_context = {
+        "page_name": page_name,
+        "page_slug": slugify(page_name),
+        "url": url,
+        "artifact_purpose": "approved page model for downstream resource and automation generation"
+    }
+    reviewer_payload = {
+        "workflow_context": workflow_context,
+        "page_name": page_name,
+        "screenshot_path": str(screenshot_path.relative_to(BASE_DIR)).replace("\\", "/") if screenshot_path.exists() else "",
+        "debug_html_path": str(html_path.relative_to(BASE_DIR)).replace("\\", "/") if html_path.exists() else "",
+        "draft_elements": elements,
+    }
+
+    try:
+        review_text = call_ai_chat(
+            endpoint,
+            token,
+            messages=[
+                {"role": "system", "content": reviewer_md},
+                {"role": "user", "content": json.dumps(reviewer_payload, indent=2, ensure_ascii=False)}
+            ],
+            temperature=temperature,
+            timeout_seconds=timeout_seconds,
+            verify_ssl=verify_ssl,
+        )
+        review_data = extract_json_object(review_text)
+        review_path = metadata_dir / f"{slugify(page_name)}.elements.review.json"
+        review_path.write_text(json.dumps(review_data, indent=2, ensure_ascii=False), encoding="utf-8")
+
+        refiner_payload = {
+            "workflow_context": workflow_context,
+            "page_name": page_name,
+            "screenshot_path": reviewer_payload["screenshot_path"],
+            "debug_html_path": reviewer_payload["debug_html_path"],
+            "draft_elements": elements,
+            "review_findings": review_data,
+        }
+        refined_text = call_ai_chat(
+            endpoint,
+            token,
+            messages=[
+                {"role": "system", "content": refiner_md},
+                {"role": "user", "content": json.dumps(refiner_payload, indent=2, ensure_ascii=False)}
+            ],
+            temperature=temperature,
+            timeout_seconds=timeout_seconds,
+            verify_ssl=verify_ssl,
+        )
+        refined_data = extract_json_object(refined_text)
+        if not isinstance(refined_data, dict) or not isinstance(refined_data.get("elements"), list):
+            refined_data = build_page_elements_from_review(review_data)
+        refined_data["page_name"] = page_name
+        approved_path = metadata_dir / f"{slugify(page_name)}.elements.approved.json"
+        refined_data["artifacts"] = {
+            "screenshot_path": reviewer_payload["screenshot_path"],
+            "debug_html_path": reviewer_payload["debug_html_path"],
+            "review_path": str(review_path.relative_to(BASE_DIR)).replace("\\", "/"),
+        }
+        approved_path.write_text(json.dumps(refined_data, indent=2, ensure_ascii=False), encoding="utf-8")
+        logger.info("AI-reviewed page elements written: %s", review_path)
+        logger.info("AI-approved page elements written: %s", approved_path)
+        return refined_data
+    except Exception as exc:
+        logger.warning("AI page elements review/refinement failed for %s: %s", page_name, exc)
+        return None
 
 def validate_config(config: dict) -> dict:
     pages = config.get("pages", [])
@@ -726,9 +873,14 @@ def generate_resource(url: str, elements: List[dict]) -> str:
     used_names, variables, keywords = set(), [], []
 
     for item in elements:
-        role = infer_role(item)
-        label = infer_label(item)
-        locator = build_best_locator(item)
+        if isinstance(item, dict) and {"name", "type", "locator"}.issubset(item.keys()):
+            role = clean_text(str(item.get("type", ""))).lower() or "element"
+            label = slugify(str(item.get("name", "")))
+            locator = clean_text(str(item.get("locator", "")))
+        else:
+            role = infer_role(item)
+            label = infer_label(item)
+            locator = build_best_locator(item)
         var_name = make_var_name(label, role, used_names)
 
         variables.append(f"${{{var_name}}}    {locator}")
@@ -748,31 +900,14 @@ Resource    ../../resources/common_keywords.resource"""
 
     return f"{settings_block}\n\n{variables_block}\n\n{keywords_block}\n"
 
-def call_ai_chat(endpoint: str, token: str, messages: List[dict], temperature: float = 0.2) -> str:
-    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-    payload = {"messages": messages, "temperature": temperature}
-    resp = requests.post(endpoint, headers=headers, json=payload, timeout=120)
-    resp.raise_for_status()
-    data = resp.json() if "application/json" in resp.headers.get("Content-Type", "") else {"content": resp.text}
-
-    if isinstance(data, dict):
-        if data.get("choices"):
-            return data["choices"][0]["message"]["content"].strip()
-        if "content" in data:
-            return str(data["content"]).strip()
-        if "response" in data:
-            return str(data["response"]).strip()
-        if "answer" in data:
-            return str(data["answer"]).strip()
-
-    return json.dumps(data, indent=2)
-
 def is_valid_ai_resource(content: str) -> bool:
     if not content.strip():
         return False
     if "```" in content:
         return False
-    return "*** Keywords ***" in content and "*** Variables ***" in content
+    if "*** Keywords ***" not in content or "*** Variables ***" not in content:
+        return False
+    return True
 
 def maybe_ai_generate_keywords(config: dict, page_name: str, url: str, elements: List[dict], resource_path: Path):
     ai = config.get("ai", {})
@@ -956,11 +1091,22 @@ def process_page(playwright, config: dict, page_entry: Dict[str, str]):
 
         json_path.write_text(json.dumps(elements, indent=2, ensure_ascii=False), encoding="utf-8")
 
-        resource_content = generate_resource(url, elements)
+        approved_page_model = refine_page_elements_with_ai(
+            config,
+            page_name,
+            url,
+            elements,
+            screenshot_path,
+            html_path,
+            metadata_dir,
+        )
+        resource_elements = approved_page_model.get("elements", []) if isinstance(approved_page_model, dict) else elements
+
+        resource_content = generate_resource(url, resource_elements)
         resource_path.write_text(resource_content, encoding="utf-8")
         logger.info("Generated deterministic resource: %s", resource_path)
 
-        maybe_ai_generate_keywords(config, page_name, url, elements, resource_path)
+        maybe_ai_generate_keywords(config, page_name, url, resource_elements, resource_path)
 
         logger.info("Generated: %s", json_path)
         logger.info("Generated: %s", screenshot_path)

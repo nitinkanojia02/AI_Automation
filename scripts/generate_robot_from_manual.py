@@ -586,9 +586,46 @@ def call_ai_chat(
 
     return extract_response_text(resp)
 
+def get_framework_keyword_catalog() -> tuple[set[str], set[str]]:
+    builtin_keywords = {
+        "should be equal", "should not be equal", "should contain", "should not contain",
+        "should be true", "should be false", "should be empty", "should not be empty",
+        "should match", "should not match", "should match regexp", "should not match regexp",
+        "length should be", "log", "sleep", "set test variable", "set suite variable",
+        "set global variable", "run keyword if", "run keywords", "repeat keyword",
+        "wait until keyword succeeds", "create list", "create dictionary", "get length",
+        "evaluate", "set variable", "should start with", "should end with"
+    }
+    selenium_keywords = {
+        "open browser", "close browser", "close all browsers", "go to", "reload page",
+        "get location", "location should be", "title should be", "element should be visible",
+        "element should not be visible", "page should contain", "page should not contain",
+        "page should contain element", "page should not contain element", "wait until element is visible",
+        "wait until page contains", "wait until page contains element", "wait until page does not contain",
+        "wait until page does not contain element", "wait until location is", "click element", "input text",
+        "clear element text", "press keys", "get text", "get value", "element text should be",
+        "textfield value should be", "capture page screenshot", "select checkbox", "unselect checkbox",
+        "select from list by label", "select from list by value", "select radio button",
+        "handle alert", "alert should be present", "get title"
+    }
+    return builtin_keywords, selenium_keywords
+
+
 def validate_resource_content(content: str, common_resource_context: List[Dict] | None = None) -> tuple[bool, str]:
     errors: list[str] = []
     warnings: list[str] = []
+
+    def normalize_keyword_token(value: str) -> str:
+        return clean_text(value).lower()
+
+    def scan_keyword_invocation(raw_text: str) -> tuple[str, list[str]]:
+        stripped = raw_text.strip()
+        parts = [part.strip() for part in re.split(r"\s{2,}|\t+", stripped) if part.strip()]
+        if not parts:
+            return "", []
+        return parts[0], parts[1:]
+
+    builtin_keywords, selenium_keywords = get_framework_keyword_catalog()
 
     if "*** Keywords ***" not in content:
         warnings.append("Generated resource does not include a *** Keywords *** section")
@@ -620,7 +657,44 @@ def validate_resource_content(content: str, common_resource_context: List[Dict] 
         if re.search(rf"(?im)^\s*{re.escape(common_name)}\s*$", content):
             warnings.append(f"Generated resource appears to duplicate shared/common keyword: {common_name}")
 
+    parsed_resource = {"variables": extract_variables_from_resource(content), "keywords": extract_keywords_from_resource(content)}
+    local_keyword_names = {
+        normalize_keyword_token(str(keyword.get("name", "")))
+        for keyword in parsed_resource.get("keywords", [])
+        if clean_text(str(keyword.get("name", "")))
+    }
+    allowed_keyword_names = builtin_keywords | selenium_keywords | common_keyword_names | local_keyword_names
+
+    control_tokens = {"for", "end", "if", "else", "else if", "try", "except", "finally", "return from keyword", "continue for loop", "exit for loop"}
+    setting_tokens = {"[documentation]", "[arguments]", "[return]", "[tags]", "[timeout]", "[setup]", "[teardown]"}
+
+    for keyword in parsed_resource.get("keywords", []):
+        keyword_name = clean_text(str(keyword.get("name", "")))
+        for body_line in keyword.get("body", []):
+            stripped = body_line.strip()
+            if not stripped:
+                continue
+            lowered = stripped.lower()
+            if lowered.startswith("..."):
+                continue
+            token, _arguments = scan_keyword_invocation(body_line)
+            normalized_token = normalize_keyword_token(token)
+            if not normalized_token or normalized_token in control_tokens or normalized_token in setting_tokens:
+                continue
+            if normalized_token not in allowed_keyword_names:
+                errors.append(
+                    f"Generated resource uses an unknown or unsupported keyword '{token}' in resource keyword '{keyword_name}'"
+                )
+
     variable_names = re.findall(r"(?im)^\s*\$\{([A-Z0-9_]+)\}\s{2,}(.+?)\s*$", content)
+    all_variable_refs = re.findall(r"\$\{([A-Z0-9_]+)\}", content)
+    variable_ref_counts: dict[str, int] = {}
+    for ref_name in all_variable_refs:
+        key = ref_name.upper()
+        variable_ref_counts[key] = variable_ref_counts.get(key, 0) + 1
+
+    seen_semantic_roots: dict[str, str] = {}
+    trivial_markers = ("LONG", "WITH_SPACES", "SPACE_", "SPACES_", "PADDED", "TRIMMED", "LOWERCASE", "UPPERCASE", "MIXEDCASE")
     for var_name, var_value in variable_names:
         upper_name = var_name.upper()
         normalized_value = var_value.strip()
@@ -632,6 +706,20 @@ def validate_resource_content(content: str, common_resource_context: List[Dict] 
             warnings.append(f"Variable ${{{var_name}}} implies a blank value but is not blank/${{EMPTY}}")
         if "LONG" in upper_name and len(normalized_value.replace("${SPACE}", " ")) < 16:
             warnings.append(f"Variable ${{{var_name}}} implies a long value but appears short")
+        if any(marker in upper_name for marker in trivial_markers):
+            warnings.append(
+                f"Variable ${{{var_name}}} appears to be a trivially derived data variant; prefer canonical variables plus built-ins/inline composition unless this exact dataset is explicitly required"
+            )
+        if variable_ref_counts.get(upper_name, 0) <= 1:
+            warnings.append(f"Variable ${{{var_name}}} appears unused outside its own definition; remove low-value unused variables")
+        semantic_root = re.sub(r"_(ALT|LONG|WITH_SPACES|SPACE|SPACES|PADDED|TRIMMED|LOWERCASE|UPPERCASE|MIXEDCASE|TEXT|VALUE|INPUT|DATA|STRING|MESSAGE|TEXTBOX)+$", "", upper_name)
+        existing = seen_semantic_roots.get(semantic_root)
+        if existing and existing != upper_name:
+            warnings.append(
+                f"Variables ${{{existing}}} and ${{{var_name}}} may represent duplicate or overly similar semantic intents; prefer one canonical variable unless distinct approved semantics require both"
+            )
+        else:
+            seen_semantic_roots[semantic_root] = upper_name
 
     is_valid = len(errors) == 0
     message_parts = []
@@ -826,25 +914,7 @@ def validate_robot_content(content: str, allowed_resources: list[str]) -> tuple[
                     f"Keyword '{signature.get('name', keyword_name)}' accepts {total_count} argument(s) but was called with {actual_count} in {source_label}. Source: {signature.get('source', 'unknown')}"
                 )
 
-    builtin_keywords = {
-        "should be equal", "should not be equal", "should contain", "should not contain",
-        "should be true", "should be false", "should be empty", "should not be empty",
-        "should match", "should not match", "should match regexp", "should not match regexp",
-        "length should be", "log", "sleep", "set test variable", "set suite variable",
-        "set global variable", "run keyword if", "run keywords", "repeat keyword",
-        "wait until keyword succeeds", "create list", "create dictionary", "get length",
-    }
-    selenium_keywords = {
-        "open browser", "close browser", "close all browsers", "go to", "reload page",
-        "get location", "location should be", "title should be", "element should be visible",
-        "element should not be visible", "page should contain", "page should not contain",
-        "page should contain element", "page should not contain element", "wait until element is visible",
-        "wait until page contains", "wait until location is", "click element", "input text",
-        "clear element text", "press keys", "get text", "get value", "element text should be",
-        "textfield value should be", "capture page screenshot", "select checkbox", "unselect checkbox",
-        "select from list by label", "select from list by value", "select radio button",
-        "handle alert", "alert should be present"
-    }
+    builtin_keywords, selenium_keywords = get_framework_keyword_catalog()
 
     if "*** Settings ***" not in content:
         errors.append("Missing *** Settings *** section")

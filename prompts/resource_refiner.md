@@ -32,6 +32,10 @@ Required design expectations:
 - Include composite or page-level actions when the page clearly supports them
 - Include validation or assertion keywords when messages or page states support them
 - Use common wrapper keywords by default for standard interactions unless a custom flow is clearly required
+- Keep the resource generic and future-ready for different applications, modules, and test types by preferring grounded reusable abstractions over workflow-specific shortcuts
+- Prefer canonical reusable test data variables only when they represent distinct approved semantics; avoid creating families of near-duplicate aliases
+- Prefer Robot built-ins and inline composition for trivial derived data such as blank, single-space, padded, or easily constructed variants instead of storing them as dedicated resource variables
+- Use only valid Robot Framework, BuiltIn, SeleniumLibrary, or shared-resource-supported APIs; never invent unsupported keywords
 
 Avoid these anti-patterns:
 - one keyword per element without meaningful abstraction
@@ -67,11 +71,15 @@ Refinement guidance:
 - Favor a concise, high-value page resource over a long list of weak repetitive wrappers
 - Prefer page-specific action and validation keywords that preserve manual-test intent when the approved manual scenarios require distinct interaction semantics
 - Prefer page validations grounded in workflow expected outcomes, approved manual expectations, approved reviewed keywords, and approved page evidence
-- Add semantic reusable variables for approved manual-test data variants that would otherwise be hardcoded in suites, including credential casing variants and other stable edge-case inputs when grounded in approved artifacts
+- Add semantic reusable variables only for approved, reusable, non-trivial business data that is clearly grounded in approved artifacts and likely to be reused across scenarios
+- Prefer one canonical variable per semantic intent; do not create duplicate aliases such as multiple invalid-username variants unless the approved artifacts require materially different data classes
+- Do not create dedicated variables for blank values, single spaces, padded values, trivial casing transforms, repeated-character strings, or other simple derivations when Robot built-ins or inline composition are sufficient
+- Do not create long-string or boundary-value variables unless the approved artifacts clearly require that exact reusable boundary dataset
 - Add reusable observable validation keywords for approved negative and validation scenarios when grounded in approved artifacts
 - Ensure the final resource gives downstream suite generation enough semantic support to avoid literal business data and weak same-page-only assertions
 - Strengthen negative validations only when visible or approved evidence supports them
-- Do not invent unsupported validation messages, unsupported business rules, or unsupported page behavior
+- Do not invent unsupported validation messages, unsupported business rules, unsupported page behavior, or unsupported framework/library keywords
+- Before finalizing, self-review every called keyword and keep only keywords that are valid Robot Framework/BuiltIn/SeleniumLibrary keywords or imported shared-resource keywords
 - If behavior is clearly generic and reusable across pages, rely on shared/common keywords instead of reproducing that behavior in the page resource
 - Do not solve gaps by inventing workflow-specific hardcoded logic; use only grounded context from the approved artifacts
 
