@@ -1231,16 +1231,25 @@ def sanitize_keyword_name(keyword_name: str, target_element: str = "") -> str:
     meaningful_target = clean_text(target_element)
     if meaningful_target:
         target_title = to_keyword_title(meaningful_target)
-        leading_action_match = re.match(r"^(Click|Enter|Select|Verify)\b", normalized_name, flags=re.IGNORECASE)
+        leading_action_match = re.match(r"^(Click|Enter|Select|Verify|Open|Close|Wait)\b", normalized_name, flags=re.IGNORECASE)
         if leading_action_match:
             action_word = leading_action_match.group(1).capitalize()
             return f"{action_word} {target_title}".strip()
 
-    cleaned = re.sub(r"\bAuto\b", "", normalized_name, flags=re.IGNORECASE)
-    cleaned = re.sub(r"\bBtn\b", "", cleaned, flags=re.IGNORECASE)
-    cleaned = re.sub(r"\bCtl\b", "", cleaned, flags=re.IGNORECASE)
-    cleaned = re.sub(r"\bComponent\b", "", cleaned, flags=re.IGNORECASE)
+    cleaned = normalized_name
+    for token in ["Auto", "Btn", "Ctl", "Component", "Ion", "Input", "Field", "Textbox", "Element"]:
+        cleaned = re.sub(rf"\b{token}\b", "", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\b\d+\b", "", cleaned, flags=re.IGNORECASE)
     cleaned = re.sub(r"\s+", " ", cleaned).strip()
+
+    leading_action_match = re.match(r"^(Click|Enter|Select|Verify|Open|Close|Wait)\b", cleaned, flags=re.IGNORECASE)
+    if leading_action_match:
+        action_word = leading_action_match.group(1).capitalize()
+        remainder = clean_text(cleaned[len(leading_action_match.group(0)):])
+        if remainder:
+            return f"{action_word} {remainder}".strip()
+        return action_word
+
     return cleaned or normalized_name
 
 

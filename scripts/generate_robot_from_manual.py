@@ -305,12 +305,14 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
         "- Follow a concise enterprise-style identifier standard: short stable application code, short stable feature code, then a two-digit sequence. Keep identifiers readable and bounded in length.\n"
         "- <FEATURECODE> must be a compact semantic code, typically one or two meaningful tokens, uppercase alphanumeric with optional underscores only when needed for readability. Do not derive it by concatenating the full workflow or story title.\n"
         "- Every generated test case must include a [Tags] line immediately after the test case name. Keep tags minimal: only the testcase id tag and the scenario type tag, for example [Tags]    WT-LOGIN01    positive.\n"
+        "- If the workflow input does not explicitly provide a short feature tag, derive a concise semantic feature code/tag from the workflow feature or target page intent, such as LOGIN, SIGNUP, PAYMENT, SEARCH, or PROFILE. Never use the full user-story sentence or full workflow title as a tag-like feature code.\n"
         "- <APPCODE> should be the uppercase abbreviated application code from the input. Use a short stable abbreviation.\n"
         "- Do not add extra tags such as AUT, ui, validation, security, accessibility, or feature-name tags.\n"
         "- Do NOT include a *** Keywords *** section in the generated .robot file unless a test-specific helper is absolutely unavoidable; navigation/page-open/page-ready/data keywords must never be defined in the suite.\n"
         "- Do NOT define keywords such as Open Browser To Login Page, Open Browser To Page, Open Page, Wait Until Login Page Loads, or any equivalent wrapper if the resource layer already provides page-open/navigation capability.\n"
         "- Prefer shared/common resource keywords such as Open Browser Session, Close Browser Session, Open Browser To Url, Open Login Page, Go To Url, Wait For Element To Be Ready, Click When Ready, and Input Text When Ready whenever they fit the intent. Raw SeleniumLibrary keywords in the suite should be a last resort, not the default.\n"
         "- If the resource layer provides browser/page setup or teardown keywords, use them as Test Setup, Suite Setup, Test Teardown, or Suite Teardown as appropriate.\n"
+        "- When the suite imports common/browser lifecycle helpers and the workflow has a known entry page or page URL context, include an explicit setup strategy for opening the browser and navigating to the starting page. Do not leave the suite with only teardown unless the tests are intentionally API-only, which this framework is not.\n"
         "- Respect the exact keyword signatures from the imported resource files. Never call a resource keyword without all mandatory arguments defined in its [Arguments] section.\n"
         "- When a page-specific keyword such as Open Login Page is available and a page URL variable exists in the page resource, prefer a no-argument page keyword design or pass the required page URL variable explicitly if the keyword still requires an argument.\n"
         "- Prefer reusable setup/teardown from shared/common resources for opening and closing browser or preparing generic page state.\n"
@@ -507,6 +509,7 @@ def build_review_prompt(manual_data: dict, resource_context: List[Dict], generat
         "- Prefer common/shared resource keywords for generic browser lifecycle, page opening, navigation, waiting, clicking, and text entry when suitable. Raw SeleniumLibrary keywords in the suite should be replaced by shared/common resource keywords whenever a suitable helper exists.\n"
         "- For generic field entry, including password fields, prefer common/shared wrapper keywords over low-level SeleniumLibrary entry keywords whenever the wrapper can satisfy the intent. If the shared/common layer already exposes Input Text When Ready or an equivalent reusable text-entry helper, use it instead of direct Input Password unless a dedicated shared password helper exists and is more appropriate.\n"
         "- If resource keywords suggest page lifecycle operations, use Suite/Test Setup and Teardown intelligently. Repeated startup actions such as open-page, navigate, and page-ready waits should normally be lifted into setup instead of being duplicated in every test.\n"
+        "- If the reviewed suite contains Test Teardown or Suite Teardown for browser cleanup, it should normally also contain a corresponding Test Setup or Suite Setup for browser opening and initial navigation whenever the tests are UI/browser-based. Repair missing setup instead of returning a teardown-only browser suite.\n"
         "- Every test must contain explicit validation aligned to expectedResult.\n"
         "- Prefer page-resource validation keywords over generic visibility checks when the expected result mentions authentication errors, validation messages, redirect behavior, blocked login, duplicate submission prevention, or success outcomes.\n"
         "- If a test is about password masking, ensure there is an explicit masking verification.\n"
@@ -597,6 +600,7 @@ def build_validation_review_prompt(manual_data: dict, resource_context: List[Dic
         "- The final approved page resource files are authoritative. Reuse exact approved page keyword names and exact approved page variable names from resource_context instead of paraphrasing, renaming, or reverting to metadata-derived naming.\n"
         "- Preserve compact formatting and one blank line between test cases.\n"
         "- Use Test Setup / Test Teardown when repeated startup and cleanup behavior exists.\n"
+        "- A UI/browser suite must not end up teardown-only. If browser cleanup exists, ensure an appropriate setup exists for browser opening and initial navigation using approved shared/common helpers or approved page-open keywords.\n"
         "- Every test must end with an observable validation aligned to expectedResult.\n"
         "- Positive login/navigation tests must include a post-login observable verification when such a keyword exists in resource_context. If such a success keyword does not exist, preserve the test but do not invent unsupported keywords.\n"
         "- Negative authentication tests must include stronger rejection assertions when supported by resource_context; do not rely only on page-ready checks unless that is the only available resource validation.\n"
@@ -1055,11 +1059,17 @@ def validate_robot_content(content: str, allowed_resources: list[str]) -> tuple[
     if re.search(r"\$\{Space\}", content):
         errors.append("Use Robot built-in ${SPACE} instead of ${Space}")
 
-    if not re.search(r"(?im)^\s*(?:Suite Setup|Test Setup)\s+.+$", content):
+    has_setup = bool(re.search(r"(?im)^\s*(?:Suite Setup|Test Setup)\s+.+$", content))
+    has_teardown = bool(re.search(r"(?im)^\s*(?:Suite Teardown|Test Teardown)\s+.+$", content))
+
+    if not has_setup:
         warnings.append("Generated suite does not include Suite Setup or Test Setup; prefer reusable setup keywords when resource context supports them")
 
-    if not re.search(r"(?im)^\s*(?:Suite Teardown|Test Teardown)\s+.+$", content):
+    if not has_teardown:
         warnings.append("Generated suite does not include Suite Teardown or Test Teardown; prefer reusable teardown keywords when resource context supports them")
+
+    if has_teardown and not has_setup:
+        warnings.append("Generated suite includes teardown but no setup; repair the suite to include setup for browser opening and initial navigation using approved shared/common or page resource helpers")
 
     if re.search(r"(?is)\*\*\*\s*settings\s*\*\*\*.*?\n\s*\n\s*(?:Test Setup|Suite Setup|Test Teardown|Suite Teardown|Resource)", content):
         warnings.append("Generated suite contains unnecessary blank lines inside the Settings section; keep Settings compact")
