@@ -54,7 +54,8 @@
                 </div>
                 <div class="col-md-6">
                     <label class="form-label">Page URL</label>
-                    <input class="form-control" name="page_url" value="{{ data.pages[0].url if data and data.pages else '' }}" required>
+                    <input class="form-control" name="page_url" value="{{ data.pages[0].url if data and data.pages else '' }}" placeholder="Optional. Provide only if this page can be opened directly by URL.">
+                    <div class="form-text">Optional for SPA/Ionic or routed flows. You can describe navigation in preconditions or the user story instead.</div>
                 </div>
                 <div class="col-md-12">
                     <label class="form-label">Resource File</label>
@@ -87,14 +88,6 @@
                     <input class="form-control" name="scenario_intent_text" value="{% if data and data.scenarioIntent %}{{ data.scenarioIntent | join(',') }}{% else %}positive,negative,edge,ui{% endif %}">
                 </div>
 
-                <div class="col-md-4">
-                    <label class="form-label">Valid Username</label>
-                    <input class="form-control" name="valid_username" value="{{ data.testData.validUsername if data and data.testData else '' }}">
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">Valid Password</label>
-                    <input class="form-control" name="valid_password" value="{{ data.testData.validPassword if data and data.testData else '' }}">
-                </div>
                 <div class="col-md-4">
                     <label class="form-label">Test Identifier Prefix</label>
                     <input class="form-control" name="test_identifier_prefix" value="{{ data.testIdentifierPrefix if data else '' }}" placeholder="Example: LOGIN or AUTH_LOGIN">

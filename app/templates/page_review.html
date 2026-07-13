@@ -84,7 +84,7 @@
                 <div class="card-body">
                     <h5>Page Summary</h5>
                     <p><strong>Page Name:</strong> {{ page_name }}</p>
-                    <p><strong>Page URL:</strong> {{ page_url }}</p>
+                    {% if page_url %}<p><strong>Page URL:</strong> {{ page_url }}</p>{% endif %}
                     <p><strong>Total Extracted Elements:</strong> {{ raw_elements_count }}</p>
                     <p><strong>Displayed In Review:</strong> {{ display_elements_count }}</p>
                     <p><strong>Review Source:</strong> {{ source_artifact|title }}</p>
@@ -102,9 +102,15 @@
                     </div>
 
                     <div class="d-grid gap-2">
+                        {% if page_url %}
                         <form method="post" action="/page-review/{{ workflow_name }}/extract">
                             <button class="btn btn-primary w-100" type="submit">Run Extraction</button>
                         </form>
+                        {% else %}
+                        <div class="alert alert-warning small mb-0">
+                            Page extraction requires a direct page URL. Add it to the workflow only when the page can be opened directly in a browser.
+                        </div>
+                        {% endif %}
                         <a href="/" class="btn btn-outline-dark">Back to Dashboard</a>
                     </div>
                 </div>

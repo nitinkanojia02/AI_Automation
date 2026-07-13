@@ -1120,10 +1120,10 @@ def process_page(playwright, config: dict, page_entry: Dict[str, str]):
 
 def build_single_page_config(config: dict, page_name: str, url: str) -> dict:
     single_config = dict(config)
-    single_config["pages"] = [{
-        "page_name": page_name,
-        "url": url
-    }]
+    page_entry = {"page_name": page_name}
+    if clean_text(url):
+        page_entry["url"] = url
+    single_config["pages"] = [page_entry]
     return single_config
 
 def parse_args():
@@ -1142,8 +1142,10 @@ def main():
         return
 
     if args.page_name or args.url:
-        if not args.page_name or not args.url:
-            raise ValueError("Both --page-name and --url must be provided for single-page extraction.")
+        if not args.page_name:
+            raise ValueError("--page-name must be provided for single-page extraction.")
+        if not args.url:
+            raise ValueError("--url must be provided for single-page extraction.")
         config = build_single_page_config(config, args.page_name, args.url)
 
     pages = config.get("pages", [])

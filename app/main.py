@@ -559,8 +559,6 @@ def build_workflow_payload(
     fields_text: str,
     validations_text: str,
     scenario_intent_text: str,
-    valid_username: str,
-    valid_password: str,
     application_code: str = "",
     source: dict | None = None,
     external_context: dict | None = None,
@@ -591,6 +589,12 @@ def build_workflow_payload(
         "notes": "Workflow entered from MVP UI."
     }
 
+    page_entry = {
+        "name": page_name,
+    }
+    if page_url:
+        page_entry["url"] = page_url
+
     payload = {
         "inputType": "exploratory_workflow",
         "workflowId": f"{slugify(workflow_name).upper()}_001",
@@ -601,21 +605,12 @@ def build_workflow_payload(
         "testIdentifierPrefix": clean_text(test_identifier_prefix).upper(),
         "source": workflow_source,
         "resourceFiles": [resource_file],
-        "pages": [
-            {
-                "name": page_name,
-                "url": page_url
-            }
-        ],
+        "pages": [page_entry],
         "observedPreconditions": preconditions,
         "observedSteps": steps,
         "observedExpectedResult": expected_result,
         "fields": fields,
         "observedValidations": validations,
-        "testData": {
-            "validUsername": valid_username.strip(),
-            "validPassword": valid_password.strip()
-        },
         "scenarioIntent": scenario_intent,
     }
 
@@ -632,6 +627,8 @@ def run_page_extraction(page_name: str, page_url: str):
     script_path = BASE_DIR / "scripts" / "extract_page_model.py"
     if not script_path.exists():
         raise HTTPException(status_code=500, detail="Page extraction script not found.")
+    if not clean_text(page_url):
+        raise HTTPException(status_code=400, detail="Page extraction requires a page URL. Add one only for pages that can be opened directly.")
 
     result = subprocess.run(
         [
@@ -3140,8 +3137,6 @@ def build_workflow_payload_from_azure_story(
     page_name: str,
     page_url: str,
     resource_file: str,
-    valid_username: str,
-    valid_password: str,
     test_identifier_prefix: str = "",
 ) -> dict:
     workflow_name = clean_text(str(azure_context.get("title", ""))) or "Imported Workflow"
@@ -3171,8 +3166,6 @@ def build_workflow_payload_from_azure_story(
         fields_text="",
         validations_text="\n".join(acceptance_criteria),
         scenario_intent_text="positive,negative,edge,ui",
-        valid_username=valid_username,
-        valid_password=valid_password,
         application_code=str(CONFIG.get("application_code", "")),
         source=source,
         external_context=azure_context,
@@ -3186,7 +3179,7 @@ def save_workflow(
     module: str = Form("Authentication"),
     feature: str = Form("Login"),
     page_name: str = Form(...),
-    page_url: str = Form(...),
+    page_url: str = Form(""),
     resource_file: str = Form(...),
     preconditions_text: str = Form(""),
     steps_text: str = Form(""),
@@ -3194,8 +3187,6 @@ def save_workflow(
     fields_text: str = Form(""),
     validations_text: str = Form(""),
     scenario_intent_text: str = Form("positive,negative,edge,ui"),
-    valid_username: str = Form(""),
-    valid_password: str = Form(""),
     existing_workflow_slug: str = Form(""),
     input_source: str = Form("manual"),
     azure_base_url: str = Form(""),
@@ -3224,8 +3215,6 @@ def save_workflow(
             page_name=page_name,
             page_url=page_url,
             resource_file=resource_file,
-            valid_username=valid_username,
-            valid_password=valid_password,
             test_identifier_prefix=test_identifier_prefix,
         ))
         workflow_name = clean_text(str(payload.get("workflowName", workflow_name)))
@@ -3243,8 +3232,6 @@ def save_workflow(
             fields_text,
             validations_text,
             scenario_intent_text,
-            valid_username,
-            valid_password,
             str(CONFIG.get("application_code", "")),
         ))
 
