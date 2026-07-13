@@ -950,7 +950,11 @@ def validate_robot_content(content: str, allowed_resources: list[str]) -> tuple[
         if not normalized_keyword:
             return
         if normalized_keyword not in builtin_keywords and normalized_keyword not in selenium_keywords and normalized_keyword not in resource_keyword_names:
-            warnings.append(f"Generated suite may use an unknown or unsupported keyword: {keyword_name}")
+            errors.append(
+                f"Generated suite uses an unknown or unsupported keyword '{keyword_name}' in {source_label}. "
+                "Use only imported resource keywords or valid Robot Framework/SeleniumLibrary/BuiltIn keywords."
+            )
+            return
         signature = keyword_signature_map.get(normalized_keyword)
         if signature:
             required_count = len(signature.get("required_args", []))
