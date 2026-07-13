@@ -140,9 +140,9 @@
                                                     <option value="urlContains" {% if signal.type == 'urlContains' %}selected{% endif %}>urlContains</option>
                                                 </select>
                                             </td>
-                                            <td><input class="form-control signal-page" name="signal_{{ loop.index0 }}_page" value="{{ signal.page if signal.page is defined else '' }}" placeholder="login_page"></td>
-                                            <td><input class="form-control signal-element" name="signal_{{ loop.index0 }}_element" value="{{ signal.element if signal.element is defined else '' }}" placeholder="username_input"></td>
-                                            <td><input class="form-control signal-value" name="signal_{{ loop.index0 }}_value" value="{{ signal.value if signal.value is defined else '' }}" placeholder="Login or input[type='password']"></td>
+                                            <td class="signal-page-cell"><input class="form-control signal-page" name="signal_{{ loop.index0 }}_page" value="{{ signal.page if signal.page is defined else '' }}" placeholder="login_page"></td>
+                                            <td class="signal-element-cell"><input class="form-control signal-element" name="signal_{{ loop.index0 }}_element" value="{{ signal.element if signal.element is defined else '' }}" placeholder="username_input"></td>
+                                            <td class="signal-value-cell"><input class="form-control signal-value" name="signal_{{ loop.index0 }}_value" value="{{ signal.value if signal.value is defined else '' }}" placeholder="Login or input[type='password']"></td>
                                         </tr>
                                         {% endfor %}
                                     </tbody>
@@ -235,9 +235,29 @@ function toggleSignalRow(selectEl) {
     const elementInput = row.querySelector('.signal-element');
     const valueInput = row.querySelector('.signal-value');
     const known = type === 'knownElement';
-    if (pageInput) pageInput.disabled = !known;
-    if (elementInput) elementInput.disabled = !known;
-    if (valueInput) valueInput.disabled = known;
+
+    const setFieldState = (input, enabled, placeholder) => {
+        if (!input) return;
+        input.disabled = !enabled;
+        input.style.display = enabled ? '' : 'none';
+        if (input.parentElement) {
+            input.parentElement.style.display = enabled ? '' : 'none';
+        }
+        if (placeholder !== undefined) {
+            input.placeholder = placeholder;
+        }
+    };
+
+    setFieldState(pageInput, known, 'login_page');
+    setFieldState(elementInput, known, 'username_input');
+    setFieldState(valueInput, !known, 'Login or input[type=\'password\']');
+
+    if (known) {
+        if (valueInput) valueInput.value = '';
+    } else {
+        if (pageInput) pageInput.value = '';
+        if (elementInput) elementInput.value = '';
+    }
 }
 
 function addTargetSignal(type = 'text', page = '', element = '', value = '') {
@@ -256,9 +276,9 @@ function addTargetSignal(type = 'text', page = '', element = '', value = '') {
                 <option value="urlContains" ${type === 'urlContains' ? 'selected' : ''}>urlContains</option>
             </select>
         </td>
-        <td><input class="form-control signal-page" name="signal_${index}_page" value="${page}" placeholder="login_page"></td>
-        <td><input class="form-control signal-element" name="signal_${index}_element" value="${element}" placeholder="username_input"></td>
-        <td><input class="form-control signal-value" name="signal_${index}_value" value="${value}" placeholder="Login or input[type='password']"></td>
+        <td class="signal-page-cell"><input class="form-control signal-page" name="signal_${index}_page" value="${page}" placeholder="login_page"></td>
+        <td class="signal-element-cell"><input class="form-control signal-element" name="signal_${index}_element" value="${element}" placeholder="username_input"></td>
+        <td class="signal-value-cell"><input class="form-control signal-value" name="signal_${index}_value" value="${value}" placeholder="Login or input[type='password']"></td>
     `;
     tbody.appendChild(row);
     countInput.value = index + 1;
