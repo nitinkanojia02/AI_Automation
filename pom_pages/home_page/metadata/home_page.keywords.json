@@ -1,0 +1,176 @@
+{
+  "pageName": "home_page",
+  "keywords": [
+    {
+      "keywordId": "KW_001",
+      "keywordName": "Open Home Page",
+      "targetElement": "",
+      "action": "generic",
+      "arguments": [],
+      "implementation": [
+        "[Documentation]    Navigate directly to the home page URL.",
+        "    Go To Url    ${HOME_PAGE_URL}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_002",
+      "keywordName": "Wait Until Home Page Loads",
+      "targetElement": "",
+      "action": "generic",
+      "arguments": [],
+      "implementation": [
+        "[Documentation]    Wait until the home page is fully loaded and primary controls are visible.",
+        "    Wait Until Location Contains    ${HOME_PAGE_URL_PATH}    ${DEFAULT_WAIT_TIMEOUT}",
+        "    Wait For Element To Be Ready    ${AUTO_PERSON_BTN_BUTTON}    ${DEFAULT_WAIT_TIMEOUT}",
+        "    Wait For Element To Be Ready    ${AUTO_BTN_CUSTOMER_SIGNUP_BUTTON}    ${DEFAULT_WAIT_TIMEOUT}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_003",
+      "keywordName": "Click Auto Person Btn Button",
+      "targetElement": "person_navigation_button",
+      "action": "click",
+      "arguments": [],
+      "implementation": [
+        "[Documentation]    Click the person navigation button from the home page.",
+        "    Click When Ready    ${AUTO_PERSON_BTN_BUTTON}    ${DEFAULT_WAIT_TIMEOUT}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_004",
+      "keywordName": "Click Auto Back Btn Button",
+      "targetElement": "back_navigation_button",
+      "action": "click",
+      "arguments": [],
+      "implementation": [
+        "[Documentation]    Click the back navigation button from the home page.",
+        "    Click When Ready    ${AUTO_BACK_BTN_BUTTON}    ${DEFAULT_WAIT_TIMEOUT}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_005",
+      "keywordName": "Click Auto Notification Btn Button",
+      "targetElement": "notification_button",
+      "action": "click",
+      "arguments": [],
+      "implementation": [
+        "[Documentation]    Click the notification button from the home page.",
+        "    Click When Ready    ${AUTO_NOTIFICATION_BTN_BUTTON}    ${DEFAULT_WAIT_TIMEOUT}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_006",
+      "keywordName": "Click Auto Home Btn Button",
+      "targetElement": "home_navigation_link",
+      "action": "click",
+      "arguments": [],
+      "implementation": [
+        "[Documentation]    Click the home navigation link from the home page.",
+        "    Click When Ready    ${AUTO_HOME_BTN_BUTTON}    ${DEFAULT_WAIT_TIMEOUT}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_007",
+      "keywordName": "Click Auto Btn Customer Signup Button",
+      "targetElement": "customer_signup_button",
+      "action": "click",
+      "arguments": [],
+      "implementation": [
+        "[Documentation]    Click the customer signup button from the home page.",
+        "    Click When Ready    ${AUTO_BTN_CUSTOMER_SIGNUP_BUTTON}    ${DEFAULT_WAIT_TIMEOUT}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_008",
+      "keywordName": "Click Auto Btn Clean Survey Button",
+      "targetElement": "clean_survey_button",
+      "action": "click",
+      "arguments": [],
+      "implementation": [
+        "[Documentation]    Click the clean survey button from the home page.",
+        "    Click When Ready    ${AUTO_BTN_CLEAN_SURVEY_BUTTON}    ${DEFAULT_WAIT_TIMEOUT}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_009",
+      "keywordName": "Click Auto Btn Site Survey Button",
+      "targetElement": "site_survey_button",
+      "action": "click",
+      "arguments": [],
+      "implementation": [
+        "[Documentation]    Click the site survey button from the home page.",
+        "    Click When Ready    ${AUTO_BTN_SITE_SURVEY_BUTTON}    ${DEFAULT_WAIT_TIMEOUT}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_010",
+      "keywordName": "Verify User Is On Login Page",
+      "targetElement": "",
+      "action": "verify",
+      "arguments": [],
+      "implementation": [
+        "[Documentation]    Verify the user is redirected to the login page.",
+        "    Wait Until Location Is    ${LOGIN_PAGE_URL}    ${DEFAULT_WAIT_TIMEOUT}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_011",
+      "keywordName": "Verify Home Page Is Displayed",
+      "targetElement": "",
+      "action": "verify",
+      "arguments": [],
+      "implementation": [
+        "[Documentation]    Verify the home page is displayed with all primary controls visible.",
+        "    Wait Until Location Contains    ${HOME_PAGE_URL_PATH}    ${DEFAULT_WAIT_TIMEOUT}",
+        "    Wait For Element To Be Ready    ${AUTO_PERSON_BTN_BUTTON}    ${DEFAULT_WAIT_TIMEOUT}",
+        "    Wait For Element To Be Ready    ${AUTO_BACK_BTN_BUTTON}    ${DEFAULT_WAIT_TIMEOUT}",
+        "    Wait For Element To Be Ready    ${AUTO_NOTIFICATION_BTN_BUTTON}    ${DEFAULT_WAIT_TIMEOUT}",
+        "    Wait For Element To Be Ready    ${AUTO_HOME_BTN_BUTTON}    ${DEFAULT_WAIT_TIMEOUT}",
+        "    Wait For Element To Be Ready    ${AUTO_BTN_CUSTOMER_SIGNUP_BUTTON}    ${DEFAULT_WAIT_TIMEOUT}",
+        "    Wait For Element To Be Ready    ${AUTO_BTN_CLEAN_SURVEY_BUTTON}    ${DEFAULT_WAIT_TIMEOUT}",
+        "    Wait For Element To Be Ready    ${AUTO_BTN_SITE_SURVEY_BUTTON}    ${DEFAULT_WAIT_TIMEOUT}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_012",
+      "keywordName": "Verify Notification Button Is Functional",
+      "targetElement": "notification_button",
+      "action": "verify",
+      "arguments": [],
+      "implementation": [
+        "[Documentation]    Verify the notification button is visible and interactable.",
+        "    Wait For Element To Be Ready    ${AUTO_NOTIFICATION_BTN_BUTTON}    ${DEFAULT_WAIT_TIMEOUT}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_013",
+      "keywordName": "Verify Home Page Controls Are Interactable",
+      "targetElement": "",
+      "action": "verify",
+      "arguments": [],
+      "implementation": [
+        "[Documentation]    Verify all approved home page controls are visible and enabled.",
+        "    Wait For Element To Be Ready    ${AUTO_PERSON_BTN_BUTTON}    ${DEFAULT_WAIT_TIMEOUT}",
+        "    Wait For Element To Be Ready    ${AUTO_BACK_BTN_BUTTON}    ${DEFAULT_WAIT_TIMEOUT}",
+        "    Wait For Element To Be Ready    ${AUTO_NOTIFICATION_BTN_BUTTON}    ${DEFAULT_WAIT_TIMEOUT}",
+        "    Wait For Element To Be Ready    ${AUTO_HOME_BTN_BUTTON}    ${DEFAULT_WAIT_TIMEOUT}",
+        "    Wait For Element To Be Ready    ${AUTO_BTN_CUSTOMER_SIGNUP_BUTTON}    ${DEFAULT_WAIT_TIMEOUT}",
+        "    Wait For Element To Be Ready    ${AUTO_BTN_CLEAN_SURVEY_BUTTON}    ${DEFAULT_WAIT_TIMEOUT}",
+        "    Wait For Element To Be Ready    ${AUTO_BTN_SITE_SURVEY_BUTTON}    ${DEFAULT_WAIT_TIMEOUT}"
+      ],
+      "approved": true
+    }
+  ]
+}

@@ -1,0 +1,200 @@
+{
+  "workflowName": "Home",
+  "resourceFiles": [
+    "home_page/home_page.resource"
+  ],
+  "preconditions": [
+    "Navigate to http://localhost/washtabui/home",
+    "Application home page is reachable and fully loaded in the browser"
+  ],
+  "testCases": [
+    {
+      "id": "TC_HOME_001",
+      "title": "Verify home page loads with all approved navigation and action controls visible",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the URL http://localhost/washtabui/home",
+        "Wait for the home page to finish loading",
+        "Observe the top navigation area and action button section"
+      ],
+      "expectedResult": "Home page loads successfully with URL containing /home and the person button, back button, notification button, home navigation link, customer signup button, clean survey button, and site survey button are visible, aligned correctly, enabled, and clickable without overlapping, clipping, or broken UI elements."
+    },
+    {
+      "id": "TC_HOME_002",
+      "title": "Verify clicking person navigation button redirects user to login page with expected URL",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the home page",
+        "Click the person navigation button once"
+      ],
+      "expectedResult": "User is redirected to the login page, the browser URL changes exactly to http://localhost/washtabui/login?data=undefined, and the login page is displayed without browser or application errors."
+    },
+    {
+      "id": "TC_HOME_004",
+      "title": "Verify customer signup button navigates to customer-search page",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the home page",
+        "Click the customer signup button"
+      ],
+      "expectedResult": "User is redirected to the customer-search page and the destination page loads with visible content and no navigation, rendering, or browser errors."
+    },
+    {
+      "id": "TC_HOME_005",
+      "title": "Verify clean survey button navigates to vehicle-survey page",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the home page",
+        "Click the clean survey button"
+      ],
+      "expectedResult": "User is redirected to the vehicle-survey page and the page content is displayed without missing sections, broken layout, or loading issues."
+    },
+    {
+      "id": "TC_HOME_006",
+      "title": "Verify site survey button navigates to survey page",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the home page",
+        "Click the site survey button"
+      ],
+      "expectedResult": "User is redirected to the survey page and the survey page loads successfully with visible content and no browser or application errors."
+    },
+    {
+      "id": "TC_HOME_007",
+      "title": "Verify home navigation link keeps user on the home page",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the home page",
+        "Click the home navigation link"
+      ],
+      "expectedResult": "The application remains on the home page, the browser URL continues to contain /home, and all home page controls remain visible and functional."
+    },
+    {
+      "id": "TC_HOME_008",
+      "title": "Verify notification button responds to user interaction without UI failure",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the home page",
+        "Click the notification button"
+      ],
+      "expectedResult": "The notification button responds to the click action without page freeze, broken UI, or browser errors. Any implemented notification popup, panel, or page opens successfully."
+    },
+    {
+      "id": "TC_HOME_009",
+      "title": "Verify back navigation button behavior when no previous page exists",
+      "type": "Edge",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the home page directly in a fresh browser tab",
+        "Click the back navigation button"
+      ],
+      "expectedResult": "The application handles the back action safely without displaying blank pages, crash messages, or broken navigation states. User either remains on the home page or returns to a valid browser history page if available."
+    },
+    {
+      "id": "TC_HOME_010",
+      "title": "Verify all approved controls are enabled and interactable",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the home page",
+        "Observe each approved button and link",
+        "Interact with each control individually"
+      ],
+      "expectedResult": "All approved controls are visible, enabled, and responsive to user interaction without disabled states, delayed response, or UI failures."
+    },
+    {
+      "id": "TC_HOME_016",
+      "title": "Verify browser refresh preserves visibility and functionality of home page controls",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the home page",
+        "Refresh the browser page"
+      ],
+      "expectedResult": "The home page reloads successfully after refresh and all approved buttons and links remain visible, enabled, and fully functional."
+    },
+    {
+      "id": "TC_HOME_017",
+      "title": "Verify direct access to home page URL opens the expected landing page",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Enter http://localhost/washtabui/home directly into the browser address bar",
+        "Press Enter"
+      ],
+      "expectedResult": "The application opens the home page directly, the URL remains http://localhost/washtabui/home, and all approved home page controls are displayed without unexpected redirects."
+    },
+    {
+      "id": "TC_HOME_018",
+      "title": "Verify home page layout remains usable after browser window resize",
+      "type": "Edge",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the home page",
+        "Resize the browser window to a smaller width",
+        "Observe all approved controls and page layout"
+      ],
+      "expectedResult": "All approved controls remain visible or accessible after resizing and the page does not display clipped buttons, overlapping text, horizontal layout corruption, or unusable navigation elements."
+    },
+    {
+      "id": "TC_HOME_019",
+      "title": "Verify browser back action returns user to home page after opening login page",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the home page",
+        "Click the person navigation button",
+        "After the login page opens, use the browser Back action"
+      ],
+      "expectedResult": "The browser returns to the home page successfully and all original home page controls are visible and usable again without requiring manual refresh."
+    },
+    {
+      "id": "TC_HOME_020",
+      "title": "Verify sequential navigation across multiple home page actions remains stable",
+      "type": "Edge",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the home page",
+        "Click the customer signup button and return to the home page",
+        "Click the clean survey button and return to the home page",
+        "Click the site survey button and return to the home page",
+        "Click the person navigation button"
+      ],
+      "expectedResult": "Each action opens the correct destination page, returning to the home page preserves all controls and layout, and the final navigation to the login page succeeds without stale UI state, broken links, or navigation failures."
+    },
+    {
+      "id": "TC_HOME_021",
+      "title": "Verify approved controls remain visible after navigating away and returning to the home page",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the home page",
+        "Navigate to the customer-search page using the customer signup button",
+        "Return to the home page using browser navigation or application navigation"
+      ],
+      "expectedResult": "The home page reloads correctly after returning and all approved navigation buttons and action controls are visible, enabled, and functional without missing elements or broken layout."
+    }
+  ]
+}

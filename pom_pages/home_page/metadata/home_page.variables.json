@@ -1,0 +1,68 @@
+{
+  "pageName": "home_page",
+  "pageUrl": "http://localhost/washtabui/home",
+  "variables": [
+    {
+      "variableName": "PAGE_URL",
+      "value": "http://localhost/washtabui/home",
+      "source": "approved_page",
+      "kind": "page_url"
+    },
+    {
+      "variableName": "PERSON_NAVIGATION_BUTTON",
+      "value": "id=auto_person_btn",
+      "source": "approved_element",
+      "kind": "locator",
+      "approvedName": "person_navigation_button",
+      "type": "button"
+    },
+    {
+      "variableName": "BACK_NAVIGATION_BUTTON",
+      "value": "id=auto_back_btn",
+      "source": "approved_element",
+      "kind": "locator",
+      "approvedName": "back_navigation_button",
+      "type": "button"
+    },
+    {
+      "variableName": "NOTIFICATION_BUTTON",
+      "value": "id=auto_notification_btn",
+      "source": "approved_element",
+      "kind": "locator",
+      "approvedName": "notification_button",
+      "type": "button"
+    },
+    {
+      "variableName": "HOME_NAVIGATION_LINK",
+      "value": "id=auto_home_btn",
+      "source": "approved_element",
+      "kind": "locator",
+      "approvedName": "home_navigation_link",
+      "type": "link"
+    },
+    {
+      "variableName": "CUSTOMER_SIGNUP_BUTTON",
+      "value": "id=auto_btn_CustomerSignup",
+      "source": "approved_element",
+      "kind": "locator",
+      "approvedName": "customer_signup_button",
+      "type": "button"
+    },
+    {
+      "variableName": "CLEAN_SURVEY_BUTTON",
+      "value": "id=auto_btn_CleanSurvey",
+      "source": "approved_element",
+      "kind": "locator",
+      "approvedName": "clean_survey_button",
+      "type": "button"
+    },
+    {
+      "variableName": "SITE_SURVEY_BUTTON",
+      "value": "id=auto_btn_SiteSurvey",
+      "source": "approved_element",
+      "kind": "locator",
+      "approvedName": "site_survey_button",
+      "type": "button"
+    }
+  ]
+}
