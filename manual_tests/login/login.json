@@ -1,0 +1,332 @@
+{
+  "workflowName": "Login",
+  "resourceFiles": [
+    "login_page/login_page.resource"
+  ],
+  "preconditions": [
+    "Navigate to http://localhost/washtabui/login?data=undefined",
+    "Login page is accessible",
+    "Username textbox, Password textbox, Login button, Forgot Password link, Back Button, and Home Button are visible",
+    "Valid credentials are available: Username 'krisadmin' and Password 'Carwash#1'"
+  ],
+  "testCases": [
+    {
+      "id": "TC_LOGIN_001",
+      "title": "Verify login page loads with all required authentication controls visible",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the login page URL",
+        "Observe the login screen without entering any data"
+      ],
+      "expectedResult": "Username textbox, Password textbox, Login button, Forgot Password link, Back Button, and Home Button are visible, enabled, and accessible on the login page. Login button displays the text 'Login' and the page remains responsive."
+    },
+    {
+      "id": "TC_LOGIN_002",
+      "title": "Verify successful login with valid username and valid password using Login button click",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Enter 'krisadmin' in the Username textbox",
+        "Enter 'Carwash#1' in the Password textbox",
+        "Click the Login button"
+      ],
+      "expectedResult": "User is authenticated successfully and redirected to the home page URL. Login form is no longer visible and authenticated home page content is displayed."
+    },
+    {
+      "id": "TC_LOGIN_003",
+      "title": "Verify successful login using keyboard Enter key submission after entering valid credentials",
+      "type": "Edge",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Enter 'krisadmin' in the Username textbox",
+        "Enter 'Carwash#1' in the Password textbox",
+        "Press the Enter key from the Password textbox"
+      ],
+      "expectedResult": "Login form submits through keyboard interaction and redirects the user to the authenticated home page without requiring a mouse click on the Login button."
+    },
+    {
+      "id": "TC_LOGIN_004",
+      "title": "Verify login fails with valid username and invalid password",
+      "type": "Negative",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Enter 'krisadmin' in the Username textbox",
+        "Enter 'WrongPassword1' in the Password textbox",
+        "Click the Login button"
+      ],
+      "expectedResult": "Authentication is rejected and a visible login failed or invalid credentials message is displayed. User remains on the login page and the home page is not opened."
+    },
+    {
+      "id": "TC_LOGIN_005",
+      "title": "Verify login fails with invalid username and valid password",
+      "type": "Negative",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Enter 'invaliduser' in the Username textbox",
+        "Enter 'Carwash#1' in the Password textbox",
+        "Click the Login button"
+      ],
+      "expectedResult": "Authentication fails and a visible login failed or invalid credentials message is displayed. Login page remains visible and no authenticated session is created."
+    },
+    {
+      "id": "TC_LOGIN_006",
+      "title": "Verify login fails with both invalid username and invalid password",
+      "type": "Negative",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Enter 'wronguser' in the Username textbox",
+        "Enter 'wrongpassword' in the Password textbox",
+        "Click the Login button"
+      ],
+      "expectedResult": "Login attempt is rejected with a visible login failed message. User stays on the login page and the URL does not change to the home page."
+    },
+    {
+      "id": "TC_LOGIN_007",
+      "title": "Verify validation when Username field is left empty",
+      "type": "Negative",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Leave the Username textbox empty",
+        "Enter 'Carwash#1' in the Password textbox",
+        "Click the Login button"
+      ],
+      "expectedResult": "Login is not completed and a validation or login failed message indicating the Username field is required is displayed. User remains on the login page."
+    },
+    {
+      "id": "TC_LOGIN_008",
+      "title": "Verify validation when Password field is left empty",
+      "type": "Negative",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Enter 'krisadmin' in the Username textbox",
+        "Leave the Password textbox empty",
+        "Click the Login button"
+      ],
+      "expectedResult": "Login is rejected and a validation or login failed message indicating the Password field is required is displayed. Login page remains visible and no redirection occurs."
+    },
+    {
+      "id": "TC_LOGIN_009",
+      "title": "Verify validation when both Username and Password fields are empty",
+      "type": "Negative",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Leave the Username textbox empty",
+        "Leave the Password textbox empty",
+        "Click the Login button"
+      ],
+      "expectedResult": "Login request is not authenticated and visible validation or login failed messaging is shown. User remains on the login page with both input fields still displayed."
+    },
+    {
+      "id": "TC_LOGIN_010",
+      "title": "Verify password field masks entered characters",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Place cursor in the Password textbox",
+        "Type 'Carwash#1' into the Password textbox"
+      ],
+      "expectedResult": "Password characters are displayed as masked characters or dots and the actual password text is not visible on the screen while typing."
+    },
+    {
+      "id": "TC_LOGIN_011",
+      "title": "Verify Username field accepts pasted text input",
+      "type": "Edge",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Copy 'krisadmin' to clipboard",
+        "Paste the value into the Username textbox",
+        "Enter 'Carwash#1' in the Password textbox",
+        "Click the Login button"
+      ],
+      "expectedResult": "Pasted username value is retained correctly in the Username textbox and valid login succeeds with navigation to the home page."
+    },
+    {
+      "id": "TC_LOGIN_012",
+      "title": "Verify Password field accepts pasted text input",
+      "type": "Edge",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Enter 'krisadmin' in the Username textbox",
+        "Copy 'Carwash#1' to clipboard",
+        "Paste the value into the Password textbox",
+        "Click the Login button"
+      ],
+      "expectedResult": "Pasted password value is accepted correctly in the Password textbox and successful authentication redirects the user to the home page."
+    },
+    {
+      "id": "TC_LOGIN_013",
+      "title": "Verify login behavior with leading and trailing spaces in Username field",
+      "type": "Edge",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Enter '  krisadmin  ' in the Username textbox",
+        "Enter 'Carwash#1' in the Password textbox",
+        "Click the Login button"
+      ],
+      "expectedResult": "Application handles leading and trailing spaces consistently without UI errors. User is either authenticated successfully after trimming spaces or shown a visible login failed message while remaining on the login page."
+    },
+    {
+      "id": "TC_LOGIN_014",
+      "title": "Verify login behavior with leading and trailing spaces in Password field",
+      "type": "Edge",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Enter 'krisadmin' in the Username textbox",
+        "Enter '  Carwash#1  ' in the Password textbox",
+        "Click the Login button"
+      ],
+      "expectedResult": "Application handles password spacing consistently without application crash or UI corruption. User is either authenticated only if spaces are ignored or shown a visible login failed message while remaining on the login page."
+    },
+    {
+      "id": "TC_LOGIN_015",
+      "title": "Verify whitespace-only values are rejected in Username and Password fields",
+      "type": "Negative",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Enter only spaces in the Username textbox",
+        "Enter only spaces in the Password textbox",
+        "Click the Login button"
+      ],
+      "expectedResult": "Whitespace-only credentials are rejected with visible validation or login failed messaging. User remains on the login page and no authenticated session is created."
+    },
+    {
+      "id": "TC_LOGIN_016",
+      "title": "Verify username field handles special characters input without UI break",
+      "type": "Negative",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Enter 'krisadmin!@#' in the Username textbox",
+        "Enter 'Carwash#1' in the Password textbox",
+        "Click the Login button"
+      ],
+      "expectedResult": "Invalid username input containing special characters is rejected with visible authentication failure messaging and the login page remains stable without script errors or broken layout."
+    },
+    {
+      "id": "TC_LOGIN_017",
+      "title": "Verify login credentials are case sensitive",
+      "type": "Negative",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Enter 'KRISADMIN' in the Username textbox",
+        "Enter 'CARWASH#1' in the Password textbox",
+        "Click the Login button"
+      ],
+      "expectedResult": "Authentication fails for incorrect case-sensitive credentials and a visible login failed message is displayed while the user remains on the login page."
+    },
+    {
+      "id": "TC_LOGIN_018",
+      "title": "Verify extremely long username input does not break the login page",
+      "type": "Edge",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Enter a username string longer than 255 characters into the Username textbox",
+        "Enter 'Carwash#1' in the Password textbox",
+        "Click the Login button"
+      ],
+      "expectedResult": "Application handles oversized username input without UI corruption, freezing, or crash. Authentication is rejected and the login page remains responsive."
+    },
+    {
+      "id": "TC_LOGIN_019",
+      "title": "Verify extremely long password input does not break the login page",
+      "type": "Edge",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Enter 'krisadmin' in the Username textbox",
+        "Enter a password string longer than 255 characters into the Password textbox",
+        "Click the Login button"
+      ],
+      "expectedResult": "Application remains stable after oversized password input and displays visible login failure behavior while keeping the login page functional and interactive."
+    },
+    {
+      "id": "TC_LOGIN_020",
+      "title": "Verify repeated clicking on Login button during valid authentication does not create duplicate submissions",
+      "type": "Edge",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Enter 'krisadmin' in the Username textbox",
+        "Enter 'Carwash#1' in the Password textbox",
+        "Rapidly click the Login button multiple times"
+      ],
+      "expectedResult": "Only one authenticated session is created and user is redirected once to the home page. Duplicate popups, duplicate navigation events, and multiple login submissions are not displayed."
+    },
+    {
+      "id": "TC_LOGIN_021",
+      "title": "Verify Login button remains functional after a failed login attempt followed by valid credentials",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Enter 'wronguser' in the Username textbox",
+        "Enter 'wrongpassword' in the Password textbox",
+        "Click the Login button",
+        "Observe the login failed message",
+        "Replace the username with 'krisadmin'",
+        "Replace the password with 'Carwash#1'",
+        "Click the Login button again"
+      ],
+      "expectedResult": "Initial invalid login attempt displays a visible login failed message. Subsequent valid login succeeds and redirects the user to the authenticated home page without requiring a browser refresh."
+    },
+    {
+      "id": "TC_LOGIN_022",
+      "title": "Verify login page remains accessible and interactive after failed authentication",
+      "type": "Negative",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Enter invalid credentials into the Username and Password textboxes",
+        "Click the Login button",
+        "Attempt to interact with Username textbox, Password textbox, and Login button again"
+      ],
+      "expectedResult": "After failed authentication, Username textbox, Password textbox, and Login button remain visible, enabled, and interactive for another login attempt without requiring page reload."
+    },
+    {
+      "id": "TC_LOGIN_023",
+      "title": "Verify browser refresh on login page retains functional login controls",
+      "type": "Edge",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the login page",
+        "Refresh the browser",
+        "Observe the login page elements",
+        "Enter valid credentials and click Login"
+      ],
+      "expectedResult": "Login page reloads correctly after browser refresh with all login controls visible and functional. User can authenticate successfully and navigate to the home page."
+    },
+    {
+      "id": "TC_LOGIN_025",
+      "title": "Verify Password field does not retain visible value after failed login attempt",
+      "type": "Negative",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Enter 'krisadmin' in the Username textbox",
+        "Enter 'WrongPassword1' in the Password textbox",
+        "Click the Login button",
+        "Observe the Password textbox after authentication failure"
+      ],
+      "expectedResult": "After failed authentication, the Password textbox remains masked and does not expose the entered password in plain text. Login page remains displayed with secure password handling."
+    }
+  ]
+}
