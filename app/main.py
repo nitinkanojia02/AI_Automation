@@ -1223,6 +1223,27 @@ def build_keywords_from_elements(elements: list[dict]) -> list[dict]:
     return keywords
 
 
+def sanitize_keyword_name(keyword_name: str, target_element: str = "") -> str:
+    normalized_name = clean_text(keyword_name)
+    if not normalized_name:
+        return normalized_name
+
+    meaningful_target = clean_text(target_element)
+    if meaningful_target:
+        target_title = to_keyword_title(meaningful_target)
+        leading_action_match = re.match(r"^(Click|Enter|Select|Verify)\b", normalized_name, flags=re.IGNORECASE)
+        if leading_action_match:
+            action_word = leading_action_match.group(1).capitalize()
+            return f"{action_word} {target_title}".strip()
+
+    cleaned = re.sub(r"\bAuto\b", "", normalized_name, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\bBtn\b", "", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\bCtl\b", "", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\bComponent\b", "", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+    return cleaned or normalized_name
+
+
 def get_manual_tests_for_workflow(workflow: dict) -> list[dict]:
     workflow_name = slugify(str(workflow.get("workflowName", "")))
     if not workflow_name:
@@ -1583,6 +1604,7 @@ def get_keyword_review_data(workflow: dict):
                             target_element = clean_text(str(item.get("targetElement", ""))) or resolve_target_element(keyword_name)
                             if target_element and target_element not in approved_elements_by_name:
                                 continue
+                            keyword_name = sanitize_keyword_name(keyword_name, target_element)
                             implementation = item.get("implementation", [])
                             if isinstance(implementation, str):
                                 implementation = [line.rstrip() for line in implementation.splitlines() if clean_text(line)]
@@ -1872,6 +1894,7 @@ def save_keywords_for_workflow(workflow: dict, keywords: list[dict]):
             continue
 
         target_element = resolve_target_element(keyword_name, str(keyword.get("targetElement", "")))
+        keyword_name = sanitize_keyword_name(keyword_name, target_element)
         implementation = keyword.get("implementation", [])
         if isinstance(implementation, str):
             implementation = [line.rstrip() for line in implementation.splitlines() if line.strip()]
@@ -1962,6 +1985,7 @@ def build_resource_generation_prompt(
         "- Remove technical locator/id noise from naming when it is not semantically meaningful, including prefixes or fragments such as auto, btn, ctl, component, generated hashes, or framework-internal tokens. Keep only domain-meaningful words in final variable and keyword names.\n"
         "- If an underlying locator uses a technical id such as auto_person_btn, the locator value may keep that id, but the resource variable name should reflect the reviewed semantic name such as PERSON_NAVIGATION_BUTTON.\n"
         "- Use the approved keywords as the canonical source for keyword naming. Preserve approved keyword names exactly in the generated resource whenever feasible; do not silently rename approved keywords into alternate wording.\n"
+        "- Approved keyword names must remain business-readable and aligned to the approved target element names. Remove technical DOM/id noise such as Auto, Btn, Ctl, Component, generated numeric fragments, or raw id wording from final page keyword names. For example, prefer Click Person Navigation Button over Click Auto Person Btn Button.\n"
         "- Use the approved keywords as the foundation for reusable keyword implementations.\n"
         "- Treat empty placeholder rows in workflow.fields as noise and ignore them.\n"
         "- Create reusable test-data variables based on approved manual tests, not just workflow.testData.\n"
