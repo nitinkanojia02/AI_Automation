@@ -737,10 +737,44 @@ def infer_label_from_raw_item(item: dict) -> str:
 
 def normalize_ui_element_name(label: str, role: str) -> str:
     base = slugify(label)
-    base = re.sub(r"^(btn|button)_", "", base)
-    base = re.sub(r"_(outline|icon)$", "", base)
+    noise_tokens = {
+        "auto", "btn", "button", "icon", "input", "field", "control", "ctl",
+        "ng", "ion", "app", "component", "elem", "element",
+    }
+    directional_tokens = {"left", "right", "top", "bottom"}
+
+    raw_parts = [part for part in base.split("_") if part]
+    filtered_parts: list[str] = []
+    for part in raw_parts:
+        if part in noise_tokens:
+            continue
+        if part.isdigit():
+            continue
+        if re.fullmatch(r"[a-f0-9]{6,}", part):
+            continue
+        filtered_parts.append(part)
+
+    if not filtered_parts:
+        filtered_parts = [part for part in raw_parts if part not in {"auto"}] or raw_parts
+
+    if filtered_parts[:2] == ["person", "nav"]:
+        filtered_parts = ["person", "navigation"]
+    elif filtered_parts[:2] == ["back", "nav"]:
+        filtered_parts = ["back", "navigation"]
+    elif filtered_parts[:2] == ["home", "nav"]:
+        filtered_parts = ["home", "navigation"]
+
+    if filtered_parts and filtered_parts[0] == "person":
+        filtered_parts[0] = "person"
+
+    if len(filtered_parts) >= 3 and filtered_parts[0] in directional_tokens and filtered_parts[1] == "navigation":
+        filtered_parts = filtered_parts[1:] + [filtered_parts[0]]
+
+    base = "_".join(filtered_parts).strip("_")
     if base in {"person", "profile", "user"}:
-        base = "profile"
+        base = "person"
+    if not base:
+        base = role or "element"
     if role == "textbox" and not base.endswith(("textbox", "input", "field")):
         return f"{base}_textbox"
     if role == "password_textbox" and not base.endswith(("password", "field", "textbox", "input")):
@@ -1924,6 +1958,9 @@ def build_resource_generation_prompt(
         "- Use SeleniumLibrary in Settings only if truly needed in this page resource.\n"
         "- Use only the approved elements to create locator variables. Remove or avoid any locator variable or locator-backed step that is not grounded in the current approved elements.\n"
         "- If metadata variable context is present, treat it as the primary canonical source for locator-variable names and page-url variable naming. Preserve those names in the generated resource whenever feasible.\n"
+        "- Preserve human-reviewed semantic naming. Variable names and page keyword names should stay business-readable and aligned with approved element names, not raw DOM ids.\n"
+        "- Remove technical locator/id noise from naming when it is not semantically meaningful, including prefixes or fragments such as auto, btn, ctl, component, generated hashes, or framework-internal tokens. Keep only domain-meaningful words in final variable and keyword names.\n"
+        "- If an underlying locator uses a technical id such as auto_person_btn, the locator value may keep that id, but the resource variable name should reflect the reviewed semantic name such as PERSON_NAVIGATION_BUTTON.\n"
         "- Use the approved keywords as the canonical source for keyword naming. Preserve approved keyword names exactly in the generated resource whenever feasible; do not silently rename approved keywords into alternate wording.\n"
         "- Use the approved keywords as the foundation for reusable keyword implementations.\n"
         "- Treat empty placeholder rows in workflow.fields as noise and ignore them.\n"
@@ -2118,7 +2155,9 @@ def build_resource_review_prompt(
         "- Remove or avoid duplicated common/shared variables and keywords that belong in resources/common_keywords.resource.\n"
         "- Improve formatting, Robot syntax quality, and maintainability.\n"
         "- Preserve useful page-specific content grounded in approved elements, approved keywords, and approved manual tests.\n"
-        "- Remove any locator variable, locator-backed step, or page-specific keyword step that relies on a locator not present in the current approved elements.\n\n"
+        "- Remove any locator variable, locator-backed step, or page-specific keyword step that relies on a locator not present in the current approved elements.\n"
+        "- Review naming quality explicitly. Replace technical or DOM-derived naming noise such as auto, btn, ctl, generated numeric fragments, or framework-specific prefixes in variable and keyword names with business-readable names grounded in the approved reviewed element names and approved keyword names.\n"
+        "- Keep locator values intact when technically required, but do not let locator ids leak into final variable names if cleaner reviewed names already exist.\n\n"
         "Mandatory repair rules:\n"
         "- Return only Robot Framework resource code with no markdown fences and no explanation.\n"
         "- Keep the file page-specific. Generic browser lifecycle, generic navigation, generic waits, generic click/input wrappers, ${BROWSER}, ${DEFAULT_TIMEOUT}, and other cross-page concerns belong in resources/common_keywords.resource, not here.\n"
@@ -2269,6 +2308,7 @@ def validate_generated_resource_against_approved_artifacts(
 
     errors = []
     warnings = []
+    technical_name_pattern = re.compile(r"\b(auto|btn|ctl|component)\b", re.IGNORECASE)
     if approved_keyword_names and not matched_keywords:
         errors.append(
             "Generated page resource did not preserve any approved reusable keywords from the reviewed artifact."
@@ -2282,6 +2322,16 @@ def validate_generated_resource_against_approved_artifacts(
         warnings.append(
             "Generated page resource is missing approved locator variables: "
             + ", ".join(missing_variables)
+        )
+
+    noisy_resource_variables = sorted(
+        name for name in resource_variable_names
+        if name and technical_name_pattern.search(name)
+    )
+    if noisy_resource_variables:
+        warnings.append(
+            "Generated page resource still contains technical locator-driven variable names. Prefer approved semantic names instead: "
+            + ", ".join(noisy_resource_variables)
         )
     if non_resource_keyword_names:
         warnings.append(
