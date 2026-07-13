@@ -9,19 +9,19 @@
       "kind": "page_url"
     },
     {
-      "variableName": "LOGIN_NAVIGATION_BUTTON",
+      "variableName": "PERSON_BUTTON",
       "value": "id=auto_person_btn",
       "source": "approved_element",
       "kind": "locator",
-      "approvedName": "login_navigation_button",
+      "approvedName": "person_button",
       "type": "button"
     },
     {
-      "variableName": "BACK_NAVIGATION_BUTTON",
+      "variableName": "BACK_BUTTON",
       "value": "id=auto_back_btn",
       "source": "approved_element",
       "kind": "locator",
-      "approvedName": "back_navigation_button",
+      "approvedName": "back_button",
       "type": "button"
     },
     {
@@ -33,12 +33,12 @@
       "type": "button"
     },
     {
-      "variableName": "HOME_NAVIGATION_BUTTON",
+      "variableName": "HOME_BUTTON",
       "value": "id=auto_home_btn",
       "source": "approved_element",
       "kind": "locator",
-      "approvedName": "home_navigation_button",
-      "type": "button"
+      "approvedName": "home_button",
+      "type": "link"
     },
     {
       "variableName": "CUSTOMER_SIGNUP_BUTTON",

@@ -3,96 +3,96 @@
   "keywords": [
     {
       "keywordId": "KW_001",
-      "keywordName": "Click Auto Person Btn Button",
-      "targetElement": "login_navigation_button",
+      "keywordName": "Click Person Button",
+      "targetElement": "person_button",
       "action": "click",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Click the Person navigation button on the home page.",
+        "[Documentation]    Click the person button from the home page.",
         "    Click When Ready    ${AUTO_PERSON_BTN_BUTTON}"
       ],
       "approved": true
     },
     {
       "keywordId": "KW_002",
-      "keywordName": "Click Auto Back Btn Button",
-      "targetElement": "back_navigation_button",
+      "keywordName": "Click Back Button",
+      "targetElement": "back_button",
       "action": "click",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Click the Back navigation button on the home page.",
+        "[Documentation]    Click the back button from the home page.",
         "    Click When Ready    ${AUTO_BACK_BTN_BUTTON}"
       ],
       "approved": true
     },
     {
       "keywordId": "KW_003",
-      "keywordName": "Click Auto Notification Btn Button",
+      "keywordName": "Click Notification Button",
       "targetElement": "notification_button",
       "action": "click",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Click the Notification button on the home page.",
+        "[Documentation]    Click the notification button from the home page.",
         "    Click When Ready    ${AUTO_NOTIFICATION_BTN_BUTTON}"
       ],
       "approved": true
     },
     {
       "keywordId": "KW_004",
-      "keywordName": "Click Auto Home Btn Button",
-      "targetElement": "home_navigation_button",
+      "keywordName": "Click Home Button",
+      "targetElement": "home_button",
       "action": "click",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Click the Home navigation button on the home page.",
+        "[Documentation]    Click the home button from the home page.",
         "    Click When Ready    ${AUTO_HOME_BTN_BUTTON}"
       ],
       "approved": true
     },
     {
       "keywordId": "KW_005",
-      "keywordName": "Click Auto Btn Customer Signup Button",
+      "keywordName": "Click Customer Signup Button",
       "targetElement": "customer_signup_button",
       "action": "click",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Click the Customer signup button on the home page.",
+        "[Documentation]    Click the customer signup button from the home page.",
         "    Click When Ready    ${AUTO_BTN_CUSTOMER_SIGNUP_BUTTON}"
       ],
       "approved": true
     },
     {
       "keywordId": "KW_006",
-      "keywordName": "Click Auto Btn Clean Survey Button",
+      "keywordName": "Click Clean Survey Button",
       "targetElement": "clean_survey_button",
       "action": "click",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Click the Clean survey button on the home page.",
+        "[Documentation]    Click the clean survey button from the home page.",
         "    Click When Ready    ${AUTO_BTN_CLEAN_SURVEY_BUTTON}"
       ],
       "approved": true
     },
     {
       "keywordId": "KW_007",
-      "keywordName": "Click Auto Btn Site Survey Button",
+      "keywordName": "Click Site Survey Button",
       "targetElement": "site_survey_button",
       "action": "click",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Click the Site survey button on the home page.",
+        "[Documentation]    Click the site survey button from the home page.",
         "    Click When Ready    ${AUTO_BTN_SITE_SURVEY_BUTTON}"
       ],
       "approved": true
     },
     {
       "keywordId": "KW_008",
-      "keywordName": "Verify Home Page Loaded",
-      "targetElement": "login_navigation_button",
+      "keywordName": "Verify Home Page Controls Are Visible",
+      "targetElement": "",
       "action": "verify",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Verify that the home page is loaded with all approved buttons visible and interactive.",
+        "[Documentation]    Verify all approved controls are visible and ready on the home page.",
         "    Wait For Element To Be Ready    ${AUTO_PERSON_BTN_BUTTON}",
         "    Wait For Element To Be Ready    ${AUTO_BACK_BTN_BUTTON}",
         "    Wait For Element To Be Ready    ${AUTO_NOTIFICATION_BTN_BUTTON}",
@@ -110,20 +110,19 @@
       "action": "generic",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Open the application home page.",
-        "    Open Browser To Url    ${HOME_PAGE_URL}",
-        "    Verify Home Page Loaded"
+        "[Documentation]    Navigate to the home page URL.",
+        "    Go To Url    ${HOME_PAGE_URL}"
       ],
       "approved": true
     },
     {
       "keywordId": "KW_010",
-      "keywordName": "Verify User Navigated To Login Page",
-      "targetElement": "login_navigation_button",
+      "keywordName": "Verify User Is Navigated To Login Page",
+      "targetElement": "",
       "action": "verify",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Verify navigation to the login page after clicking the Person button.",
+        "[Documentation]    Verify navigation to the login page.",
         "    Location Should Be    ${LOGIN_PAGE_URL}"
       ],
       "approved": true
