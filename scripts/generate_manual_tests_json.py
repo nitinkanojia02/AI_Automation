@@ -153,6 +153,8 @@ Context usage requirements:
 4. Use user-supplied testData and workflow context to infer positive, negative, and edge data combinations.
 5. Use expected observations and validations to derive concrete observable expectedResult values.
 6. Do not limit generation to only explicitly listed workflow steps if the approved page elements clearly support additional meaningful scenarios.
+7. Never generate a manual test, step, field reference, validation, or expected result around an element that is not present in approvedElements unless that behavior is explicitly stated in the workflow input itself (for example in observedSteps, observedValidations, preconditions, fields, or user story text).
+8. If an element was not approved, treat it as out of scope and do not infer new tests from it.
 
 Mandatory coverage requirements:
 1. testCases must be a non-empty array.

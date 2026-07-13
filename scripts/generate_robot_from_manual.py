@@ -291,10 +291,11 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
         "- Also import the page resource files listed in manual_test.resourceFiles.\n"
         "- Use provided keyword names and variable names from resource_context wherever possible.\n"
         "- Prefer existing keywords from resource_context over inventing new ones.\n"
-        "- Treat resource_context as including both page-specific resources and shared/common resources. Use common/shared keywords for generic browser lifecycle, navigation, and waiting behaviors, and avoid duplicating them in suite logic.\n"
+        "- Treat resource_context as including both page-specific resources and shared/common resources. Use common/shared keywords for generic browser lifecycle, navigation, waiting, clicking, and text entry behaviors, and avoid duplicating them in suite logic.\n"
         "- Treat retrieved_common_keywords, retrieved_page_keywords, and retrieved_page_variables as RAG-like retrieved context. Reuse them explicitly instead of free-form invention.\n"
-        "- If a shared helper such as Open Browser Session, Close Browser Session, Open Browser To Url, Go To Url, Wait For Element To Be Ready, Click When Ready, or Input Text When Ready exists in retrieved_common_keywords, prefer that helper over raw SeleniumLibrary steps.\n"
+        "- Shared/common resource keywords take priority over raw SeleniumLibrary keywords for generic interactions. If a shared helper such as Open Browser Session, Close Browser Session, Open Browser To Url, Go To Url, Wait For Element To Be Ready, Click When Ready, or Input Text When Ready exists in retrieved_common_keywords, use that helper rather than direct SeleniumLibrary calls.\n"
         "- If a page keyword or page variable already exists in retrieved_page_keywords or retrieved_page_variables, preserve and reuse it instead of creating a parallel name.\n"
+        "- Prefer common/shared wrapper keywords for text and password entry. If no explicit password-specific shared helper exists, use the common/shared text-entry wrapper that already exists rather than raw SeleniumLibrary Input Password.\n"
         "- Include *** Settings *** and *** Test Cases *** sections.\n"
         "- Do NOT include a *** Variables *** section in the generated .robot file.\n"
         "- Use compact formatting: no blank lines inside the Settings section, no blank line after *** Test Cases *** (the first test case must start immediately on the next line), exactly one blank line between major sections, and exactly one blank line between test cases.\n"
@@ -502,6 +503,7 @@ def build_review_prompt(manual_data: dict, resource_context: List[Dict], generat
         "- Eliminate unnecessary dependence on noisy derived variables. If the suite uses aliases that merely duplicate ${EMPTY}, ${SPACE}, padded forms of valid credentials, duplicate invalid credential variants, or other simple compositions, rewrite the suite to use built-ins, canonical semantic variables, and inline composition instead.\n"
         "- Reuse one canonical invalid username/password pair across similar negative scenarios unless the approved manual tests clearly require distinct invalid data classes.\n"
         "- Prefer common/shared resource keywords for generic browser lifecycle, page opening, navigation, waiting, clicking, and text entry when suitable. Raw SeleniumLibrary keywords in the suite should be replaced by shared/common resource keywords whenever a suitable helper exists.\n"
+        "- For generic field entry, including password fields, prefer common/shared wrapper keywords over low-level SeleniumLibrary entry keywords whenever the wrapper can satisfy the intent. If the shared/common layer already exposes Input Text When Ready or an equivalent reusable text-entry helper, use it instead of direct Input Password unless a dedicated shared password helper exists and is more appropriate.\n"
         "- If resource keywords suggest page lifecycle operations, use Suite/Test Setup and Teardown intelligently. Repeated startup actions such as open-page, navigate, and page-ready waits should normally be lifted into setup instead of being duplicated in every test.\n"
         "- Every test must contain explicit validation aligned to expectedResult.\n"
         "- Prefer page-resource validation keywords over generic visibility checks when the expected result mentions authentication errors, validation messages, redirect behavior, blocked login, duplicate submission prevention, or success outcomes.\n"
@@ -596,6 +598,7 @@ def build_validation_review_prompt(manual_data: dict, resource_context: List[Dic
         "- Positive login/navigation tests must include a post-login observable verification when such a keyword exists in resource_context. If such a success keyword does not exist, preserve the test but do not invent unsupported keywords.\n"
         "- Negative authentication tests must include stronger rejection assertions when supported by resource_context; do not rely only on page-ready checks unless that is the only available resource validation.\n"
         "- For UI visibility assertions, prefer wait-based visibility semantics such as Wait Until Element Is Visible and Wait Until Element Is Not Visible, or equivalent approved resource validation keywords. Avoid immediate absence checks like Page Should Not Contain Element when the user-observable intent is hidden/not visible.\n"
+        "- For generic clicking, waiting, navigation, and text/password entry, prefer approved shared/common resource helpers over direct SeleniumLibrary calls whenever the shared/common helper already exists in resource_context.\n"
         "- Preserve specialized interaction intent such as Enter key submission and repeated clicking.\n"
         "- Reuse semantic resource variables over inline literals whenever available in resource_context, especially for reusable usernames, passwords, URLs, paths, expected validation texts, and semantically meaningful credential variants such as uppercase, lowercase, mixed-case, or other reusable edge-case data.\n"
         "- Reject suites that preserve hardcoded credential literals or weaken approved negative expected outcomes into only same-page checks when stronger approved resource semantics or manual expectations exist.\n"
@@ -865,6 +868,15 @@ def validate_robot_alignment_with_resource_context(content: str, resource_contex
         for keyword in resource.get("keywords", [])
         if clean_text(str(keyword.get("name", "")))
     }
+    suite_keyword_counts: dict[str, int] = {}
+    for name in suite_called_keywords:
+        suite_keyword_counts[name] = suite_keyword_counts.get(name, 0) + 1
+
+    preferred_low_level_overrides = {
+        "input text": "input text when ready",
+        "input password": "input text when ready",
+        "click element": "click when ready",
+    }
 
     if approved_resource_keyword_names:
         called_approved_keywords = [name for name in suite_called_keywords if name in approved_resource_keyword_names]
@@ -875,6 +887,12 @@ def validate_robot_alignment_with_resource_context(content: str, resource_contex
         called_common_helpers = [name for name in suite_called_keywords if name in common_helper_names]
         if not called_common_helpers:
             warnings.append("Generated suite does not appear to call retrieved common/shared helper keywords")
+
+    for low_level_name, preferred_helper in preferred_low_level_overrides.items():
+        if suite_keyword_counts.get(low_level_name, 0) and preferred_helper in common_helper_names:
+            warnings.append(
+                f"Generated suite uses low-level keyword '{low_level_name}' even though shared/common helper '{preferred_helper}' is available and should be preferred"
+            )
 
     return len(errors) == 0, ("Warnings:\n" + "\n".join(warnings)) if warnings else ""
 
@@ -1405,6 +1423,7 @@ def process_manual_file(config: dict, manual_json_path: Path):
             + "\n\nFollow-up repair instructions:\n"
             + "Use the provided imported resource context and allowed keyword inventories as guardrails. "
             + "Reduce hallucination risk by preferring existing imported resource keywords, exact supported library keywords, and valid keyword signatures. "
+            + "When a shared/common helper exists for generic waiting, clicking, navigation, or text/password entry, prefer that helper over direct SeleniumLibrary usage. "
             + "Do not block the workflow. Return the best corrected Robot Framework suite possible using only valid framework-aligned keywords."
         )
         followup_robot_content = call_ai_chat(
