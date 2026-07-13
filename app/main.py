@@ -1922,7 +1922,7 @@ def build_resource_generation_prompt(
         "- Do not include markdown fences.\n"
         "- Include only these sections if needed: *** Settings ***, *** Variables ***, *** Keywords ***.\n"
         "- Use SeleniumLibrary in Settings only if truly needed in this page resource.\n"
-        "- Use the approved elements to create locator variables.\n"
+        "- Use only the approved elements to create locator variables. Remove or avoid any locator variable or locator-backed step that is not grounded in the current approved elements.\n"
         "- If metadata variable context is present, treat it as the primary canonical source for locator-variable names and page-url variable naming. Preserve those names in the generated resource whenever feasible.\n"
         "- Use the approved keywords as the canonical source for keyword naming. Preserve approved keyword names exactly in the generated resource whenever feasible; do not silently rename approved keywords into alternate wording.\n"
         "- Use the approved keywords as the foundation for reusable keyword implementations.\n"
@@ -1974,6 +1974,66 @@ def build_resource_generation_prompt(
         "- Keep formatting compact with no excessive blank lines and use modern Robot syntax only.\n\n"
         f"Input JSON:\n{json.dumps(payload, indent=2)}"
     )
+
+def sanitize_existing_resource_against_approved_elements(existing_resource: str, approved_elements: list[dict]) -> str:
+    resource_text = strip_markdown_fences(existing_resource or "")
+    if not resource_text.strip():
+        return ""
+
+    approved_locators = {
+        clean_text(str(item.get("locator", "")))
+        for item in approved_elements
+        if isinstance(item, dict) and clean_text(str(item.get("locator", "")))
+    }
+    if not approved_locators:
+        return resource_text
+
+    lines = resource_text.splitlines()
+    sanitized_lines: list[str] = []
+    in_variables = False
+
+    variable_pattern = re.compile(r"^(\$\{[^}]+\})\s{2,}(.*)$")
+    keyword_step_locator_patterns = [
+        re.compile(r"^\s*(?:Click Element|Input Text|Wait Until Element Is Visible|Wait Until Page Contains Element|Element Should Be Visible|Element Should Not Be Visible|Page Should Contain Element|Scroll Element Into View)\s{2,}(.+)$", re.IGNORECASE),
+        re.compile(r"^\s*(?:Click When Ready|Input Text When Ready|Wait For Element To Be Ready)\s{2,}(.+?)(?:\s{2,}.*)?$", re.IGNORECASE),
+    ]
+
+    for line in lines:
+        stripped = line.strip()
+        lower = stripped.lower()
+
+        if stripped.startswith("***"):
+            in_variables = lower == "*** variables ***"
+            sanitized_lines.append(line)
+            continue
+
+        if in_variables:
+            match = variable_pattern.match(stripped)
+            if match:
+                variable_value = clean_text(match.group(2))
+                if variable_value and (
+                    variable_value.startswith(("xpath=", "css=", "id=", "name=", "//", "(", "#", "."))
+                    or "@" in variable_value
+                ):
+                    if variable_value not in approved_locators:
+                        continue
+            sanitized_lines.append(line)
+            continue
+
+        should_drop_line = False
+        for pattern in keyword_step_locator_patterns:
+            match = pattern.match(line)
+            if match:
+                locator_candidate = clean_text(match.group(1))
+                if locator_candidate and locator_candidate not in approved_locators:
+                    should_drop_line = True
+                    break
+        if not should_drop_line:
+            sanitized_lines.append(line)
+
+    sanitized_text = "\n".join(sanitized_lines).strip()
+    return sanitized_text + ("\n" if sanitized_text else "")
+
 
 def normalize_resource_content(content: str) -> str:
     content = strip_markdown_fences(content)
@@ -2057,7 +2117,8 @@ def build_resource_review_prompt(
         "- Keep only page-specific locators, page-specific actions, page-specific validations, and page-specific test-data variables.\n"
         "- Remove or avoid duplicated common/shared variables and keywords that belong in resources/common_keywords.resource.\n"
         "- Improve formatting, Robot syntax quality, and maintainability.\n"
-        "- Preserve useful page-specific content grounded in approved elements, approved keywords, and approved manual tests.\n\n"
+        "- Preserve useful page-specific content grounded in approved elements, approved keywords, and approved manual tests.\n"
+        "- Remove any locator variable, locator-backed step, or page-specific keyword step that relies on a locator not present in the current approved elements.\n\n"
         "Mandatory repair rules:\n"
         "- Return only Robot Framework resource code with no markdown fences and no explanation.\n"
         "- Keep the file page-specific. Generic browser lifecycle, generic navigation, generic waits, generic click/input wrappers, ${BROWSER}, ${DEFAULT_TIMEOUT}, and other cross-page concerns belong in resources/common_keywords.resource, not here.\n"
@@ -2317,7 +2378,10 @@ def generate_resource_for_workflow(workflow: dict, approved_keywords: list[dict]
         raise HTTPException(status_code=400, detail="AI endpoint/token missing for resource generation.")
 
     resource_path = get_resource_path(page_name)
-    existing_page_resource = read_text(resource_path)
+    existing_page_resource = sanitize_existing_resource_against_approved_elements(
+        read_text(resource_path),
+        approved_elements,
+    )
 
     metadata_variable_context = variables_payload.get("variables", []) if isinstance(variables_payload, dict) else []
     prompt = build_resource_generation_prompt(
