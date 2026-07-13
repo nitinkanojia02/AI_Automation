@@ -13,6 +13,7 @@ from openpyxl import Workbook
 
 from fastapi import FastAPI, Form, HTTPException, Request
 from fastapi.responses import RedirectResponse
+from starlette.datastructures import FormData
 from fastapi.templating import Jinja2Templates
 from starlette.status import HTTP_303_SEE_OTHER
 
@@ -563,6 +564,10 @@ def build_workflow_payload(
     source: dict | None = None,
     external_context: dict | None = None,
     test_identifier_prefix: str = "",
+    entry_page_name: str = "",
+    entry_page_url: str = "",
+    navigation_steps: list[dict] | None = None,
+    target_page_signals: list[dict] | None = None,
 ):
     preconditions = [line.strip() for line in preconditions_text.splitlines() if line.strip()]
     steps = [line.strip() for line in steps_text.splitlines() if line.strip()]
@@ -614,6 +619,25 @@ def build_workflow_payload(
         "scenarioIntent": scenario_intent,
     }
 
+    normalized_entry_page_name = clean_text(entry_page_name)
+    normalized_entry_page_url = normalize_url_value(entry_page_url)
+    normalized_navigation_steps = navigation_steps if isinstance(navigation_steps, list) else []
+    normalized_target_page_signals = target_page_signals if isinstance(target_page_signals, list) else []
+
+    if normalized_entry_page_name or normalized_entry_page_url or normalized_navigation_steps or normalized_target_page_signals:
+        entry_page = {}
+        if normalized_entry_page_name:
+            entry_page["name"] = normalized_entry_page_name
+        if normalized_entry_page_url:
+            entry_page["url"] = normalized_entry_page_url
+        if entry_page:
+            payload["entryPage"] = entry_page
+        payload["targetPage"] = {"name": page_name}
+        if normalized_navigation_steps:
+            payload["navigationSteps"] = normalized_navigation_steps
+        if normalized_target_page_signals:
+            payload["targetPageSignals"] = normalized_target_page_signals
+
     if isinstance(external_context, dict) and external_context:
         payload["externalContext"] = external_context
 
@@ -623,22 +647,41 @@ def build_workflow_payload(
 # Extraction handling
 # -------------------------------------------------------------------
 
-def run_page_extraction(page_name: str, page_url: str):
+def run_page_extraction(page_name: str, page_url: str, extraction_context: dict | None = None):
     script_path = BASE_DIR / "scripts" / "extract_page_model.py"
     if not script_path.exists():
         raise HTTPException(status_code=500, detail="Page extraction script not found.")
-    if not clean_text(page_url):
-        raise HTTPException(status_code=400, detail="Page extraction requires a page URL. Add one only for pages that can be opened directly.")
+
+    command = [
+        sys.executable,
+        str(script_path),
+        "--page-name",
+        page_name,
+    ]
+
+    extraction_context = extraction_context or {}
+    navigation_steps = extraction_context.get("navigationSteps", []) if isinstance(extraction_context, dict) else []
+    entry_page = extraction_context.get("entryPage", {}) if isinstance(extraction_context, dict) else {}
+    target_page_signals = extraction_context.get("targetPageSignals", []) if isinstance(extraction_context, dict) else []
+
+    if navigation_steps:
+        entry_page_url = normalize_url_value(str(entry_page.get("url", ""))) if isinstance(entry_page, dict) else ""
+        if not entry_page_url:
+            raise HTTPException(status_code=400, detail="Navigation-based extraction requires an entry page URL.")
+        command.extend(["--entry-url", entry_page_url])
+        command.extend(["--navigation-json", json.dumps({
+            "entryPage": entry_page,
+            "targetPage": extraction_context.get("targetPage", {"name": page_name}),
+            "navigationSteps": navigation_steps,
+            "targetPageSignals": target_page_signals,
+        }, ensure_ascii=False)])
+    else:
+        if not clean_text(page_url):
+            raise HTTPException(status_code=400, detail="Page extraction requires a direct page URL or navigation-based extraction details.")
+        command.extend(["--url", page_url])
 
     result = subprocess.run(
-        [
-            sys.executable,
-            str(script_path),
-            "--page-name",
-            page_name,
-            "--url",
-            page_url
-        ],
+        command,
         cwd=str(BASE_DIR),
         capture_output=True,
         text=True
@@ -795,6 +838,10 @@ def get_page_review_data(workflow: dict):
     pages = workflow.get("pages", [])
     page_name = pages[0].get("name") if pages else "page"
     page_url = pages[0].get("url") if pages else ""
+    entry_page = workflow.get("entryPage", {}) if isinstance(workflow.get("entryPage"), dict) else {}
+    target_page = workflow.get("targetPage", {}) if isinstance(workflow.get("targetPage"), dict) else {}
+    navigation_steps = workflow.get("navigationSteps", []) if isinstance(workflow.get("navigationSteps"), list) else []
+    target_page_signals = workflow.get("targetPageSignals", []) if isinstance(workflow.get("targetPageSignals"), list) else []
 
     page_dir = get_page_dir(page_name)
     metadata_dir = get_page_metadata_dir(page_name)
@@ -888,6 +935,11 @@ def get_page_review_data(workflow: dict):
     return {
         "page_name": page_name,
         "page_url": page_url,
+        "entry_page": entry_page,
+        "target_page": target_page,
+        "navigation_steps": navigation_steps,
+        "target_page_signals": target_page_signals,
+        "is_navigation_mode": bool(navigation_steps),
         "elements": display_elements,
         "display_elements_count": len(display_elements),
         "raw_preview_elements": raw_preview_elements,
@@ -2972,6 +3024,46 @@ def normalize_url_value(value: str) -> str:
     return value.strip()
 
 
+def extract_navigation_steps_from_form(form: FormData, step_count: int) -> list[dict]:
+    steps: list[dict] = []
+    for idx in range(max(step_count, 0)):
+        action = clean_text(str(form.get(f"navigation_step_{idx}_action", "")))
+        page = clean_text(str(form.get(f"navigation_step_{idx}_page", "")))
+        element = clean_text(str(form.get(f"navigation_step_{idx}_element", "")))
+        if not action or not page or not element:
+            continue
+        steps.append({
+            "action": action,
+            "page": page,
+            "element": element,
+        })
+    return steps
+
+
+def extract_target_signals_from_form(form: FormData, signal_count: int) -> list[dict]:
+    signals: list[dict] = []
+    for idx in range(max(signal_count, 0)):
+        signal_type = clean_text(str(form.get(f"signal_{idx}_type", ""))).lower()
+        if signal_type == "knownelement":
+            page = clean_text(str(form.get(f"signal_{idx}_page", "")))
+            element = clean_text(str(form.get(f"signal_{idx}_element", "")))
+            if page and element:
+                signals.append({
+                    "type": "knownElement",
+                    "page": page,
+                    "element": element,
+                })
+            continue
+        value = clean_text(str(form.get(f"signal_{idx}_value", "")))
+        if signal_type in {"text", "selector", "title", "urlcontains"} and value:
+            normalized_type = "urlContains" if signal_type == "urlcontains" else signal_type
+            signals.append({
+                "type": normalized_type,
+                "value": value,
+            })
+    return signals
+
+
 def strip_html_tags(value: str) -> str:
     text = re.sub(r"<br\s*/?>", "\n", value or "", flags=re.IGNORECASE)
     text = re.sub(r"</p\s*>", "\n", text, flags=re.IGNORECASE)
@@ -3138,6 +3230,10 @@ def build_workflow_payload_from_azure_story(
     page_url: str,
     resource_file: str,
     test_identifier_prefix: str = "",
+    entry_page_name: str = "",
+    entry_page_url: str = "",
+    navigation_steps: list[dict] | None = None,
+    target_page_signals: list[dict] | None = None,
 ) -> dict:
     workflow_name = clean_text(str(azure_context.get("title", ""))) or "Imported Workflow"
     description = clean_text(str(azure_context.get("description", "")))
@@ -3170,16 +3266,25 @@ def build_workflow_payload_from_azure_story(
         source=source,
         external_context=azure_context,
         test_identifier_prefix=clean_text(test_identifier_prefix).upper() or derive_test_identifier_prefix(azure_context),
+        entry_page_name=entry_page_name,
+        entry_page_url=entry_page_url,
+        navigation_steps=navigation_steps,
+        target_page_signals=target_page_signals,
     )
 
 
 @app.post("/workflow/save")
-def save_workflow(
+async def save_workflow(
+    request: Request,
     workflow_name: str = Form(""),
     module: str = Form("Authentication"),
     feature: str = Form("Login"),
     page_name: str = Form(...),
     page_url: str = Form(""),
+    entry_page_name: str = Form(""),
+    entry_page_url: str = Form(""),
+    navigation_step_count: int = Form(0),
+    signal_count: int = Form(0),
     resource_file: str = Form(...),
     preconditions_text: str = Form(""),
     steps_text: str = Form(""),
@@ -3195,8 +3300,12 @@ def save_workflow(
     azure_work_item_id: str = Form(""),
     test_identifier_prefix: str = Form(""),
 ):
+    form = await request.form()
     page_url = normalize_url_value(page_url)
+    entry_page_url = normalize_url_value(entry_page_url)
     input_source = clean_text(input_source).lower() or "manual"
+    navigation_steps = extract_navigation_steps_from_form(form, navigation_step_count)
+    target_page_signals = extract_target_signals_from_form(form, signal_count)
 
     if input_source == "azure_devops":
         pat = os.getenv("AZURE_DEVOPS_PAT", "").strip()
@@ -3216,6 +3325,10 @@ def save_workflow(
             page_url=page_url,
             resource_file=resource_file,
             test_identifier_prefix=test_identifier_prefix,
+            entry_page_name=entry_page_name,
+            entry_page_url=entry_page_url,
+            navigation_steps=navigation_steps,
+            target_page_signals=target_page_signals,
         ))
         workflow_name = clean_text(str(payload.get("workflowName", workflow_name)))
     else:
@@ -3233,6 +3346,10 @@ def save_workflow(
             validations_text,
             scenario_intent_text,
             str(CONFIG.get("application_code", "")),
+            entry_page_name=entry_page_name,
+            entry_page_url=entry_page_url,
+            navigation_steps=navigation_steps,
+            target_page_signals=target_page_signals,
         ))
 
     target_slug = existing_workflow_slug.strip() or slugify(workflow_name)
@@ -3259,6 +3376,11 @@ def page_review(request: Request, workflow_name: str):
         "workflow": workflow,
         "page_name": review_data["page_name"],
         "page_url": review_data["page_url"],
+        "entry_page": review_data.get("entry_page", {}),
+        "target_page": review_data.get("target_page", {}),
+        "navigation_steps": review_data.get("navigation_steps", []),
+        "target_page_signals": review_data.get("target_page_signals", []),
+        "is_navigation_mode": review_data.get("is_navigation_mode", False),
         "elements": review_data["elements"],
         "screenshot_web_path": review_data["screenshot_web_path"],
         "raw_elements_count": review_data["raw_elements_count"],
@@ -3272,8 +3394,14 @@ def page_review(request: Request, workflow_name: str):
 def run_page_review_extraction(request: Request, workflow_name: str):
     workflow = load_workflow_or_404(workflow_name)
     review_data = get_page_review_data(workflow)
+    extraction_context = {
+        "entryPage": review_data.get("entry_page", {}),
+        "targetPage": review_data.get("target_page", {}) or {"name": review_data["page_name"]},
+        "navigationSteps": review_data.get("navigation_steps", []),
+        "targetPageSignals": review_data.get("target_page_signals", []),
+    }
     try:
-        run_page_extraction(review_data["page_name"], review_data["page_url"])
+        run_page_extraction(review_data["page_name"], review_data["page_url"], extraction_context)
         updated_review_data = get_page_review_data(workflow)
         refined_elements, review_summary = review_and_refine_page_elements(workflow, updated_review_data)
         updated_review_data = get_page_review_data(workflow)
@@ -3282,6 +3410,11 @@ def run_page_review_extraction(request: Request, workflow_name: str):
             "workflow": workflow,
             "page_name": updated_review_data["page_name"],
             "page_url": updated_review_data["page_url"],
+            "entry_page": updated_review_data.get("entry_page", {}),
+            "target_page": updated_review_data.get("target_page", {}),
+            "navigation_steps": updated_review_data.get("navigation_steps", []),
+            "target_page_signals": updated_review_data.get("target_page_signals", []),
+            "is_navigation_mode": updated_review_data.get("is_navigation_mode", False),
             "elements": refined_elements or updated_review_data["elements"],
             "screenshot_web_path": updated_review_data["screenshot_web_path"],
             "raw_elements_count": updated_review_data["raw_elements_count"],
@@ -3298,6 +3431,11 @@ def run_page_review_extraction(request: Request, workflow_name: str):
             "workflow": workflow,
             "page_name": updated_review_data["page_name"],
             "page_url": updated_review_data["page_url"],
+            "entry_page": updated_review_data.get("entry_page", {}),
+            "target_page": updated_review_data.get("target_page", {}),
+            "navigation_steps": updated_review_data.get("navigation_steps", []),
+            "target_page_signals": updated_review_data.get("target_page_signals", []),
+            "is_navigation_mode": updated_review_data.get("is_navigation_mode", False),
             "elements": updated_review_data["elements"],
             "screenshot_web_path": updated_review_data["screenshot_web_path"],
             "raw_elements_count": updated_review_data["raw_elements_count"],

@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import re
+import time
 from pathlib import Path
 from typing import Dict, List, Tuple
 
@@ -1027,6 +1028,107 @@ def wait_for_meaningful_page_content(page, wait_seconds: int):
     except Exception:
         logger.warning("Meaningful control count threshold was not reached before timeout.")
 
+def get_page_metadata_elements(page_name: str) -> List[dict]:
+    page_slug = slugify(page_name)
+    metadata_dir = BASE_DIR / "pom_pages" / page_slug / "metadata"
+    candidates = [
+        metadata_dir / f"{page_slug}.elements.reviewed.json",
+        metadata_dir / f"{page_slug}.elements.approved.json",
+        metadata_dir / f"{page_slug}.elements.json",
+    ]
+    for path in candidates:
+        if not path.exists():
+            continue
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        if isinstance(data, dict) and isinstance(data.get("elements"), list):
+            return [item for item in data.get("elements", []) if isinstance(item, dict)]
+        if isinstance(data, list):
+            return [item for item in data if isinstance(item, dict)]
+    return []
+
+
+def resolve_known_element_locator(page_name: str, element_name: str) -> str:
+    normalized_page = slugify(page_name)
+    normalized_element = slugify(element_name)
+    for item in get_page_metadata_elements(normalized_page):
+        candidate_name = slugify(str(item.get("approvedName") or item.get("name") or ""))
+        locator = clean_text(str(item.get("locator", "")))
+        if candidate_name == normalized_element and locator:
+            return locator
+    raise ValueError(f"Known element '{element_name}' was not found in metadata for page '{page_name}'.")
+
+
+def perform_navigation_steps(page, navigation_steps: List[dict], wait_seconds: int):
+    for index, step in enumerate(navigation_steps, start=1):
+        action = clean_text(str(step.get("action", "")))
+        source_page = clean_text(str(step.get("page", "")))
+        element_name = clean_text(str(step.get("element", "")))
+        if action != "clickKnownElement":
+            raise ValueError(f"Unsupported navigation action '{action}' in step {index}. MVP supports only clickKnownElement.")
+        locator = resolve_known_element_locator(source_page, element_name)
+        logger.info("Navigation step %s: %s -> %s.%s using locator %s", index, action, source_page, element_name, locator)
+        page.locator(locator).first.click(timeout=30000)
+        page.wait_for_timeout(max(wait_seconds, 1) * 1000)
+
+
+def wait_for_target_page_signals(page, target_page_signals: List[dict], wait_seconds: int):
+    if not target_page_signals:
+        logger.info("No target page signals were provided. Waiting briefly before extraction.")
+        page.wait_for_timeout(max(wait_seconds, 1) * 1000)
+        return
+
+    timeout_ms = max(wait_seconds, 1) * 1000 * 6
+    deadline = time.time() + (timeout_ms / 1000)
+    pending = list(target_page_signals)
+    while time.time() < deadline:
+        remaining = []
+        for signal in pending:
+            signal_type = clean_text(str(signal.get("type", "")))
+            if signal_type == "knownElement":
+                try:
+                    locator = resolve_known_element_locator(str(signal.get("page", "")), str(signal.get("element", "")))
+                    if page.locator(locator).first.is_visible(timeout=500):
+                        continue
+                except Exception:
+                    pass
+                remaining.append(signal)
+                continue
+            value = clean_text(str(signal.get("value", "")))
+            if signal_type == "text":
+                if value and page.get_by_text(value, exact=False).first.is_visible(timeout=500):
+                    continue
+                remaining.append(signal)
+                continue
+            if signal_type == "selector":
+                if value and page.locator(value).first.is_visible(timeout=500):
+                    continue
+                remaining.append(signal)
+                continue
+            if signal_type == "title":
+                try:
+                    if value and value.lower() in page.title().lower():
+                        continue
+                except Exception:
+                    pass
+                remaining.append(signal)
+                continue
+            if signal_type == "urlContains":
+                if value and value.lower() in page.url.lower():
+                    continue
+                remaining.append(signal)
+                continue
+            remaining.append(signal)
+        if not remaining:
+            logger.info("All target page signals were satisfied.")
+            return
+        pending = remaining
+        page.wait_for_timeout(500)
+    raise ValueError(f"Target page signals were not satisfied before timeout: {json.dumps(pending, ensure_ascii=False)}")
+
+
 def process_page(playwright, config: dict, page_entry: Dict[str, str]):
     gc = config["generation_control"]
     page_name_raw = page_entry["page_name"]
@@ -1062,6 +1164,12 @@ def process_page(playwright, config: dict, page_entry: Dict[str, str]):
     try:
         logger.info("Opening URL: %s", url)
         page.goto(url, wait_until="domcontentloaded", timeout=120000)
+
+        navigation_steps = page_entry.get("navigation_steps", []) if isinstance(page_entry.get("navigation_steps"), list) else []
+        target_page_signals = page_entry.get("target_page_signals", []) if isinstance(page_entry.get("target_page_signals"), list) else []
+        if navigation_steps:
+            perform_navigation_steps(page, navigation_steps, config["wait_seconds"])
+            wait_for_target_page_signals(page, target_page_signals, config["wait_seconds"])
 
         wait_for_meaningful_page_content(page, config["wait_seconds"])
 
@@ -1126,10 +1234,24 @@ def build_single_page_config(config: dict, page_name: str, url: str) -> dict:
     single_config["pages"] = [page_entry]
     return single_config
 
+
+def build_navigation_page_config(config: dict, page_name: str, entry_url: str, navigation_payload: dict) -> dict:
+    single_config = dict(config)
+    page_entry = {
+        "page_name": page_name,
+        "url": entry_url,
+        "navigation_steps": navigation_payload.get("navigationSteps", []),
+        "target_page_signals": navigation_payload.get("targetPageSignals", []),
+    }
+    single_config["pages"] = [page_entry]
+    return single_config
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Extract page model(s) and generate POM resources.")
     parser.add_argument("--page-name", help="Extract only this page name.")
     parser.add_argument("--url", help="Extract only this page URL.")
+    parser.add_argument("--entry-url", help="Entry URL for navigation-based extraction.")
+    parser.add_argument("--navigation-json", help="Navigation payload JSON for SPA extraction.")
     return parser.parse_args()
 
 def main():
@@ -1141,7 +1263,16 @@ def main():
         logger.info("POM generation is disabled via config (regenerate_pom_pages=false). Exiting.")
         return
 
-    if args.page_name or args.url:
+    if args.navigation_json or args.entry_url:
+        if not args.page_name:
+            raise ValueError("--page-name must be provided for navigation-based extraction.")
+        if not args.entry_url:
+            raise ValueError("--entry-url must be provided for navigation-based extraction.")
+        if not args.navigation_json:
+            raise ValueError("--navigation-json must be provided for navigation-based extraction.")
+        navigation_payload = json.loads(args.navigation_json)
+        config = build_navigation_page_config(config, args.page_name, args.entry_url, navigation_payload)
+    elif args.page_name or args.url:
         if not args.page_name:
             raise ValueError("--page-name must be provided for single-page extraction.")
         if not args.url:

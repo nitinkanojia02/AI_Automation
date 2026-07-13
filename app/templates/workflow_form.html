@@ -55,12 +55,102 @@
                 <div class="col-md-6">
                     <label class="form-label">Page URL</label>
                     <input class="form-control" name="page_url" value="{{ data.pages[0].url if data and data.pages else '' }}" placeholder="Optional. Provide only if this page can be opened directly by URL.">
-                    <div class="form-text">Optional for SPA/Ionic or routed flows. You can describe navigation in preconditions or the user story instead.</div>
+                    <div class="form-text">Optional for directly accessible pages. For SPA/Ionic flows, use the navigation journey section below.</div>
                 </div>
                 <div class="col-md-12">
                     <label class="form-label">Resource File</label>
                     <input class="form-control" name="resource_file" value="{{ data.resourceFiles[0] if data and data.resourceFiles else 'login_page/login_page.resource' }}" required>
                     <div class="form-text">Page resource stays directly under the page folder, for example <code>login_page/login_page.resource</code>. Other page artifacts are stored under <code>pom_pages/&lt;page&gt;/metadata</code>.</div>
+                </div>
+
+                <div class="col-md-12">
+                    <div class="card border-secondary-subtle">
+                        <div class="card-body">
+                            <h5 class="mb-2">SPA / Navigation Journey (MVP)</h5>
+                            <div class="text-muted small mb-3">
+                                Use this when the target page cannot be opened directly. The framework will open the entry page, execute the navigation steps using existing known elements from prior extracted pages, wait for target page signals, and then extract the target page.
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Entry Page Name</label>
+                                    <input class="form-control" name="entry_page_name" value="{{ data.entryPage.name if data and data.entryPage else '' }}" placeholder="Example: home_page">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Entry Page URL</label>
+                                    <input class="form-control" name="entry_page_url" value="{{ data.entryPage.url if data and data.entryPage else '' }}" placeholder="Example: http://localhost/washtabui/home">
+                                </div>
+                            </div>
+
+                            <hr>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="mb-0">Navigation Steps</h6>
+                                <button class="btn btn-outline-secondary btn-sm" type="button" onclick="addNavigationStep()">Add Step</button>
+                            </div>
+                            <div class="table-responsive mb-3">
+                                <table class="table table-sm align-middle" id="navigation-steps-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 25%;">Action</th>
+                                            <th style="width: 35%;">Source Page</th>
+                                            <th style="width: 40%;">Known Element</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="navigation-steps-body">
+                                        {% set existing_steps = data.navigationSteps if data and data.navigationSteps else [] %}
+                                        {% for step in existing_steps %}
+                                        <tr>
+                                            <td>
+                                                <select class="form-select" name="navigation_step_{{ loop.index0 }}_action">
+                                                    <option value="clickKnownElement" {% if step.action == 'clickKnownElement' %}selected{% endif %}>clickKnownElement</option>
+                                                </select>
+                                            </td>
+                                            <td><input class="form-control" name="navigation_step_{{ loop.index0 }}_page" value="{{ step.page }}" placeholder="Example: home_page"></td>
+                                            <td><input class="form-control" name="navigation_step_{{ loop.index0 }}_element" value="{{ step.element }}" placeholder="Example: person_button"></td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <input type="hidden" id="navigation_step_count" name="navigation_step_count" value="{{ existing_steps|length if existing_steps else 0 }}">
+
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="mb-0">Target Page Signals</h6>
+                                <button class="btn btn-outline-secondary btn-sm" type="button" onclick="addTargetSignal()">Add Signal</button>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-sm align-middle" id="target-signals-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 20%;">Type</th>
+                                            <th style="width: 25%;">Page</th>
+                                            <th style="width: 25%;">Element</th>
+                                            <th style="width: 30%;">Value</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="target-signals-body">
+                                        {% set existing_signals = data.targetPageSignals if data and data.targetPageSignals else [] %}
+                                        {% for signal in existing_signals %}
+                                        <tr>
+                                            <td>
+                                                <select class="form-select signal-type" name="signal_{{ loop.index0 }}_type" onchange="toggleSignalRow(this)">
+                                                    <option value="knownElement" {% if signal.type == 'knownElement' %}selected{% endif %}>knownElement</option>
+                                                    <option value="text" {% if signal.type == 'text' %}selected{% endif %}>text</option>
+                                                    <option value="selector" {% if signal.type == 'selector' %}selected{% endif %}>selector</option>
+                                                    <option value="title" {% if signal.type == 'title' %}selected{% endif %}>title</option>
+                                                    <option value="urlContains" {% if signal.type == 'urlContains' %}selected{% endif %}>urlContains</option>
+                                                </select>
+                                            </td>
+                                            <td><input class="form-control signal-page" name="signal_{{ loop.index0 }}_page" value="{{ signal.page if signal.page is defined else '' }}" placeholder="login_page"></td>
+                                            <td><input class="form-control signal-element" name="signal_{{ loop.index0 }}_element" value="{{ signal.element if signal.element is defined else '' }}" placeholder="username_input"></td>
+                                            <td><input class="form-control signal-value" name="signal_{{ loop.index0 }}_value" value="{{ signal.value if signal.value is defined else '' }}" placeholder="Login or input[type='password']"></td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <input type="hidden" id="signal_count" name="signal_count" value="{{ existing_signals|length if existing_signals else 0 }}">
+                        </div>
+                    </div>
                 </div>
                 <div class="col-md-6 manual-input-field">
                     <label class="form-label">Observed Preconditions (one per line)</label>
@@ -117,6 +207,67 @@ function toggleWorkflowSource() {
         field.style.display = useAzure ? 'none' : '';
     });
 }
-window.addEventListener('DOMContentLoaded', toggleWorkflowSource);
+
+function addNavigationStep(action = 'clickKnownElement', page = '', element = '') {
+    const tbody = document.getElementById('navigation-steps-body');
+    const countInput = document.getElementById('navigation_step_count');
+    if (!tbody || !countInput) return;
+    const index = parseInt(countInput.value || '0', 10);
+    const row = document.createElement('tr');
+    row.innerHTML = `
+        <td>
+            <select class="form-select" name="navigation_step_${index}_action">
+                <option value="clickKnownElement" ${action === 'clickKnownElement' ? 'selected' : ''}>clickKnownElement</option>
+            </select>
+        </td>
+        <td><input class="form-control" name="navigation_step_${index}_page" value="${page}" placeholder="Example: home_page"></td>
+        <td><input class="form-control" name="navigation_step_${index}_element" value="${element}" placeholder="Example: person_button"></td>
+    `;
+    tbody.appendChild(row);
+    countInput.value = index + 1;
+}
+
+function toggleSignalRow(selectEl) {
+    const row = selectEl.closest('tr');
+    if (!row) return;
+    const type = selectEl.value;
+    const pageInput = row.querySelector('.signal-page');
+    const elementInput = row.querySelector('.signal-element');
+    const valueInput = row.querySelector('.signal-value');
+    const known = type === 'knownElement';
+    if (pageInput) pageInput.disabled = !known;
+    if (elementInput) elementInput.disabled = !known;
+    if (valueInput) valueInput.disabled = known;
+}
+
+function addTargetSignal(type = 'text', page = '', element = '', value = '') {
+    const tbody = document.getElementById('target-signals-body');
+    const countInput = document.getElementById('signal_count');
+    if (!tbody || !countInput) return;
+    const index = parseInt(countInput.value || '0', 10);
+    const row = document.createElement('tr');
+    row.innerHTML = `
+        <td>
+            <select class="form-select signal-type" name="signal_${index}_type" onchange="toggleSignalRow(this)">
+                <option value="knownElement" ${type === 'knownElement' ? 'selected' : ''}>knownElement</option>
+                <option value="text" ${type === 'text' ? 'selected' : ''}>text</option>
+                <option value="selector" ${type === 'selector' ? 'selected' : ''}>selector</option>
+                <option value="title" ${type === 'title' ? 'selected' : ''}>title</option>
+                <option value="urlContains" ${type === 'urlContains' ? 'selected' : ''}>urlContains</option>
+            </select>
+        </td>
+        <td><input class="form-control signal-page" name="signal_${index}_page" value="${page}" placeholder="login_page"></td>
+        <td><input class="form-control signal-element" name="signal_${index}_element" value="${element}" placeholder="username_input"></td>
+        <td><input class="form-control signal-value" name="signal_${index}_value" value="${value}" placeholder="Login or input[type='password']"></td>
+    `;
+    tbody.appendChild(row);
+    countInput.value = index + 1;
+    toggleSignalRow(row.querySelector('.signal-type'));
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+    toggleWorkflowSource();
+    document.querySelectorAll('.signal-type').forEach(toggleSignalRow);
+});
 </script>
 {% endblock %}

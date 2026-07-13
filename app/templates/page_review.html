@@ -84,7 +84,37 @@
                 <div class="card-body">
                     <h5>Page Summary</h5>
                     <p><strong>Page Name:</strong> {{ page_name }}</p>
-                    {% if page_url %}<p><strong>Page URL:</strong> {{ page_url }}</p>{% endif %}
+                    {% if is_navigation_mode %}
+                    <p><strong>Extraction Mode:</strong> Navigation Journey</p>
+                    {% if entry_page and entry_page.name %}<p><strong>Entry Page:</strong> {{ entry_page.name }}</p>{% endif %}
+                    {% if entry_page and entry_page.url %}<p><strong>Entry URL:</strong> {{ entry_page.url }}</p>{% endif %}
+                    {% if navigation_steps %}
+                    <div class="mb-2">
+                        <strong>Navigation Steps:</strong>
+                        <ol class="small mb-0 ps-3">
+                            {% for step in navigation_steps %}
+                            <li>{{ step.action }} → {{ step.page }}.{{ step.element }}</li>
+                            {% endfor %}
+                        </ol>
+                    </div>
+                    {% endif %}
+                    {% if target_page_signals %}
+                    <div class="mb-2">
+                        <strong>Target Signals:</strong>
+                        <ul class="small mb-0 ps-3">
+                            {% for signal in target_page_signals %}
+                            <li>
+                                {% if signal.type == 'knownElement' %}
+                                knownElement → {{ signal.page }}.{{ signal.element }}
+                                {% else %}
+                                {{ signal.type }} → {{ signal.value }}
+                                {% endif %}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                    {% elif page_url %}<p><strong>Page URL:</strong> {{ page_url }}</p>{% endif %}
                     <p><strong>Total Extracted Elements:</strong> {{ raw_elements_count }}</p>
                     <p><strong>Displayed In Review:</strong> {{ display_elements_count }}</p>
                     <p><strong>Review Source:</strong> {{ source_artifact|title }}</p>
@@ -102,13 +132,13 @@
                     </div>
 
                     <div class="d-grid gap-2">
-                        {% if page_url %}
+                        {% if page_url or is_navigation_mode %}
                         <form method="post" action="/page-review/{{ workflow_name }}/extract">
                             <button class="btn btn-primary w-100" type="submit">Run Extraction</button>
                         </form>
                         {% else %}
                         <div class="alert alert-warning small mb-0">
-                            Page extraction requires a direct page URL. Add it to the workflow only when the page can be opened directly in a browser.
+                            Page extraction requires either a direct page URL or an SPA navigation journey with an entry page URL, navigation steps, and target page signals.
                         </div>
                         {% endif %}
                         <a href="/" class="btn btn-outline-dark">Back to Dashboard</a>
