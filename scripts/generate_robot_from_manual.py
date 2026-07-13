@@ -345,6 +345,9 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
         "- Preserve specialized manual intent. If the approved manual test is specifically about copy-paste, Enter key submission, repeated clicking, whitespace handling, case sensitivity, or duplicate prevention, the generated automation should reflect that interaction intent instead of collapsing it into a generic login flow.\n"
         "- Prefer business-readable test cases that call reusable resource keywords over low-level keyword chains when the resource context supports that style.\n"
         "- Use only valid, existing Robot Framework/SeleniumLibrary/BuiltIn keywords or keywords provided by the imported resources. Never invent unsupported keywords. If a negative URL assertion is needed, prefer a valid built-in assertion or a valid page/resource verification keyword for no-navigation behavior.\n"
+        "- Prefer wait-oriented verification patterns over immediate absence checks. When verifying UI state, favor visible-state waits such as Wait Until Element Is Visible or Wait Until Element Is Not Visible, or equivalent approved resource keywords, instead of direct page/DOM absence checks whenever visibility is the real user-observable outcome.\n"
+        "- For negative UI assertions about an element not appearing, not remaining visible, being dismissed, or being hidden, prefer Wait Until Element Is Not Visible or an equivalent approved resource/page validation keyword. Avoid direct reliance on Page Should Not Contain Element when the user expectation is about visibility in the UI.\n"
+        "- For positive UI assertions about an element appearing or becoming usable, prefer Wait Until Element Is Visible or an equivalent approved resource/page validation keyword before or as part of the assertion.\n"
         "- Before finalizing the suite, review whether repeated opening/navigation/waiting steps are duplicated at the start of many tests. If so, move those repeated startup actions into Test Setup or Suite Setup unless a specific test intentionally requires a different startup sequence.\n"
         "- Before finalizing the suite, self-review every keyword call and remove or replace any keyword that is not part of Robot built-ins, SeleniumLibrary, or the imported resource context.\n\n"
         f"Input JSON:\n{json.dumps(payload, indent=2)}"
@@ -508,6 +511,7 @@ def build_review_prompt(manual_data: dict, resource_context: List[Dict], generat
         "- If a test is about successful login or navigation, ensure there is an explicit post-condition verification such as dashboard/home visibility, URL change, success state, or a dedicated page validation keyword.\n"
         "- Preserve specialized interaction intent such as copy-paste, Enter key submission, repeated clicking, whitespace handling, or duplicate submission prevention; do not simplify these into a generic login-only sequence.\n"
         "- Prefer business-readable resource keyword calls over low-level one-off steps.\n"
+        "- Prefer wait-based visibility assertions over immediate DOM-absence assertions. When validating that an element appears, disappears, remains hidden, or is dismissed in the UI, use Wait Until Element Is Visible or Wait Until Element Is Not Visible, or equivalent approved resource keywords, instead of Page Should Not Contain Element when visibility is the true intent.\n"
         "- Replace any unsupported or invented keyword with a valid existing Robot built-in, SeleniumLibrary keyword, or imported resource keyword.\n"
         "- Treat allowed_builtin_keywords and allowed_selenium_keywords from the input JSON as the approved non-resource keyword inventory. If a keyword is not in those lists or in imported resource_context, replace it instead of returning it.\n"
         "- Self-audit the final suite for keyword existence: every called keyword must come from Robot built-ins, SeleniumLibrary, or the imported resource files.\n"
@@ -591,6 +595,7 @@ def build_validation_review_prompt(manual_data: dict, resource_context: List[Dic
         "- Every test must end with an observable validation aligned to expectedResult.\n"
         "- Positive login/navigation tests must include a post-login observable verification when such a keyword exists in resource_context. If such a success keyword does not exist, preserve the test but do not invent unsupported keywords.\n"
         "- Negative authentication tests must include stronger rejection assertions when supported by resource_context; do not rely only on page-ready checks unless that is the only available resource validation.\n"
+        "- For UI visibility assertions, prefer wait-based visibility semantics such as Wait Until Element Is Visible and Wait Until Element Is Not Visible, or equivalent approved resource validation keywords. Avoid immediate absence checks like Page Should Not Contain Element when the user-observable intent is hidden/not visible.\n"
         "- Preserve specialized interaction intent such as Enter key submission and repeated clicking.\n"
         "- Reuse semantic resource variables over inline literals whenever available in resource_context, especially for reusable usernames, passwords, URLs, paths, expected validation texts, and semantically meaningful credential variants such as uppercase, lowercase, mixed-case, or other reusable edge-case data.\n"
         "- Reject suites that preserve hardcoded credential literals or weaken approved negative expected outcomes into only same-page checks when stronger approved resource semantics or manual expectations exist.\n"
@@ -657,7 +662,7 @@ def get_framework_keyword_catalog() -> tuple[set[str], set[str]]:
         "get location", "location should be", "title should be", "element should be visible",
         "element should not be visible", "element should be enabled", "element should be focused",
         "page should contain", "page should not contain", "page should contain element", "page should not contain element",
-        "wait until element is visible", "wait until element is enabled",
+        "wait until element is visible", "wait until element is not visible", "wait until element is enabled",
         "wait until page contains", "wait until page contains element", "wait until page does not contain",
         "wait until page does not contain element", "wait until location is", "wait until location contains",
         "click element", "input text", "input password", "clear element text", "press keys",
@@ -945,6 +950,11 @@ def validate_robot_content(content: str, allowed_resources: list[str]) -> tuple[
     low_level_usage = len(re.findall(r"(?im)^\s*(Input Text|Press Keys|Click Element|Wait Until Element Is Visible|Wait Until Page Contains Element)\b", content))
     if low_level_usage >= 6:
         warnings.append("Generated suite appears to rely heavily on low-level interaction keywords; prefer approved page/common abstractions when available")
+
+    if re.search(r"(?im)^\s*Page Should Not Contain Element\b", content):
+        warnings.append(
+            "Generated suite uses Page Should Not Contain Element. For UI-hidden/dismissed/absent-in-view expectations, prefer wait-based visibility semantics such as Wait Until Element Is Not Visible or an equivalent approved resource validation keyword."
+        )
 
     def normalize_keyword_token(value: str) -> str:
         return clean_text(value).lower()
