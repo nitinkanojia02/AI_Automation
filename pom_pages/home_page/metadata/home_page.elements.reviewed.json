@@ -249,7 +249,7 @@
   ],
   "elements": [
     {
-      "approvedName": "person_navigation_button",
+      "approvedName": "login_navigation_button",
       "type": "button",
       "locator": "id=auto_person_btn",
       "approved": true
@@ -267,8 +267,8 @@
       "approved": true
     },
     {
-      "approvedName": "home_navigation_link",
-      "type": "link",
+      "approvedName": "home_navigation_button",
+      "type": "button",
       "locator": "id=auto_home_btn",
       "approved": true
     },
@@ -293,114 +293,127 @@
   ],
   "reviewSummary": {
     "overall_quality": "medium",
-    "summary": "The draft captures the primary actionable controls required for the Home workflow, but it includes noisy wrapper elements, weak generic locators, and inconsistent business naming. The artifact should be refined to retain only meaningful navigation and action controls for downstream automation reliability.",
+    "summary": "The draft captures the primary actionable controls required for the Home workflow, but it contains noisy and overly generic elements, weak semantic naming, and unnecessary wrapper/container artifacts that would reduce downstream automation quality and maintainability.",
     "issues": [
-      {
-        "severity": "high",
-        "type": "duplicate",
-        "element_name": "element_8",
-        "message": "The generic anchor element duplicates the existing home navigation control represented by auto_home_btn.",
-        "suggested_fix": "Remove element_8 and keep only the home navigation control using locator id=auto_home_btn."
-      },
       {
         "severity": "high",
         "type": "locator",
         "element_name": "element_8",
-        "message": "Locator xpath=//a is overly generic and likely to match multiple links, making automation brittle.",
-        "suggested_fix": "Remove this element or replace it with a unique stable locator tied to a business-specific control."
+        "message": "The locator xpath=//a is overly generic and likely to match multiple links across the page, creating brittle and ambiguous automation behavior.",
+        "suggested_fix": "Remove this element entirely or replace it with a uniquely identifiable navigation link locator tied to a business purpose."
+      },
+      {
+        "severity": "high",
+        "type": "naming",
+        "element_name": "customersignup_button",
+        "message": "The element name is compressed and not business-readable, reducing maintainability and downstream keyword quality.",
+        "suggested_fix": "Rename to customer_signup_button."
+      },
+      {
+        "severity": "high",
+        "type": "naming",
+        "element_name": "cleansurvey_button",
+        "message": "The element name lacks readability and semantic clarity.",
+        "suggested_fix": "Rename to clean_survey_button."
+      },
+      {
+        "severity": "high",
+        "type": "naming",
+        "element_name": "sitesurvey_button",
+        "message": "The element name lacks readability and semantic clarity.",
+        "suggested_fix": "Rename to site_survey_button."
+      },
+      {
+        "severity": "medium",
+        "type": "classification",
+        "element_name": "home_button",
+        "message": "The element behaves as a navigation link inside an ion-button wrapper but is classified only as a button.",
+        "suggested_fix": "Classify as navigation_button or navigation_link to better represent workflow intent."
+      },
+      {
+        "severity": "medium",
+        "type": "duplicate",
+        "element_name": "element_8",
+        "message": "This anchor element is a duplicate wrapper representation of the existing Home navigation control.",
+        "suggested_fix": "Keep only the primary Home navigation control using id=auto_home_btn and remove the duplicate anchor abstraction."
       },
       {
         "severity": "medium",
         "type": "noise",
         "element_name": "background_content",
-        "message": "The background content container is decorative/layout-only and does not provide meaningful automation value.",
-        "suggested_fix": "Remove the background_content element from the approved page model."
-      },
-      {
-        "severity": "medium",
-        "type": "naming",
-        "element_name": "customersignup_button",
-        "message": "Element name is compressed and less readable for downstream keyword generation.",
-        "suggested_fix": "Rename to customer_signup_button for better semantic clarity."
-      },
-      {
-        "severity": "medium",
-        "type": "naming",
-        "element_name": "cleansurvey_button",
-        "message": "Element name lacks readability and business separation.",
-        "suggested_fix": "Rename to clean_survey_button."
-      },
-      {
-        "severity": "medium",
-        "type": "naming",
-        "element_name": "sitesurvey_button",
-        "message": "Element name lacks readability and semantic separation.",
-        "suggested_fix": "Rename to site_survey_button."
-      },
-      {
-        "severity": "low",
-        "type": "classification",
-        "element_name": "home_button",
-        "message": "The underlying native control is an anchor/navigation link rather than a pure button.",
-        "suggested_fix": "Classify the control as navigation_link or link if the framework distinguishes navigation controls from action buttons."
+        "message": "The background container is a layout-level element and not a meaningful business control. Its use should be restricted to edge-case negative click testing only.",
+        "suggested_fix": "Retain only if explicitly needed for non-interactive area validation workflows; otherwise exclude from canonical page model."
       },
       {
         "severity": "medium",
         "type": "validation_gap",
         "element_name": "",
-        "message": "No observable destination-page indicators, status messages, or navigation confirmation elements are present for customer-search, vehicle-survey, survey, or login transitions.",
-        "suggested_fix": "Capture stable page-level identifiers or visible headers/messages from destination pages to strengthen navigation verification."
+        "message": "No observable page-state indicator, heading, title, or validation element exists to confirm successful page load beyond button visibility.",
+        "suggested_fix": "Add a stable page identifier element such as a page title, header, or content container unique to the Home page."
+      },
+      {
+        "severity": "medium",
+        "type": "validation_gap",
+        "element_name": "",
+        "message": "No notification panel, notification badge, toast message, or UI response element is modeled for validating notification interaction outcomes.",
+        "suggested_fix": "Add observable notification state elements if the application exposes them."
       },
       {
         "severity": "low",
-        "type": "validation_gap",
-        "element_name": "",
-        "message": "No notification popup, panel, or status indicator element was captured for validating notification-button behavior.",
-        "suggested_fix": "Add any visible notification drawer, modal, toast, or panel element if available in the UI."
+        "type": "naming",
+        "element_name": "person_button",
+        "message": "The element name is generic and does not clearly communicate that it navigates to login/authentication.",
+        "suggested_fix": "Rename to login_navigation_button or user_profile_navigation_button if supported by product terminology."
       }
     ],
     "approved_elements": [
       {
-        "name": "person_navigation_button",
-        "type": "button",
+        "name": "login_navigation_button",
+        "type": "navigation_button",
         "locator": "id=auto_person_btn",
-        "description": "Navigates the user from the home page to the login page."
+        "description": "Navigates the user from the Home page to the Login page."
       },
       {
         "name": "back_navigation_button",
-        "type": "button",
+        "type": "navigation_button",
         "locator": "id=auto_back_btn",
-        "description": "Performs backward navigation from the current page."
+        "description": "Triggers browser or application back navigation behavior."
       },
       {
         "name": "notification_button",
         "type": "button",
         "locator": "id=auto_notification_btn",
-        "description": "Opens notifications or related user alerts."
+        "description": "Opens or triggers notification-related interaction."
       },
       {
-        "name": "home_navigation_link",
-        "type": "link",
+        "name": "home_navigation_button",
+        "type": "navigation_button",
         "locator": "id=auto_home_btn",
-        "description": "Keeps the user on or returns the user to the home page."
+        "description": "Represents navigation to the Home route."
       },
       {
         "name": "customer_signup_button",
         "type": "button",
         "locator": "id=auto_btn_CustomerSignup",
-        "description": "Navigates the user to the customer-search workflow."
+        "description": "Opens the customer-search workflow."
       },
       {
         "name": "clean_survey_button",
         "type": "button",
         "locator": "id=auto_btn_CleanSurvey",
-        "description": "Navigates the user to the vehicle-survey workflow."
+        "description": "Opens the vehicle-survey workflow."
       },
       {
         "name": "site_survey_button",
         "type": "button",
         "locator": "id=auto_btn_SiteSurvey",
-        "description": "Navigates the user to the survey workflow."
+        "description": "Opens the site survey workflow."
+      },
+      {
+        "name": "background_content_area",
+        "type": "container",
+        "locator": "id=background-content",
+        "description": "Non-interactive background area used for negative click validation scenarios."
       }
     ]
   }

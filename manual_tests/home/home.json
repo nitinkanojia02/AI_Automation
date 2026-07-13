@@ -4,235 +4,160 @@
     "home_page/home_page.resource"
   ],
   "preconditions": [
-    "Navigate to http://localhost/washtabui/home in a supported browser",
-    "Application server is running and the home page loads successfully",
-    "User is on the home page before starting each test unless otherwise specified"
+    "Launch browser and navigate to http://localhost/washtabui/home",
+    "Home page should load successfully before executing test steps"
   ],
   "testCases": [
     {
-      "id": "HOME_TC_001",
-      "title": "Verify all approved navigation controls and action buttons are visible and enabled on the home page",
+      "id": "HOME_001_TC001",
+      "title": "Verify all approved navigation and action buttons are visible on the home page",
       "type": "Positive",
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Open the URL http://localhost/washtabui/home",
-        "Observe the top navigation section and main action button section of the page"
+        "Open the application home page using URL http://localhost/washtabui/home",
+        "Observe the top and main action sections of the page",
+        "Verify visibility of Person button, Back button, Notification button, Home button, Customer signup button, Clean survey button, and Site survey button"
       ],
-      "expectedResult": "['Person navigation button is visible with no broken icon or missing label', 'Back navigation button is visible with no broken icon or missing label', 'Notification button is visible with no broken icon or missing label', 'Home navigation link is visible and rendered correctly', 'Customer Signup button is visible and enabled', 'Clean Survey button is visible and enabled', 'Site Survey button is visible and enabled', 'All approved controls are clickable and displayed without overlap, truncation, or layout distortion']"
+      "expectedResult": "All approved buttons are visible, fully rendered, and accessible on the home page without overlap, clipping, hidden state, or UI distortion. No browser or application error is displayed during page load."
     },
     {
-      "id": "HOME_TC_002",
-      "title": "Verify clicking the person navigation button redirects the user to the login page",
+      "id": "HOME_001_TC002",
+      "title": "Verify user can navigate to login page using the Person button",
       "type": "Positive",
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Open the URL http://localhost/washtabui/home",
-        "Click the Person navigation button"
+        "Open the home page",
+        "Click the Person button once"
       ],
-      "expectedResult": "['Current page changes from the home page to the login page', 'Browser URL updates to http://localhost/washtabui/login?data=undefined', 'Login page content is displayed successfully', 'No application error message, blank page, or failed navigation state is displayed']"
+      "expectedResult": "The application redirects the user from the home page to the login page and the browser URL changes to http://localhost/washtabui/login?data=undefined. The home page controls are no longer displayed after navigation."
     },
     {
-      "id": "HOME_TC_003",
-      "title": "Verify customer signup button opens the customer-search page",
+      "id": "HOME_001_TC003",
+      "title": "Verify Customer signup button opens the customer-search page",
       "type": "Positive",
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Open the URL http://localhost/washtabui/home",
-        "Click the Customer Signup button"
+        "Open the home page",
+        "Click the Customer signup button once"
       ],
-      "expectedResult": "['User is redirected from the home page to the customer-search page', 'Customer-search page content is fully visible after navigation', 'Target page loads without blank sections, broken UI elements, or browser errors']"
+      "expectedResult": "The application navigates away from the home page and opens the customer-search page successfully. The home page action buttons are replaced by the customer-search workflow screen without visible UI errors."
     },
     {
-      "id": "HOME_TC_004",
-      "title": "Verify clean survey button opens the vehicle-survey page",
+      "id": "HOME_001_TC004",
+      "title": "Verify Clean survey button opens the vehicle-survey page",
       "type": "Positive",
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Open the URL http://localhost/washtabui/home",
-        "Click the Clean Survey button"
+        "Open the home page",
+        "Click the Clean survey button once"
       ],
-      "expectedResult": "['User is redirected from the home page to the vehicle-survey page', 'Vehicle-survey page content becomes visible and usable', 'Navigation completes without page freeze, browser warning, or application error']"
+      "expectedResult": "The application navigates successfully to the vehicle-survey page and the home page interface is replaced by the vehicle-survey workflow screen without broken rendering or browser errors."
     },
     {
-      "id": "HOME_TC_005",
-      "title": "Verify site survey button opens the survey page",
+      "id": "HOME_001_TC005",
+      "title": "Verify Site survey button opens the survey page",
       "type": "Positive",
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Open the URL http://localhost/washtabui/home",
-        "Click the Site Survey button"
+        "Open the home page",
+        "Click the Site survey button once"
       ],
-      "expectedResult": "['User is redirected from the home page to the survey page', 'Survey page content is displayed successfully', 'No unexpected popup, loading loop, or rendering issue appears during navigation']"
+      "expectedResult": "The application navigates successfully to the survey page and the user is no longer on the home page. Navigation completes without loading failures, blank pages, or UI errors."
     },
     {
-      "id": "HOME_TC_006",
-      "title": "Verify clicking the home navigation link while already on the home page does not trigger incorrect navigation",
+      "id": "HOME_001_TC006",
+      "title": "Verify Home button remains interactive on the home page",
       "type": "Positive",
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Open the URL http://localhost/washtabui/home",
-        "Click the Home navigation link"
+        "Open the home page",
+        "Locate the Home button",
+        "Click the Home button once"
       ],
-      "expectedResult": "['User remains on the home page after clicking the Home navigation link', 'Home page URL continues to reference the home route', 'Page content reloads correctly or remains stable without duplicate overlays or navigation errors']"
+      "expectedResult": "The Home button accepts the click interaction and the application remains stable on the home page without page corruption, browser errors, or disabled UI elements."
     },
     {
-      "id": "HOME_TC_007",
-      "title": "Verify notification button interaction does not break the application UI",
+      "id": "HOME_001_TC007",
+      "title": "Verify Notification button accepts user interaction without application failure",
       "type": "Positive",
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Open the URL http://localhost/washtabui/home",
-        "Click the Notification button"
+        "Open the home page",
+        "Locate the Notification button",
+        "Click the Notification button once"
       ],
-      "expectedResult": "['Notification button responds to the click action', 'Application UI remains responsive after interaction', 'If a notification panel or notification page exists, it is displayed correctly without visual corruption', 'No crash message, script error, or blank screen appears']"
+      "expectedResult": "The Notification button responds to the click event without causing browser crashes, frozen UI, script errors, blank overlays, or unexpected navigation away from the application."
     },
     {
-      "id": "HOME_TC_008",
-      "title": "Verify back navigation button behavior from the home page",
+      "id": "HOME_001_TC008",
+      "title": "Verify Back button accepts user interaction on the home page",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the home page",
+        "Locate the Back button",
+        "Click the Back button once"
+      ],
+      "expectedResult": "The Back button responds to the click interaction without causing application crashes, blank screens, broken layouts, or unresponsive behavior."
+    },
+    {
+      "id": "HOME_001_TC009",
+      "title": "Verify all approved buttons are enabled and actionable on initial page load",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the home page",
+        "Inspect each approved button displayed on the screen",
+        "Verify each button appears enabled and supports pointer interaction"
+      ],
+      "expectedResult": "All approved buttons appear enabled, visually interactive, and selectable. No approved button is displayed in a disabled, hidden, or inactive state on initial page load."
+    },
+    {
+      "id": "HOME_001_TC010",
+      "title": "Verify direct navigation to the home URL displays the correct home screen",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Enter http://localhost/washtabui/home directly into the browser address bar",
+        "Press Enter to load the page"
+      ],
+      "expectedResult": "The browser loads the home page successfully and all approved navigation and action buttons are visible and interactive after the page finishes loading."
+    },
+    {
+      "id": "HOME_001_TC015",
+      "title": "Verify home page remains accessible after browser refresh",
       "type": "Edge",
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Open the URL http://localhost/washtabui/home",
-        "Click the Back navigation button"
+        "Navigate to the home page",
+        "Refresh the browser page",
+        "Observe the UI after reload"
       ],
-      "expectedResult": "['Application handles the back action without crashing', 'User is either navigated to the previous browser page or remains on the current home page', 'No blank screen, broken layout, or unresponsive state is displayed after clicking Back']"
+      "expectedResult": "The home page reloads successfully and all approved buttons remain visible, enabled, and interactive after the refresh. No session error, blank page, or broken UI component is displayed."
     },
     {
-      "id": "HOME_TC_013",
-      "title": "Verify all approved controls are keyboard accessible using tab navigation",
-      "type": "Edge",
-      "priority": "Medium",
-      "preconditions": [],
-      "steps": [
-        "Open the URL http://localhost/washtabui/home",
-        "Press the Tab key repeatedly to move focus through the page controls",
-        "Observe focus movement across Person, Back, Notification, Home, Customer Signup, Clean Survey, and Site Survey controls"
-      ],
-      "expectedResult": "['Keyboard focus reaches all approved interactive elements', 'Focused elements display a visible focus indicator or highlight', 'No approved control is skipped or inaccessible through keyboard-only navigation']"
-    },
-    {
-      "id": "HOME_TC_018",
-      "title": "Verify direct access to the home page URL loads the correct page",
-      "type": "Positive",
-      "priority": "Medium",
-      "preconditions": [],
-      "steps": [
-        "Launch a new browser session",
-        "Enter the URL http://localhost/washtabui/home directly into the browser address bar",
-        "Press Enter"
-      ],
-      "expectedResult": "['Home page loads successfully in the new browser session', 'All approved navigation controls and action buttons are visible', 'No authentication warning, access denial message, or broken page content is displayed']"
-    },
-    {
-      "id": "HOME_TC_019",
-      "title": "Verify browser refresh retains a stable home page state",
-      "type": "Edge",
-      "priority": "Medium",
-      "preconditions": [],
-      "steps": [
-        "Open the URL http://localhost/washtabui/home",
-        "Refresh the browser using the refresh button or F5 key"
-      ],
-      "expectedResult": "['Home page reloads successfully after refresh', 'All approved controls remain visible and functional after reload', 'No duplicate controls, missing assets, stale content, or script errors appear']"
-    },
-    {
-      "id": "HOME_TC_020",
-      "title": "Verify browser back navigation returns the user to the home page after opening the login page",
-      "type": "Edge",
-      "priority": "Medium",
-      "preconditions": [],
-      "steps": [
-        "Open the URL http://localhost/washtabui/home",
-        "Click the Person navigation button to open the login page",
-        "Use the browser back button"
-      ],
-      "expectedResult": "['Browser returns to the home page successfully', 'All home page controls are displayed correctly after returning', 'No stale loading state, navigation error, or partially rendered page is displayed']"
-    },
-    {
-      "id": "HOME_TC_021",
-      "title": "Verify browser back navigation returns the user to the home page after opening the customer-search page",
-      "type": "Edge",
-      "priority": "Medium",
-      "preconditions": [],
-      "steps": [
-        "Open the URL http://localhost/washtabui/home",
-        "Click the Customer Signup button",
-        "Use the browser back button"
-      ],
-      "expectedResult": "['Browser returns to the home page successfully', 'Home page buttons remain visible and functional after returning', 'No broken navigation state, duplicated content, or blank section appears']"
-    },
-    {
-      "id": "HOME_TC_022",
-      "title": "Verify the home page does not display disabled or visually broken approved controls during initial load",
+      "id": "HOME_001_TC020",
+      "title": "Verify no unexpected navigation occurs without user interaction on the home page",
       "type": "Negative",
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Open the URL http://localhost/washtabui/home",
-        "Observe all approved controls immediately after the page finishes loading"
+        "Open the home page",
+        "Do not click any button for a reasonable observation period",
+        "Observe the current page and URL"
       ],
-      "expectedResult": "['All approved controls are fully rendered on initial page load', 'No approved control appears unintentionally disabled', 'No overlapping text, broken icons, clipped labels, or missing button text is visible']"
-    },
-    {
-      "id": "HOME_TC_023",
-      "title": "Verify clicking non-interactive blank areas around buttons does not trigger navigation",
-      "type": "Negative",
-      "priority": "Medium",
-      "preconditions": [],
-      "steps": [
-        "Open the URL http://localhost/washtabui/home",
-        "Click blank areas and margins surrounding the visible action buttons without directly clicking the controls"
-      ],
-      "expectedResult": "['No navigation or button action is triggered when non-interactive areas are clicked', 'User remains on the home page', 'No hidden click area, unexpected redirect, or popup appears']"
-    },
-    {
-      "id": "HOME_TC_024",
-      "title": "Verify multiple sequential navigations from the home page work consistently without degrading the UI state",
-      "type": "Edge",
-      "priority": "Medium",
-      "preconditions": [],
-      "steps": [
-        "Open the URL http://localhost/washtabui/home",
-        "Click the Customer Signup button and return to the home page using browser back navigation",
-        "Click the Clean Survey button and return to the home page",
-        "Click the Site Survey button"
-      ],
-      "expectedResult": "['Each button opens the correct target page during the sequence', 'Returning to the home page preserves button visibility and functionality', 'Final navigation to the survey page succeeds without degraded performance, missing controls, or navigation failure']"
-    },
-    {
-      "id": "HOME_TC_025",
-      "title": "Verify browser forward navigation restores the previously opened page after returning to the home page",
-      "type": "Edge",
-      "priority": "Medium",
-      "preconditions": [],
-      "steps": [
-        "Open the URL http://localhost/washtabui/home",
-        "Click the Customer Signup button",
-        "Use the browser back button to return to the home page",
-        "Use the browser forward button"
-      ],
-      "expectedResult": "['Browser forward navigation returns the user to the customer-search page', 'Customer-search page content loads correctly after forward navigation', 'No stale page state, broken layout, or navigation error appears']"
-    },
-    {
-      "id": "HOME_TC_026",
-      "title": "Verify home page controls remain functional after multiple browser refresh operations",
-      "type": "Edge",
-      "priority": "Medium",
-      "preconditions": [],
-      "steps": [
-        "Open the URL http://localhost/washtabui/home",
-        "Refresh the page multiple times consecutively using the browser refresh option or F5 key",
-        "Click the Person navigation button after the final refresh"
-      ],
-      "expectedResult": "['Home page reloads successfully after each refresh', 'No duplicate controls or rendering artifacts appear after repeated refreshes', 'Person navigation button remains functional and opens the login page successfully after the final refresh']"
+      "expectedResult": "The application remains on the home page throughout the observation period. No automatic redirects, popup windows, unexpected page transitions, or URL changes occur without user interaction."
     }
   ]
 }
