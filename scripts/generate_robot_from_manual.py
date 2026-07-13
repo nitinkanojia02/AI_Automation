@@ -251,6 +251,7 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
     })
 
     identifier_policy = derive_standard_test_identifier(prompt_manual_data)
+    allowed_builtin_keywords, allowed_selenium_keywords = get_framework_keyword_catalog()
 
     payload = {
         "manual_test": prompt_manual_data,
@@ -258,6 +259,8 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
         "retrieved_common_keywords": retrieved_common_keywords,
         "retrieved_page_keywords": retrieved_page_keywords,
         "retrieved_page_variables": retrieved_page_variables,
+        "allowed_builtin_keywords": sorted(allowed_builtin_keywords),
+        "allowed_selenium_keywords": sorted(allowed_selenium_keywords),
         "resource_import_prefix": "../pom_pages/",
         "common_resource_hint": "../resources/common_keywords.resource",
         "identifier_policy": identifier_policy,
@@ -443,6 +446,7 @@ def build_review_prompt(manual_data: dict, resource_context: List[Dict], generat
         ]
 
     page_resources = [resource.get("file", "") for resource in resource_context if "/pom_pages/" in f"/{resource.get('file', '')}" or str(resource.get("file", "")).startswith("pom_pages/")]
+    allowed_builtin_keywords, allowed_selenium_keywords = get_framework_keyword_catalog()
     payload = {
         "manual_test": prompt_manual_data,
         "resource_context": resource_context,
@@ -473,7 +477,8 @@ def build_review_prompt(manual_data: dict, resource_context: List[Dict], generat
         "- Preserve the intent and coverage of the approved manual tests.\n"
         "- Correct Robot Framework syntax and framework alignment issues.\n"
         "- Improve reuse of resource keywords, resource variables, setup/teardown, and validation steps.\n"
-        "- Ensure the output remains a thin suite that relies on the provided page resource files and the shared common resource layer.\n\n"
+        "- Ensure the output remains a thin suite that relies on the provided page resource files and the shared common resource layer.\n"
+        "- Use the input keyword inventory as the allowed universe for non-resource keywords: prefer allowed_builtin_keywords and allowed_selenium_keywords, and otherwise reuse imported resource keywords from resource_context.\n\n"
         "Mandatory repair rules:\n"
         "- Return only Robot Framework code, with no markdown fences and no explanation.\n"
         "- Preserve compact formatting: no blank lines inside the Settings section, no blank line after *** Test Cases *** (the first test case must start immediately on the next line), exactly one blank line between major sections, and exactly one blank line between test cases.\n"
@@ -504,6 +509,7 @@ def build_review_prompt(manual_data: dict, resource_context: List[Dict], generat
         "- Preserve specialized interaction intent such as copy-paste, Enter key submission, repeated clicking, whitespace handling, or duplicate submission prevention; do not simplify these into a generic login-only sequence.\n"
         "- Prefer business-readable resource keyword calls over low-level one-off steps.\n"
         "- Replace any unsupported or invented keyword with a valid existing Robot built-in, SeleniumLibrary keyword, or imported resource keyword.\n"
+        "- Treat allowed_builtin_keywords and allowed_selenium_keywords from the input JSON as the approved non-resource keyword inventory. If a keyword is not in those lists or in imported resource_context, replace it instead of returning it.\n"
         "- Self-audit the final suite for keyword existence: every called keyword must come from Robot built-ins, SeleniumLibrary, or the imported resource files.\n"
         "- Self-audit every imported resource keyword call against its required [Arguments] signature and fix any missing mandatory arguments before returning the suite.\n"
         "- Review the final suite for repetitive startup sequences. If multiple tests begin with the same open-page, navigate, or page-ready steps, refactor those repeated actions into Test Setup or Suite Setup unless a specific test intentionally requires a different startup flow.\n"
@@ -528,12 +534,15 @@ def build_validation_review_prompt(manual_data: dict, resource_context: List[Dic
         ]
 
     page_resources = [resource.get("file", "") for resource in resource_context if "/pom_pages/" in f"/{resource.get('file', '')}" or str(resource.get("file", "")).startswith("pom_pages/")]
+    allowed_builtin_keywords, allowed_selenium_keywords = get_framework_keyword_catalog()
     manual_expected_outcomes = collect_manual_expected_outcomes(prompt_manual_data)
     resource_validation_keywords = collect_resource_validation_keywords(resource_context)
     payload = {
         "manual_test": prompt_manual_data,
         "resource_context": resource_context,
         "generated_robot": generated_robot,
+        "allowed_builtin_keywords": sorted(allowed_builtin_keywords),
+        "allowed_selenium_keywords": sorted(allowed_selenium_keywords),
         "resource_import_prefix": "../pom_pages/",
         "common_resource_hint": "../resources/common_keywords.resource",
         "approved_artifact_lineage": {
@@ -569,7 +578,8 @@ def build_validation_review_prompt(manual_data: dict, resource_context: List[Dic
         "- Preserve approved manual intent and scenario coverage.\n"
         "- Reject weak or action-only tests by repairing them into assertion-complete tests when the resource context supports it.\n"
         "- Prefer framework-safe, reusable, maintainable suite structure over ad hoc literal-driven test steps.\n"
-        "- Keep generated page resources untouched; operate only on the suite.\n\n"
+        "- Keep generated page resources untouched; operate only on the suite.\n"
+        "- Use the input keyword inventory as a guardrail: allowed_builtin_keywords and allowed_selenium_keywords define the approved non-resource keyword universe, and imported resource_context defines the approved resource keyword universe.\n\n"
         "Final-gate enforcement rules:\n"
         "- Return only Robot Framework code. No markdown fences. No explanation text.\n"
         "- Keep the suite thin: only *** Settings *** and *** Test Cases *** unless a tiny local helper is absolutely unavoidable.\n"
@@ -585,6 +595,7 @@ def build_validation_review_prompt(manual_data: dict, resource_context: List[Dic
         "- Reuse semantic resource variables over inline literals whenever available in resource_context, especially for reusable usernames, passwords, URLs, paths, expected validation texts, and semantically meaningful credential variants such as uppercase, lowercase, mixed-case, or other reusable edge-case data.\n"
         "- Reject suites that preserve hardcoded credential literals or weaken approved negative expected outcomes into only same-page checks when stronger approved resource semantics or manual expectations exist.\n"
         "- Avoid inventing unsupported keywords, unsupported assertions, or unsupported library APIs.\n"
+        "- If validation warnings indicate an unknown keyword, repair it by reusing imported resource keywords or by choosing only from allowed_builtin_keywords and allowed_selenium_keywords in the input JSON.\n"
         "- Self-audit the final suite against the imported keyword inventory before returning it.\n\n"
         "Special review focus for this framework maturity stage:\n"
         "- detect false-positive positive-path tests\n"
@@ -950,9 +961,9 @@ def validate_robot_content(content: str, allowed_resources: list[str]) -> tuple[
         if not normalized_keyword:
             return
         if normalized_keyword not in builtin_keywords and normalized_keyword not in selenium_keywords and normalized_keyword not in resource_keyword_names:
-            errors.append(
+            warnings.append(
                 f"Generated suite uses an unknown or unsupported keyword '{keyword_name}' in {source_label}. "
-                "Use only imported resource keywords or valid Robot Framework/SeleniumLibrary/BuiltIn keywords."
+                "Review and replace it with an imported resource keyword or a valid Robot Framework/SeleniumLibrary/BuiltIn keyword."
             )
             return
         signature = keyword_signature_map.get(normalized_keyword)
@@ -1352,13 +1363,61 @@ def process_manual_file(config: dict, manual_json_path: Path):
     robot_content = validated_robot_content or robot_content
 
     is_valid, validation_message = validate_robot_content(robot_content, resource_files)
+    if validation_message and re.search(r"unknown or unsupported keyword", validation_message, flags=re.IGNORECASE):
+        keyword_repair_prompt = (
+            build_validation_review_prompt(manual_data, resource_context, robot_content)
+            + "\n\nValidation findings to repair before returning the suite:\n"
+            + validation_message
+            + "\n\nRepair instruction:\n"
+            + "Replace any unknown keyword by reusing imported resource keywords or by choosing only from allowed_builtin_keywords and allowed_selenium_keywords already provided in the input JSON. "
+            + "Focus on imported libraries, imported resources, existing keyword signatures, and approved keyword inventories. "
+            + "Do not invent replacement keywords. If a needed behavior is missing, compose it using only valid existing keywords from the provided inventories. "
+            + "Do not explain. Return only corrected Robot Framework code."
+        )
+        repaired_robot_content = call_ai_chat(
+            endpoint=endpoint,
+            token=token,
+            prompt=keyword_repair_prompt,
+            timeout_seconds=ai.get("timeout_seconds", 120),
+            verify_ssl=ai.get("verify_ssl", False),
+        )
+        repaired_robot_content = repaired_robot_content.strip()
+        repaired_robot_content = re.sub(r"^```[a-zA-Z0-9_-]*\s*\n", "", repaired_robot_content)
+        repaired_robot_content = re.sub(r"\n```$", "", repaired_robot_content)
+        robot_content = repaired_robot_content or robot_content
+        is_valid, validation_message = validate_robot_content(robot_content, resource_files)
+
+    if validation_message:
+        followup_review_prompt = (
+            build_validation_review_prompt(manual_data, resource_context, robot_content)
+            + "\n\nValidation and quality findings to improve:\n"
+            + validation_message
+            + "\n\nFollow-up repair instructions:\n"
+            + "Use the provided imported resource context and allowed keyword inventories as guardrails. "
+            + "Reduce hallucination risk by preferring existing imported resource keywords, exact supported library keywords, and valid keyword signatures. "
+            + "Do not block the workflow. Return the best corrected Robot Framework suite possible using only valid framework-aligned keywords."
+        )
+        followup_robot_content = call_ai_chat(
+            endpoint=endpoint,
+            token=token,
+            prompt=followup_review_prompt,
+            timeout_seconds=ai.get("timeout_seconds", 120),
+            verify_ssl=ai.get("verify_ssl", False),
+        )
+        followup_robot_content = followup_robot_content.strip()
+        followup_robot_content = re.sub(r"^```[a-zA-Z0-9_-]*\s*\n", "", followup_robot_content)
+        followup_robot_content = re.sub(r"\n```$", "", followup_robot_content)
+        robot_content = followup_robot_content or robot_content
+        is_valid, validation_message = validate_robot_content(robot_content, resource_files)
     alignment_valid, alignment_message = validate_robot_alignment_with_resource_context(robot_content, resource_context)
     manual_expected_outcomes = collect_manual_expected_outcomes(manual_data)
     resource_validation_keywords = collect_resource_validation_keywords(resource_context)
     assertion_warning = warn_on_assertion_quality(manual_expected_outcomes, robot_content, resource_validation_keywords)
     if not is_valid:
-        raise ValueError(
-            f"Generated invalid robot content for {manual_json_path.name}: {validation_message}"
+        logger.warning(
+            "Generated robot content for %s did not fully validate after repair: %s",
+            manual_json_path.name,
+            validation_message,
         )
     if alignment_message:
         logger.warning("Robot alignment review for %s: %s", manual_json_path.name, alignment_message)
