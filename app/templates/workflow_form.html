@@ -73,7 +73,16 @@
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <label class="form-label">Entry Page Name</label>
-                                    <input class="form-control" name="entry_page_name" value="{{ data.entryPage.name if data and data.entryPage else '' }}" placeholder="Example: home_page">
+                                    <select class="form-select" name="entry_page_name" id="entry_page_name">
+                                        <option value="">Select entry page</option>
+                                        {% set selected_entry_page = data.entryPage.name if data and data.entryPage else '' %}
+                                        {% for page_name in navigation_resource_catalog.keys() | sort %}
+                                        <option value="{{ page_name }}" {% if selected_entry_page == page_name %}selected{% endif %}>{{ page_name }}</option>
+                                        {% endfor %}
+                                        {% if selected_entry_page and selected_entry_page not in navigation_resource_catalog %}
+                                        <option value="{{ selected_entry_page }}" selected>{{ selected_entry_page }}</option>
+                                        {% endif %}
+                                    </select>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Entry Page URL</label>
@@ -104,8 +113,22 @@
                                                     <option value="clickKnownElement" {% if step.action == 'clickKnownElement' %}selected{% endif %}>clickKnownElement</option>
                                                 </select>
                                             </td>
-                                            <td><input class="form-control" name="navigation_step_{{ loop.index0 }}_page" value="{{ step.page }}" placeholder="Example: home_page"></td>
-                                            <td><input class="form-control" name="navigation_step_{{ loop.index0 }}_element" value="{{ step.element }}" placeholder="Example: person_button"></td>
+                                            <td>
+                                                <select class="form-select navigation-step-page" name="navigation_step_{{ loop.index0 }}_page" onchange="updateNavigationElementOptions(this)">
+                                                    <option value="">Select source page</option>
+                                                    {% for page_name in navigation_resource_catalog.keys() | sort %}
+                                                    <option value="{{ page_name }}" {% if step.page == page_name %}selected{% endif %}>{{ page_name }}</option>
+                                                    {% endfor %}
+                                                    {% if step.page and step.page not in navigation_resource_catalog %}
+                                                    <option value="{{ step.page }}" selected>{{ step.page }}</option>
+                                                    {% endif %}
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <select class="form-select navigation-step-element" name="navigation_step_{{ loop.index0 }}_element" data-selected-value="{{ step.element }}">
+                                                    <option value="">Select known element</option>
+                                                </select>
+                                            </td>
                                         </tr>
                                         {% endfor %}
                                     </tbody>
@@ -195,6 +218,8 @@
     </div>
 </div>
 <script>
+const navigationResourceCatalog = {{ navigation_resource_catalog | tojson }};
+
 function toggleWorkflowSource() {
     const source = document.getElementById('input_source');
     const azureBlock = document.getElementById('azure_input_block');
@@ -206,6 +231,40 @@ function toggleWorkflowSource() {
     manualFields.forEach((field) => {
         field.style.display = useAzure ? 'none' : '';
     });
+}
+
+function buildNavigationPageOptions(selectedPage = '') {
+    const options = ['<option value="">Select source page</option>'];
+    Object.keys(navigationResourceCatalog).sort().forEach((pageName) => {
+        options.push(`<option value="${pageName}" ${selectedPage === pageName ? 'selected' : ''}>${pageName}</option>`);
+    });
+    if (selectedPage && !navigationResourceCatalog[selectedPage]) {
+        options.push(`<option value="${selectedPage}" selected>${selectedPage}</option>`);
+    }
+    return options.join('');
+}
+
+function updateNavigationElementOptions(pageSelectEl) {
+    const row = pageSelectEl.closest('tr');
+    if (!row) return;
+    const elementSelect = row.querySelector('.navigation-step-element');
+    if (!elementSelect) return;
+    const selectedPage = pageSelectEl.value;
+    const selectedValue = elementSelect.dataset.selectedValue || elementSelect.value || '';
+    const elements = selectedPage && navigationResourceCatalog[selectedPage] ? navigationResourceCatalog[selectedPage] : [];
+
+    const options = ['<option value="">Select known element</option>'];
+    elements.forEach((elementName) => {
+        options.push(`<option value="${elementName}" ${selectedValue === elementName ? 'selected' : ''}>${elementName}</option>`);
+    });
+    if (selectedValue && !elements.includes(selectedValue)) {
+        options.push(`<option value="${selectedValue}" selected>${selectedValue}</option>`);
+    }
+    elementSelect.innerHTML = options.join('');
+    elementSelect.dataset.selectedValue = selectedValue && elements.includes(selectedValue) ? selectedValue : (elements.includes(elementSelect.value) ? elementSelect.value : '');
+    if (!elements.includes(selectedValue)) {
+        elementSelect.value = elements.includes(elementSelect.value) ? elementSelect.value : '';
+    }
 }
 
 function addNavigationStep(action = 'clickKnownElement', page = '', element = '') {
@@ -220,10 +279,19 @@ function addNavigationStep(action = 'clickKnownElement', page = '', element = ''
                 <option value="clickKnownElement" ${action === 'clickKnownElement' ? 'selected' : ''}>clickKnownElement</option>
             </select>
         </td>
-        <td><input class="form-control" name="navigation_step_${index}_page" value="${page}" placeholder="Example: home_page"></td>
-        <td><input class="form-control" name="navigation_step_${index}_element" value="${element}" placeholder="Example: person_button"></td>
+        <td>
+            <select class="form-select navigation-step-page" name="navigation_step_${index}_page" onchange="updateNavigationElementOptions(this)">
+                ${buildNavigationPageOptions(page)}
+            </select>
+        </td>
+        <td>
+            <select class="form-select navigation-step-element" name="navigation_step_${index}_element" data-selected-value="${element}">
+                <option value="">Select known element</option>
+            </select>
+        </td>
     `;
     tbody.appendChild(row);
+    updateNavigationElementOptions(row.querySelector('.navigation-step-page'));
     countInput.value = index + 1;
 }
 
@@ -288,6 +356,7 @@ function addTargetSignal(type = 'text', page = '', element = '', value = '') {
 window.addEventListener('DOMContentLoaded', function () {
     toggleWorkflowSource();
     document.querySelectorAll('.signal-type').forEach(toggleSignalRow);
+    document.querySelectorAll('.navigation-step-page').forEach(updateNavigationElementOptions);
 });
 </script>
 {% endblock %}

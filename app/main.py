@@ -3037,6 +3037,29 @@ def delete_workflow(workflow_name: str):
 
     return RedirectResponse(url="/", status_code=HTTP_303_SEE_OTHER)
 
+def get_navigation_resource_catalog() -> dict:
+    catalog: dict[str, list[str]] = {}
+    for resource_path in sorted(POM_DIR.glob("*/*.resource")):
+        page_name = resource_path.parent.name
+        try:
+            parsed = parse_resource_file(resource_path)
+        except Exception:
+            continue
+        locator_variable_names = []
+        for variable in parsed.get("variables", []):
+            if not isinstance(variable, dict):
+                continue
+            name = clean_text(str(variable.get("name", "")))
+            value = clean_text(str(variable.get("value", "")))
+            if not name or not value:
+                continue
+            if value.startswith(("xpath=", "css=", "id=", "name=", "//", "(", "#", ".")) or "@" in value:
+                locator_variable_names.append(name)
+        if locator_variable_names:
+            catalog[page_name] = sorted(set(locator_variable_names))
+    return catalog
+
+
 @app.get("/workflow/new")
 def workflow_form(request: Request):
     existing = WORKFLOW_DIR / "login.json"
@@ -3051,6 +3074,7 @@ def workflow_form(request: Request):
         "edit_mode": False,
         "workflow_slug": "",
         "azure_defaults": azure_defaults,
+        "navigation_resource_catalog": get_navigation_resource_catalog(),
     })
 
 @app.get("/workflow/edit/{workflow_name}")
@@ -3066,6 +3090,7 @@ def edit_workflow(request: Request, workflow_name: str):
         "edit_mode": True,
         "workflow_slug": workflow_name,
         "azure_defaults": azure_defaults,
+        "navigation_resource_catalog": get_navigation_resource_catalog(),
     })
 
 def normalize_resource_file_path(page_name: str, resource_file: str) -> str:

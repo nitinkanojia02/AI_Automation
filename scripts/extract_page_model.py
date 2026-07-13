@@ -1028,37 +1028,50 @@ def wait_for_meaningful_page_content(page, wait_seconds: int):
     except Exception:
         logger.warning("Meaningful control count threshold was not reached before timeout.")
 
-def get_page_metadata_elements(page_name: str) -> List[dict]:
+def get_page_resource_variables(page_name: str) -> List[dict]:
     page_slug = slugify(page_name)
-    metadata_dir = BASE_DIR / "pom_pages" / page_slug / "metadata"
-    candidates = [
-        metadata_dir / f"{page_slug}.elements.reviewed.json",
-        metadata_dir / f"{page_slug}.elements.approved.json",
-        metadata_dir / f"{page_slug}.elements.json",
-    ]
-    for path in candidates:
-        if not path.exists():
+    resource_path = BASE_DIR / "pom_pages" / page_slug / f"{page_slug}.resource"
+    if not resource_path.exists():
+        return []
+    try:
+        resource_text = resource_path.read_text(encoding="utf-8")
+    except Exception:
+        return []
+
+    variables: List[dict] = []
+    in_variables = False
+    for line in resource_text.splitlines():
+        stripped = line.strip()
+        lowered = stripped.lower()
+        if lowered == "*** variables ***":
+            in_variables = True
             continue
-        try:
-            data = json.loads(path.read_text(encoding="utf-8"))
-        except Exception:
+        if stripped.startswith("***") and lowered != "*** variables ***":
+            in_variables = False
             continue
-        if isinstance(data, dict) and isinstance(data.get("elements"), list):
-            return [item for item in data.get("elements", []) if isinstance(item, dict)]
-        if isinstance(data, list):
-            return [item for item in data if isinstance(item, dict)]
-    return []
+        if not in_variables or not stripped:
+            continue
+        parts = re.split(r"\s{2,}|\t+", stripped, maxsplit=1)
+        if len(parts) != 2:
+            continue
+        variable_token, value = parts
+        if variable_token.startswith("${") and variable_token.endswith("}"):
+            variables.append({
+                "name": variable_token[2:-1].strip(),
+                "value": value.strip(),
+            })
+    return variables
 
 
 def resolve_known_element_locator(page_name: str, element_name: str) -> str:
     normalized_page = slugify(page_name)
     normalized_element = slugify(element_name)
-    for item in get_page_metadata_elements(normalized_page):
-        candidate_name = slugify(str(item.get("approvedName") or item.get("name") or ""))
-        locator = clean_text(str(item.get("locator", "")))
-        if candidate_name == normalized_element and locator:
+    for item in get_page_resource_variables(normalized_page):
+        variable_name = clean_text(str(item.get("name", "")))
+        locator = clean_text(str(item.get("value", "")))
+        if slugify(variable_name) == normalized_element and locator:
             return locator
-    raise ValueError(f"Known element '{element_name}' was not found in metadata for page '{page_name}'.")
+    raise ValueError(f"Known element '{element_name}' was not found in resource variables for page '{page_name}'.")
 
 
 def perform_navigation_steps(page, navigation_steps: List[dict], wait_seconds: int):
