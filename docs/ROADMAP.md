@@ -118,7 +118,7 @@ Focus areas:
 4. introduce a formal reusable test-data layer
 5. strengthen validation and regeneration loops
 6. improve workflow and artifact status visibility in the UI
-7. expand support beyond the current demo workflow shape
+7. expand support beyond the current curated `login` and `home` demo workflow shapes
 
 ---
 

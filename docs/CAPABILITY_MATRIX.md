@@ -28,7 +28,7 @@ This document summarizes the framework capability set based on the current repos
 | Validation of generated Robot output | Enforce generated suite quality | Implemented | Structural, resource-alignment, signature, naming, setup/teardown, and reusable-data warnings are present, though still evolving |
 | Structured test data strategy | Centralize reusable test data cleanly | Partial | Some workflow test data exists, but no strong abstraction layer yet |
 | Approval workflow metadata | Track review, approval, version, and ownership | Partial | Basic status exists, governance metadata is limited |
-| Multi-page workflow orchestration | Support larger cross-page journeys | Partial | Current MVP is strongest on focused flows |
+| Multi-page workflow orchestration | Support larger cross-page journeys | Partial | Current MVP is strongest on focused flows, but the checked-in `login` and `home` examples now provide more than a single login-only reference point |
 | Execution feedback loop | Feed failures back into refinement | Limited | Not yet a structured closed loop |
 | Self-healing | Detect and repair broken automation intelligently | Not Yet Implemented | Future direction |
 | Knowledge retention layer | Persist and reuse learned patterns across runs | Not Yet Implemented | Future direction |

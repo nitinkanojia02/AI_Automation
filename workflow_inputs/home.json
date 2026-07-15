@@ -1,0 +1,46 @@
+{
+  "inputType": "exploratory_workflow",
+  "workflowId": "HOME_001",
+  "workflowName": "home",
+  "module": "Navigation",
+  "feature": "HOME",
+  "applicationCode": "WT",
+  "testIdentifierPrefix": "HOME",
+  "source": {
+    "createdBy": "Repository sample",
+    "notes": "Checked-in sample workflow aligned to curated home artifacts."
+  },
+  "resourceFiles": [
+    "home_page/home_page.resource"
+  ],
+  "pages": [
+    {
+      "name": "home_page",
+      "url": "http://localhost/washtabui/home"
+    }
+  ],
+  "observedPreconditions": [
+    "Launch the application and navigate to http://localhost/washtabui/home",
+    "Home page should load successfully before executing test steps"
+  ],
+  "observedSteps": [
+    "Open the Home page",
+    "Verify approved navigation and action controls",
+    "Use supported controls to navigate to linked destinations"
+  ],
+  "observedExpectedResult": "The home page loads successfully, approved controls are visible and interactive, and supported navigation actions route the user to the expected destinations.",
+  "fields": [],
+  "observedValidations": [
+    "Approved controls are visible and enabled",
+    "Person button navigates to the login page",
+    "Customer signup button opens the customer-search page",
+    "Clean survey button opens the vehicle-survey page",
+    "Site survey button opens the survey page"
+  ],
+  "scenarioIntent": [
+    "positive",
+    "negative",
+    "edge",
+    "ui"
+  ]
+}
