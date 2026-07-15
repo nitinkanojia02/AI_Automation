@@ -369,10 +369,12 @@ def normalize_test_case(
     fallback_fields: List[str],
     fallback_steps: List[str],
     fallback_expected: str,
+    forced_title: Optional[str] = None,
+    forced_type: Optional[str] = None,
 ) -> Dict[str, Any]:
-    title = str(test_case.get("title", "")).strip() or f"Test Case {idx}"
+    title = forced_title or str(test_case.get("title", "")).strip() or f"Test Case {idx}"
     expected = str(test_case.get("expectedResult", fallback_expected)).strip()
-    tc_type = map_test_type(title, expected, str(test_case.get("type", "")))
+    tc_type = forced_type or map_test_type(title, expected, str(test_case.get("type", "")))
 
     tc_id = str(test_case.get("id", "")).strip() or f"{id_prefix}-{idx:03d}"
     steps = ensure_list_of_strings(test_case.get("steps", fallback_steps))
@@ -465,6 +467,134 @@ def generate_fallback_test_cases(workflow_input: Dict[str, Any], workflow_name: 
     return fallback_cases
 
 
+def parse_acceptance_criteria(workflow_input: Dict[str, Any]) -> List[str]:
+    raw_candidates: List[str] = []
+
+    for key in ("acceptanceCriteria", "acceptance_criteria", "criteria"):
+        value = workflow_input.get(key)
+        if isinstance(value, list):
+            raw_candidates.extend(str(x).strip() for x in value if str(x).strip())
+        elif isinstance(value, str) and value.strip():
+            raw_candidates.extend(line.strip(" -\t") for line in re.split(r"\n+", value) if line.strip())
+
+    for parent_key in ("externalContext", "metadata"):
+        parent = workflow_input.get(parent_key)
+        if not isinstance(parent, dict):
+            continue
+        for key in ("acceptanceCriteria", "acceptance_criteria", "criteria"):
+            value = parent.get(key)
+            if isinstance(value, list):
+                raw_candidates.extend(str(x).strip() for x in value if str(x).strip())
+            elif isinstance(value, str) and value.strip():
+                raw_candidates.extend(line.strip(" -\t") for line in re.split(r"\n+", value) if line.strip())
+
+    seen = set()
+    normalized: List[str] = []
+    for criterion in raw_candidates:
+        criterion = re.sub(r"^\d+[\.)]\s*", "", criterion).strip()
+        if not criterion:
+            continue
+        key = criterion.lower()
+        if key not in seen:
+            seen.add(key)
+            normalized.append(criterion)
+    return normalized
+
+
+def criterion_signature(text: str) -> str:
+    return re.sub(r"[^a-z0-9]+", " ", text.lower()).strip()
+
+
+def test_case_signature(tc: Dict[str, Any]) -> str:
+    combined = " ".join(
+        [
+            str(tc.get("title", "")),
+            str(tc.get("expectedResult", "")),
+            " ".join(ensure_list_of_strings(tc.get("steps", []))),
+            " ".join(ensure_list_of_strings(tc.get("fields", []))),
+        ]
+    )
+    return criterion_signature(combined)
+
+
+def criterion_is_covered(criterion: str, test_cases: List[Dict[str, Any]]) -> bool:
+    criterion_key = criterion_signature(criterion)
+    criterion_tokens = {token for token in criterion_key.split() if len(token) > 2}
+    if not criterion_tokens:
+        return False
+
+    for tc in test_cases:
+        candidate_key = test_case_signature(tc)
+        if criterion_key and criterion_key in candidate_key:
+            return True
+        candidate_tokens = set(candidate_key.split())
+        overlap = criterion_tokens & candidate_tokens
+        if len(overlap) >= max(2, min(len(criterion_tokens), 4)):
+            return True
+    return False
+
+
+def build_required_case_from_criterion(
+    criterion: str,
+    idx: int,
+    id_prefix: str,
+    fallback_fields: List[str],
+) -> Dict[str, Any]:
+    text = criterion.strip()
+    lowered = text.lower()
+    fields = list(fallback_fields)
+    steps = ["Open the relevant page or workflow context", text]
+    expected = text
+    tc_type = "positive"
+
+    if "back button" in lowered and "home page" in lowered:
+        fields = sorted(set(fields + ["back_button"]))
+        steps = [
+            "Open the Login page from the Home page",
+            "Click the Back button on the Login page",
+        ]
+        expected = "The user is returned to the Home page and the Login page is no longer active."
+        tc_type = "positive"
+    elif "home button" in lowered and "home page" in lowered:
+        fields = sorted(set(fields + ["home_button"]))
+        steps = [
+            "Open the Login page from the Home page",
+            "Click the Home button on the Login page",
+        ]
+        expected = "The user is returned to the Home page and the Login page is no longer active."
+        tc_type = "positive"
+    elif "forgot password" in lowered:
+        fields = sorted(set(fields + ["forgot_password_link"]))
+        steps = [
+            "Open the Login page from the Home page",
+            "Click Forgot Password on the Login page",
+        ]
+        expected = "The supported password recovery destination or recovery workflow opens successfully."
+        tc_type = "positive"
+    elif any(token in lowered for token in ["invalid", "fail", "error", "remain unauthenticated", "should not proceed"]):
+        tc_type = "negative"
+    elif any(token in lowered for token in ["masked", "validation", "required", "blank", "empty"]):
+        tc_type = "negative" if any(token in lowered for token in ["required", "blank", "empty"]) else "positive"
+
+    return normalize_test_case(
+        test_case={
+            "id": f"{id_prefix}-{idx:03d}",
+            "title": text,
+            "type": tc_type,
+            "steps": steps,
+            "expectedResult": expected,
+            "fields": fields,
+        },
+        idx=idx,
+        id_prefix=id_prefix,
+        fallback_fields=fallback_fields,
+        fallback_steps=steps,
+        fallback_expected=expected,
+        forced_title=text,
+        forced_type=tc_type,
+    )
+
+
 def normalize_manual_test(generated: Dict[str, Any], workflow_input: Dict[str, Any]) -> Dict[str, Any]:
     workflow_name = str(
         workflow_input.get("workflowName")
@@ -505,6 +635,29 @@ def normalize_manual_test(generated: Dict[str, Any], workflow_input: Dict[str, A
 
     if not normalized_cases:
         normalized_cases = generate_fallback_test_cases(workflow_input, workflow_name)
+
+    acceptance_criteria = parse_acceptance_criteria(workflow_input)
+    missing_required_cases: List[Dict[str, Any]] = []
+    next_idx = len(normalized_cases) + 1
+    for criterion in acceptance_criteria:
+        if not criterion_is_covered(criterion, normalized_cases + missing_required_cases):
+            missing_required_cases.append(
+                build_required_case_from_criterion(
+                    criterion=criterion,
+                    idx=next_idx,
+                    id_prefix=id_prefix,
+                    fallback_fields=fallback_fields,
+                )
+            )
+            next_idx += 1
+
+    if missing_required_cases:
+        logger.info(
+            "Added %d acceptance-criteria coverage test case(s) for workflow %s",
+            len(missing_required_cases),
+            workflow_name,
+        )
+        normalized_cases.extend(missing_required_cases)
 
     seen_ids = set()
     deduped_cases: List[Dict[str, Any]] = []
