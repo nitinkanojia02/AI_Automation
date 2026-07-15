@@ -525,11 +525,20 @@ def normalize_manual_test(generated: Dict[str, Any], workflow_input: Dict[str, A
             seen_signatures.add(signature)
             deduped_cases.append(tc)
 
+    explicit_prefix = clean_text(str(workflow_input.get("testIdentifierPrefix") or generated.get("testIdentifierPrefix", "")))
+    explicit_feature = clean_text(str(workflow_input.get("feature") or generated.get("feature", "")))
+    if explicit_prefix:
+        resolved_feature = explicit_prefix
+    elif explicit_feature and len(re.findall(r"[A-Za-z0-9]+", explicit_feature)) <= 3:
+        resolved_feature = explicit_feature
+    else:
+        resolved_feature = workflow_name
+
     return {
         "workflowName": workflow_name,
-        "feature": workflow_input.get("feature") or generated.get("feature", ""),
+        "feature": resolved_feature,
         "applicationCode": workflow_input.get("applicationCode") or generated.get("applicationCode", ""),
-        "testIdentifierPrefix": workflow_input.get("testIdentifierPrefix") or generated.get("testIdentifierPrefix", ""),
+        "testIdentifierPrefix": explicit_prefix,
         "resourceFiles": [str(x).strip() for x in resource_files if str(x).strip()],
         "preconditions": preconditions,
         "testCases": [

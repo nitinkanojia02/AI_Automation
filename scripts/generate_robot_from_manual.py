@@ -64,6 +64,18 @@ def normalize_feature_code(text: str) -> str:
 
 
 def derive_fallback_feature_code(manual_data: dict) -> str:
+    raw_prefix = compact_code(str(manual_data.get("testIdentifierPrefix", "")))
+    if raw_prefix:
+        return raw_prefix[:16]
+
+    raw_feature = clean_text(str(manual_data.get("feature", "")))
+    if raw_feature:
+        feature_words = re.findall(r"[A-Za-z0-9]+", raw_feature)
+        if 0 < len(feature_words) <= 3:
+            compact_feature = compact_code(raw_feature)
+            if compact_feature:
+                return compact_feature[:16]
+
     candidates = [
         str(manual_data.get("feature", "")),
         str(manual_data.get("workflowName", "")),
