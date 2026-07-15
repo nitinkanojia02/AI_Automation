@@ -35,6 +35,10 @@ def slugify(value: str) -> str:
     return value or "workflow"
 
 
+def clean_text(value: str) -> str:
+    return re.sub(r"\s+", " ", str(value or "")).strip()
+
+
 def pretty_json(obj: Any) -> str:
     return json.dumps(obj, indent=2, ensure_ascii=False)
 
