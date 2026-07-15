@@ -56,43 +56,58 @@ def compact_code(text: str) -> str:
     return re.sub(r"[^A-Za-z0-9]+", "", clean_text(text)).upper()
 
 
-def derive_standard_test_identifier(manual_data: dict) -> dict:
-    app_code = compact_code(str(manual_data.get("applicationCode", "")))[:6] or "APP"
-    explicit_prefix = compact_code(str(manual_data.get("testIdentifierPrefix", "")))
-    if explicit_prefix:
-        feature_code = explicit_prefix[:16]
-    else:
-        candidates = [
-            str(manual_data.get("feature", "")),
-            str(manual_data.get("workflowName", "")),
-            str(manual_data.get("module", "")),
-        ]
-        stop_words = {
-            "a", "an", "and", "application", "auth", "authentication", "flow", "for", "from", "home", "in", "of", "on", "page",
-            "screen", "story", "test", "the", "to", "user", "users", "using", "validation", "verify", "workflow"
-        }
-        preferred_words = {
-            "login", "logout", "dashboard", "search", "cart", "checkout", "profile", "payment", "order", "admin", "report"
-        }
-        tokens: list[str] = []
-        for candidate in candidates:
-            words = re.findall(r"[A-Za-z0-9]+", clean_text(candidate).lower())
-            meaningful_words = [word for word in words if len(word) >= 3 and word not in stop_words]
-            preferred = [word for word in meaningful_words if word in preferred_words]
-            selected_words = preferred or meaningful_words
-            for word in selected_words[:2]:
-                code = compact_code(word)
-                if code and code not in tokens:
-                    tokens.append(code[:8])
-            if tokens:
-                break
-        feature_code = "_".join(tokens[:2])[:16] if tokens else "FLOW"
+def normalize_feature_code(text: str) -> str:
+    cleaned = clean_text(text).upper()
+    cleaned = re.sub(r"[^A-Z0-9]+", "_", cleaned)
+    cleaned = re.sub(r"_+", "_", cleaned).strip("_")
+    return cleaned
+
+
+def derive_fallback_feature_code(manual_data: dict) -> str:
+    candidates = [
+        str(manual_data.get("feature", "")),
+        str(manual_data.get("workflowName", "")),
+        str(manual_data.get("module", "")),
+    ]
+    stop_words = {
+        "a", "an", "and", "application", "auth", "authentication", "flow", "for", "from", "in", "of", "on", "page",
+        "screen", "story", "test", "the", "to", "user", "users", "using", "validation", "verify", "workflow", "should", "support"
+    }
+    preferred_words = {
+        "home", "login", "logout", "dashboard", "search", "cart", "checkout", "profile", "payment", "order", "admin", "report"
+    }
+    tokens: list[str] = []
+    for candidate in candidates:
+        words = re.findall(r"[A-Za-z0-9]+", clean_text(candidate).lower())
+        meaningful_words = [word for word in words if len(word) >= 3 and word not in stop_words]
+        preferred = [word for word in meaningful_words if word in preferred_words]
+        selected_words = preferred or meaningful_words
+        for word in selected_words[:2]:
+            code = compact_code(word)
+            if code and code not in tokens:
+                tokens.append(code[:8])
+        if tokens:
+            break
+    return "_".join(tokens[:2])[:16] if tokens else "FLOW"
+
+
+def resolve_test_identifier_policy(manual_data: dict) -> dict:
+    app_code = compact_code(str(manual_data.get("applicationCode", "")))[:8] or "APP"
+    raw_prefix = clean_text(str(manual_data.get("testIdentifierPrefix", "")))
+    normalized_prefix = normalize_feature_code(raw_prefix)
+    feature_code = normalized_prefix[:20] if normalized_prefix else derive_fallback_feature_code(manual_data)
+    family_prefix = f"{app_code}-{feature_code}"
     return {
         "app_code": app_code,
-        "feature_code": feature_code or "FLOW",
-        "example_test_id": f"{app_code}-{feature_code or 'FLOW'}01",
-        "example_test_name": f"AUT-{app_code}-{feature_code or 'FLOW'}01: Verify workflow behavior",
+        "feature_code": feature_code,
+        "family_prefix": family_prefix,
+        "example_test_id": f"{family_prefix}01",
+        "example_test_name": f"AUT-{family_prefix}01: Verify workflow behavior",
     }
+
+
+def derive_standard_test_identifier(manual_data: dict) -> dict:
+    return resolve_test_identifier_policy(manual_data)
 
 def get_ai_token(ai_cfg: dict) -> str:
     token = str(ai_cfg.get("token", "")).strip()
@@ -979,6 +994,48 @@ def warn_on_assertion_quality(manual_expected_outcomes: list[str], robot_content
     return ""
 
 
+def normalize_generated_robot_identifiers(content: str, identifier_policy: dict) -> str:
+    family_prefix = clean_text(str(identifier_policy.get("family_prefix", "")))
+    if not family_prefix:
+        return content
+
+    lines = content.splitlines()
+    normalized_lines: list[str] = []
+    current_test_id = ""
+    sequence = 1
+    pending_tags_index: int | None = None
+
+    for line in lines:
+        stripped = line.strip()
+        test_name_match = re.match(r"^(AUT-)([A-Z0-9]+)-([A-Z0-9_]+?)(\d{2})(:\s+.*)$", stripped)
+        if stripped and not line.startswith((" ", "\t")) and test_name_match:
+            current_test_id = f"{family_prefix}{sequence:02d}"
+            normalized_lines.append(f"AUT-{current_test_id}{test_name_match.group(5)}")
+            pending_tags_index = len(normalized_lines)
+            sequence += 1
+            continue
+
+        if current_test_id and stripped.startswith("[Tags]"):
+            parts = [part.strip() for part in re.split(r"\s{2,}|\t+", stripped) if part.strip()]
+            scenario_tag = "positive"
+            for part in parts[1:]:
+                normalized = clean_text(part).lower()
+                if normalized in {"positive", "negative", "edge", "smoke", "regression"}:
+                    scenario_tag = normalized
+                    break
+            normalized_lines.append(f"    [Tags]    {current_test_id}    {scenario_tag}")
+            pending_tags_index = None
+            continue
+
+        if current_test_id and pending_tags_index is not None and line.startswith((" ", "\t")) and stripped and not stripped.startswith("[Tags]"):
+            normalized_lines.append(f"    [Tags]    {current_test_id}    positive")
+            pending_tags_index = None
+
+        normalized_lines.append(line)
+
+    return "\n".join(normalized_lines) + ("\n" if content.endswith("\n") else "")
+
+
 def validate_robot_content(content: str, allowed_resources: list[str]) -> tuple[bool, str]:
     errors: list[str] = []
     warnings: list[str] = []
@@ -1376,6 +1433,8 @@ def process_manual_file(config: dict, manual_json_path: Path):
     if not endpoint or not token:
         raise ValueError("AI endpoint/token missing in config.")
 
+    identifier_policy = resolve_test_identifier_policy(manual_data)
+
     prompt = build_prompt(manual_data, resource_context)
     robot_content = call_ai_chat(
         endpoint=endpoint,
@@ -1388,6 +1447,7 @@ def process_manual_file(config: dict, manual_json_path: Path):
     robot_content = robot_content.strip()
     robot_content = re.sub(r"^```[a-zA-Z0-9_-]*\s*\n", "", robot_content)
     robot_content = re.sub(r"\n```$", "", robot_content)
+    robot_content = normalize_generated_robot_identifiers(robot_content, identifier_policy)
 
     review_prompt = build_review_prompt(manual_data, resource_context, robot_content)
     reviewed_robot_content = call_ai_chat(
@@ -1400,7 +1460,7 @@ def process_manual_file(config: dict, manual_json_path: Path):
     reviewed_robot_content = reviewed_robot_content.strip()
     reviewed_robot_content = re.sub(r"^```[a-zA-Z0-9_-]*\s*\n", "", reviewed_robot_content)
     reviewed_robot_content = re.sub(r"\n```$", "", reviewed_robot_content)
-    robot_content = reviewed_robot_content or robot_content
+    robot_content = normalize_generated_robot_identifiers(reviewed_robot_content or robot_content, identifier_policy)
 
     validation_review_prompt = build_validation_review_prompt(manual_data, resource_context, robot_content)
     validated_robot_content = call_ai_chat(
@@ -1413,7 +1473,7 @@ def process_manual_file(config: dict, manual_json_path: Path):
     validated_robot_content = validated_robot_content.strip()
     validated_robot_content = re.sub(r"^```[a-zA-Z0-9_-]*\s*\n", "", validated_robot_content)
     validated_robot_content = re.sub(r"\n```$", "", validated_robot_content)
-    robot_content = validated_robot_content or robot_content
+    robot_content = normalize_generated_robot_identifiers(validated_robot_content or robot_content, identifier_policy)
 
     is_valid, validation_message = validate_robot_content(robot_content, resource_files)
     if validation_message and re.search(r"unknown or unsupported keyword", validation_message, flags=re.IGNORECASE):
@@ -1437,7 +1497,7 @@ def process_manual_file(config: dict, manual_json_path: Path):
         repaired_robot_content = repaired_robot_content.strip()
         repaired_robot_content = re.sub(r"^```[a-zA-Z0-9_-]*\s*\n", "", repaired_robot_content)
         repaired_robot_content = re.sub(r"\n```$", "", repaired_robot_content)
-        robot_content = repaired_robot_content or robot_content
+        robot_content = normalize_generated_robot_identifiers(repaired_robot_content or robot_content, identifier_policy)
         is_valid, validation_message = validate_robot_content(robot_content, resource_files)
 
     if validation_message:
@@ -1461,7 +1521,7 @@ def process_manual_file(config: dict, manual_json_path: Path):
         followup_robot_content = followup_robot_content.strip()
         followup_robot_content = re.sub(r"^```[a-zA-Z0-9_-]*\s*\n", "", followup_robot_content)
         followup_robot_content = re.sub(r"\n```$", "", followup_robot_content)
-        robot_content = followup_robot_content or robot_content
+        robot_content = normalize_generated_robot_identifiers(followup_robot_content or robot_content, identifier_policy)
         is_valid, validation_message = validate_robot_content(robot_content, resource_files)
     alignment_valid, alignment_message = validate_robot_alignment_with_resource_context(robot_content, resource_context)
     manual_expected_outcomes = collect_manual_expected_outcomes(manual_data)
