@@ -10,7 +10,12 @@ PROMPTS_DIR = Path(__file__).resolve().parent.parent / "prompts"
 import requests
 import urllib3
 
-from scripts.workflow_context import infer_workflow_reuse_context
+try:
+    from scripts.workflow_context import infer_workflow_reuse_context
+except ModuleNotFoundError:
+    import sys
+    sys.path.append(str(Path(__file__).resolve().parent.parent))
+    from scripts.workflow_context import infer_workflow_reuse_context
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 

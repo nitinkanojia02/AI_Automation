@@ -6,8 +6,14 @@ import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from scripts.generate_robot_from_manual import build_manual_review_prompt, validate_manual_content
-from scripts.workflow_context import infer_workflow_reuse_context
+try:
+    from scripts.generate_robot_from_manual import build_manual_review_prompt, validate_manual_content
+    from scripts.workflow_context import infer_workflow_reuse_context
+except ModuleNotFoundError:
+    import sys
+    sys.path.append(str(Path(__file__).resolve().parent.parent))
+    from scripts.generate_robot_from_manual import build_manual_review_prompt, validate_manual_content
+    from scripts.workflow_context import infer_workflow_reuse_context
 
 import requests
 

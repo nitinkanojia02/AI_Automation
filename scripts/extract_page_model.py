@@ -11,7 +11,12 @@ import requests
 import urllib3
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
-from scripts.workflow_context import infer_workflow_reuse_context
+try:
+    from scripts.workflow_context import infer_workflow_reuse_context
+except ModuleNotFoundError:
+    import sys
+    sys.path.append(str(Path(__file__).resolve().parent.parent))
+    from scripts.workflow_context import infer_workflow_reuse_context
 from playwright.sync_api import sync_playwright
 
 BASE_DIR = Path(__file__).resolve().parent.parent
