@@ -1003,7 +1003,26 @@ def normalize_generated_robot_identifiers(content: str, identifier_policy: dict)
     normalized_lines: list[str] = []
     current_test_id = ""
     sequence = 1
-    pending_tags_index: int | None = None
+    pending_tag_for_current_test = False
+
+    def detect_scenario_tag(tag_line: str) -> str:
+        parts = [part.strip() for part in re.split(r"\s{2,}|\t+", tag_line) if part.strip()]
+        for part in parts:
+            normalized = clean_text(part).lower()
+            if normalized in {"positive", "negative", "edge", "smoke", "regression"}:
+                return normalized
+        return "positive"
+
+    def is_test_case_header(raw_line: str) -> bool:
+        stripped_line = raw_line.strip()
+        if not stripped_line or raw_line.startswith((" ", "\t")):
+            return False
+        if stripped_line.startswith("***"):
+            return False
+        upper = stripped_line.upper()
+        if upper.startswith(("LIBRARY", "RESOURCE", "SUITE SETUP", "SUITE TEARDOWN", "TEST SETUP", "TEST TEARDOWN", "DOCUMENTATION", "METADATA", "FORCE TAGS", "DEFAULT TAGS")):
+            return False
+        return ":" in stripped_line
 
     for line in lines:
         stripped = line.strip()
@@ -1011,25 +1030,34 @@ def normalize_generated_robot_identifiers(content: str, identifier_policy: dict)
         if stripped and not line.startswith((" ", "\t")) and test_name_match:
             current_test_id = f"{family_prefix}{sequence:02d}"
             normalized_lines.append(f"AUT-{current_test_id}{test_name_match.group(5)}")
-            pending_tags_index = len(normalized_lines)
+            pending_tag_for_current_test = True
             sequence += 1
             continue
 
-        if current_test_id and stripped.startswith("[Tags]"):
-            parts = [part.strip() for part in re.split(r"\s{2,}|\t+", stripped) if part.strip()]
-            scenario_tag = "positive"
-            for part in parts[1:]:
-                normalized = clean_text(part).lower()
-                if normalized in {"positive", "negative", "edge", "smoke", "regression"}:
-                    scenario_tag = normalized
-                    break
-            normalized_lines.append(f"    [Tags]    {current_test_id}    {scenario_tag}")
-            pending_tags_index = None
+        if stripped and is_test_case_header(line):
+            current_test_id = f"{family_prefix}{sequence:02d}"
+            title_suffix = stripped[stripped.find(":"):] if ":" in stripped else f": Test Case {sequence:02d}"
+            normalized_lines.append(f"AUT-{current_test_id}{title_suffix}")
+            pending_tag_for_current_test = True
+            sequence += 1
             continue
 
-        if current_test_id and pending_tags_index is not None and line.startswith((" ", "\t")) and stripped and not stripped.startswith("[Tags]"):
+        if current_test_id and pending_tag_for_current_test and line.startswith((" ", "\t")):
+            lower_stripped = stripped.lower()
+            if stripped.startswith("["):
+                if lower_stripped.startswith("[tags]"):
+                    scenario_tag = detect_scenario_tag(stripped)
+                    normalized_lines.append(f"    [Tags]    {current_test_id}    {scenario_tag}")
+                    pending_tag_for_current_test = False
+                    continue
+                normalized_lines.append(line)
+                continue
+
             normalized_lines.append(f"    [Tags]    {current_test_id}    positive")
-            pending_tags_index = None
+            pending_tag_for_current_test = False
+
+        if current_test_id and line.startswith((" ", "\t")) and stripped and not stripped.startswith("[") and compact_code(stripped) == compact_code(str(identifier_policy.get("feature_code", ""))):
+            continue
 
         normalized_lines.append(line)
 
