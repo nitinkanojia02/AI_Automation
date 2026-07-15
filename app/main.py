@@ -3551,7 +3551,11 @@ async def save_workflow(
             target_page_signals=target_page_signals,
         ))
 
-    target_slug = existing_workflow_slug.strip() or slugify(workflow_name)
+    canonical_workflow_name = derive_canonical_workflow_name(payload, workflow_name)
+    if canonical_workflow_name:
+        payload["workflowName"] = canonical_workflow_name
+
+    target_slug = existing_workflow_slug.strip() or derive_workflow_artifact_slug(payload, canonical_workflow_name or workflow_name)
     target = WORKFLOW_DIR / f"{target_slug}.json"
     write_json(target, payload)
 
@@ -3571,7 +3575,7 @@ def page_review(request: Request, workflow_name: str):
     workflow = load_workflow_or_404(workflow_name)
     review_data = get_page_review_data(workflow)
     return render_template(request, "page_review.html", {
-        "workflow_name": workflow_name,
+        "workflow_name": derive_canonical_workflow_name(workflow, workflow_name),
         "workflow": workflow,
         "page_name": review_data["page_name"],
         "page_url": review_data["page_url"],
@@ -3605,7 +3609,7 @@ def run_page_review_extraction(request: Request, workflow_name: str):
         refined_elements, review_summary = review_and_refine_page_elements(workflow, updated_review_data)
         updated_review_data = get_page_review_data(workflow)
         return render_template(request, "page_review.html", {
-            "workflow_name": workflow_name,
+            "workflow_name": derive_canonical_workflow_name(workflow, workflow_name),
             "workflow": workflow,
             "page_name": updated_review_data["page_name"],
             "page_url": updated_review_data["page_url"],
@@ -3626,7 +3630,7 @@ def run_page_review_extraction(request: Request, workflow_name: str):
     except Exception as exc:
         updated_review_data = get_page_review_data(workflow)
         return render_template(request, "page_review.html", {
-            "workflow_name": workflow_name,
+            "workflow_name": derive_canonical_workflow_name(workflow, workflow_name),
             "workflow": workflow,
             "page_name": updated_review_data["page_name"],
             "page_url": updated_review_data["page_url"],
