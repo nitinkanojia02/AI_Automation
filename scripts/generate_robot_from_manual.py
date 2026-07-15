@@ -1389,6 +1389,14 @@ def validate_manual_content(manual_data: dict) -> tuple[bool, str]:
     return is_valid, "\n\n".join(part for part in message_parts if part)
 
 def derive_module_name(manual_data: dict, manual_json_path: Path) -> str:
+    explicit_prefix = normalize_feature_code(str(manual_data.get("testIdentifierPrefix", "")))
+    if explicit_prefix:
+        return slugify(explicit_prefix)
+
+    feature_code = normalize_feature_code(str(manual_data.get("feature", "")))
+    if feature_code:
+        return slugify(feature_code)
+
     if manual_data.get("workflowName"):
         return slugify(manual_data["workflowName"])
     return slugify(manual_json_path.stem)

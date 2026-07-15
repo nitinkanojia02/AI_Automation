@@ -463,8 +463,8 @@ def generate_fallback_test_cases(workflow_input: Dict[str, Any], workflow_name: 
 
 def normalize_manual_test(generated: Dict[str, Any], workflow_input: Dict[str, Any]) -> Dict[str, Any]:
     workflow_name = str(
-        generated.get("workflowName")
-        or workflow_input.get("workflowName")
+        workflow_input.get("workflowName")
+        or generated.get("workflowName")
         or "Workflow"
     ).strip()
 
@@ -527,6 +527,9 @@ def normalize_manual_test(generated: Dict[str, Any], workflow_input: Dict[str, A
 
     return {
         "workflowName": workflow_name,
+        "feature": workflow_input.get("feature") or generated.get("feature", ""),
+        "applicationCode": workflow_input.get("applicationCode") or generated.get("applicationCode", ""),
+        "testIdentifierPrefix": workflow_input.get("testIdentifierPrefix") or generated.get("testIdentifierPrefix", ""),
         "resourceFiles": [str(x).strip() for x in resource_files if str(x).strip()],
         "preconditions": preconditions,
         "testCases": [
