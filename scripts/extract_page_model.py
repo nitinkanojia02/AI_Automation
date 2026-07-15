@@ -1128,19 +1128,38 @@ def get_page_resource_variables(page_name: str) -> List[dict]:
 def resolve_known_element_locator(page_name: str, element_name: str) -> str:
     normalized_page = slugify(page_name)
     normalized_element = slugify(element_name)
-    element_tokens = [token for token in re.split(r"[_\s]+", normalized_element) if token]
+    aliases = {
+        "profile_button": ["profile_button", "person_button", "profile", "person", "user_button", "account_button", "profile_icon", "person_icon"],
+        "person_button": ["person_button", "profile_button", "person", "profile", "user_button", "account_button", "person_icon", "profile_icon"],
+        "login_button": ["login_button", "sign_in_button", "signin_button", "submit_login_button"],
+    }
+    candidate_names = aliases.get(normalized_element, [normalized_element])
+    candidate_tokens = set()
+    for candidate in candidate_names:
+        candidate_tokens.update(token for token in re.split(r"[_\s]+", candidate) if token)
+
+    best_locator = ""
+    best_score = -1
     for item in get_page_resource_variables(normalized_page):
         variable_name = clean_text(str(item.get("name", "")))
         locator = clean_text(str(item.get("value", "")))
         slug_name = slugify(variable_name)
         if not locator:
             continue
-        if slug_name == normalized_element:
+        if slug_name in candidate_names:
             return locator
-        if normalized_element and normalized_element in slug_name:
-            return locator
-        if element_tokens and all(token in slug_name for token in element_tokens):
-            return locator
+        score = 0
+        variable_tokens = {token for token in re.split(r"[_\s]+", slug_name) if token}
+        overlap = len(candidate_tokens & variable_tokens)
+        if overlap:
+            score += overlap
+        if any(candidate in slug_name for candidate in candidate_names):
+            score += 2
+        if score > best_score:
+            best_score = score
+            best_locator = locator
+    if best_locator and best_score > 0:
+        return best_locator
     raise ValueError(f"Known element '{element_name}' was not found in resource variables for page '{page_name}'.")
 
 
@@ -1182,7 +1201,7 @@ def infer_story_navigation_steps(page_name: str, workflow_like: dict) -> Tuple[L
     return navigation_steps, deduped_signals
 
 
-def perform_navigation_steps(page, navigation_steps: List[dict], wait_seconds: int):
+def perform_navigation_steps(page, navigation_steps: List[dict], wait_seconds: int, navigation_debug: List[dict] | None = None):
     for index, step in enumerate(navigation_steps, start=1):
         action = clean_text(str(step.get("action", "")))
         source_page = clean_text(str(step.get("page", "")))
@@ -1190,9 +1209,29 @@ def perform_navigation_steps(page, navigation_steps: List[dict], wait_seconds: i
         if action != "clickKnownElement":
             raise ValueError(f"Unsupported navigation action '{action}' in step {index}. MVP supports only clickKnownElement.")
         locator = resolve_known_element_locator(source_page, element_name)
+        debug_entry = {
+            "step": index,
+            "action": action,
+            "source_page": source_page,
+            "element": element_name,
+            "locator": locator,
+        }
         logger.info("Navigation step %s: %s -> %s.%s using locator %s", index, action, source_page, element_name, locator)
-        page.locator(locator).first.click(timeout=30000)
+        target = page.locator(locator).first
+        try:
+            debug_entry["count"] = target.count()
+        except Exception:
+            debug_entry["count"] = -1
+        try:
+            debug_entry["visible_before_click"] = target.is_visible(timeout=3000)
+        except Exception:
+            debug_entry["visible_before_click"] = False
+        target.click(timeout=30000)
+        debug_entry["clicked"] = True
         page.wait_for_timeout(max(wait_seconds, 1) * 1000)
+        debug_entry["url_after_click"] = page.url
+        if navigation_debug is not None:
+            navigation_debug.append(debug_entry)
 
 
 def wait_for_target_page_signals(page, target_page_signals: List[dict], wait_seconds: int):
@@ -1288,6 +1327,7 @@ def process_page(playwright, config: dict, page_entry: Dict[str, str]):
 
         navigation_steps = page_entry.get("navigation_steps", []) if isinstance(page_entry.get("navigation_steps"), list) else []
         target_page_signals = page_entry.get("target_page_signals", []) if isinstance(page_entry.get("target_page_signals"), list) else []
+        navigation_debug: List[dict] = []
         if not navigation_steps:
             inferred_steps, inferred_signals = infer_story_navigation_steps(page_name, page_entry)
             if inferred_steps:
@@ -1297,8 +1337,17 @@ def process_page(playwright, config: dict, page_entry: Dict[str, str]):
                 logger.info("Using story-driven inferred navigation steps for page '%s': %s", page_name, json.dumps(navigation_steps, ensure_ascii=False))
 
         if navigation_steps:
-            perform_navigation_steps(page, navigation_steps, config["wait_seconds"])
-            wait_for_target_page_signals(page, target_page_signals, config["wait_seconds"])
+            try:
+                perform_navigation_steps(page, navigation_steps, config["wait_seconds"], navigation_debug)
+                wait_for_target_page_signals(page, target_page_signals, config["wait_seconds"])
+                navigation_debug.append({"target_signals_satisfied": True, "final_url": page.url})
+            except Exception as nav_exc:
+                navigation_debug.append({"target_signals_satisfied": False, "final_url": page.url, "error": str(nav_exc)})
+                debug_path = metadata_dir / f"{page_name}.navigation.debug.json"
+                debug_path.write_text(json.dumps(navigation_debug, indent=2, ensure_ascii=False), encoding="utf-8")
+                raise
+            debug_path = metadata_dir / f"{page_name}.navigation.debug.json"
+            debug_path.write_text(json.dumps(navigation_debug, indent=2, ensure_ascii=False), encoding="utf-8")
 
         wait_for_meaningful_page_content(page, config["wait_seconds"])
 
