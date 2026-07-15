@@ -148,6 +148,10 @@ The MVP now supports two upstream workflow sources:
 ### Stage 2: Page extraction
 The extraction script opens the target page with Playwright, inspects the DOM, and generates page-level artifacts under `pom_pages/`.
 
+The current MVP also supports SPA-aware extraction for dependent workflows that are not directly accessible by URL. In those cases, page URL and explicit navigation journey fields are optional. The framework now attempts to infer the entry URL from workflow story text and reuse available approved upstream resources to execute pre-extraction navigation such as Home → Person/Profile → Login.
+
+Current extraction behavior also persists navigation diagnostics so dependent-workflow extraction can be debugged more easily. When navigation or target-state recognition fails, the extractor now records additional debug artifacts and uses more semantic target-state detection instead of relying only on exact visible text.
+
 ### Stage 3: Page and keyword review
 The UI allows users to review extracted elements, update names/locators, and approve generated page keywords/resources.
 
@@ -181,12 +185,14 @@ The generated Robot suite is reviewed and saved through the UI.
 The current implementation supports:
 - workflow input capture and editing
 - page extraction from a live application page
+- SPA-aware extraction for dependent workflows that begin from an upstream page and navigate through story-described controls
 - page element/locator review
 - keyword/resource review
 - approved-artifact alignment validation during downstream generation
 - AI-assisted manual test generation with intent enrichment
 - AI-assisted Robot Framework generation with lineage-aware refinement
 - Robot keyword/signature and resource-alignment validation
+- deterministic test identifier and Robot tag normalization using explicit identifier prefixes when provided
 - evidence-oriented assertion guidance and warning surfacing
 - final automation review and save
 

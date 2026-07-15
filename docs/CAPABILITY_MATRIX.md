@@ -8,7 +8,9 @@ This document summarizes the framework capability set based on the current repos
 |---|---|---|---|
 | Workflow definition | Define workflow input artifacts | Implemented | Workflow JSON is stored under `workflow_inputs/` and managed through the UI |
 | Workflow editing UI | Create or update workflow definitions | Implemented | Available in FastAPI UI |
+| Workflow naming normalization | Keep internal workflow keys short and stable instead of using full story-derived slugs | Implemented | App flow now prefers canonical short workflow identifiers for review pages and artifact naming |
 | Page inspection | Open and inspect configured target pages | Implemented | Driven through `scripts/extract_page_model.py` |
+| SPA-dependent page extraction | Reach dependent views that are not directly accessible by URL | Implemented | Extraction can now infer entry URL, upstream resources, and pre-extraction navigation from story context |
 | DOM understanding | Extract relevant page controls and metadata | Implemented | Heuristic and DOM-driven extraction |
 | Locator generation | Create locator variables for page resources | Implemented | Generated as part of page resource creation |
 | Resource/POM generation | Create reusable Robot Framework resource files | Implemented | Includes locators and page keywords |
@@ -20,8 +22,10 @@ This document summarizes the framework capability set based on the current repos
 | Manual test review | Review and refine generated manual tests | Implemented | Supported in the UI |
 | Automation generation | Generate Robot Framework suites from manual tests | Implemented | AI-assisted, lineage-aware, and resource-aware |
 | Resource grounding | Use available resource files during automation generation | Implemented | Present in current Robot generation design |
+| Workflow story-based reuse inference | Infer related upstream resources from workflow narrative and approved artifacts | Implemented | Used to ground dependent workflow generation and extraction without hardcoded dependency maps |
 | Automation review UI | Review generated automation before save | Implemented | Available in the UI |
 | Robot keyword/signature validation | Check generated keyword usage against imported resource signatures | Implemented | Includes mandatory argument compliance and unsupported-keyword detection |
+| Robot identifier and tag normalization | Enforce short deterministic testcase IDs, names, and tags | Implemented | Prefers explicit `testIdentifierPrefix` and applies post-generation normalization generically across features |
 | Assertion guidance and warnings | Push suites toward evidence-backed observable checks | Implemented | Warnings and refinement guidance are present for weak or action-only outcomes |
 | Local execution support | Execute generated Robot suites locally | Partial | Depends on generated tests and local environment; execution UI is not a core feature |
 | Execution result artifacts | Produce Robot logs and reports | Partial | Possible via standard Robot commands, but execution outputs are not represented in the checked-in repo |

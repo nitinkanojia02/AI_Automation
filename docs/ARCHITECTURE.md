@@ -103,6 +103,7 @@ This reflects the current UI and script flow in the repository more accurately t
 - define page URL and resource relationships
 - capture preconditions, steps, expected result, validations, and test data
 - store generation and AI configuration
+- provide sufficient story context for SPA-dependent workflows where direct page URL may be absent and navigation must be inferred from workflow narrative plus approved upstream resources
 
 The current sample workflow is `workflow_inputs/login.json`.
 
@@ -120,6 +121,8 @@ The current sample workflow is `workflow_inputs/login.json`.
 - infer labels, roles, and locator candidates
 - generate evidence artifacts such as screenshots and debug HTML
 - create a page resource draft
+- support SPA-dependent extraction by inferring entry URLs, upstream reusable resources, and pre-extraction navigation steps from workflow story context
+- persist navigation debug artifacts and richer timeout diagnostics when story-driven navigation or target-state recognition fails
 
 ### Typical outputs
 - `pom_pages/<page>/<page>.elements.json`

@@ -69,6 +69,8 @@ Focus areas:
 - improve cross-page artifact relationships
 - support broader enterprise application modules
 
+Note: the current MVP now includes an initial implementation of SPA-aware dependent-workflow extraction and upstream resource reuse. Near-term roadmap work in this area should focus on making state-transition execution more robust, broadening story-to-navigation inference, and improving merge/extension behavior for stateful pages such as guest Home and authenticated Home.
+
 ### 8. Improve execution visibility
 Focus areas:
 - clearer execution guidance in the UI
