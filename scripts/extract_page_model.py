@@ -1327,14 +1327,28 @@ def process_page(playwright, config: dict, page_entry: Dict[str, str]):
 
         navigation_steps = page_entry.get("navigation_steps", []) if isinstance(page_entry.get("navigation_steps"), list) else []
         target_page_signals = page_entry.get("target_page_signals", []) if isinstance(page_entry.get("target_page_signals"), list) else []
-        navigation_debug: List[dict] = []
+        navigation_debug: List[dict] = [{
+            "page": page_name,
+            "entry_url": url,
+            "received_navigation_steps": navigation_steps,
+            "received_target_page_signals": target_page_signals,
+            "has_inferred_reuse_context": bool(page_entry.get("inferred_reuse_context")),
+            "resource_files": (page_entry.get("inferred_reuse_context") or {}).get("authoritativeResourceFiles", []) if isinstance(page_entry.get("inferred_reuse_context"), dict) else [],
+        }]
+        debug_path = metadata_dir / f"{page_name}.navigation.debug.json"
         if not navigation_steps:
             inferred_steps, inferred_signals = infer_story_navigation_steps(page_name, page_entry)
+            navigation_debug.append({
+                "inferred_navigation_steps": inferred_steps,
+                "inferred_target_page_signals": inferred_signals,
+            })
             if inferred_steps:
                 navigation_steps = inferred_steps
                 if not target_page_signals:
                     target_page_signals = inferred_signals
                 logger.info("Using story-driven inferred navigation steps for page '%s': %s", page_name, json.dumps(navigation_steps, ensure_ascii=False))
+
+        debug_path.write_text(json.dumps(navigation_debug, indent=2, ensure_ascii=False), encoding="utf-8")
 
         if navigation_steps:
             try:
@@ -1343,10 +1357,11 @@ def process_page(playwright, config: dict, page_entry: Dict[str, str]):
                 navigation_debug.append({"target_signals_satisfied": True, "final_url": page.url})
             except Exception as nav_exc:
                 navigation_debug.append({"target_signals_satisfied": False, "final_url": page.url, "error": str(nav_exc)})
-                debug_path = metadata_dir / f"{page_name}.navigation.debug.json"
                 debug_path.write_text(json.dumps(navigation_debug, indent=2, ensure_ascii=False), encoding="utf-8")
                 raise
-            debug_path = metadata_dir / f"{page_name}.navigation.debug.json"
+            debug_path.write_text(json.dumps(navigation_debug, indent=2, ensure_ascii=False), encoding="utf-8")
+        else:
+            navigation_debug.append({"navigation_attempted": False, "reason": "No navigation steps were available or inferred.", "final_url": page.url})
             debug_path.write_text(json.dumps(navigation_debug, indent=2, ensure_ascii=False), encoding="utf-8")
 
         wait_for_meaningful_page_content(page, config["wait_seconds"])

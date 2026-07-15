@@ -44,6 +44,12 @@ from scripts.generate_robot_from_manual import (
     validate_robot_alignment_with_resource_context,
     validate_robot_content,
 )
+try:
+    from scripts.workflow_context import infer_workflow_reuse_context
+except ModuleNotFoundError:
+    import sys as _sys
+    _sys.path.append(str(BASE_DIR))
+    from scripts.workflow_context import infer_workflow_reuse_context
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 WORKFLOW_DIR = BASE_DIR / "workflow_inputs"
@@ -3644,6 +3650,19 @@ def run_page_review_extraction(request: Request, workflow_name: str):
         "targetPage": review_data.get("target_page", {}) or {"name": review_data["page_name"]},
         "navigationSteps": review_data.get("navigation_steps", []),
         "targetPageSignals": review_data.get("target_page_signals", []),
+        "workflowName": clean_text(str(workflow.get("workflowName", workflow_name))),
+        "feature": clean_text(str(workflow.get("feature", ""))),
+        "testIdentifierPrefix": clean_text(str(workflow.get("testIdentifierPrefix", ""))),
+        "applicationCode": clean_text(str(workflow.get("applicationCode", ""))),
+        "resourceFiles": workflow.get("resourceFiles", []) if isinstance(workflow.get("resourceFiles"), list) else [],
+        "pages": workflow.get("pages", []) if isinstance(workflow.get("pages"), list) else [],
+        "pageUrl": review_data.get("page_url", ""),
+        "description": clean_text(str(workflow.get("description", workflow.get("userStory", "")))),
+        "userStory": clean_text(str(workflow.get("userStory", ""))),
+        "observedSteps": workflow.get("observedSteps", []) if isinstance(workflow.get("observedSteps"), list) else [],
+        "observedValidations": workflow.get("observedValidations", []) if isinstance(workflow.get("observedValidations"), list) else [],
+        "acceptanceCriteria": workflow.get("acceptanceCriteria", []) if isinstance(workflow.get("acceptanceCriteria"), list) else [],
+        "inferred_reuse_context": infer_workflow_reuse_context(workflow),
     }
     try:
         run_page_extraction(review_data["page_name"], review_data["page_url"], extraction_context)
