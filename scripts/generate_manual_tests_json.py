@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from scripts.generate_robot_from_manual import build_manual_review_prompt, validate_manual_content
+from scripts.workflow_context import infer_workflow_reuse_context
 
 import requests
 
@@ -126,6 +127,7 @@ def make_test_id_prefix(workflow_name: str) -> str:
 
 
 def build_prompt(workflow_input: Dict[str, Any]) -> str:
+    reuse_context = infer_workflow_reuse_context(workflow_input)
     return f"""
 You are AI Layer 1: a senior QA test designer operating inside a multi-layer AI-assisted automation framework.
 Your output is a reviewable manual-test artifact that will feed downstream keyword/resource generation, Robot generation, and additional AI review and governance layers.
@@ -250,6 +252,9 @@ Important behavior:
 
 Workflow Input:
 {pretty_json(workflow_input)}
+
+Inferred Existing Resource Reuse Context:
+{pretty_json(reuse_context)}
 """.strip()
 
 
@@ -535,6 +540,7 @@ def normalize_manual_test(generated: Dict[str, Any], workflow_input: Dict[str, A
 
 def process_workflow_file(config: Dict[str, Any], input_path: Path) -> None:
     workflow_input = load_json(input_path)
+    workflow_input["inferredReuseContext"] = infer_workflow_reuse_context(workflow_input)
     gc = config["generation_control"]
     ai_cfg = config["ai"]
 

@@ -10,6 +10,8 @@ PROMPTS_DIR = Path(__file__).resolve().parent.parent / "prompts"
 import requests
 import urllib3
 
+from scripts.workflow_context import infer_workflow_reuse_context
+
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -222,6 +224,7 @@ def parse_resource_file(resource_path: Path) -> Dict:
 
 def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
     prompt_manual_data = json.loads(json.dumps(manual_data))
+    reuse_context = infer_workflow_reuse_context(prompt_manual_data)
     if isinstance(prompt_manual_data.get("fields"), list):
         prompt_manual_data["fields"] = [
             field for field in prompt_manual_data["fields"]
@@ -264,6 +267,7 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
         "resource_import_prefix": "../pom_pages/",
         "common_resource_hint": "../resources/common_keywords.resource",
         "identifier_policy": identifier_policy,
+        "inferred_reuse_context": reuse_context,
         "intent_preservation_notes": [
             "Preserve manual interaction intent from steps and any interactionIntent metadata.",
             "Use interactionIntent as AI guidance, not as a hardcoded routing table.",
@@ -457,6 +461,7 @@ def build_review_prompt(manual_data: dict, resource_context: List[Dict], generat
     payload = {
         "manual_test": prompt_manual_data,
         "resource_context": resource_context,
+        "inferred_reuse_context": infer_workflow_reuse_context(prompt_manual_data),
         "generated_robot": generated_robot,
         "resource_import_prefix": "../pom_pages/",
         "common_resource_hint": "../resources/common_keywords.resource",
@@ -551,6 +556,7 @@ def build_validation_review_prompt(manual_data: dict, resource_context: List[Dic
     payload = {
         "manual_test": prompt_manual_data,
         "resource_context": resource_context,
+        "inferred_reuse_context": infer_workflow_reuse_context(prompt_manual_data),
         "generated_robot": generated_robot,
         "allowed_builtin_keywords": sorted(allowed_builtin_keywords),
         "allowed_selenium_keywords": sorted(allowed_selenium_keywords),
@@ -1317,6 +1323,7 @@ def process_manual_file(config: dict, manual_json_path: Path):
     ai = config["ai"]
 
     manual_data = load_json(manual_json_path)
+    manual_data["inferredReuseContext"] = infer_workflow_reuse_context(manual_data)
 
     excluded_modules = set(gc.get("excluded_modules", []))
     excluded_files = set(gc.get("excluded_manual_files", []))

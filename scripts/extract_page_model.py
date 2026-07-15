@@ -10,6 +10,8 @@ from typing import Dict, List, Tuple
 import requests
 import urllib3
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+
+from scripts.workflow_context import infer_workflow_reuse_context
 from playwright.sync_api import sync_playwright
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -1221,6 +1223,10 @@ def process_page(playwright, config: dict, page_entry: Dict[str, str]):
             html_path,
             metadata_dir,
         )
+        if isinstance(approved_page_model, dict) and page_entry.get("inferred_reuse_context"):
+            approved_page_model["inferredReuseContext"] = page_entry.get("inferred_reuse_context")
+            approved_path = metadata_dir / f"{slugify(page_name)}.elements.approved.json"
+            approved_path.write_text(json.dumps(approved_page_model, indent=2, ensure_ascii=False), encoding="utf-8")
         resource_elements = approved_page_model.get("elements", []) if isinstance(approved_page_model, dict) else elements
 
         resource_content = generate_resource(url, resource_elements)
@@ -1250,11 +1256,23 @@ def build_single_page_config(config: dict, page_name: str, url: str) -> dict:
 
 def build_navigation_page_config(config: dict, page_name: str, entry_url: str, navigation_payload: dict) -> dict:
     single_config = dict(config)
+    workflow_like_payload = {
+        "workflowName": page_name,
+        "resourceFiles": navigation_payload.get("resourceFiles", []),
+        "entryPage": {"name": page_name, "url": entry_url},
+        "targetPage": {"name": page_name},
+        "navigationSteps": navigation_payload.get("navigationSteps", []),
+        "targetPageSignals": navigation_payload.get("targetPageSignals", []),
+        "observedSteps": navigation_payload.get("observedSteps", []),
+        "observedValidations": navigation_payload.get("observedValidations", []),
+        "description": navigation_payload.get("description", ""),
+    }
     page_entry = {
         "page_name": page_name,
         "url": entry_url,
         "navigation_steps": navigation_payload.get("navigationSteps", []),
         "target_page_signals": navigation_payload.get("targetPageSignals", []),
+        "inferred_reuse_context": infer_workflow_reuse_context(workflow_like_payload),
     }
     single_config["pages"] = [page_entry]
     return single_config
