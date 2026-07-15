@@ -670,51 +670,89 @@ def criterion_is_covered(criterion: str, test_cases: List[Dict[str, Any]]) -> bo
     return False
 
 
+def classify_requirement(text: str) -> Dict[str, Any]:
+    cleaned = clean_text(text)
+    lowered = cleaned.lower()
+    requirement: Dict[str, Any] = {
+        "category": "generic",
+        "title": cleaned,
+        "type": "positive",
+        "steps": ["Open the relevant page or workflow context", cleaned],
+        "expectedResult": cleaned,
+        "fields": [],
+    }
+
+    if "back button" in lowered and "home page" in lowered:
+        requirement.update({
+            "category": "navigation",
+            "title": "Verify Back button returns user to Home page",
+            "type": "positive",
+            "steps": [
+                "Open the current workflow page",
+                "Click the Back button",
+            ],
+            "expectedResult": "The application navigates back to the Home page and the current page is no longer active.",
+            "fields": ["back_button"],
+        })
+    elif "home button" in lowered and "home page" in lowered:
+        requirement.update({
+            "category": "navigation",
+            "title": "Verify Home button returns user to Home page",
+            "type": "positive",
+            "steps": [
+                "Open the current workflow page",
+                "Click the Home button",
+            ],
+            "expectedResult": "The application navigates to the Home page and the current page is no longer active.",
+            "fields": ["home_button"],
+        })
+    elif "forgot password" in lowered:
+        requirement.update({
+            "category": "navigation",
+            "title": "Verify Forgot Password opens the recovery workflow",
+            "type": "positive",
+            "steps": [
+                "Open the current workflow page",
+                "Click Forgot Password",
+            ],
+            "expectedResult": "The supported password recovery destination or recovery workflow opens successfully.",
+            "fields": ["forgot_password_link"],
+        })
+    elif "mask" in lowered and "password" in lowered:
+        requirement.update({
+            "category": "field_behavior",
+            "title": "Verify password input is masked by default",
+            "type": "positive",
+            "steps": [
+                "Open the current workflow page",
+                "Click inside the password field",
+                "Enter a password value",
+            ],
+            "expectedResult": "Password input is masked by default and the entered value is not displayed in plain text.",
+            "fields": ["password_textbox"],
+        })
+    elif any(token in lowered for token in ["required", "blank", "empty"]):
+        requirement["category"] = "validation"
+        requirement["type"] = "negative"
+    elif any(token in lowered for token in ["invalid", "fail", "error", "unauthenticated", "reject"]):
+        requirement["category"] = "negative_flow"
+        requirement["type"] = "negative"
+
+    return requirement
+
+
 def build_required_case_from_criterion(
     criterion: str,
     idx: int,
     id_prefix: str,
     fallback_fields: List[str],
 ) -> Dict[str, Any]:
-    text = clean_text(criterion)
-    lowered = text.lower()
-    fields = list(fallback_fields)
-    steps = ["Open the relevant page or workflow context", text]
-    expected = text
-    tc_type = "positive"
-    title = text
-
-    if "back button" in lowered and "home page" in lowered:
-        fields = sorted(set(fields + ["back_button"]))
-        title = "Verify Back button on Login page returns user to Home page"
-        steps = [
-            "Open the Login page from the Home page",
-            "Click the Back button on the Login page",
-        ]
-        expected = "The user is returned to the Home page in guest state and the Login page is no longer active."
-        tc_type = "positive"
-    elif "home button" in lowered and "home page" in lowered:
-        fields = sorted(set(fields + ["home_button"]))
-        title = "Verify Home button on Login page returns user to Home page"
-        steps = [
-            "Open the Login page from the Home page",
-            "Click the Home button on the Login page",
-        ]
-        expected = "The user is returned to the Home page in guest state and the Login page is no longer active."
-        tc_type = "positive"
-    elif "forgot password" in lowered:
-        fields = sorted(set(fields + ["forgot_password_link"]))
-        title = "Verify Forgot Password navigation opens recovery flow from Login page"
-        steps = [
-            "Open the Login page from the Home page",
-            "Click Forgot Password on the Login page",
-        ]
-        expected = "The supported password recovery destination or recovery workflow opens successfully."
-        tc_type = "positive"
-    elif any(token in lowered for token in ["invalid", "fail", "error", "remain unauthenticated", "should not proceed"]):
-        tc_type = "negative"
-    elif any(token in lowered for token in ["masked", "validation", "required", "blank", "empty"]):
-        tc_type = "negative" if any(token in lowered for token in ["required", "blank", "empty"]) else "positive"
+    requirement = classify_requirement(criterion)
+    fields = sorted(set(fallback_fields + requirement.get("fields", []))) if requirement.get("fields") else list(fallback_fields)
+    title = requirement["title"]
+    steps = requirement["steps"]
+    expected = requirement["expectedResult"]
+    tc_type = requirement["type"]
 
     return normalize_test_case(
         test_case={
