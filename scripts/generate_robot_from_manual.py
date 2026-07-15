@@ -1585,7 +1585,7 @@ def main():
     if not manual_tests_dir.exists():
         raise FileNotFoundError(f"manual_tests directory not found: {manual_tests_dir}")
 
-    manual_files = sorted(manual_tests_dir.glob("*.json"))
+    manual_files = sorted(manual_tests_dir.rglob("*.json"))
     if not manual_files:
         logger.info("No manual test JSON files found in: %s", manual_tests_dir)
         return

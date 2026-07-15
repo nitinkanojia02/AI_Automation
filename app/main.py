@@ -74,8 +74,9 @@ def get_manual_excel_path(workflow_name: str) -> Path:
     return workflow_dir / f"{workflow_name}_approved_manual_tests.xlsx"
 
 
-def get_automation_path(workflow_name: str) -> Path:
-    return TESTS_DIR / f"{workflow_name}_tests.robot"
+def get_automation_path(workflow_name: str, workflow: dict | None = None) -> Path:
+    base_name = derive_workflow_artifact_slug(workflow, workflow_name)
+    return TESTS_DIR / f"{base_name}_tests.robot"
 TEMPLATES_DIR = BASE_DIR / "app" / "templates"
 CONFIG_PATH = BASE_DIR / "config" / "page_model_config.json"
 
@@ -314,7 +315,7 @@ def get_workflow_status(workflow_name: str) -> dict:
     resource_path = page_dir / f"{page_name}.resource" if page_dir else None
     keywords_path = metadata_dir / f"{page_name}.keywords.json" if metadata_dir else None
     manual_path = get_manual_json_path(workflow_name)
-    automation_path = get_automation_path(workflow_name)
+    automation_path = get_automation_path(workflow_name, workflow)
 
     page_reviewed = bool(elements_path and elements_path.exists())
 
@@ -407,9 +408,19 @@ def derive_app_code(workflow: dict | None, workflow_name: str) -> str:
 
 
 def derive_feature_code(workflow: dict | None, workflow_name: str) -> str:
-    feature = compact_code((workflow or {}).get("feature", ""))
-    workflow_code = compact_code((workflow or {}).get("workflowName", workflow_name))
-    return feature or workflow_code or "FLOW"
+    workflow = workflow or {}
+    explicit_prefix = compact_code(workflow.get("testIdentifierPrefix", ""))
+    feature = compact_code(workflow.get("feature", ""))
+    workflow_code = compact_code(workflow.get("workflowName", workflow_name))
+    return explicit_prefix or feature or workflow_code or "FLOW"
+
+
+def derive_workflow_artifact_slug(workflow: dict | None, workflow_name: str) -> str:
+    workflow = workflow or {}
+    explicit_prefix = slugify(str(workflow.get("testIdentifierPrefix", "")))
+    feature_slug = slugify(str(workflow.get("feature", "")))
+    workflow_slug = slugify(str(workflow.get("workflowName", workflow_name)))
+    return explicit_prefix or feature_slug or workflow_slug or "workflow"
 
 def to_keyword_title(element_name: str) -> str:
     base = clean_text(element_name).replace("_", " ")
@@ -3046,7 +3057,7 @@ def generate_automation_for_workflow(workflow_name: str) -> str:
     if not is_valid:
         raise HTTPException(status_code=400, detail=validation_message)
 
-    target = get_automation_path(workflow_name)
+    target = get_automation_path(workflow_name, workflow)
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(robot_content, encoding="utf-8")
     return robot_content
@@ -3100,7 +3111,7 @@ def delete_workflow(workflow_name: str):
     if legacy_manual_excel_path.exists():
         legacy_manual_excel_path.unlink()
 
-    automation_path = get_automation_path(workflow_name)
+    automation_path = get_automation_path(workflow_name, workflow)
     if automation_path.exists():
         automation_path.unlink()
 
@@ -3887,7 +3898,8 @@ async def save_manual_tests(request: Request, workflow_name: str):
 
 @app.get("/automation/{workflow_name}")
 def automation_page(request: Request, workflow_name: str):
-    robot_path = get_automation_path(workflow_name)
+    workflow = read_json(WORKFLOW_DIR / f"{workflow_name}.json") if (WORKFLOW_DIR / f"{workflow_name}.json").exists() else None
+    robot_path = get_automation_path(workflow_name, workflow)
     robot_content = read_text(robot_path)
     return render_template(request, "automation.html", {
         "workflow_name": workflow_name,
@@ -3896,7 +3908,8 @@ def automation_page(request: Request, workflow_name: str):
 
 @app.post("/automation/{workflow_name}/generate")
 def generate_automation_route(request: Request, workflow_name: str):
-    automation_path = get_automation_path(workflow_name)
+    workflow = read_json(WORKFLOW_DIR / f"{workflow_name}.json") if (WORKFLOW_DIR / f"{workflow_name}.json").exists() else None
+    automation_path = get_automation_path(workflow_name, workflow)
     existing_content = read_text(automation_path) if automation_path.exists() else ""
     ensure_workflow_run(workflow_name)
     try:
@@ -3916,9 +3929,9 @@ def generate_automation_route(request: Request, workflow_name: str):
 @app.post("/automation/{workflow_name}/save")
 def save_automation(request: Request, workflow_name: str, robot_content: str = Form(...)):
     try:
-        target = get_automation_path(workflow_name)
-        target.parent.mkdir(parents=True, exist_ok=True)
         workflow = read_json(WORKFLOW_DIR / f"{workflow_name}.json") if (WORKFLOW_DIR / f"{workflow_name}.json").exists() else None
+        target = get_automation_path(workflow_name, workflow)
+        target.parent.mkdir(parents=True, exist_ok=True)
         robot_content = normalize_robot_content(robot_content, workflow, workflow_name)
         target.write_text(robot_content, encoding="utf-8")
         return render_template(request, "automation.html", {
