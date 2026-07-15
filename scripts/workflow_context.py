@@ -80,18 +80,31 @@ def resource_summary(resource_file: str) -> Dict[str, Any]:
 
 def find_relevant_existing_resources(workflow_input: Dict[str, Any]) -> List[str]:
     story = collect_story_text(workflow_input).lower()
+    external_context = workflow_input.get("externalContext", {}) if isinstance(workflow_input.get("externalContext"), dict) else {}
+    external_story = collect_story_text(external_context).lower() if external_context else ""
+    combined_story = f"{story} {external_story}".strip()
     current = {str(x).replace('\\', '/').strip() for x in workflow_input.get("resourceFiles", []) if str(x).strip()}
     candidates: List[str] = []
     for resource_path in sorted(POM_DIR.glob("*/*.resource")):
         rel = str(resource_path.relative_to(POM_DIR)).replace("\\", "/")
-        if rel in current:
+        page_dir_name = resource_path.parent.name
+        page_name = page_dir_name.replace("_page", "")
+        if rel in current and page_name not in {"home", "logout"}:
             continue
-        page_name = resource_path.parent.name.replace("_page", "")
-        page_tokens = {page_name, resource_path.stem.replace("_page", "")}
-        if any(token and token in story for token in page_tokens):
+        page_tokens = {
+            page_name,
+            page_dir_name,
+            resource_path.stem.replace("_page", ""),
+            resource_path.stem,
+            page_name.replace("_", " "),
+        }
+        if any(token and token in combined_story for token in page_tokens):
             candidates.append(rel)
             continue
-        if page_name == "home" and any(token in story for token in ["person/profile", "person button", "profile button", "authenticated state", "logout", "account menu", "single page application", "spa"]):
+        if page_name == "home" and any(token in combined_story for token in ["person/profile", "person button", "profile button", "home page", "begins on the home page", "opened from the home page", "authenticated state", "logout", "account menu", "single page application", "spa"]):
+            candidates.append(rel)
+            continue
+        if page_name == "login" and any(token in combined_story for token in ["login page", "login view", "username field", "password field", "forgot password"]):
             candidates.append(rel)
     deduped: List[str] = []
     seen = set()

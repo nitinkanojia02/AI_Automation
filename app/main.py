@@ -3655,6 +3655,7 @@ def run_page_review_extraction(request: Request, workflow_name: str):
         "testIdentifierPrefix": clean_text(str(workflow.get("testIdentifierPrefix", ""))),
         "applicationCode": clean_text(str(workflow.get("applicationCode", ""))),
         "resourceFiles": workflow.get("resourceFiles", []) if isinstance(workflow.get("resourceFiles"), list) else [],
+        "externalContext": workflow.get("externalContext", {}) if isinstance(workflow.get("externalContext"), dict) else {},
         "pages": workflow.get("pages", []) if isinstance(workflow.get("pages"), list) else [],
         "pageUrl": review_data.get("page_url", ""),
         "description": clean_text(str(workflow.get("description", workflow.get("userStory", "")))),

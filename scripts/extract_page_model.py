@@ -1437,8 +1437,13 @@ def build_navigation_page_config(config: dict, page_name: str, entry_url: str, n
     entry_page_payload = navigation_payload.get("entryPage", {}) if isinstance(navigation_payload.get("entryPage"), dict) else {}
     target_page_payload = navigation_payload.get("targetPage", {}) if isinstance(navigation_payload.get("targetPage"), dict) else {}
     workflow_like_payload = {
-        "workflowName": page_name,
+        "workflowName": clean_text(str(navigation_payload.get("workflowName", page_name))) or page_name,
+        "feature": clean_text(str(navigation_payload.get("feature", ""))),
+        "testIdentifierPrefix": clean_text(str(navigation_payload.get("testIdentifierPrefix", ""))),
+        "applicationCode": clean_text(str(navigation_payload.get("applicationCode", ""))),
         "resourceFiles": navigation_payload.get("resourceFiles", []),
+        "externalContext": navigation_payload.get("externalContext", {}) if isinstance(navigation_payload.get("externalContext"), dict) else {},
+        "pages": navigation_payload.get("pages", []) if isinstance(navigation_payload.get("pages"), list) else [],
         "entryPage": {
             "name": clean_text(str(entry_page_payload.get("name", ""))) or page_name,
             "url": clean_text(str(entry_page_payload.get("url", ""))) or entry_url,
@@ -1451,7 +1456,9 @@ def build_navigation_page_config(config: dict, page_name: str, entry_url: str, n
         "targetPageSignals": navigation_payload.get("targetPageSignals", []),
         "observedSteps": navigation_payload.get("observedSteps", []),
         "observedValidations": navigation_payload.get("observedValidations", []),
+        "acceptanceCriteria": navigation_payload.get("acceptanceCriteria", []),
         "description": navigation_payload.get("description", ""),
+        "userStory": navigation_payload.get("userStory", ""),
     }
     page_entry = {
         "page_name": page_name,
