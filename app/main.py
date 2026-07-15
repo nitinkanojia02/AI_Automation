@@ -3645,16 +3645,50 @@ def page_review(request: Request, workflow_name: str):
 def run_page_review_extraction(request: Request, workflow_name: str):
     workflow = load_workflow_or_404(workflow_name)
     review_data = get_page_review_data(workflow)
+    inferred_reuse = infer_workflow_reuse_context(workflow)
+    resource_files = workflow.get("resourceFiles", []) if isinstance(workflow.get("resourceFiles"), list) else []
+    if not resource_files:
+        resource_files = inferred_reuse.get("authoritativeResourceFiles", []) if isinstance(inferred_reuse.get("authoritativeResourceFiles"), list) else []
+
+    navigation_steps = review_data.get("navigation_steps", [])
+    target_page_signals = review_data.get("target_page_signals", [])
+    if not navigation_steps:
+        try:
+            from scripts.extract_page_model import infer_story_navigation_steps as _infer_story_navigation_steps
+        except ModuleNotFoundError:
+            import sys as _sys
+            _sys.path.append(str(BASE_DIR))
+            from scripts.extract_page_model import infer_story_navigation_steps as _infer_story_navigation_steps
+        story_context = {
+            "workflowName": clean_text(str(workflow.get("workflowName", workflow_name))),
+            "feature": clean_text(str(workflow.get("feature", ""))),
+            "testIdentifierPrefix": clean_text(str(workflow.get("testIdentifierPrefix", ""))),
+            "applicationCode": clean_text(str(workflow.get("applicationCode", ""))),
+            "resourceFiles": resource_files,
+            "externalContext": workflow.get("externalContext", {}) if isinstance(workflow.get("externalContext"), dict) else {},
+            "pages": workflow.get("pages", []) if isinstance(workflow.get("pages"), list) else [],
+            "pageUrl": review_data.get("page_url", ""),
+            "description": clean_text(str(workflow.get("description", workflow.get("userStory", "")))),
+            "userStory": clean_text(str(workflow.get("userStory", ""))),
+            "observedSteps": workflow.get("observedSteps", []) if isinstance(workflow.get("observedSteps"), list) else [],
+            "observedValidations": workflow.get("observedValidations", []) if isinstance(workflow.get("observedValidations"), list) else [],
+            "acceptanceCriteria": workflow.get("acceptanceCriteria", []) if isinstance(workflow.get("acceptanceCriteria"), list) else [],
+            "inferred_reuse_context": inferred_reuse,
+        }
+        navigation_steps, inferred_signals = _infer_story_navigation_steps(review_data["page_name"], story_context)
+        if not target_page_signals:
+            target_page_signals = inferred_signals
+
     extraction_context = {
         "entryPage": review_data.get("entry_page", {}),
         "targetPage": review_data.get("target_page", {}) or {"name": review_data["page_name"]},
-        "navigationSteps": review_data.get("navigation_steps", []),
-        "targetPageSignals": review_data.get("target_page_signals", []),
+        "navigationSteps": navigation_steps,
+        "targetPageSignals": target_page_signals,
         "workflowName": clean_text(str(workflow.get("workflowName", workflow_name))),
         "feature": clean_text(str(workflow.get("feature", ""))),
         "testIdentifierPrefix": clean_text(str(workflow.get("testIdentifierPrefix", ""))),
         "applicationCode": clean_text(str(workflow.get("applicationCode", ""))),
-        "resourceFiles": workflow.get("resourceFiles", []) if isinstance(workflow.get("resourceFiles"), list) else [],
+        "resourceFiles": resource_files,
         "externalContext": workflow.get("externalContext", {}) if isinstance(workflow.get("externalContext"), dict) else {},
         "pages": workflow.get("pages", []) if isinstance(workflow.get("pages"), list) else [],
         "pageUrl": review_data.get("page_url", ""),
@@ -3663,7 +3697,7 @@ def run_page_review_extraction(request: Request, workflow_name: str):
         "observedSteps": workflow.get("observedSteps", []) if isinstance(workflow.get("observedSteps"), list) else [],
         "observedValidations": workflow.get("observedValidations", []) if isinstance(workflow.get("observedValidations"), list) else [],
         "acceptanceCriteria": workflow.get("acceptanceCriteria", []) if isinstance(workflow.get("acceptanceCriteria"), list) else [],
-        "inferred_reuse_context": infer_workflow_reuse_context(workflow),
+        "inferred_reuse_context": inferred_reuse,
     }
     try:
         run_page_extraction(review_data["page_name"], review_data["page_url"], extraction_context)
