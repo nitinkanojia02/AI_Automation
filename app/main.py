@@ -711,9 +711,21 @@ def run_page_extraction(page_name: str, page_url: str, extraction_context: dict 
             "targetPageSignals": target_page_signals,
         }, ensure_ascii=False)])
     else:
-        if not clean_text(page_url):
-            raise HTTPException(status_code=400, detail="Page extraction requires a direct page URL or navigation-based extraction details.")
-        command.extend(["--url", page_url])
+        resolved_url = clean_text(page_url)
+        if not resolved_url:
+            workflow_like = dict(extraction_context) if isinstance(extraction_context, dict) else {}
+            workflow_like.setdefault("pageUrl", page_url)
+            workflow_like.setdefault("workflowName", page_name)
+            try:
+                from scripts.extract_page_model import resolve_entry_url as _resolve_entry_url
+            except ModuleNotFoundError:
+                import sys as _sys
+                _sys.path.append(str(BASE_DIR))
+                from scripts.extract_page_model import resolve_entry_url as _resolve_entry_url
+            resolved_url = clean_text(_resolve_entry_url(workflow_like))
+        if not resolved_url:
+            raise HTTPException(status_code=400, detail="Page extraction could not determine an entry URL from the workflow story or existing resources.")
+        command.extend(["--url", resolved_url])
 
     result = subprocess.run(
         command,

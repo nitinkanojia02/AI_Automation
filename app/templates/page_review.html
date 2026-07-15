@@ -132,13 +132,12 @@
                     </div>
 
                     <div class="d-grid gap-2">
-                        {% if page_url or is_navigation_mode %}
                         <form method="post" action="/page-review/{{ workflow_name }}/extract">
                             <button class="btn btn-primary w-100" type="submit">Run Extraction</button>
                         </form>
-                        {% else %}
-                        <div class="alert alert-warning small mb-0">
-                            Page extraction requires either a direct page URL or an SPA navigation journey with an entry page URL, navigation steps, and target page signals.
+                        {% if not page_url and not is_navigation_mode %}
+                        <div class="alert alert-info small mb-0">
+                            No direct page URL or explicit navigation journey is configured. For SPA workflows, extraction will use the user story and existing approved resources to infer the entry path where possible.
                         </div>
                         {% endif %}
                         <a href="/" class="btn btn-outline-dark">Back to Dashboard</a>
