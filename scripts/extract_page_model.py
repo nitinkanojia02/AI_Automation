@@ -44,6 +44,61 @@ def ensure_dir(path: Path):
 def clean_text(text: str) -> str:
     return re.sub(r"\s+", " ", (text or "").strip())
 
+
+def build_story_text(workflow_like: dict) -> str:
+    if not isinstance(workflow_like, dict):
+        return ""
+    parts = [
+        str(workflow_like.get("title", "")),
+        str(workflow_like.get("description", "")),
+        str(workflow_like.get("userStory", "")),
+        str(workflow_like.get("workflowName", "")),
+    ]
+    for key in ("observedSteps", "observedExpectedResults", "observedValidations", "acceptanceCriteria"):
+        value = workflow_like.get(key)
+        if isinstance(value, list):
+            parts.extend(str(item) for item in value)
+        elif value:
+            parts.append(str(value))
+    return "\n".join(part for part in parts if clean_text(part))
+
+
+def first_url_in_text(text: str) -> str:
+    match = re.search(r"https?://[^\s)]+", text or "")
+    return clean_text(match.group(0)) if match else ""
+
+
+def resolve_entry_url(workflow_like: dict) -> str:
+    if not isinstance(workflow_like, dict):
+        return "http://localhost/"
+
+    direct_url = clean_text(
+        str(
+            workflow_like.get("pageUrl")
+            or workflow_like.get("pageURL")
+            or workflow_like.get("url")
+            or (workflow_like.get("entryPage") or {}).get("url", "")
+            or ""
+        )
+    )
+    if direct_url:
+        return direct_url
+
+    story_url = first_url_in_text(build_story_text(workflow_like))
+    if story_url:
+        return story_url
+
+    try:
+        inferred = infer_workflow_reuse_context(workflow_like)
+    except Exception:
+        inferred = {}
+    for candidate in inferred.get("discoveredUrls", []):
+        resolved = clean_text(str(candidate))
+        if resolved:
+            return resolved
+
+    return "http://localhost/"
+
 def split_camel_case(text: str) -> str:
     text = clean_text(text)
     text = re.sub(r"([a-z0-9])([A-Z])", r"\1 \2", text)
@@ -1253,8 +1308,8 @@ def process_page(playwright, config: dict, page_entry: Dict[str, str]):
 def build_single_page_config(config: dict, page_name: str, url: str) -> dict:
     single_config = dict(config)
     page_entry = {"page_name": page_name}
-    if clean_text(url):
-        page_entry["url"] = url
+    resolved_url = clean_text(url) or "http://localhost/"
+    page_entry["url"] = resolved_url
     single_config["pages"] = [page_entry]
     return single_config
 

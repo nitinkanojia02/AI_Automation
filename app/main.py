@@ -420,10 +420,18 @@ def derive_workflow_artifact_slug(workflow: dict | None, workflow_name: str) -> 
     explicit_prefix = slugify(str(workflow.get("testIdentifierPrefix", "")))
     feature_slug = slugify(str(workflow.get("feature", "")))
     workflow_slug = slugify(str(workflow.get("workflowName", workflow_name)))
+    page_slug = slugify(str(((workflow.get("pages") or [{}])[0]).get("name", ""))) if isinstance(workflow.get("pages"), list) and workflow.get("pages") else ""
+    module_slug = slugify(str(workflow.get("module", "")))
     if explicit_prefix:
         return explicit_prefix
     if feature_slug and len(feature_slug) <= 24:
         return feature_slug
+    if page_slug and module_slug:
+        combined = f"{page_slug}_{module_slug}"
+        if len(combined) <= 24:
+            return combined
+    if page_slug:
+        return page_slug
     if workflow_slug and len(workflow_slug) <= 24:
         return workflow_slug
     short_words = [
@@ -432,7 +440,7 @@ def derive_workflow_artifact_slug(workflow: dict | None, workflow_name: str) -> 
         if slugify(word)
     ][:3]
     collapsed = "_".join(word for word in short_words if word)
-    return collapsed or feature_slug or workflow_slug or "workflow"
+    return collapsed or page_slug or feature_slug or workflow_slug or "workflow"
 
 
 def derive_canonical_workflow_name(workflow: dict | None, workflow_name: str) -> str:
