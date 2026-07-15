@@ -3,219 +3,143 @@
   "keywords": [
     {
       "keywordId": "KW_001",
-      "keywordName": "Open Home Page",
-      "targetElement": "",
-      "action": "generic",
+      "keywordName": "Click Person Button",
+      "targetElement": "person_button",
+      "action": "click",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Navigate to the guest Home page.",
-        "    Go To Url    ${HOME_PAGE_URL}"
+        "[Documentation]    Click the Person/Profile button from the Home page guest state.",
+        "    Click When Ready    ${AUTO_PERSON_BTN_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}"
       ],
       "approved": true
     },
     {
       "keywordId": "KW_002",
-      "keywordName": "Verify Home Page URL",
-      "targetElement": "",
-      "action": "verify",
-      "arguments": [],
-      "implementation": [
-        "[Documentation]    Verify the browser is currently on the Home page.",
-        "    Location Should Be    ${HOME_PAGE_URL}"
-      ],
-      "approved": true
-    },
-    {
-      "keywordId": "KW_003",
-      "keywordName": "Verify Login Page URL",
-      "targetElement": "",
-      "action": "verify",
-      "arguments": [],
-      "implementation": [
-        "[Documentation]    Verify navigation to the login page.",
-        "    Wait Until Location Contains    ${LOGIN_PAGE_URL_PATH}    ${DEFAULT_TIMEOUT}"
-      ],
-      "approved": true
-    },
-    {
-      "keywordId": "KW_004",
-      "keywordName": "Verify Home Page Is Loaded",
-      "targetElement": "",
-      "action": "verify",
-      "arguments": [],
-      "implementation": [
-        "[Documentation]    Verify the Home page is loaded successfully with approved guest controls available.",
-        "    Wait Until Location Contains    ${HOME_PAGE_URL}    ${DEFAULT_TIMEOUT}",
-        "    Verify Guest Home Controls Are Visible",
-        "    Verify Guest Home Controls Are Enabled"
-      ],
-      "approved": true
-    },
-    {
-      "keywordId": "KW_005",
-      "keywordName": "Verify Guest Home Controls Are Visible",
-      "targetElement": "",
-      "action": "verify",
-      "arguments": [],
-      "implementation": [
-        "[Documentation]    Verify all approved guest-state controls are visible on the Home page.",
-        "    Wait For Element To Be Ready    ${PERSON_PROFILE_BUTTON}",
-        "    Element Should Be Visible    ${BACK_BUTTON}",
-        "    Element Should Be Visible    ${NOTIFICATION_BUTTON}",
-        "    Element Should Be Visible    ${HOME_BUTTON}",
-        "    Element Should Be Visible    ${CUSTOMER_SIGNUP_BUTTON}",
-        "    Element Should Be Visible    ${CLEAN_SURVEY_BUTTON}",
-        "    Element Should Be Visible    ${SITE_SURVEY_BUTTON}"
-      ],
-      "approved": true
-    },
-    {
-      "keywordId": "KW_006",
-      "keywordName": "Verify Guest Home Controls Are Enabled",
-      "targetElement": "",
-      "action": "verify",
-      "arguments": [],
-      "implementation": [
-        "[Documentation]    Verify all approved guest-state controls are enabled and actionable.",
-        "    Element Should Be Enabled    ${PERSON_PROFILE_BUTTON}",
-        "    Element Should Be Enabled    ${BACK_BUTTON}",
-        "    Element Should Be Enabled    ${NOTIFICATION_BUTTON}",
-        "    Element Should Be Enabled    ${HOME_BUTTON}",
-        "    Element Should Be Enabled    ${CUSTOMER_SIGNUP_BUTTON}",
-        "    Element Should Be Enabled    ${CLEAN_SURVEY_BUTTON}",
-        "    Element Should Be Enabled    ${SITE_SURVEY_BUTTON}"
-      ],
-      "approved": true
-    },
-    {
-      "keywordId": "KW_007",
-      "keywordName": "Verify User Is Navigated To Login Page",
-      "targetElement": "",
-      "action": "verify",
-      "arguments": [],
-      "implementation": [
-        "[Documentation]    Verify the user is redirected to the login page after clicking the Person/Profile button.",
-        "    Verify Login Page URL"
-      ],
-      "approved": true
-    },
-    {
-      "keywordId": "KW_008",
-      "keywordName": "Verify Customer Search Page Navigation",
-      "targetElement": "",
-      "action": "verify",
-      "arguments": [],
-      "implementation": [
-        "[Documentation]    Verify navigation to the customer-search page.",
-        "    Wait Until Location Contains    ${CUSTOMER_SEARCH_PAGE_PATH}    ${DEFAULT_TIMEOUT}"
-      ],
-      "approved": true
-    },
-    {
-      "keywordId": "KW_009",
-      "keywordName": "Verify Vehicle Survey Page Navigation",
-      "targetElement": "",
-      "action": "verify",
-      "arguments": [],
-      "implementation": [
-        "[Documentation]    Verify navigation to the vehicle-survey page.",
-        "    Wait Until Location Contains    ${VEHICLE_SURVEY_PAGE_PATH}    ${DEFAULT_TIMEOUT}"
-      ],
-      "approved": true
-    },
-    {
-      "keywordId": "KW_010",
-      "keywordName": "Verify Survey Page Navigation",
-      "targetElement": "",
-      "action": "verify",
-      "arguments": [],
-      "implementation": [
-        "[Documentation]    Verify navigation to the survey page.",
-        "    Wait Until Location Contains    ${SURVEY_PAGE_PATH}    ${DEFAULT_TIMEOUT}"
-      ],
-      "approved": true
-    },
-    {
-      "keywordId": "KW_012",
-      "keywordName": "Click Person Profile Button",
-      "targetElement": "person_profile_button",
-      "action": "click",
-      "arguments": [],
-      "implementation": [
-        "[Documentation]    Open the login page or login view from guest Home state.",
-        "    Click When Ready    ${PERSON_PROFILE_BUTTON}"
-      ],
-      "approved": true
-    },
-    {
-      "keywordId": "KW_013",
       "keywordName": "Click Back Button",
       "targetElement": "back_button",
       "action": "click",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Click the shared back navigation control.",
-        "    Click When Ready    ${BACK_BUTTON}"
+        "[Documentation]    Click the Back button from the Home page shell.",
+        "    Click When Ready    ${AUTO_BACK_BTN_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}"
       ],
       "approved": true
     },
     {
-      "keywordId": "KW_014",
+      "keywordId": "KW_003",
       "keywordName": "Click Notification Button",
       "targetElement": "notification_button",
       "action": "click",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Click the shared notification control.",
-        "    Click When Ready    ${NOTIFICATION_BUTTON}"
+        "[Documentation]    Click the Notification button from the Home page shell.",
+        "    Click When Ready    ${AUTO_NOTIFICATION_BTN_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}"
       ],
       "approved": true
     },
     {
-      "keywordId": "KW_015",
+      "keywordId": "KW_004",
       "keywordName": "Click Home Button",
       "targetElement": "home_button",
       "action": "click",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Click the home navigation control.",
-        "    Click When Ready    ${HOME_BUTTON}"
+        "[Documentation]    Click the Home button from the Home page shell.",
+        "    Click When Ready    ${AUTO_HOME_BTN_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}"
       ],
       "approved": true
     },
     {
-      "keywordId": "KW_016",
+      "keywordId": "KW_005",
       "keywordName": "Click Customer Signup Button",
       "targetElement": "customer_signup_button",
       "action": "click",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Navigate to the customer signup or customer search workflow.",
-        "    Click When Ready    ${CUSTOMER_SIGNUP_BUTTON}"
+        "[Documentation]    Click the Customer signup button from the Home page guest state.",
+        "    Click When Ready    ${AUTO_BTN_CUSTOMER_SIGNUP_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}"
       ],
       "approved": true
     },
     {
-      "keywordId": "KW_017",
+      "keywordId": "KW_006",
       "keywordName": "Click Clean Survey Button",
       "targetElement": "clean_survey_button",
       "action": "click",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Navigate to the clean survey workflow.",
-        "    Click When Ready    ${CLEAN_SURVEY_BUTTON}"
+        "[Documentation]    Click the Clean survey button from the Home page guest state.",
+        "    Click When Ready    ${AUTO_BTN_CLEAN_SURVEY_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}"
       ],
       "approved": true
     },
     {
-      "keywordId": "KW_018",
+      "keywordId": "KW_007",
       "keywordName": "Click Site Survey Button",
       "targetElement": "site_survey_button",
       "action": "click",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Navigate to the site survey workflow.",
-        "    Click When Ready    ${SITE_SURVEY_BUTTON}"
+        "[Documentation]    Click the Site survey button from the Home page guest state.",
+        "    Click When Ready    ${AUTO_BTN_SITE_SURVEY_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_008",
+      "keywordName": "Open Home Page In Guest State",
+      "targetElement": "",
+      "action": "generic",
+      "arguments": [],
+      "implementation": [
+        "[Documentation]    Open the Home page directly in guest state and wait for the Person/Profile button to be ready.",
+        "    Go To Url    ${HOME_PAGE_URL}",
+        "    Wait For Element To Be Ready    ${AUTO_PERSON_BTN_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_009",
+      "keywordName": "Verify Guest State Controls Are Visible",
+      "targetElement": "",
+      "action": "verify",
+      "arguments": [],
+      "implementation": [
+        "[Documentation]    Verify all approved guest-state controls are visible and enabled on the Home page.",
+        "    Wait For Element To Be Ready    ${AUTO_PERSON_BTN_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}",
+        "    Wait For Element To Be Ready    ${AUTO_BACK_BTN_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}",
+        "    Wait For Element To Be Ready    ${AUTO_NOTIFICATION_BTN_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}",
+        "    Wait For Element To Be Ready    ${AUTO_HOME_BTN_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}",
+        "    Wait For Element To Be Ready    ${AUTO_BTN_CUSTOMER_SIGNUP_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}",
+        "    Wait For Element To Be Ready    ${AUTO_BTN_CLEAN_SURVEY_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}",
+        "    Wait For Element To Be Ready    ${AUTO_BTN_SITE_SURVEY_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_010",
+      "keywordName": "Verify Person Button",
+      "targetElement": "person_button",
+      "action": "verify",
+      "arguments": [],
+      "implementation": [
+        "[Documentation]    Verify the Login page or Login view opens after clicking the Person/Profile button.",
+        "    Click When Ready    ${AUTO_PERSON_BTN_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}",
+        "    Wait Until Page Does Not Contain Element    ${AUTO_PERSON_BTN_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_011",
+      "keywordName": "Verify Home Page Remains In Guest State",
+      "targetElement": "",
+      "action": "verify",
+      "arguments": [],
+      "implementation": [
+        "[Documentation]    Verify the Home page remains in guest state with approved guest controls visible.",
+        "    Wait For Element To Be Ready    ${AUTO_PERSON_BTN_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}",
+        "    Wait For Element To Be Ready    ${AUTO_HOME_BTN_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}",
+        "    Wait For Element To Be Ready    ${AUTO_BTN_CUSTOMER_SIGNUP_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}"
       ],
       "approved": true
     }

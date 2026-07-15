@@ -1,7 +1,7 @@
 {
   "inputType": "exploratory_workflow",
   "workflowId": "HOME_PAGE_SHOULD_SUPPORT_GUEST_STATE_CONTROLS_GUEST_NAVIGATION_AND_LOGIN_ENTRY_FROM_THE_PERSON_BUTTON_001",
-  "workflowName": "Home page should support guest state controls, guest navigation, and login entry from the Person button",
+  "workflowName": "home",
   "module": "Imported",
   "feature": "Home page should support guest state controls, guest navigation, and login entry from the Person button",
   "applicationCode": "WT",
