@@ -1128,12 +1128,58 @@ def get_page_resource_variables(page_name: str) -> List[dict]:
 def resolve_known_element_locator(page_name: str, element_name: str) -> str:
     normalized_page = slugify(page_name)
     normalized_element = slugify(element_name)
+    element_tokens = [token for token in re.split(r"[_\s]+", normalized_element) if token]
     for item in get_page_resource_variables(normalized_page):
         variable_name = clean_text(str(item.get("name", "")))
         locator = clean_text(str(item.get("value", "")))
-        if slugify(variable_name) == normalized_element and locator:
+        slug_name = slugify(variable_name)
+        if not locator:
+            continue
+        if slug_name == normalized_element:
+            return locator
+        if normalized_element and normalized_element in slug_name:
+            return locator
+        if element_tokens and all(token in slug_name for token in element_tokens):
             return locator
     raise ValueError(f"Known element '{element_name}' was not found in resource variables for page '{page_name}'.")
+
+
+def infer_story_navigation_steps(page_name: str, workflow_like: dict) -> Tuple[List[dict], List[dict]]:
+    if not isinstance(workflow_like, dict):
+        return [], []
+
+    story = build_story_text(workflow_like).lower()
+    current_page = slugify(page_name)
+    reuse_context = workflow_like.get("inferred_reuse_context") if isinstance(workflow_like.get("inferred_reuse_context"), dict) else {}
+    relevant_resources = [str(item).replace("\\", "/").strip() for item in reuse_context.get("authoritativeResourceFiles", []) if str(item).strip()]
+
+    navigation_steps: List[dict] = []
+    target_page_signals: List[dict] = []
+
+    if current_page == "login":
+        home_resource_available = any(item.startswith("home_page/") for item in relevant_resources) or "home page" in story
+        opens_from_person = any(token in story for token in ["person/profile button", "person button", "profile button", "clicks the person/profile button", "open the login page by clicking the person/profile button"])
+        if home_resource_available and opens_from_person:
+            navigation_steps.append({
+                "action": "clickKnownElement",
+                "page": "home",
+                "element": "profile_button",
+            })
+            target_page_signals.extend([
+                {"type": "text", "value": "Username"},
+                {"type": "text", "value": "Password"},
+                {"type": "selector", "value": "input[type='password']"},
+            ])
+
+    deduped_signals: List[dict] = []
+    seen = set()
+    for signal in target_page_signals:
+        key = json.dumps(signal, sort_keys=True)
+        if key not in seen:
+            seen.add(key)
+            deduped_signals.append(signal)
+
+    return navigation_steps, deduped_signals
 
 
 def perform_navigation_steps(page, navigation_steps: List[dict], wait_seconds: int):
@@ -1242,6 +1288,14 @@ def process_page(playwright, config: dict, page_entry: Dict[str, str]):
 
         navigation_steps = page_entry.get("navigation_steps", []) if isinstance(page_entry.get("navigation_steps"), list) else []
         target_page_signals = page_entry.get("target_page_signals", []) if isinstance(page_entry.get("target_page_signals"), list) else []
+        if not navigation_steps:
+            inferred_steps, inferred_signals = infer_story_navigation_steps(page_name, page_entry)
+            if inferred_steps:
+                navigation_steps = inferred_steps
+                if not target_page_signals:
+                    target_page_signals = inferred_signals
+                logger.info("Using story-driven inferred navigation steps for page '%s': %s", page_name, json.dumps(navigation_steps, ensure_ascii=False))
+
         if navigation_steps:
             perform_navigation_steps(page, navigation_steps, config["wait_seconds"])
             wait_for_target_page_signals(page, target_page_signals, config["wait_seconds"])

@@ -699,6 +699,28 @@ def run_page_extraction(page_name: str, page_url: str, extraction_context: dict 
     entry_page = extraction_context.get("entryPage", {}) if isinstance(extraction_context, dict) else {}
     target_page_signals = extraction_context.get("targetPageSignals", []) if isinstance(extraction_context, dict) else []
 
+    if not navigation_steps and isinstance(extraction_context, dict):
+        try:
+            from scripts.extract_page_model import infer_story_navigation_steps as _infer_story_navigation_steps
+        except ModuleNotFoundError:
+            import sys as _sys
+            _sys.path.append(str(BASE_DIR))
+            from scripts.extract_page_model import infer_story_navigation_steps as _infer_story_navigation_steps
+        inferred_steps, inferred_signals = _infer_story_navigation_steps(page_name, extraction_context)
+        if inferred_steps:
+            navigation_steps = inferred_steps
+            if not target_page_signals:
+                target_page_signals = inferred_signals
+            extraction_context = dict(extraction_context)
+            extraction_context["navigationSteps"] = navigation_steps
+            extraction_context["targetPageSignals"] = target_page_signals
+            if not isinstance(entry_page, dict) or not normalize_url_value(str(entry_page.get("url", ""))):
+                extraction_context["entryPage"] = {
+                    "name": clean_text(str((entry_page or {}).get("name", "") if isinstance(entry_page, dict) else "")) or "home",
+                    "url": clean_text(str(extraction_context.get("pageUrl") or extraction_context.get("url") or "")),
+                }
+            entry_page = extraction_context.get("entryPage", {})
+
     if navigation_steps:
         entry_page_url = normalize_url_value(str(entry_page.get("url", ""))) if isinstance(entry_page, dict) else ""
         if not entry_page_url:
