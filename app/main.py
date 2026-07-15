@@ -730,6 +730,25 @@ def run_page_extraction(page_name: str, page_url: str, extraction_context: dict 
     if navigation_steps:
         entry_page_url = normalize_url_value(str(entry_page.get("url", ""))) if isinstance(entry_page, dict) else ""
         if not entry_page_url:
+            workflow_like = dict(extraction_context) if isinstance(extraction_context, dict) else {}
+            workflow_like.setdefault("pageUrl", page_url)
+            workflow_like.setdefault("workflowName", page_name)
+            try:
+                from scripts.extract_page_model import resolve_entry_url as _resolve_entry_url
+            except ModuleNotFoundError:
+                import sys as _sys
+                _sys.path.append(str(BASE_DIR))
+                from scripts.extract_page_model import resolve_entry_url as _resolve_entry_url
+            entry_page_url = clean_text(_resolve_entry_url(workflow_like))
+            if isinstance(extraction_context, dict):
+                extraction_context = dict(extraction_context)
+                current_entry = extraction_context.get("entryPage", {}) if isinstance(extraction_context.get("entryPage", {}), dict) else {}
+                extraction_context["entryPage"] = {
+                    "name": clean_text(str(current_entry.get("name", ""))) or "home",
+                    "url": entry_page_url,
+                }
+                entry_page = extraction_context["entryPage"]
+        if not entry_page_url:
             raise HTTPException(status_code=400, detail="Navigation-based extraction requires an entry page URL.")
         command.extend(["--entry-url", entry_page_url])
         command.extend(["--navigation-json", json.dumps({
