@@ -138,6 +138,14 @@ def make_test_id_prefix(workflow_name: str) -> str:
 
 def build_prompt(workflow_input: Dict[str, Any]) -> str:
     reuse_context = infer_workflow_reuse_context(workflow_input)
+    acceptance_criteria = parse_acceptance_criteria(workflow_input)
+    mandatory_scenarios = []
+    for idx, criterion in enumerate(acceptance_criteria, start=1):
+        mandatory_scenarios.append({
+            "id": f"AC{idx}",
+            "criterion": criterion,
+            "mustGenerateAtLeastOneTest": True,
+        })
     return f"""
 You are AI Layer 1: a senior QA test designer operating inside a multi-layer AI-assisted automation framework.
 Your output is a reviewable manual-test artifact that will feed downstream keyword/resource generation, Robot generation, and additional AI review and governance layers.
@@ -184,6 +192,10 @@ Mandatory coverage requirements:
 8. If approved elements or fields imply likely validations, generate those test cases too even if not explicitly listed.
 9. Prefer high coverage and realistic manual execution scenarios over minimal output.
 10. Avoid duplicate or redundant test cases.
+11. Every mandatory acceptance criterion must be covered by at least one generated test case.
+12. Acceptance criteria involving shared or upstream controls must still generate tests even when those controls are not newly extracted on the current page.
+13. For navigation criteria such as Back button or Home button returning to a previous page, generate explicit navigation tests instead of replacing them with generic exploratory cases.
+14. Prioritize mandatory acceptance-criteria coverage before adding additional exploratory edge cases.
 
 Schema rules:
 1. Every test case object must contain exactly these keys:
@@ -259,6 +271,16 @@ Important behavior:
 - Prefer tests whose expectedResult can be validated by visible UI state, message, field behavior, redirect behavior, enabled/disabled state, masking behavior, or other observable outcomes.
 - Do not write weak expected results like 'system works correctly', 'login should happen', or 'validation should appear' without specifying what exactly must be observed.
 - When generating authentication tests, ensure at least one positive case explicitly expects successful login state and at least one negative case explicitly expects failed login state with an observable rejection condition.
+
+Mandatory Acceptance Criteria Coverage Map:
+{pretty_json(mandatory_scenarios)}
+
+Additional generation instructions for acceptance criteria:
+- Generate at least one explicit test case for each mandatory acceptance criterion above.
+- If a criterion mentions Back button, Home button, Forgot Password, or other shared/upstream controls, still generate the scenario even if that control is reused from another approved resource.
+- Do not omit explicit navigation scenarios because of missing local extraction.
+- Do not treat URLs, headings, or descriptive labels as standalone test cases.
+- expectedResult must be a single clear string, not a serialized list.
 
 Workflow Input:
 {pretty_json(workflow_input)}
@@ -373,7 +395,11 @@ def normalize_test_case(
     forced_type: Optional[str] = None,
 ) -> Dict[str, Any]:
     title = forced_title or str(test_case.get("title", "")).strip() or f"Test Case {idx}"
-    expected = str(test_case.get("expectedResult", fallback_expected)).strip()
+    raw_expected = test_case.get("expectedResult", fallback_expected)
+    if isinstance(raw_expected, list):
+        expected = " ".join(clean_text(x) for x in raw_expected if clean_text(x))
+    else:
+        expected = str(raw_expected).strip()
     tc_type = forced_type or map_test_type(title, expected, str(test_case.get("type", "")))
 
     tc_id = str(test_case.get("id", "")).strip() or f"{id_prefix}-{idx:03d}"
@@ -561,14 +587,26 @@ def criterion_is_covered(criterion: str, test_cases: List[Dict[str, Any]]) -> bo
     if not criterion_tokens:
         return False
 
+    lowered = criterion.lower()
+    special_patterns = []
+    if "back button" in lowered and "home page" in lowered:
+        special_patterns.append({"back", "button", "home", "page"})
+    if "home button" in lowered and "home page" in lowered:
+        special_patterns.append({"home", "button", "page"})
+    if "forgot password" in lowered:
+        special_patterns.append({"forgot", "password"})
+
     for tc in test_cases:
         candidate_key = test_case_signature(tc)
+        candidate_tokens = set(candidate_key.split())
         if criterion_key and criterion_key in candidate_key:
             return True
-        candidate_tokens = set(candidate_key.split())
         overlap = criterion_tokens & candidate_tokens
         if len(overlap) >= max(2, min(len(criterion_tokens), 4)):
             return True
+        for pattern in special_patterns:
+            if pattern.issubset(candidate_tokens):
+                return True
     return False
 
 
@@ -705,10 +743,13 @@ def normalize_manual_test(generated: Dict[str, Any], workflow_input: Dict[str, A
     deduped_cases: List[Dict[str, Any]] = []
     seen_signatures = set()
 
+    normalized_id_prefix = clean_text(str(workflow_input.get("testIdentifierPrefix") or generated.get("testIdentifierPrefix") or workflow_input.get("feature") or workflow_name)).upper()
+    normalized_id_prefix = re.sub(r"[^A-Z0-9]+", "_", normalized_id_prefix).strip("_") or id_prefix
+
     for idx, tc in enumerate(normalized_cases, start=1):
         tc_id = str(tc.get("id", "")).strip()
         if not tc_id or tc_id in seen_ids:
-            tc["id"] = f"{id_prefix}-{idx:03d}"
+            tc["id"] = f"{normalized_id_prefix}_{idx:03d}"
         seen_ids.add(tc["id"])
 
         signature = (
