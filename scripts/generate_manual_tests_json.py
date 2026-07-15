@@ -138,12 +138,13 @@ def make_test_id_prefix(workflow_name: str) -> str:
 
 def build_prompt(workflow_input: Dict[str, Any]) -> str:
     reuse_context = infer_workflow_reuse_context(workflow_input)
-    acceptance_criteria = parse_acceptance_criteria(workflow_input)
+    requirement_units = extract_requirement_units(workflow_input)
     mandatory_scenarios = []
-    for idx, criterion in enumerate(acceptance_criteria, start=1):
+    for item in requirement_units:
         mandatory_scenarios.append({
-            "id": f"AC{idx}",
-            "criterion": criterion,
+            "id": item["id"],
+            "source": item["source"],
+            "requirement": item["text"],
             "mustGenerateAtLeastOneTest": True,
         })
     return f"""
@@ -554,8 +555,17 @@ def parse_acceptance_criteria(workflow_input: Dict[str, Any]) -> List[str]:
 
     seen = set()
     normalized: List[str] = []
+    pending_when_then = False
     for criterion in raw_candidates:
         criterion = re.sub(r"^\d+[\.)]\s*", "", criterion).strip()
+        lowered = criterion.lower()
+        if lowered.startswith("when ") or lowered.startswith("then "):
+            pending_when_then = True
+            continue
+        if lowered.startswith("given "):
+            pending_when_then = False
+        if pending_when_then and not lowered.startswith("given "):
+            continue
         if not looks_like_acceptance_criterion(criterion):
             continue
         key = criterion.lower()
@@ -567,6 +577,54 @@ def parse_acceptance_criteria(workflow_input: Dict[str, Any]) -> List[str]:
 
 def criterion_signature(text: str) -> str:
     return re.sub(r"[^a-z0-9]+", " ", text.lower()).strip()
+
+
+def extract_requirement_units(workflow_input: Dict[str, Any]) -> List[Dict[str, Any]]:
+    requirements: List[Dict[str, Any]] = []
+    story_text = " ".join(
+        [
+            clean_text(str(workflow_input.get("description", ""))),
+            clean_text(str(workflow_input.get("userStory", ""))),
+            clean_text(str((workflow_input.get("externalContext") or {}).get("description", ""))) if isinstance(workflow_input.get("externalContext"), dict) else "",
+            clean_text(str((workflow_input.get("externalContext") or {}).get("userStory", ""))) if isinstance(workflow_input.get("externalContext"), dict) else "",
+            clean_text(str((workflow_input.get("externalContext") or {}).get("validationExpectations", ""))) if isinstance(workflow_input.get("externalContext"), dict) else "",
+            clean_text(str((workflow_input.get("externalContext") or {}).get("transitionExpectations", ""))) if isinstance(workflow_input.get("externalContext"), dict) else "",
+        ]
+    ).strip()
+
+    acceptance_criteria = parse_acceptance_criteria(workflow_input)
+    for idx, criterion in enumerate(acceptance_criteria, start=1):
+        requirements.append({
+            "id": f"AC{idx}",
+            "source": "acceptance_criteria",
+            "text": criterion,
+            "signature": criterion_signature(criterion),
+        })
+
+    lower_story = story_text.lower()
+    generic_patterns = [
+        (r"back button[^.\n]*home page", "Back button navigation should return to Home page"),
+        (r"home button[^.\n]*home page", "Home button navigation should return to Home page"),
+        (r"forgot password[^.\n]*(open|navigate|workflow|destination)", "Forgot Password should open the supported recovery flow"),
+        (r"password[^.\n]*masked", "Password input should be masked by default"),
+        (r"person/profile button[^.\n]*login page", "Person/Profile button from Home page should open the Login page"),
+    ]
+    next_idx = len(requirements) + 1
+    seen_signatures = {item["signature"] for item in requirements}
+    for pattern, text in generic_patterns:
+        if re.search(pattern, lower_story, flags=re.IGNORECASE):
+            sig = criterion_signature(text)
+            if sig not in seen_signatures:
+                seen_signatures.add(sig)
+                requirements.append({
+                    "id": f"REQ{next_idx}",
+                    "source": "story_requirement",
+                    "text": text,
+                    "signature": sig,
+                })
+                next_idx += 1
+    return requirements
+
 
 
 def test_case_signature(tc: Dict[str, Any]) -> str:
@@ -595,6 +653,8 @@ def criterion_is_covered(criterion: str, test_cases: List[Dict[str, Any]]) -> bo
         special_patterns.append({"home", "button", "page"})
     if "forgot password" in lowered:
         special_patterns.append({"forgot", "password"})
+    if "person/profile button" in lowered and "login page" in lowered:
+        special_patterns.append({"person", "profile", "button", "login", "page"})
 
     for tc in test_cases:
         candidate_key = test_case_signature(tc)
@@ -716,14 +776,14 @@ def normalize_manual_test(generated: Dict[str, Any], workflow_input: Dict[str, A
     if not normalized_cases:
         normalized_cases = generate_fallback_test_cases(workflow_input, workflow_name)
 
-    acceptance_criteria = parse_acceptance_criteria(workflow_input)
+    requirement_units = extract_requirement_units(workflow_input)
     missing_required_cases: List[Dict[str, Any]] = []
     next_idx = len(normalized_cases) + 1
-    for criterion in acceptance_criteria:
-        if not criterion_is_covered(criterion, normalized_cases + missing_required_cases):
+    for requirement in requirement_units:
+        if not criterion_is_covered(requirement["text"], normalized_cases + missing_required_cases):
             missing_required_cases.append(
                 build_required_case_from_criterion(
-                    criterion=criterion,
+                    criterion=requirement["text"],
                     idx=next_idx,
                     id_prefix=id_prefix,
                     fallback_fields=fallback_fields,

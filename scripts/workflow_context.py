@@ -39,11 +39,16 @@ def collect_story_text(workflow_input: Dict[str, Any]) -> str:
         "description",
         "userStory",
         "observedExpectedResult",
+        "acceptanceCriteria",
+        "acceptance_criteria",
+        "generationGuidance",
     ]:
         value = workflow_input.get(key)
         if isinstance(value, str) and clean_text(value):
             chunks.append(clean_text(value))
-    for key in ["observedPreconditions", "observedSteps", "observedValidations", "scenarioIntent"]:
+        elif isinstance(value, list):
+            chunks.extend(clean_text(str(item)) for item in value if clean_text(str(item)))
+    for key in ["observedPreconditions", "observedSteps", "observedValidations", "scenarioIntent", "preconditions", "steps"]:
         value = workflow_input.get(key)
         if isinstance(value, list):
             chunks.extend(clean_text(str(item)) for item in value if clean_text(str(item)))
@@ -55,6 +60,27 @@ def collect_story_text(workflow_input: Dict[str, Any]) -> str:
         for step in workflow_input["navigationSteps"]:
             if isinstance(step, dict):
                 chunks.extend(clean_text(str(v)) for v in step.values() if clean_text(str(v)))
+    external_context = workflow_input.get("externalContext")
+    if isinstance(external_context, dict):
+        for key in [
+            "description",
+            "userStory",
+            "acceptanceCriteria",
+            "acceptance_criteria",
+            "generationGuidance",
+            "validationExpectations",
+            "behaviorRules",
+            "transitionExpectations",
+            "pomReuseGuidance",
+            "approvedTestDataGuidance",
+            "applicationContext",
+            "loginPageElements",
+        ]:
+            value = external_context.get(key)
+            if isinstance(value, str) and clean_text(value):
+                chunks.append(clean_text(value))
+            elif isinstance(value, list):
+                chunks.extend(clean_text(str(item)) for item in value if clean_text(str(item)))
     return " ".join(chunk for chunk in chunks if chunk)
 
 
