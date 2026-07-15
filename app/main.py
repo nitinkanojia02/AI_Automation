@@ -420,7 +420,23 @@ def derive_workflow_artifact_slug(workflow: dict | None, workflow_name: str) -> 
     explicit_prefix = slugify(str(workflow.get("testIdentifierPrefix", "")))
     feature_slug = slugify(str(workflow.get("feature", "")))
     workflow_slug = slugify(str(workflow.get("workflowName", workflow_name)))
-    return explicit_prefix or feature_slug or workflow_slug or "workflow"
+    if explicit_prefix:
+        return explicit_prefix
+    if feature_slug and len(feature_slug) <= 24:
+        return feature_slug
+    if workflow_slug and len(workflow_slug) <= 24:
+        return workflow_slug
+    short_words = [
+        slugify(word)
+        for word in re.findall(r"[A-Za-z0-9]+", str(workflow.get("workflowName", workflow_name)))
+        if slugify(word)
+    ][:3]
+    collapsed = "_".join(word for word in short_words if word)
+    return collapsed or feature_slug or workflow_slug or "workflow"
+
+
+def derive_canonical_workflow_name(workflow: dict | None, workflow_name: str) -> str:
+    return derive_workflow_artifact_slug(workflow, workflow_name)
 
 def to_keyword_title(element_name: str) -> str:
     base = clean_text(element_name).replace("_", " ")
@@ -1265,7 +1281,7 @@ def sanitize_keyword_name(keyword_name: str, target_element: str = "") -> str:
 
 
 def get_manual_tests_for_workflow(workflow: dict) -> list[dict]:
-    workflow_name = slugify(str(workflow.get("workflowName", "")))
+    workflow_name = derive_canonical_workflow_name(workflow, str(workflow.get("workflowName", "")))
     if not workflow_name:
         return []
     manual_path = get_manual_json_path(workflow_name)
@@ -1369,7 +1385,7 @@ def build_keyword_generation_prompt(
     )
 
 def review_and_refine_page_elements(workflow: dict, review_data: dict) -> tuple[list[dict], dict | None]:
-    workflow_name = clean_text(str(workflow.get("workflowName", ""))) or review_data["page_name"]
+    workflow_name = derive_canonical_workflow_name(workflow, review_data["page_name"])
     raw_elements = review_data.get("raw_elements", [])
     if not raw_elements:
         return review_data.get("elements", []), None
@@ -1588,7 +1604,7 @@ def get_keyword_review_data(workflow: dict):
 
     if approved_elements and approved_manual_tests:
         try:
-            workflow_name = clean_text(str(workflow.get("workflowName", ""))) or page_name
+            workflow_name = derive_canonical_workflow_name(workflow, page_name)
             config = validate_robot_config(load_robot_ai_json(CONFIG_PATH))
             ai_cfg = config.get("ai", {})
             if ai_cfg.get("enabled", True):
@@ -1663,7 +1679,7 @@ def get_keyword_review_data(workflow: dict):
     }
 
 def review_and_refine_resource_artifact(workflow: dict, page_name: str, elements: list[dict], draft_resource: str):
-    workflow_name = clean_text(str(workflow.get("workflowName", ""))) or page_name
+    workflow_name = derive_canonical_workflow_name(workflow, page_name)
 
     review_result = None
     refined_resource = draft_resource
@@ -1757,8 +1773,8 @@ def enrich_resource_with_manual_test_variables(workflow: dict, approved_keywords
     if not resource_path.exists():
         return ""
 
-    workflow_name = clean_text(str(workflow.get("workflowName", ""))) or page_name
-    manual_path = get_manual_json_path(slugify(workflow_name))
+    workflow_name = derive_canonical_workflow_name(workflow, page_name)
+    manual_path = get_manual_json_path(workflow_name)
     if not manual_path.exists():
         return read_text(resource_path)
 
@@ -2443,7 +2459,7 @@ def generate_resource_for_workflow(workflow: dict, approved_keywords: list[dict]
     variables_payload = sync_page_variables_from_approved_elements(workflow, approved_elements)
 
     approved_manual_tests = []
-    workflow_name = slugify(str(workflow.get("workflowName", "")))
+    workflow_name = derive_canonical_workflow_name(workflow, page_name)
     manual_path = get_manual_json_path(workflow_name)
     if manual_path.exists():
         try:
