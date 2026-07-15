@@ -467,6 +467,44 @@ def generate_fallback_test_cases(workflow_input: Dict[str, Any], workflow_name: 
     return fallback_cases
 
 
+def looks_like_acceptance_criterion(text: str) -> bool:
+    cleaned = clean_text(text)
+    if not cleaned:
+        return False
+    if re.fullmatch(r"https?://\S+", cleaned, flags=re.IGNORECASE):
+        return False
+    lowered = cleaned.lower()
+    if lowered in {
+        "acceptance criteria",
+        "application context",
+        "entry conditions",
+        "generation guidance",
+        "prefer",
+        "validate",
+    }:
+        return False
+    if lowered.startswith("given "):
+        return True
+    if lowered.startswith("when ") or lowered.startswith("then "):
+        return False
+    behavior_tokens = [
+        "button",
+        "login",
+        "home page",
+        "back",
+        "forgot password",
+        "username",
+        "password",
+        "validation",
+        "authenticate",
+        "return to",
+        "open",
+        "click",
+    ]
+    return any(token in lowered for token in behavior_tokens)
+
+
+
 def parse_acceptance_criteria(workflow_input: Dict[str, Any]) -> List[str]:
     raw_candidates: List[str] = []
 
@@ -492,7 +530,7 @@ def parse_acceptance_criteria(workflow_input: Dict[str, Any]) -> List[str]:
     normalized: List[str] = []
     for criterion in raw_candidates:
         criterion = re.sub(r"^\d+[\.)]\s*", "", criterion).strip()
-        if not criterion:
+        if not looks_like_acceptance_criterion(criterion):
             continue
         key = criterion.lower()
         if key not in seen:
@@ -540,31 +578,35 @@ def build_required_case_from_criterion(
     id_prefix: str,
     fallback_fields: List[str],
 ) -> Dict[str, Any]:
-    text = criterion.strip()
+    text = clean_text(criterion)
     lowered = text.lower()
     fields = list(fallback_fields)
     steps = ["Open the relevant page or workflow context", text]
     expected = text
     tc_type = "positive"
+    title = text
 
     if "back button" in lowered and "home page" in lowered:
         fields = sorted(set(fields + ["back_button"]))
+        title = "Verify Back button on Login page returns user to Home page"
         steps = [
             "Open the Login page from the Home page",
             "Click the Back button on the Login page",
         ]
-        expected = "The user is returned to the Home page and the Login page is no longer active."
+        expected = "The user is returned to the Home page in guest state and the Login page is no longer active."
         tc_type = "positive"
     elif "home button" in lowered and "home page" in lowered:
         fields = sorted(set(fields + ["home_button"]))
+        title = "Verify Home button on Login page returns user to Home page"
         steps = [
             "Open the Login page from the Home page",
             "Click the Home button on the Login page",
         ]
-        expected = "The user is returned to the Home page and the Login page is no longer active."
+        expected = "The user is returned to the Home page in guest state and the Login page is no longer active."
         tc_type = "positive"
     elif "forgot password" in lowered:
         fields = sorted(set(fields + ["forgot_password_link"]))
+        title = "Verify Forgot Password navigation opens recovery flow from Login page"
         steps = [
             "Open the Login page from the Home page",
             "Click Forgot Password on the Login page",
@@ -578,8 +620,8 @@ def build_required_case_from_criterion(
 
     return normalize_test_case(
         test_case={
-            "id": f"{id_prefix}-{idx:03d}",
-            "title": text,
+            "id": f"{id_prefix}_{idx:03d}",
+            "title": title,
             "type": tc_type,
             "steps": steps,
             "expectedResult": expected,
@@ -590,7 +632,7 @@ def build_required_case_from_criterion(
         fallback_fields=fallback_fields,
         fallback_steps=steps,
         fallback_expected=expected,
-        forced_title=text,
+        forced_title=title,
         forced_type=tc_type,
     )
 
