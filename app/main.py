@@ -3647,8 +3647,13 @@ def run_page_review_extraction(request: Request, workflow_name: str):
     review_data = get_page_review_data(workflow)
     inferred_reuse = infer_workflow_reuse_context(workflow)
     resource_files = workflow.get("resourceFiles", []) if isinstance(workflow.get("resourceFiles"), list) else []
-    if not resource_files:
-        resource_files = inferred_reuse.get("authoritativeResourceFiles", []) if isinstance(inferred_reuse.get("authoritativeResourceFiles"), list) else []
+    inferred_authoritative = inferred_reuse.get("authoritativeResourceFiles", []) if isinstance(inferred_reuse.get("authoritativeResourceFiles"), list) else []
+    merged_resource_files = []
+    for item in list(resource_files) + list(inferred_authoritative):
+        normalized = clean_text(str(item)).replace("\\", "/")
+        if normalized and normalized not in merged_resource_files:
+            merged_resource_files.append(normalized)
+    resource_files = merged_resource_files
 
     navigation_steps = review_data.get("navigation_steps", [])
     target_page_signals = review_data.get("target_page_signals", [])
@@ -3697,7 +3702,10 @@ def run_page_review_extraction(request: Request, workflow_name: str):
         "observedSteps": workflow.get("observedSteps", []) if isinstance(workflow.get("observedSteps"), list) else [],
         "observedValidations": workflow.get("observedValidations", []) if isinstance(workflow.get("observedValidations"), list) else [],
         "acceptanceCriteria": workflow.get("acceptanceCriteria", []) if isinstance(workflow.get("acceptanceCriteria"), list) else [],
-        "inferred_reuse_context": inferred_reuse,
+        "inferred_reuse_context": {
+            **inferred_reuse,
+            "authoritativeResourceFiles": resource_files,
+        },
     }
     try:
         run_page_extraction(review_data["page_name"], review_data["page_url"], extraction_context)

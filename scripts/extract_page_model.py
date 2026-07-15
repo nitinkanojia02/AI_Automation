@@ -1171,22 +1171,39 @@ def infer_story_navigation_steps(page_name: str, workflow_like: dict) -> Tuple[L
     current_page = slugify(page_name)
     reuse_context = workflow_like.get("inferred_reuse_context") if isinstance(workflow_like.get("inferred_reuse_context"), dict) else {}
     relevant_resources = [str(item).replace("\\", "/").strip() for item in reuse_context.get("authoritativeResourceFiles", []) if str(item).strip()]
+    if not relevant_resources:
+        explicit_resources = workflow_like.get("resourceFiles", []) if isinstance(workflow_like.get("resourceFiles"), list) else []
+        relevant_resources = [str(item).replace("\\", "/").strip() for item in explicit_resources if str(item).strip()]
+
+    external_context = workflow_like.get("externalContext", {}) if isinstance(workflow_like.get("externalContext"), dict) else {}
+    external_story = build_story_text(external_context).lower() if external_context else ""
+    combined_story = f"{story} {external_story}".strip()
 
     navigation_steps: List[dict] = []
     target_page_signals: List[dict] = []
 
-    if current_page == "login":
-        home_resource_available = any(item.startswith("home_page/") for item in relevant_resources) or "home page" in story
-        opens_from_person = any(token in story for token in ["person/profile button", "person button", "profile button", "clicks the person/profile button", "open the login page by clicking the person/profile button"])
+    if current_page in {"login", "login_page"}:
+        home_resource_available = any(item.startswith("home_page/") for item in relevant_resources) or "home page" in combined_story
+        opens_from_person = any(token in combined_story for token in [
+            "person/profile button",
+            "person button",
+            "profile button",
+            "clicks the person/profile button",
+            "click the person/profile button",
+            "opened by clicking the person/profile button",
+            "open the login page by clicking the person/profile button",
+            "home page person/profile button",
+        ])
         if home_resource_available and opens_from_person:
             navigation_steps.append({
                 "action": "clickKnownElement",
-                "page": "home",
+                "page": "home_page",
                 "element": "profile_button",
             })
             target_page_signals.extend([
                 {"type": "text", "value": "Username"},
                 {"type": "text", "value": "Password"},
+                {"type": "text", "value": "Login"},
                 {"type": "selector", "value": "input[type='password']"},
             ])
 
@@ -1334,6 +1351,9 @@ def process_page(playwright, config: dict, page_entry: Dict[str, str]):
             "received_target_page_signals": target_page_signals,
             "has_inferred_reuse_context": bool(page_entry.get("inferred_reuse_context")),
             "resource_files": (page_entry.get("inferred_reuse_context") or {}).get("authoritativeResourceFiles", []) if isinstance(page_entry.get("inferred_reuse_context"), dict) else [],
+            "raw_resource_files": page_entry.get("resourceFiles", []) if isinstance(page_entry.get("resourceFiles"), list) else [],
+            "story_excerpt": build_story_text(page_entry)[:800],
+            "external_story_excerpt": build_story_text(page_entry.get("externalContext", {}))[:800] if isinstance(page_entry.get("externalContext"), dict) else "",
         }]
         debug_path = metadata_dir / f"{page_name}.navigation.debug.json"
         if not navigation_steps:
