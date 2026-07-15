@@ -1251,16 +1251,63 @@ def perform_navigation_steps(page, navigation_steps: List[dict], wait_seconds: i
             navigation_debug.append(debug_entry)
 
 
-def wait_for_target_page_signals(page, target_page_signals: List[dict], wait_seconds: int):
+def semantic_login_state_satisfied(page) -> bool:
+    try:
+        password_present = page.locator("input[type='password']").count() > 0
+    except Exception:
+        password_present = False
+    try:
+        user_like_present = (
+            page.locator("input[type='text'], input[type='email'], input[name*='user' i], input[id*='user' i], input[placeholder*='user' i], input[placeholder*='email' i]").count() > 0
+        )
+    except Exception:
+        user_like_present = False
+    try:
+        action_present = (
+            page.get_by_role("button", name=re.compile(r"log\s*in|login|sign\s*in", re.I)).count() > 0
+            or page.locator("button, input[type='submit']").count() > 0
+        )
+    except Exception:
+        action_present = False
+    return password_present and (user_like_present or action_present)
+
+
+def write_signal_timeout_debug(page, metadata_dir: Path, page_name: str):
+    try:
+        ensure_dir(metadata_dir)
+        page.screenshot(path=str(metadata_dir / f"{page_name}.target-signal-timeout.png"), full_page=True)
+    except Exception:
+        pass
+    try:
+        (metadata_dir / f"{page_name}.target-signal-timeout.html").write_text(page.content(), encoding="utf-8")
+    except Exception:
+        pass
+    try:
+        controls = {
+            "url": page.url,
+            "title": page.title(),
+            "inputs": page.locator("input").evaluate_all("els => els.map(e => ({type: e.type || '', id: e.id || '', name: e.name || '', placeholder: e.placeholder || ''}))"),
+            "buttons": page.locator("button, input[type='submit'], a").evaluate_all("els => els.slice(0,50).map(e => ({text: (e.innerText || e.value || '').trim(), id: e.id || '', name: e.name || '', role: e.getAttribute('role') || ''}))"),
+        }
+        (metadata_dir / f"{page_name}.target-signal-timeout.controls.json").write_text(json.dumps(controls, indent=2, ensure_ascii=False), encoding="utf-8")
+    except Exception:
+        pass
+
+
+def wait_for_target_page_signals(page, target_page_signals: List[dict], wait_seconds: int, metadata_dir: Path | None = None, page_name: str = "page"):
     if not target_page_signals:
         logger.info("No target page signals were provided. Waiting briefly before extraction.")
         page.wait_for_timeout(max(wait_seconds, 1) * 1000)
         return
 
+    login_like = any(clean_text(str(signal.get("value", ""))).lower() in {"username", "password", "login"} for signal in target_page_signals)
     timeout_ms = max(wait_seconds, 1) * 1000 * 6
     deadline = time.time() + (timeout_ms / 1000)
     pending = list(target_page_signals)
     while time.time() < deadline:
+        if login_like and semantic_login_state_satisfied(page):
+            logger.info("Semantic login-state detection satisfied target page signals.")
+            return
         remaining = []
         for signal in pending:
             signal_type = clean_text(str(signal.get("type", "")))
@@ -1275,13 +1322,19 @@ def wait_for_target_page_signals(page, target_page_signals: List[dict], wait_sec
                 continue
             value = clean_text(str(signal.get("value", "")))
             if signal_type == "text":
-                if value and page.get_by_text(value, exact=False).first.is_visible(timeout=500):
-                    continue
+                try:
+                    if value and page.get_by_text(value, exact=False).first.is_visible(timeout=500):
+                        continue
+                except Exception:
+                    pass
                 remaining.append(signal)
                 continue
             if signal_type == "selector":
-                if value and page.locator(value).first.is_visible(timeout=500):
-                    continue
+                try:
+                    if value and page.locator(value).first.is_visible(timeout=500):
+                        continue
+                except Exception:
+                    pass
                 remaining.append(signal)
                 continue
             if signal_type == "title":
@@ -1303,6 +1356,8 @@ def wait_for_target_page_signals(page, target_page_signals: List[dict], wait_sec
             return
         pending = remaining
         page.wait_for_timeout(500)
+    if metadata_dir is not None:
+        write_signal_timeout_debug(page, metadata_dir, page_name)
     raise ValueError(f"Target page signals were not satisfied before timeout: {json.dumps(pending, ensure_ascii=False)}")
 
 
@@ -1373,7 +1428,7 @@ def process_page(playwright, config: dict, page_entry: Dict[str, str]):
         if navigation_steps:
             try:
                 perform_navigation_steps(page, navigation_steps, config["wait_seconds"], navigation_debug)
-                wait_for_target_page_signals(page, target_page_signals, config["wait_seconds"])
+                wait_for_target_page_signals(page, target_page_signals, config["wait_seconds"], metadata_dir=metadata_dir, page_name=page_name)
                 navigation_debug.append({"target_signals_satisfied": True, "final_url": page.url})
             except Exception as nav_exc:
                 navigation_debug.append({"target_signals_satisfied": False, "final_url": page.url, "error": str(nav_exc)})
