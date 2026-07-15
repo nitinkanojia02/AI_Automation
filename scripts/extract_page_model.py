@@ -1370,11 +1370,19 @@ def build_single_page_config(config: dict, page_name: str, url: str) -> dict:
 
 def build_navigation_page_config(config: dict, page_name: str, entry_url: str, navigation_payload: dict) -> dict:
     single_config = dict(config)
+    entry_page_payload = navigation_payload.get("entryPage", {}) if isinstance(navigation_payload.get("entryPage"), dict) else {}
+    target_page_payload = navigation_payload.get("targetPage", {}) if isinstance(navigation_payload.get("targetPage"), dict) else {}
     workflow_like_payload = {
         "workflowName": page_name,
         "resourceFiles": navigation_payload.get("resourceFiles", []),
-        "entryPage": {"name": page_name, "url": entry_url},
-        "targetPage": {"name": page_name},
+        "entryPage": {
+            "name": clean_text(str(entry_page_payload.get("name", ""))) or page_name,
+            "url": clean_text(str(entry_page_payload.get("url", ""))) or entry_url,
+        },
+        "targetPage": {
+            "name": clean_text(str(target_page_payload.get("name", ""))) or page_name,
+            "url": clean_text(str(target_page_payload.get("url", ""))),
+        },
         "navigationSteps": navigation_payload.get("navigationSteps", []),
         "targetPageSignals": navigation_payload.get("targetPageSignals", []),
         "observedSteps": navigation_payload.get("observedSteps", []),
