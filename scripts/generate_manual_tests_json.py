@@ -154,6 +154,7 @@ Your output is a reviewable manual-test artifact that will feed downstream keywo
 Your goal is not just to list tests, but to produce high-signal manual tests with explicit observable outcomes so later AI layers can generate strong assertions and the exact reusable page keywords needed for approved scenarios.
 
 Analyze the workflow input and generate a practical manual test suite JSON.
+Prioritize full coverage of the imported user story structure: user story, entry conditions, behavior rules, validation expectations, transition expectations, approved test data guidance, acceptance criteria, and generation guidance. Treat those sections as mandatory scenario sources before adding optional exploratory cases.
 
 Return ONLY a valid JSON object with exactly these top-level keys:
 - workflowName
@@ -197,6 +198,8 @@ Mandatory coverage requirements:
 12. Acceptance criteria involving shared or upstream controls must still generate tests even when those controls are not newly extracted on the current page.
 13. For navigation criteria such as Back button or Home button returning to a previous page, generate explicit navigation tests instead of replacing them with generic exploratory cases.
 14. Prioritize mandatory acceptance-criteria coverage before adding additional exploratory edge cases.
+15. If the workflow includes explicit approved credentials, required navigation controls, transition expectations, or reusable resource guidance, generate tests that reflect those exact story details before adding extra generic exploratory scenarios.
+16. Do not let optional edge or accessibility-style tests displace mandatory user-story scenarios such as back/home navigation, post-login transition validation, or approved-credential usage.
 
 Schema rules:
 1. Every test case object must contain exactly these keys:
@@ -266,7 +269,9 @@ Important behavior:
 - If observedValidations exist, transform them into concrete manual test cases, not summary text.
 - Write expectedResult values so downstream automation and keyword generation can create observable assertions and reusable validations, not vague outcomes.
 - For positive authentication/navigation cases, expectedResult should explicitly mention authenticated state, landing page, redirect, dashboard/home visibility, URL change, or equivalent observable outcome.
+- If approved test credentials are provided in the workflow story, reflect that approved data in the relevant positive login/manual test wording instead of replacing it with generic 'valid credentials' phrasing everywhere.
 - For negative authentication or validation cases, expectedResult should explicitly mention observable rejection, validation messaging, no navigation, protected-area denial, disabled submission, or continued presence of the login/form state where applicable.
+- If the story requires transition validation such as logged-in user name visibility or additional authenticated-only features becoming available, create explicit manual tests for those outcomes instead of leaving them implied inside a generic successful login test.
 - For edge interaction scenarios such as Enter key, repeated clicking, whitespace handling, copy-paste, and long input, expectedResult should describe the exact observable behavior that automation must verify.
 - Avoid producing shallow variants that differ only in wording but not in observable intent.
 - Prefer tests whose expectedResult can be validated by visible UI state, message, field behavior, redirect behavior, enabled/disabled state, masking behavior, or other observable outcomes.
@@ -280,6 +285,9 @@ Additional generation instructions for acceptance criteria:
 - Generate at least one explicit test case for each mandatory acceptance criterion above.
 - If a criterion mentions Back button, Home button, Forgot Password, or other shared/upstream controls, still generate the scenario even if that control is reused from another approved resource.
 - Do not omit explicit navigation scenarios because of missing local extraction.
+- Mine imported story sections such as Validation Expectations, Transition Expectations, Approved Test Data Guidance, Entry Conditions, and Generation Guidance as mandatory scenario sources, not as background-only prose.
+- If the story provides approved credentials, include them explicitly in the relevant positive scenario wording so downstream layers preserve that approved data lineage.
+- If the story requires post-login authenticated-state evidence like logged-in user name visibility or authenticated-only features, generate dedicated manual tests for those outcomes instead of leaving them implicit.
 - Do not treat URLs, headings, or descriptive labels as standalone test cases.
 - expectedResult must be a single clear string, not a serialized list.
 
@@ -532,6 +540,99 @@ def looks_like_acceptance_criterion(text: str) -> bool:
 
 
 
+def _collect_text_blocks(value: Any) -> List[str]:
+    blocks: List[str] = []
+    if isinstance(value, str) and clean_text(value):
+        blocks.append(clean_text(value))
+    elif isinstance(value, list):
+        blocks.extend(clean_text(str(item)) for item in value if clean_text(str(item)))
+    return blocks
+
+
+def extract_story_sections(workflow_input: Dict[str, Any]) -> Dict[str, List[str]]:
+    section_names = [
+        "user story",
+        "application context",
+        "entry conditions",
+        "test credentials",
+        "approved test data guidance",
+        "login page elements",
+        "behavior rules",
+        "validation expectations",
+        "transition expectations",
+        "pom reuse guidance",
+        "acceptance criteria",
+        "generation guidance",
+        "prefer",
+    ]
+    raw_blocks: List[str] = []
+    for key in (
+        "description",
+        "userStory",
+        "observedExpectedResult",
+        "observedPreconditions",
+        "observedSteps",
+        "observedValidations",
+        "acceptanceCriteria",
+        "acceptance_criteria",
+        "generationGuidance",
+    ):
+        raw_blocks.extend(_collect_text_blocks(workflow_input.get(key)))
+    for parent_key in ("externalContext", "metadata"):
+        parent = workflow_input.get(parent_key)
+        if not isinstance(parent, dict):
+            continue
+        for key in (
+            "description",
+            "userStory",
+            "acceptanceCriteria",
+            "acceptance_criteria",
+            "generationGuidance",
+            "validationExpectations",
+            "transitionExpectations",
+            "behaviorRules",
+            "pomReuseGuidance",
+            "approvedTestDataGuidance",
+            "applicationContext",
+            "loginPageElements",
+            "entryConditions",
+            "testCredentials",
+        ):
+            raw_blocks.extend(_collect_text_blocks(parent.get(key)))
+
+    sections: Dict[str, List[str]] = {name: [] for name in section_names}
+    for block in raw_blocks:
+        normalized_block = re.sub(r"\s+", " ", block).strip()
+        if not normalized_block:
+            continue
+        lower_block = normalized_block.lower()
+        for idx, name in enumerate(section_names):
+            marker = name.lower()
+            start = lower_block.find(marker)
+            if start == -1:
+                continue
+            end = len(normalized_block)
+            for next_name in section_names[idx + 1:]:
+                next_pos = lower_block.find(next_name.lower(), start + len(marker))
+                if next_pos != -1:
+                    end = min(end, next_pos)
+            fragment = normalized_block[start:end].strip(" :-")
+            if fragment:
+                sections[name].append(fragment)
+
+    deduped_sections: Dict[str, List[str]] = {}
+    for name, values in sections.items():
+        seen = set()
+        deduped: List[str] = []
+        for value in values:
+            key = value.lower()
+            if key not in seen:
+                seen.add(key)
+                deduped.append(value)
+        deduped_sections[name] = deduped
+    return deduped_sections
+
+
 def parse_acceptance_criteria(workflow_input: Dict[str, Any]) -> List[str]:
     raw_candidates: List[str] = []
 
@@ -553,11 +654,21 @@ def parse_acceptance_criteria(workflow_input: Dict[str, Any]) -> List[str]:
             elif isinstance(value, str) and value.strip():
                 raw_candidates.extend(line.strip(" -\t") for line in re.split(r"\n+", value) if line.strip())
 
+    story_sections = extract_story_sections(workflow_input)
+    raw_candidates.extend(story_sections.get("acceptance criteria", []))
+
     seen = set()
     normalized: List[str] = []
     pending_when_then = False
     for criterion in raw_candidates:
         criterion = re.sub(r"^\d+[\.)]\s*", "", criterion).strip()
+        if "acceptance criteria" in criterion.lower():
+            parts = re.split(r"(?=Given\s)", criterion, flags=re.IGNORECASE)
+            for part in parts:
+                part = clean_text(re.sub(r"^acceptance criteria\s*", "", part, flags=re.IGNORECASE))
+                if part:
+                    raw_candidates.append(part)
+            continue
         lowered = criterion.lower()
         if lowered.startswith("when ") or lowered.startswith("then "):
             pending_when_then = True
@@ -581,6 +692,7 @@ def criterion_signature(text: str) -> str:
 
 def extract_requirement_units(workflow_input: Dict[str, Any]) -> List[Dict[str, Any]]:
     requirements: List[Dict[str, Any]] = []
+    story_sections = extract_story_sections(workflow_input)
     story_text = " ".join(
         [
             clean_text(str(workflow_input.get("description", ""))),
@@ -589,6 +701,11 @@ def extract_requirement_units(workflow_input: Dict[str, Any]) -> List[Dict[str, 
             clean_text(str((workflow_input.get("externalContext") or {}).get("userStory", ""))) if isinstance(workflow_input.get("externalContext"), dict) else "",
             clean_text(str((workflow_input.get("externalContext") or {}).get("validationExpectations", ""))) if isinstance(workflow_input.get("externalContext"), dict) else "",
             clean_text(str((workflow_input.get("externalContext") or {}).get("transitionExpectations", ""))) if isinstance(workflow_input.get("externalContext"), dict) else "",
+            " ".join(story_sections.get("validation expectations", [])),
+            " ".join(story_sections.get("transition expectations", [])),
+            " ".join(story_sections.get("generation guidance", [])),
+            " ".join(story_sections.get("test credentials", [])),
+            " ".join(story_sections.get("approved test data guidance", [])),
         ]
     ).strip()
 
@@ -601,28 +718,45 @@ def extract_requirement_units(workflow_input: Dict[str, Any]) -> List[Dict[str, 
             "signature": criterion_signature(criterion),
         })
 
-    lower_story = story_text.lower()
+    derived_requirements: List[str] = []
+    section_text = " ".join(
+        story_sections.get("validation expectations", [])
+        + story_sections.get("transition expectations", [])
+        + story_sections.get("generation guidance", [])
+        + story_sections.get("test credentials", [])
+        + story_sections.get("approved test data guidance", [])
+        + story_sections.get("behavior rules", [])
+    )
+    lower_story = f"{story_text} {section_text}".lower()
+
     generic_patterns = [
         (r"back button[^.\n]*home page", "Back button navigation should return to Home page"),
         (r"home button[^.\n]*home page", "Home button navigation should return to Home page"),
         (r"forgot password[^.\n]*(open|navigate|workflow|destination)", "Forgot Password should open the supported recovery flow"),
         (r"password[^.\n]*masked", "Password input should be masked by default"),
         (r"person/profile button[^.\n]*login page", "Person/Profile button from Home page should open the Login page"),
+        (r"logged-in user name|logged in user name", "Successful login should show the logged-in user name on the Home page"),
+        (r"authenticated-only features should become available|additional authenticated-only features should become available", "Successful login should make authenticated-only features available on the Home page"),
+        (r"valid username\s*:?[ ]*krisadmin", "Positive login scenarios should use the approved valid username krisadmin"),
+        (r"valid password\s*:?[ ]*carwash#1", "Positive login scenarios should use the approved valid password Carwash#1"),
     ]
-    next_idx = len(requirements) + 1
-    seen_signatures = {item["signature"] for item in requirements}
     for pattern, text in generic_patterns:
         if re.search(pattern, lower_story, flags=re.IGNORECASE):
-            sig = criterion_signature(text)
-            if sig not in seen_signatures:
-                seen_signatures.add(sig)
-                requirements.append({
-                    "id": f"REQ{next_idx}",
-                    "source": "story_requirement",
-                    "text": text,
-                    "signature": sig,
-                })
-                next_idx += 1
+            derived_requirements.append(text)
+
+    next_idx = len(requirements) + 1
+    seen_signatures = {item["signature"] for item in requirements}
+    for text in derived_requirements:
+        sig = criterion_signature(text)
+        if sig not in seen_signatures:
+            seen_signatures.add(sig)
+            requirements.append({
+                "id": f"REQ{next_idx}",
+                "source": "story_requirement",
+                "text": text,
+                "signature": sig,
+            })
+            next_idx += 1
     return requirements
 
 
