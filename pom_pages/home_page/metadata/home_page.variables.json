@@ -9,11 +9,11 @@
       "kind": "page_url"
     },
     {
-      "variableName": "PERSON_BUTTON",
+      "variableName": "PERSON_PROFILE_BUTTON",
       "value": "id=auto_person_btn",
       "source": "approved_element",
       "kind": "locator",
-      "approvedName": "person_button",
+      "approvedName": "person_profile_button",
       "type": "button"
     },
     {
@@ -38,7 +38,7 @@
       "source": "approved_element",
       "kind": "locator",
       "approvedName": "home_button",
-      "type": "link"
+      "type": "button"
     },
     {
       "variableName": "CUSTOMER_SIGNUP_BUTTON",

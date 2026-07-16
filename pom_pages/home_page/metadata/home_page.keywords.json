@@ -3,13 +3,13 @@
   "keywords": [
     {
       "keywordId": "KW_001",
-      "keywordName": "Click Person Button",
-      "targetElement": "person_button",
+      "keywordName": "Click Person Profile Button",
+      "targetElement": "person_profile_button",
       "action": "click",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Click the Person/Profile button from the Home page guest state.",
-        "    Click When Ready    ${AUTO_PERSON_BTN_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}"
+        "[Documentation]    Clicks the Person/Profile button from the Home page guest state.",
+        "    Click When Ready    ${AUTO_PERSON_BTN_BUTTON}"
       ],
       "approved": true
     },
@@ -20,8 +20,8 @@
       "action": "click",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Click the Back button from the Home page shell.",
-        "    Click When Ready    ${AUTO_BACK_BTN_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}"
+        "[Documentation]    Clicks the Back button from the Home page shell.",
+        "    Click When Ready    ${AUTO_BACK_BTN_BUTTON}"
       ],
       "approved": true
     },
@@ -32,8 +32,8 @@
       "action": "click",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Click the Notification button from the Home page shell.",
-        "    Click When Ready    ${AUTO_NOTIFICATION_BTN_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}"
+        "[Documentation]    Clicks the Notification button from the Home page shell.",
+        "    Click When Ready    ${AUTO_NOTIFICATION_BTN_BUTTON}"
       ],
       "approved": true
     },
@@ -44,8 +44,8 @@
       "action": "click",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Click the Home button from the Home page shell.",
-        "    Click When Ready    ${AUTO_HOME_BTN_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}"
+        "[Documentation]    Clicks the Home button from the Home page shell.",
+        "    Click When Ready    ${AUTO_HOME_BTN_BUTTON}"
       ],
       "approved": true
     },
@@ -56,8 +56,8 @@
       "action": "click",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Click the Customer signup button from the Home page guest state.",
-        "    Click When Ready    ${AUTO_BTN_CUSTOMER_SIGNUP_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}"
+        "[Documentation]    Clicks the Customer signup button from the Home page.",
+        "    Click When Ready    ${AUTO_BTN_CUSTOMER_SIGNUP_BUTTON}"
       ],
       "approved": true
     },
@@ -68,8 +68,8 @@
       "action": "click",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Click the Clean survey button from the Home page guest state.",
-        "    Click When Ready    ${AUTO_BTN_CLEAN_SURVEY_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}"
+        "[Documentation]    Clicks the Clean survey button from the Home page.",
+        "    Click When Ready    ${AUTO_BTN_CLEAN_SURVEY_BUTTON}"
       ],
       "approved": true
     },
@@ -80,66 +80,76 @@
       "action": "click",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Click the Site survey button from the Home page guest state.",
-        "    Click When Ready    ${AUTO_BTN_SITE_SURVEY_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}"
+        "[Documentation]    Clicks the Site survey button from the Home page.",
+        "    Click When Ready    ${AUTO_BTN_SITE_SURVEY_BUTTON}"
       ],
       "approved": true
     },
     {
       "keywordId": "KW_008",
-      "keywordName": "Open Home Page In Guest State",
-      "targetElement": "",
-      "action": "generic",
+      "keywordName": "Verify Person Profile Button",
+      "targetElement": "person_profile_button",
+      "action": "verify",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Open the Home page directly in guest state and wait for the Person/Profile button to be ready.",
-        "    Go To Url    ${HOME_PAGE_URL}",
-        "    Wait For Element To Be Ready    ${AUTO_PERSON_BTN_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}"
+        "[Documentation]    Verifies that all approved guest-state Home page controls are visible and enabled.",
+        "    Wait For Element To Be Ready    ${AUTO_PERSON_BTN_BUTTON}",
+        "    Wait For Element To Be Ready    ${AUTO_BACK_BTN_BUTTON}",
+        "    Wait For Element To Be Ready    ${AUTO_NOTIFICATION_BTN_BUTTON}",
+        "    Wait For Element To Be Ready    ${AUTO_HOME_BTN_BUTTON}",
+        "    Wait For Element To Be Ready    ${AUTO_BTN_CUSTOMER_SIGNUP_BUTTON}",
+        "    Wait For Element To Be Ready    ${AUTO_BTN_CLEAN_SURVEY_BUTTON}",
+        "    Wait For Element To Be Ready    ${AUTO_BTN_SITE_SURVEY_BUTTON}"
       ],
       "approved": true
     },
     {
       "keywordId": "KW_009",
-      "keywordName": "Verify Guest State Controls Are Visible",
+      "keywordName": "Open Home Page",
       "targetElement": "",
-      "action": "verify",
+      "action": "generic",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Verify all approved guest-state controls are visible and enabled on the Home page.",
-        "    Wait For Element To Be Ready    ${AUTO_PERSON_BTN_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}",
-        "    Wait For Element To Be Ready    ${AUTO_BACK_BTN_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}",
-        "    Wait For Element To Be Ready    ${AUTO_NOTIFICATION_BTN_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}",
-        "    Wait For Element To Be Ready    ${AUTO_HOME_BTN_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}",
-        "    Wait For Element To Be Ready    ${AUTO_BTN_CUSTOMER_SIGNUP_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}",
-        "    Wait For Element To Be Ready    ${AUTO_BTN_CLEAN_SURVEY_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}",
-        "    Wait For Element To Be Ready    ${AUTO_BTN_SITE_SURVEY_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}"
+        "[Documentation]    Opens the Home page in a browser session.",
+        "    Open Browser To Url    ${HOME_PAGE_URL}"
       ],
       "approved": true
     },
     {
       "keywordId": "KW_010",
-      "keywordName": "Verify Person Button",
-      "targetElement": "person_button",
+      "keywordName": "Verify Person Profile Button",
+      "targetElement": "person_profile_button",
       "action": "verify",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Verify the Login page or Login view opens after clicking the Person/Profile button.",
-        "    Click When Ready    ${AUTO_PERSON_BTN_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}",
-        "    Wait Until Page Does Not Contain Element    ${AUTO_PERSON_BTN_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}"
+        "[Documentation]    Verifies that the Person/Profile button is visible and enabled.",
+        "    Wait For Element To Be Ready    ${AUTO_PERSON_BTN_BUTTON}"
       ],
       "approved": true
     },
     {
       "keywordId": "KW_011",
-      "keywordName": "Verify Home Page Remains In Guest State",
-      "targetElement": "",
+      "keywordName": "Verify Notification Button",
+      "targetElement": "notification_button",
       "action": "verify",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Verify the Home page remains in guest state with approved guest controls visible.",
-        "    Wait For Element To Be Ready    ${AUTO_PERSON_BTN_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}",
-        "    Wait For Element To Be Ready    ${AUTO_HOME_BTN_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}",
-        "    Wait For Element To Be Ready    ${AUTO_BTN_CUSTOMER_SIGNUP_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}"
+        "[Documentation]    Verifies that the Notification button is visible and enabled.",
+        "    Wait For Element To Be Ready    ${AUTO_NOTIFICATION_BTN_BUTTON}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_012",
+      "keywordName": "Verify Customer Signup Button",
+      "targetElement": "customer_signup_button",
+      "action": "verify",
+      "arguments": [],
+      "implementation": [
+        "[Documentation]    Verifies that guest-accessible feature buttons are visible and enabled.",
+        "    Wait For Element To Be Ready    ${AUTO_BTN_CUSTOMER_SIGNUP_BUTTON}",
+        "    Wait For Element To Be Ready    ${AUTO_BTN_CLEAN_SURVEY_BUTTON}",
+        "    Wait For Element To Be Ready    ${AUTO_BTN_SITE_SURVEY_BUTTON}"
       ],
       "approved": true
     }

@@ -7,8 +7,7 @@ ${LOGIN_PAGE_URL_PATH}    /washtabui/login
 ${CUSTOMER_SEARCH_PAGE_PATH}    customer-search
 ${VEHICLE_SURVEY_PAGE_PATH}    vehicle-survey
 ${SURVEY_PAGE_PATH}    survey
-${HOME_PAGE_LOAD_TIMEOUT}    10s
-${PERSON_BUTTON}    id=auto_person_btn
+${PERSON_PROFILE_BUTTON}    id=auto_person_btn
 ${BACK_BUTTON}    id=auto_back_btn
 ${NOTIFICATION_BUTTON}    id=auto_notification_btn
 ${HOME_BUTTON}    id=auto_home_btn
@@ -18,8 +17,8 @@ ${SITE_SURVEY_BUTTON}    id=auto_btn_SiteSurvey
 
 *** Keywords ***
 Open Home Page
-    [Documentation]    Navigate to the guest Home page.
-    Go To Url    ${HOME_PAGE_URL}
+    [Documentation]    Open the Home page in guest state.
+    Open Browser To Url    ${HOME_PAGE_URL}
 
 Open Home Page In Guest State
     [Documentation]    Open the Home page directly in guest state and wait for approved guest controls to be ready.
@@ -28,13 +27,11 @@ Open Home Page In Guest State
 
 Verify Home Page URL
     [Documentation]    Verify the browser is currently on the Home page.
-    ${current_url}=    Get Location
-    Should Be Equal    ${current_url}    ${HOME_PAGE_URL}
+    Location Should Be    ${HOME_PAGE_URL}
 
 Verify Login Page URL
     [Documentation]    Verify navigation to the login page.
-    ${current_url}=    Get Location
-    Should Contain    ${current_url}    ${LOGIN_PAGE_URL_PATH}
+    Wait Until Location Contains    ${LOGIN_PAGE_URL_PATH}    ${DEFAULT_TIMEOUT}
 
 Verify Home Page Is Loaded
     [Documentation]    Verify the Home page is loaded successfully with approved guest controls available.
@@ -44,17 +41,17 @@ Verify Home Page Is Loaded
 
 Verify Guest State Controls Are Visible
     [Documentation]    Verify all approved guest-state controls are visible and enabled on the Home page.
-    Wait For Element To Be Ready    ${PERSON_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}
-    Wait For Element To Be Ready    ${BACK_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}
-    Wait For Element To Be Ready    ${NOTIFICATION_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}
-    Wait For Element To Be Ready    ${HOME_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}
-    Wait For Element To Be Ready    ${CUSTOMER_SIGNUP_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}
-    Wait For Element To Be Ready    ${CLEAN_SURVEY_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}
-    Wait For Element To Be Ready    ${SITE_SURVEY_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}
+    Wait For Element To Be Ready    ${PERSON_PROFILE_BUTTON}
+    Wait For Element To Be Ready    ${BACK_BUTTON}
+    Wait For Element To Be Ready    ${NOTIFICATION_BUTTON}
+    Wait For Element To Be Ready    ${HOME_BUTTON}
+    Wait For Element To Be Ready    ${CUSTOMER_SIGNUP_BUTTON}
+    Wait For Element To Be Ready    ${CLEAN_SURVEY_BUTTON}
+    Wait For Element To Be Ready    ${SITE_SURVEY_BUTTON}
 
 Verify Guest Home Controls Are Enabled
     [Documentation]    Verify all approved guest-state controls are enabled and actionable.
-    Element Should Be Enabled    ${PERSON_BUTTON}
+    Element Should Be Enabled    ${PERSON_PROFILE_BUTTON}
     Element Should Be Enabled    ${BACK_BUTTON}
     Element Should Be Enabled    ${NOTIFICATION_BUTTON}
     Element Should Be Enabled    ${HOME_BUTTON}
@@ -63,7 +60,7 @@ Verify Guest Home Controls Are Enabled
     Element Should Be Enabled    ${SITE_SURVEY_BUTTON}
 
 Verify Home Page Remains In Guest State
-    [Documentation]    Verify the Home page remains in guest state with approved guest controls visible.
+    [Documentation]    Verify the Home page remains in guest state with approved controls available.
     Verify Home Page Is Loaded
 
 Verify User Is Navigated To Login Page
@@ -72,53 +69,45 @@ Verify User Is Navigated To Login Page
 
 Verify Customer Search Page Navigation
     [Documentation]    Verify navigation to the customer-search page.
-    ${current_url}=    Get Location
-    Should Contain    ${current_url}    ${CUSTOMER_SEARCH_PAGE_PATH}
+    Wait Until Location Contains    ${CUSTOMER_SEARCH_PAGE_PATH}    ${DEFAULT_TIMEOUT}
 
 Verify Vehicle Survey Page Navigation
     [Documentation]    Verify navigation to the vehicle-survey page.
-    ${current_url}=    Get Location
-    Should Contain    ${current_url}    ${VEHICLE_SURVEY_PAGE_PATH}
+    Wait Until Location Contains    ${VEHICLE_SURVEY_PAGE_PATH}    ${DEFAULT_TIMEOUT}
 
 Verify Survey Page Navigation
     [Documentation]    Verify navigation to the survey page.
-    ${current_url}=    Get Location
-    Should Contain    ${current_url}    ${SURVEY_PAGE_PATH}
-
-Verify Person Button
-    [Documentation]    Verify the Login page or Login view opens after clicking the Person/Profile button.
-    Click Person Button
-    Verify User Is Navigated To Login Page
+    Wait Until Location Contains    ${SURVEY_PAGE_PATH}    ${DEFAULT_TIMEOUT}
 
 Refresh Home Page
     [Documentation]    Refresh the current Home page view and verify guest controls remain available.
     Reload Page
     Verify Home Page Remains In Guest State
 
-Click Person Button
-    [Documentation]    Click the Person/Profile button from the Home page guest state.
-    Click When Ready    ${PERSON_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}
+Click Person Profile Button
+    [Documentation]    Click the Person/Profile button from the guest Home state.
+    Click When Ready    ${PERSON_PROFILE_BUTTON}
 
 Click Back Button
-    [Documentation]    Click the Back button from the Home page shell.
-    Click When Ready    ${BACK_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}
+    [Documentation]    Click the shared back navigation control.
+    Click When Ready    ${BACK_BUTTON}
 
 Click Notification Button
-    [Documentation]    Click the Notification button from the Home page shell.
-    Click When Ready    ${NOTIFICATION_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}
+    [Documentation]    Click the shared notification control.
+    Click When Ready    ${NOTIFICATION_BUTTON}
 
 Click Home Button
-    [Documentation]    Click the Home button from the Home page shell.
-    Click When Ready    ${HOME_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}
+    [Documentation]    Click the home navigation control.
+    Click When Ready    ${HOME_BUTTON}
 
 Click Customer Signup Button
-    [Documentation]    Click the Customer signup button from the Home page guest state.
-    Click When Ready    ${CUSTOMER_SIGNUP_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}
+    [Documentation]    Click the Customer signup button from the Home page.
+    Click When Ready    ${CUSTOMER_SIGNUP_BUTTON}
 
 Click Clean Survey Button
-    [Documentation]    Click the Clean survey button from the Home page guest state.
-    Click When Ready    ${CLEAN_SURVEY_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}
+    [Documentation]    Click the Clean survey button from the Home page.
+    Click When Ready    ${CLEAN_SURVEY_BUTTON}
 
 Click Site Survey Button
-    [Documentation]    Click the Site survey button from the Home page guest state.
-    Click When Ready    ${SITE_SURVEY_BUTTON}    ${HOME_PAGE_LOAD_TIMEOUT}
+    [Documentation]    Click the Site survey button from the Home page.
+    Click When Ready    ${SITE_SURVEY_BUTTON}

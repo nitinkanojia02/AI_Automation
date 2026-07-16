@@ -249,7 +249,7 @@
   ],
   "elements": [
     {
-      "approvedName": "person_button",
+      "approvedName": "person_profile_button",
       "type": "button",
       "locator": "id=auto_person_btn",
       "approved": true
@@ -268,7 +268,7 @@
     },
     {
       "approvedName": "home_button",
-      "type": "link",
+      "type": "button",
       "locator": "id=auto_home_btn",
       "approved": true
     },
@@ -293,77 +293,77 @@
   ],
   "reviewSummary": {
     "overall_quality": "medium",
-    "summary": "The draft captures the primary guest-state navigation controls required for the Home page workflow, but it includes noisy non-actionable elements, weak naming conventions, an overly generic locator, and lacks modeled negative-state validation elements required by the workflow expectations.",
+    "summary": "The draft captures the primary guest-state navigation controls required for the Home workflow, but it contains noisy non-business elements, weak generic locators, and inconsistent semantic naming that would reduce downstream automation quality and maintainability.",
     "issues": [
+      {
+        "severity": "high",
+        "type": "noise",
+        "element_name": "background_content",
+        "message": "The background content container is a decorative layout element with no workflow relevance or verification value.",
+        "suggested_fix": "Remove the element from the approved page model."
+      },
+      {
+        "severity": "high",
+        "type": "locator",
+        "element_name": "element_8",
+        "message": "The locator xpath=//a is overly generic, brittle, and likely to match multiple anchors across the SPA.",
+        "suggested_fix": "Remove this duplicate wrapper element and rely on the existing home_button element with the stable id locator."
+      },
+      {
+        "severity": "high",
+        "type": "duplicate",
+        "element_name": "element_8",
+        "message": "This anchor element is a shadow/native wrapper for the already modeled home_button control and duplicates the same interaction target.",
+        "suggested_fix": "Keep only the semantic home_button element using id=auto_home_btn."
+      },
       {
         "severity": "medium",
         "type": "naming",
         "element_name": "customersignup_button",
-        "message": "Element name is compressed and less readable for downstream keyword and resource generation.",
-        "suggested_fix": "Rename to customer_signup_button for semantic clarity and consistency with workflow terminology."
+        "message": "The element name lacks readable semantic separation and is less maintainable for downstream keyword generation.",
+        "suggested_fix": "Rename to customer_signup_button."
       },
       {
         "severity": "medium",
         "type": "naming",
         "element_name": "cleansurvey_button",
-        "message": "Element name lacks readable semantic separation.",
+        "message": "The element name is compressed and less readable for automation and business review.",
         "suggested_fix": "Rename to clean_survey_button."
       },
       {
         "severity": "medium",
         "type": "naming",
         "element_name": "sitesurvey_button",
-        "message": "Element name lacks readable semantic separation.",
+        "message": "The element name is compressed and does not align with readable business semantics.",
         "suggested_fix": "Rename to site_survey_button."
       },
       {
         "severity": "medium",
-        "type": "classification",
-        "element_name": "home_button",
-        "message": "The element is classified as a button although the underlying native control is an anchor element used for navigation.",
-        "suggested_fix": "Classify the element as link to better reflect navigation semantics."
-      },
-      {
-        "severity": "high",
-        "type": "locator",
-        "element_name": "element_8",
-        "message": "Locator xpath=//a is overly generic and likely to match multiple links across the page, making automation brittle and ambiguous.",
-        "suggested_fix": "Remove this duplicate wrapper element and rely on the already approved home_button element with locator id=auto_home_btn."
-      },
-      {
-        "severity": "medium",
-        "type": "duplicate",
-        "element_name": "element_8",
-        "message": "This element duplicates the existing Home navigation control already modeled as home_button.",
-        "suggested_fix": "Remove the duplicate wrapper anchor element from the approved page model."
+        "type": "validation_gap",
+        "element_name": "",
+        "message": "The workflow explicitly requires validation that authenticated-only controls and the logged-in user name button are absent in guest state, but no observable negative-state elements or exclusion targets are modeled.",
+        "suggested_fix": "Add identifiable elements or stable exclusion locators for authenticated-only controls and logged-in username indicators if available in the DOM."
       },
       {
         "severity": "low",
-        "type": "noise",
-        "element_name": "background_content",
-        "message": "The background content container is a layout-only element with no business interaction or validation value for automation.",
-        "suggested_fix": "Remove the background_content element from the approved page model."
-      },
-      {
-        "severity": "high",
-        "type": "validation_gap",
-        "element_name": "",
-        "message": "The workflow explicitly requires validation that authenticated-only controls and the logged-in user name button are not visible in guest state, but no related validation elements are modeled.",
-        "suggested_fix": "Add identifiable guest-state negative validation elements or stable locators for authenticated-only controls and the logged-in username control if available in the DOM."
+        "type": "classification",
+        "element_name": "home_button",
+        "message": "The underlying native control behaves as a navigational anchor within an ion-button wrapper, but the modeled type is button.",
+        "suggested_fix": "Retain as button if framework interaction is click-based, but document that it performs navigation semantics."
       }
     ],
     "approved_elements": [
       {
-        "name": "person_button",
+        "name": "person_profile_button",
         "type": "button",
         "locator": "id=auto_person_btn",
-        "description": "Opens the login page from the guest Home page."
+        "description": "Opens the Login page or Login view from guest Home state."
       },
       {
         "name": "back_button",
         "type": "button",
         "locator": "id=auto_back_btn",
-        "description": "Shared Home shell navigation back control."
+        "description": "Shared Home shell back navigation control."
       },
       {
         "name": "notification_button",
@@ -373,27 +373,27 @@
       },
       {
         "name": "home_button",
-        "type": "link",
+        "type": "button",
         "locator": "id=auto_home_btn",
-        "description": "Shared Home shell navigation link for returning to the Home page."
+        "description": "Shared Home shell navigation control that preserves or reloads Home state."
       },
       {
         "name": "customer_signup_button",
         "type": "button",
         "locator": "id=auto_btn_CustomerSignup",
-        "description": "Navigates guest users to the customer-search workflow."
+        "description": "Navigates guest users to the customer-search page."
       },
       {
         "name": "clean_survey_button",
         "type": "button",
         "locator": "id=auto_btn_CleanSurvey",
-        "description": "Navigates guest users to the vehicle-survey workflow."
+        "description": "Navigates guest users to the vehicle-survey page."
       },
       {
         "name": "site_survey_button",
         "type": "button",
         "locator": "id=auto_btn_SiteSurvey",
-        "description": "Navigates guest users to the survey workflow."
+        "description": "Navigates guest users to the survey page."
       }
     ]
   }
