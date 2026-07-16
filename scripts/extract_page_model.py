@@ -897,36 +897,40 @@ def generate_keyword(var_name: str, label: str, role: str) -> str:
     if role in {"button", "link", "radio", "element"}:
         return f"""Click {label_title}
     [Documentation]    {keyword_doc("Click", label_title, role)}
-    Click When Ready    ${{{var_name}}}"""
+    Wait Until Element Is Visible    ${{{var_name}}}
+    Click Element    ${{{var_name}}}"""
 
     if role == "textbox":
         return f"""Enter {label_title}
     [Documentation]    {keyword_doc("Enter text", label_title, role)}
     [Arguments]    ${{text}}
-    Input Text When Ready    ${{{var_name}}}    ${{text}}"""
+    Wait Until Element Is Visible    ${{{var_name}}}
+    Input Text    ${{{var_name}}}    ${{text}}"""
 
     if role == "password":
         return f"""Enter {label_title}
     [Documentation]    {keyword_doc("Enter password", label_title, role)}
     [Arguments]    ${{password}}
-    Input Text When Ready    ${{{var_name}}}    ${{password}}"""
+    Wait Until Element Is Visible    ${{{var_name}}}
+    Input Password    ${{{var_name}}}    ${{password}}"""
 
     if role == "dropdown":
         return f"""Select {label_title}
     [Documentation]    {keyword_doc("Select dropdown value", label_title, role)}
     [Arguments]    ${{value}}
-    Wait For Element To Be Ready    ${{{var_name}}}
+    Wait Until Element Is Visible    ${{{var_name}}}
     Select From List By Label    ${{{var_name}}}    ${{value}}"""
 
     if role == "checkbox":
         return f"""Select {label_title}
     [Documentation]    {keyword_doc("Select checkbox", label_title, role)}
-    Click When Ready    ${{{var_name}}}"""
+    Wait Until Element Is Visible    ${{{var_name}}}
+    Select Checkbox    ${{{var_name}}}"""
 
     return f"""Click {label_title}
     [Documentation]    {keyword_doc("Click", label_title, role)}
-    Click When Ready    ${{{var_name}}}"""
-
+    Wait Until Element Is Visible    ${{{var_name}}}
+    Click Element    ${{{var_name}}}"""
 def generate_resource(url: str, elements: List[dict]) -> str:
     used_names, variables, keywords = set(), [], []
 

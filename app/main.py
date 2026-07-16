@@ -2090,6 +2090,9 @@ def build_resource_generation_prompt(
         "- Use the approved keywords as the canonical source for keyword naming. Preserve approved keyword names exactly in the generated resource whenever feasible; do not silently rename approved keywords into alternate wording.\n"
         "- Approved keyword names must remain business-readable and aligned to the approved target element names. Remove technical DOM/id noise such as Auto, Btn, Ctl, Component, generated numeric fragments, or raw id wording from final page keyword names. For example, prefer Click Person Navigation Button over Click Auto Person Btn Button.\n"
         "- Use the approved keywords as the foundation for reusable keyword implementations.\n"
+        "- Treat the approved reviewed keyword implementations as the primary implementation lineage whenever they are valid and supported. Do not replace them with raw framework-level alternatives unless the approved implementation is invalid, unsupported, or clearly inferior based on the shared/common resource context.\n"
+        "- Infer reusable interaction preferences dynamically from the provided common_resource_context. If the shared/common resource exposes a higher-level reusable helper for an interaction pattern, prefer that helper over assembling the same behavior with lower-level SeleniumLibrary steps.\n"
+        "- Do not rely on hardcoded mappings or workflow-specific assumptions; reason from the approved artifacts and the discovered shared/common keyword surface.\n"
         "- Treat empty placeholder rows in workflow.fields as noise and ignore them.\n"
         "- Create reusable test-data variables based on approved manual tests, not just workflow.testData.\n"
         "- Valid business data should come from workflow.testData if present.\n"
@@ -2116,7 +2119,7 @@ def build_resource_generation_prompt(
         "- If a common/shared keyword already exists or is strongly implied by common_resource_context, do not recreate it in the page resource. Instead, design the page resource to rely on the shared/common resource layer.\n"
         "- The page resource should contain only page-specific behavior such as entering credentials into this page, clicking page-specific buttons, and validating page-specific messages or field behavior.\n"
         "- The page resource must import ../../resources/common_keywords.resource in its *** Settings *** section whenever it uses shared/common helpers.\n"
-        "- Page-specific action keywords should prefer shared/common helpers such as Input Text When Ready, Click When Ready, and Wait For Element To Be Ready whenever those helpers fit the action. Avoid raw SeleniumLibrary calls in page keywords when an appropriate common helper exists.\n"
+        "- Page-specific action keywords should prefer the highest-value shared/common helpers discovered in common_resource_context whenever those helpers fit the action. Avoid reconstructing the same interaction behavior with lower-level SeleniumLibrary calls when a reusable shared/common abstraction already exists.\n"
         "- The page resource must import ../../resources/common_keywords.resource in *** Settings ***. Treat this import as mandatory for generated page resources in this framework.\n"
         "- If a page keyword uses a common helper or depends on a common variable, the page resource must reuse that helper or variable through the common resource import instead of inlining raw SeleniumLibrary behavior.\n"
         "- Insert exactly one blank line between major sections such as *** Settings ***, *** Variables ***, and *** Keywords ***. Do not leave extra blank lines inside the Settings section. There must be no blank line immediately before *** Keywords *** when it directly follows *** Variables ***; only a single section-separator blank line is allowed.\n"
@@ -2288,7 +2291,9 @@ def build_resource_review_prompt(
         "Mandatory repair rules:\n"
         "- Return only Robot Framework resource code with no markdown fences and no explanation.\n"
         "- Keep the file page-specific. Generic browser lifecycle, generic navigation, generic waits, generic click/input wrappers, ${BROWSER}, ${DEFAULT_TIMEOUT}, and other cross-page concerns belong in resources/common_keywords.resource, not here.\n"
-        "- Page action keywords should reuse shared/common helpers such as Input Text When Ready, Click When Ready, and Wait For Element To Be Ready when applicable instead of directly repeating raw SeleniumLibrary interaction patterns.\n"
+        "- Page action keywords should reuse the best available shared/common helpers discoverable in common_resource_context when applicable instead of directly repeating lower-level SeleniumLibrary interaction patterns.\n"
+        "- Treat approved reviewed keyword implementations as authoritative implementation lineage whenever they are valid and supported. If the approved implementation already uses a reusable shared/common helper, preserve that choice. If it uses raw framework steps but the shared/common resource clearly exposes a reusable helper for the same interaction pattern, intelligently refine toward the shared/common helper without introducing unsupported behavior.\n"
+        "- Infer helper preference from the provided shared/common resource content and approved artifacts rather than from hardcoded interaction maps.\n"
         "- If a common/shared keyword already exists or is implied by common_resource_context, do not recreate it here.\n"
         "- Remove business-flow keywords that are too generic or duplicate shared/common behavior.\n"
         "- Keep reusable page-specific actions and page-specific validations.\n"
@@ -2497,23 +2502,32 @@ def validate_generated_resource_against_approved_artifacts(
                 "Generated page resource does not reuse retrieved common/shared keywords even though common resource context is available; prefer common wrappers over raw SeleniumLibrary calls."
             )
 
-        helper_preference_rules = [
-            ("input text when ready", ["input text", "input password"], "Input Text When Ready"),
-            ("click when ready", ["click element"], "Click When Ready"),
-            (
-                "wait for element to be ready",
-                ["wait until element is visible", "wait until element is enabled"],
-                "Wait For Element To Be Ready",
-            ),
-        ]
-        for preferred_helper, low_level_keywords, helper_display_name in helper_preference_rules:
-            if preferred_helper not in common_keyword_names:
+        approved_implementation_tokens = set()
+        approved_low_level_tokens = set()
+        for item in approved_keywords:
+            if not isinstance(item, dict) or not bool(item.get("approved", True)):
                 continue
-            for low_level_keyword in low_level_keywords:
-                if re.search(rf"(?im)^\s*{re.escape(low_level_keyword)}\b", resource_content):
-                    errors.append(
-                        f"Generated page resource uses low-level keyword '{low_level_keyword}' even though shared/common helper '{helper_display_name}' is available and should be preferred."
-                    )
+            for line in item.get("implementation", []) or []:
+                token = clean_text(str(line).split("    ")[0]).lower()
+                if not token:
+                    continue
+                approved_implementation_tokens.add(token)
+                if token in direct_low_level_calls:
+                    approved_low_level_tokens.add(token)
+
+        resource_low_level_tokens = {
+            name for name in direct_low_level_calls
+            if re.search(rf"(?im)^\s*{re.escape(name)}\b", resource_content)
+        }
+        if resource_low_level_tokens and approved_implementation_tokens and not (resource_low_level_tokens & approved_implementation_tokens):
+            warnings.append(
+                "Generated page resource fell back to raw low-level interaction keywords that are not reflected in the approved reviewed keyword implementations. Prefer preserving approved reviewed implementations and use shared/common helpers when the common resource context indicates a reusable abstraction."
+            )
+
+        if approved_low_level_tokens and common_hits > 0 and resource_low_level_tokens:
+            warnings.append(
+                "Approved reviewed keywords still contain some raw low-level interaction steps while shared/common helpers are also available. Consider improving the reviewed keyword generation/review prompts so approved implementations converge on shared helper usage before final resource generation."
+            )
 
     forbidden_builtin_hits = [
         keyword_name for keyword_name in forbidden_builtin_assertion_keywords
