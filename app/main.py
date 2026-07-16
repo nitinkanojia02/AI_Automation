@@ -244,6 +244,8 @@ def call_manual_ai_with_workflow_session(
         prompt=effective_prompt,
         timeout_sec=timeout_seconds,
     )
+    if not isinstance(response, dict):
+        raise HTTPException(status_code=502, detail=f"Manual test AI returned invalid content during {stage}.")
     append_session_message(workflow_name, "assistant", stage, json.dumps(response, indent=2, ensure_ascii=False))
     return response
 
@@ -2769,7 +2771,7 @@ def generate_resource_for_workflow(workflow: dict, approved_keywords: list[dict]
 # -------------------------------------------------------------------
 
 def generate_manual_tests_for_workflow(workflow_name: str) -> dict:
-    ensure_workflow_run(workflow_name)
+    begin_workflow_run(workflow_name)
     workflow_input = load_workflow_or_404(workflow_name)
     approved_elements = load_approved_elements_for_workflow(workflow_input)
     if not approved_elements:
@@ -4089,7 +4091,6 @@ def generate_manual_tests_route(request: Request, workflow_name: str):
     workflow_path = WORKFLOW_DIR / f"{workflow_name}.json"
     manual_path = get_manual_json_path(workflow_name)
     workflow = read_json(workflow_path) if workflow_path.exists() else None
-    begin_workflow_run(workflow_name)
     try:
         generated = generate_manual_tests_for_workflow(workflow_name)
         test_cases = extract_manual_test_cases(generated)
