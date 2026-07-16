@@ -8,7 +8,7 @@
   ],
   "preconditions": [
     "Application is accessible at http://localhost/washtabui/home",
-    "User is not authenticated before launching the application"
+    "User is not authenticated before starting each test"
   ],
   "testCases": [
     {
@@ -20,9 +20,9 @@
       "steps": [
         "Launch the application in a new browser session",
         "Navigate to http://localhost/washtabui/home",
-        "Wait for the SPA Home page to finish loading"
+        "Wait for the Home page to finish loading"
       ],
-      "expectedResult": "The Home page loads in guest state and displays the Person/Profile button, Back button, Notification button, Home button, Customer signup button, Clean survey button, and Site survey button in visible enabled state without displaying authenticated-only controls or logged-in user information."
+      "expectedResult": "The Home page loads successfully in guest state, the browser URL contains /washtabui/home, and all approved guest-state controls are displayed without authenticated user indicators."
     },
     {
       "id": "HOME_TC_003",
@@ -31,10 +31,10 @@
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Open the Home page in guest state",
+        "Navigate to the Home page as a guest user",
         "Click the Person/Profile button"
       ],
-      "expectedResult": "The Login page or Login view opens from the guest Home page and the application remains in unauthenticated state until credentials are entered."
+      "expectedResult": "The Login page or Login view is displayed and the guest Home state transitions into the login workflow without authenticating the user automatically."
     },
     {
       "id": "HOME_TC_004",
@@ -43,10 +43,10 @@
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Open the Home page in guest state",
+        "Navigate to the Home page as a guest user",
         "Click the Customer signup button"
       ],
-      "expectedResult": "The SPA navigates away from the guest Home page and displays the customer-search page content without requiring authentication."
+      "expectedResult": "The application navigates to the customer-search page and the customer-search workflow view is displayed successfully for a guest user."
     },
     {
       "id": "HOME_TC_005",
@@ -55,10 +55,10 @@
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Open the Home page in guest state",
+        "Navigate to the Home page as a guest user",
         "Click the Clean survey button"
       ],
-      "expectedResult": "The SPA navigates away from the guest Home page and displays the vehicle-survey page content without requiring authentication."
+      "expectedResult": "The application navigates to the vehicle-survey page and the vehicle-survey workflow is displayed while remaining in guest state."
     },
     {
       "id": "HOME_TC_006",
@@ -67,139 +67,194 @@
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Open the Home page in guest state",
+        "Navigate to the Home page as a guest user",
         "Click the Site survey button"
       ],
-      "expectedResult": "The SPA navigates away from the guest Home page and displays the survey page content without requiring authentication."
+      "expectedResult": "The application navigates to the survey page and the survey workflow is displayed successfully from the guest Home state."
+    },
+    {
+      "id": "HOME_TC_007",
+      "title": "Verify authenticated-only controls are not visible in guest Home state",
+      "type": "Negative",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Navigate to the Home page without signing in",
+        "Inspect the Home page shell controls and visible feature buttons"
+      ],
+      "expectedResult": "Authenticated-only controls and authenticated-only feature buttons are absent or remain inaccessible while the user is unauthenticated."
     },
     {
       "id": "HOME_TC_009",
-      "title": "Verify Back button returns user to Home page from customer-search page",
+      "title": "Verify Back button returns user to Home page after navigating to Customer signup page",
       "type": "Positive",
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Open the Home page in guest state",
-        "Click the Customer signup button to open the customer-search page",
-        "Click the Back button"
+        "Navigate to the Home page as a guest user",
+        "Click the Customer signup button",
+        "After the customer-search page opens click the Back button"
       ],
-      "expectedResult": "The application returns to the Home page guest state and the approved guest-state controls become visible and enabled again."
+      "expectedResult": "The application returns to the Home page guest state and all approved guest-state controls are visible again."
     },
     {
       "id": "HOME_TC_010",
-      "title": "Verify Back button returns user to Home page from vehicle-survey page",
+      "title": "Verify Home button returns user to Home page after navigating to Clean survey page",
       "type": "Positive",
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Open the Home page in guest state",
-        "Click the Clean survey button to open the vehicle-survey page",
-        "Click the Back button"
+        "Navigate to the Home page as a guest user",
+        "Click the Clean survey button",
+        "After the vehicle-survey page opens click the Home button"
       ],
-      "expectedResult": "The application returns to the Home page guest state and the approved guest-state controls become visible and enabled again."
+      "expectedResult": "The application returns to the Home page guest state and guest-accessible controls remain visible and enabled."
     },
     {
       "id": "HOME_TC_011",
-      "title": "Verify Back button returns user to Home page from survey page",
+      "title": "Verify Home button returns user to Home page after navigating to Site survey page",
       "type": "Positive",
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Open the Home page in guest state",
-        "Click the Site survey button to open the survey page",
-        "Click the Back button"
+        "Navigate to the Home page as a guest user",
+        "Click the Site survey button",
+        "After the survey page opens click the Home button"
       ],
-      "expectedResult": "The application returns to the Home page guest state and the approved guest-state controls become visible and enabled again."
+      "expectedResult": "The application returns to the Home page guest state and the Person/Profile button and guest-accessible feature buttons are displayed again."
     },
     {
       "id": "HOME_TC_012",
-      "title": "Verify Home button returns user to Home page from customer-search page",
+      "title": "Verify Back button from Login page returns to Home page guest state",
       "type": "Positive",
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Open the Home page in guest state",
-        "Click the Customer signup button",
-        "Click the Home button"
+        "Navigate to the Home page as a guest user",
+        "Click the Person/Profile button",
+        "When the Login page or Login view opens click the Back button"
       ],
-      "expectedResult": "The application navigates back to the guest Home page and displays the approved guest-accessible controls in enabled state."
+      "expectedResult": "The Login page or Login view closes and the application returns to the Home page guest state with approved guest controls visible."
     },
     {
       "id": "HOME_TC_013",
-      "title": "Verify Home button returns user to Home page from vehicle-survey page",
+      "title": "Verify Home button from Login page returns to Home page guest state",
       "type": "Positive",
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Open the Home page in guest state",
-        "Click the Clean survey button",
-        "Click the Home button"
+        "Navigate to the Home page as a guest user",
+        "Click the Person/Profile button",
+        "When the Login page or Login view opens click the Home button"
       ],
-      "expectedResult": "The application navigates back to the guest Home page and displays the approved guest-accessible controls in enabled state."
+      "expectedResult": "The application navigates back to the Home page guest state and no authenticated account details are displayed."
     },
     {
       "id": "HOME_TC_014",
-      "title": "Verify Home button returns user to Home page from survey page",
+      "title": "Verify Notification button is visible enabled and stable in guest Home state",
       "type": "Positive",
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Open the Home page in guest state",
-        "Click the Site survey button",
-        "Click the Home button"
-      ],
-      "expectedResult": "The application navigates back to the guest Home page and displays the approved guest-accessible controls in enabled state."
-    },
-    {
-      "id": "HOME_TC_020",
-      "title": "Verify Home button behavior when already on Home page in guest state",
-      "type": "Edge",
-      "priority": "Medium",
-      "preconditions": [],
-      "steps": [
-        "Open the Home page in guest state",
-        "Click the Home button while already on the Home page"
-      ],
-      "expectedResult": "The application remains on the guest Home page and does not duplicate content, reload unexpectedly, or display any application error."
-    },
-    {
-      "id": "HOME_TC_021",
-      "title": "Verify Back button behavior when user is already on initial Home page guest state",
-      "type": "Edge",
-      "priority": "Medium",
-      "preconditions": [],
-      "steps": [
-        "Launch the application directly to the Home page in a new guest session",
-        "Click the Back button without performing prior page navigation"
-      ],
-      "expectedResult": "The application handles the Back button action gracefully without displaying a crash, broken SPA state, blank screen, or JavaScript error."
-    },
-    {
-      "id": "HOME_TC_022",
-      "title": "Verify Notification button is visible and enabled in guest Home state",
-      "type": "Positive",
-      "priority": "Medium",
-      "preconditions": [],
-      "steps": [
-        "Open the Home page in guest state",
+        "Navigate to the Home page as a guest user",
         "Locate the Notification button",
         "Click the Notification button once"
       ],
-      "expectedResult": "The Notification button is visible and enabled and the application accepts the interaction without UI breakage, navigation failure, or application instability."
+      "expectedResult": "The Notification button remains visible and enabled and clicking it does not freeze the interface, remove guest controls, redirect unexpectedly, or display application errors."
     },
     {
-      "id": "HOME_TC_024",
-      "title": "Verify guest-accessible feature buttons remain available after returning to Home page",
+      "id": "HOME_TC_018",
+      "title": "Verify direct navigation to Home URL opens guest Home state",
       "type": "Positive",
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Open the Home page in guest state",
-        "Navigate to the customer-search page using Customer signup button",
-        "Return to Home page using the Home button",
+        "Open a fresh browser session without authentication",
+        "Enter http://localhost/washtabui/home directly in the browser address bar",
+        "Wait for the application to load"
+      ],
+      "expectedResult": "The application opens directly into the Home page guest state and displays only guest-accessible controls and shared Home controls."
+    },
+    {
+      "id": "HOME_TC_019",
+      "title": "Verify Home button behavior when already on Home page guest state",
+      "type": "Edge",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Navigate to the Home page as a guest user",
+        "Click the Home button while remaining on the Home page"
+      ],
+      "expectedResult": "The application remains on the Home page guest state without navigation loops, duplicate rendering, unexpected reload behavior, or disappearance of guest-state controls."
+    },
+    {
+      "id": "HOME_TC_020",
+      "title": "Verify Back button behavior when guest user is already on initial Home page",
+      "type": "Edge",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open a fresh browser session",
+        "Navigate directly to the Home page",
+        "Click the Back button without prior in-application navigation"
+      ],
+      "expectedResult": "The application handles the Back action gracefully without crashing, exposing authenticated content, displaying script errors, or corrupting the Home page state."
+    },
+    {
+      "id": "HOME_TC_021",
+      "title": "Verify guest-accessible feature buttons remain available after returning from secondary page",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Navigate to the Home page as a guest user",
+        "Click the Customer signup button",
+        "Use the Back button to return to the Home page",
         "Observe the Customer signup, Clean survey, and Site survey buttons"
       ],
-      "expectedResult": "After returning to Home page, all guest-accessible feature buttons remain visible, enabled, and available for reuse without requiring page reload or authentication."
+      "expectedResult": "After returning to the Home page all guest-accessible feature buttons remain visible, enabled, and available for continued interaction."
+    },
+    {
+      "id": "HOME_TC_022",
+      "title": "Verify guest Home state remains unauthenticated after navigating through multiple guest workflows",
+      "type": "Edge",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Navigate to the Home page as a guest user",
+        "Click the Customer signup button and return to the Home page",
+        "Click the Clean survey button and return to the Home page",
+        "Click the Site survey button and return to the Home page"
+      ],
+      "expectedResult": "The user remains in guest state throughout all navigation flows and no authenticated-only control or logged-in user name becomes visible."
+    },
+    {
+      "id": "HOME_TC_023",
+      "title": "Verify Person/Profile button remains visible after returning from Login page",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Navigate to the Home page as a guest user",
+        "Click the Person/Profile button",
+        "Return to the Home page using the Back button",
+        "Observe the Person/Profile button"
+      ],
+      "expectedResult": "The Person/Profile button is visible enabled and available for interaction after returning from the Login page."
+    },
+    {
+      "id": "HOME_TC_024",
+      "title": "Verify guest-accessible feature buttons can be opened sequentially without application instability",
+      "type": "Edge",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Navigate to the Home page as a guest user",
+        "Open the Customer signup page and return to Home",
+        "Open the Clean survey page and return to Home",
+        "Open the Site survey page and return to Home"
+      ],
+      "expectedResult": "Each guest-accessible workflow opens successfully and the Home page remains stable and usable after sequential navigation."
     }
   ]
 }
