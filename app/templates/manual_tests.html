@@ -162,14 +162,6 @@
                     <p><strong>Name:</strong> {{ workflow.workflowName }}</p>
                     <p><strong>Module:</strong> {{ workflow.module }}</p>
                     <p><strong>Feature:</strong> {{ workflow.feature }}</p>
-                    <p><strong>Expected Result:</strong> {{ workflow.observedExpectedResult }}</p>
-
-                    <h6 class="mt-3">Observed Steps</h6>
-                    <ul class="mb-0">
-                        {% for step in workflow.observedSteps %}
-                        <li>{{ step }}</li>
-                        {% endfor %}
-                    </ul>
                     {% else %}
                     <p>No workflow input found.</p>
                     {% endif %}
