@@ -195,11 +195,11 @@ Mandatory coverage requirements:
 9. Prefer high coverage and realistic manual execution scenarios over minimal output.
 10. Avoid duplicate or redundant test cases.
 11. Every mandatory acceptance criterion must be covered by at least one generated test case.
-12. Acceptance criteria involving shared or upstream controls must still generate tests even when those controls are not newly extracted on the current page.
-13. For navigation criteria such as Back button or Home button returning to a previous page, generate explicit navigation tests instead of replacing them with generic exploratory cases.
+12. Acceptance criteria involving shared, upstream, reused, or cross-page controls must still generate tests even when those controls are not newly extracted on the current page.
+13. For workflow-defined navigation, return, redirect, or transition criteria, generate explicit scenario coverage instead of replacing them with generic exploratory cases.
 14. Prioritize mandatory acceptance-criteria coverage before adding additional exploratory edge cases.
-15. If the workflow includes explicit approved business data, required navigation controls, transition expectations, state changes, or reusable resource guidance, generate tests that reflect those exact story details before adding extra generic exploratory scenarios.
-16. Do not let optional edge or accessibility-style tests displace mandatory user-story scenarios such as required navigation, transition validation, state-change validation, or approved business-data usage.
+15. If the workflow includes explicit approved business data, required controls, transition expectations, state changes, observable outcome signals, or reusable resource guidance, generate tests that reflect those exact story details before adding extra generic exploratory scenarios.
+16. Do not let optional edge or accessibility-style tests displace mandatory user-story scenarios such as required navigation, transition validation, state-change validation, observable outcome validation, or approved business-data usage.
 
 Schema rules:
 1. Every test case object must contain exactly these keys:
@@ -378,11 +378,11 @@ def infer_interaction_intent(title: str, steps: List[str], expected_result: str)
     validation_type = "generic"
     if has_any("required", "mandatory", "empty", "blank"):
         validation_type = "required_field"
-    elif has_any("error message", "validation message", "invalid credentials", "authentication failed", "rejected", "denied"):
+    elif has_any("error message", "validation message", "rejected", "denied", "failed"):
         validation_type = "error_message"
-    elif has_any("redirect", "dashboard", "home page", "landing page", "successful login", "logged in"):
+    elif has_any("redirect", "landing page", "destination page", "state change", "success state", "navigated"):
         validation_type = "navigation_success"
-    elif has_any("masked", "masking", "password hidden"):
+    elif has_any("masked", "masking", "hidden"):
         validation_type = "masking"
 
     return {
@@ -524,17 +524,19 @@ def looks_like_acceptance_criterion(text: str) -> bool:
         return False
     behavior_tokens = [
         "button",
-        "login",
-        "home page",
-        "back",
-        "forgot password",
-        "username",
-        "password",
+        "field",
+        "form",
         "validation",
         "authenticate",
+        "submit",
         "return to",
+        "navigate",
+        "redirect",
         "open",
         "click",
+        "visible",
+        "enabled",
+        "disabled",
     ]
     return any(token in lowered for token in behavior_tokens)
 
@@ -698,22 +700,6 @@ def criterion_signature(text: str) -> str:
 
 def extract_requirement_units(workflow_input: Dict[str, Any]) -> List[Dict[str, Any]]:
     requirements: List[Dict[str, Any]] = []
-    story_sections = extract_story_sections(workflow_input)
-    story_text = " ".join(
-        [
-            clean_text(str(workflow_input.get("description", ""))),
-            clean_text(str(workflow_input.get("userStory", ""))),
-            clean_text(str((workflow_input.get("externalContext") or {}).get("description", ""))) if isinstance(workflow_input.get("externalContext"), dict) else "",
-            clean_text(str((workflow_input.get("externalContext") or {}).get("userStory", ""))) if isinstance(workflow_input.get("externalContext"), dict) else "",
-            clean_text(str((workflow_input.get("externalContext") or {}).get("validationExpectations", ""))) if isinstance(workflow_input.get("externalContext"), dict) else "",
-            clean_text(str((workflow_input.get("externalContext") or {}).get("transitionExpectations", ""))) if isinstance(workflow_input.get("externalContext"), dict) else "",
-            " ".join(story_sections.get("validation expectations", [])),
-            " ".join(story_sections.get("transition expectations", [])),
-            " ".join(story_sections.get("generation guidance", [])),
-            " ".join(story_sections.get("test credentials", [])),
-            " ".join(story_sections.get("approved test data guidance", [])),
-        ]
-    ).strip()
 
     acceptance_criteria = parse_acceptance_criteria(workflow_input)
     for idx, criterion in enumerate(acceptance_criteria, start=1):
@@ -724,40 +710,38 @@ def extract_requirement_units(workflow_input: Dict[str, Any]) -> List[Dict[str, 
             "signature": criterion_signature(criterion),
         })
 
-    derived_requirements: List[str] = []
-    section_text = " ".join(
-        story_sections.get("validation expectations", [])
-        + story_sections.get("transition expectations", [])
-        + story_sections.get("generation guidance", [])
-        + story_sections.get("test credentials", [])
-        + story_sections.get("approved test data guidance", [])
-        + story_sections.get("behavior rules", [])
-    )
-    lower_story = f"{story_text} {section_text}".lower()
-
-    generic_patterns = [
-        (r"back button[^.\n]*(return|navigate)", "Back-button navigation should return to the previous supported page or state"),
-        (r"home button[^.\n]*(return|navigate)", "Home-button navigation should return to the designated home or landing page"),
-        (r"forgot password[^.\n]*(open|navigate|workflow|destination)", "Recovery-navigation control should open the supported recovery flow"),
-        (r"password[^.\n]*masked", "Sensitive secret input should be masked by default"),
-        (r"logged[- ]in user name|signed[- ]in user name|user identity.*visible", "Successful completion should reveal the expected identity or user-specific state indicator"),
-        (r"authenticated-only features should become available|additional [a-z\- ]*features should become available|role-specific.*available", "Successful completion should reveal newly available state-specific capabilities"),
-        (r"valid [a-z0-9_ -]+\s*:|approved [a-z0-9_ -]+data|approved [a-z0-9_ -]+credentials", "Positive scenarios should use approved business data provided by the workflow story"),
+    generic_sections = [
+        "validation expectations",
+        "transition expectations",
+        "generation guidance",
+        "behavior rules",
+        "entry conditions",
+        "test credentials",
+        "approved test data guidance",
+        "page elements",
+        "screen elements",
+        "view elements",
+        "pom reuse guidance",
+        "application context",
+        "user story",
     ]
-    for pattern, text in generic_patterns:
-        if re.search(pattern, lower_story, flags=re.IGNORECASE):
-            derived_requirements.append(text)
-
+    story_sections = extract_story_sections(workflow_input)
     next_idx = len(requirements) + 1
     seen_signatures = {item["signature"] for item in requirements}
-    for text in derived_requirements:
-        sig = criterion_signature(text)
-        if sig not in seen_signatures:
+
+    for section_name in generic_sections:
+        for item in story_sections.get(section_name, []):
+            cleaned_item = clean_text(re.sub(rf"^{re.escape(section_name)}\s*", "", item, flags=re.IGNORECASE))
+            if not cleaned_item:
+                continue
+            sig = criterion_signature(cleaned_item)
+            if sig in seen_signatures:
+                continue
             seen_signatures.add(sig)
             requirements.append({
                 "id": f"REQ{next_idx}",
-                "source": "story_requirement",
-                "text": text,
+                "source": section_name.replace(" ", "_"),
+                "text": cleaned_item,
                 "signature": sig,
             })
             next_idx += 1
@@ -783,17 +767,6 @@ def criterion_is_covered(criterion: str, test_cases: List[Dict[str, Any]]) -> bo
     if not criterion_tokens:
         return False
 
-    lowered = criterion.lower()
-    special_patterns = []
-    if "back button" in lowered:
-        special_patterns.append({"back", "button"})
-    if "home button" in lowered:
-        special_patterns.append({"home", "button"})
-    if "forgot password" in lowered:
-        special_patterns.append({"forgot", "password"})
-    if any(token in lowered for token in ["profile button", "person button", "account button", "entry control"]) and any(token in lowered for token in ["open", "entry", "destination", "page", "view"]):
-        special_patterns.append({"button", "open"})
-
     for tc in test_cases:
         candidate_key = test_case_signature(tc)
         candidate_tokens = set(candidate_key.split())
@@ -802,113 +775,7 @@ def criterion_is_covered(criterion: str, test_cases: List[Dict[str, Any]]) -> bo
         overlap = criterion_tokens & candidate_tokens
         if len(overlap) >= max(2, min(len(criterion_tokens), 4)):
             return True
-        for pattern in special_patterns:
-            if pattern.issubset(candidate_tokens):
-                return True
     return False
-
-
-def classify_requirement(text: str) -> Dict[str, Any]:
-    cleaned = clean_text(text)
-    lowered = cleaned.lower()
-    requirement: Dict[str, Any] = {
-        "category": "generic",
-        "title": cleaned,
-        "type": "positive",
-        "steps": ["Open the relevant page or workflow context", cleaned],
-        "expectedResult": cleaned,
-        "fields": [],
-    }
-
-    if "back button" in lowered:
-        requirement.update({
-            "category": "navigation",
-            "title": "Verify Back button returns to the supported previous page or state",
-            "type": "positive",
-            "steps": [
-                "Open the current workflow page or state",
-                "Click the Back button",
-            ],
-            "expectedResult": "The application returns to the supported previous page or previous state and the current page or state is no longer active.",
-            "fields": ["back_button"],
-        })
-    elif "home button" in lowered:
-        requirement.update({
-            "category": "navigation",
-            "title": "Verify Home button returns to the designated landing page",
-            "type": "positive",
-            "steps": [
-                "Open the current workflow page or state",
-                "Click the Home button",
-            ],
-            "expectedResult": "The application navigates to the designated landing page and the current page or state is no longer active.",
-            "fields": ["home_button"],
-        })
-    elif "forgot password" in lowered:
-        requirement.update({
-            "category": "navigation",
-            "title": "Verify Forgot Password opens the recovery workflow",
-            "type": "positive",
-            "steps": [
-                "Open the current workflow page",
-                "Click Forgot Password",
-            ],
-            "expectedResult": "The supported password recovery destination or recovery workflow opens successfully.",
-            "fields": ["forgot_password_link"],
-        })
-    elif "mask" in lowered and "password" in lowered:
-        requirement.update({
-            "category": "field_behavior",
-            "title": "Verify password input is masked by default",
-            "type": "positive",
-            "steps": [
-                "Open the current workflow page",
-                "Click inside the password field",
-                "Enter a password value",
-            ],
-            "expectedResult": "Password input is masked by default and the entered value is not displayed in plain text.",
-            "fields": ["password_textbox"],
-        })
-    elif any(token in lowered for token in ["required", "blank", "empty"]):
-        requirement["category"] = "validation"
-        requirement["type"] = "negative"
-    elif any(token in lowered for token in ["invalid", "fail", "error", "unauthenticated", "reject"]):
-        requirement["category"] = "negative_flow"
-        requirement["type"] = "negative"
-
-    return requirement
-
-
-def build_required_case_from_criterion(
-    criterion: str,
-    idx: int,
-    id_prefix: str,
-    fallback_fields: List[str],
-) -> Dict[str, Any]:
-    requirement = classify_requirement(criterion)
-    fields = sorted(set(fallback_fields + requirement.get("fields", []))) if requirement.get("fields") else list(fallback_fields)
-    title = requirement["title"]
-    steps = requirement["steps"]
-    expected = requirement["expectedResult"]
-    tc_type = requirement["type"]
-
-    return normalize_test_case(
-        test_case={
-            "id": f"{id_prefix}_{idx:03d}",
-            "title": title,
-            "type": tc_type,
-            "steps": steps,
-            "expectedResult": expected,
-            "fields": fields,
-        },
-        idx=idx,
-        id_prefix=id_prefix,
-        fallback_fields=fallback_fields,
-        fallback_steps=steps,
-        fallback_expected=expected,
-        forced_title=title,
-        forced_type=tc_type,
-    )
 
 
 def normalize_manual_test(generated: Dict[str, Any], workflow_input: Dict[str, Any]) -> Dict[str, Any]:
@@ -953,27 +820,18 @@ def normalize_manual_test(generated: Dict[str, Any], workflow_input: Dict[str, A
         normalized_cases = generate_fallback_test_cases(workflow_input, workflow_name)
 
     requirement_units = extract_requirement_units(workflow_input)
-    missing_required_cases: List[Dict[str, Any]] = []
-    next_idx = len(normalized_cases) + 1
-    for requirement in requirement_units:
-        if not criterion_is_covered(requirement["text"], normalized_cases + missing_required_cases):
-            missing_required_cases.append(
-                build_required_case_from_criterion(
-                    criterion=requirement["text"],
-                    idx=next_idx,
-                    id_prefix=id_prefix,
-                    fallback_fields=fallback_fields,
-                )
-            )
-            next_idx += 1
-
-    if missing_required_cases:
-        logger.info(
-            "Added %d acceptance-criteria coverage test case(s) for workflow %s",
-            len(missing_required_cases),
+    missing_requirements = [
+        requirement["text"]
+        for requirement in requirement_units
+        if not criterion_is_covered(requirement["text"], normalized_cases)
+    ]
+    if missing_requirements:
+        logger.warning(
+            "Manual tests for %s do not clearly cover %d extracted requirement(s): %s",
             workflow_name,
+            len(missing_requirements),
+            "; ".join(missing_requirements[:10]),
         )
-        normalized_cases.extend(missing_required_cases)
 
     seen_ids = set()
     deduped_cases: List[Dict[str, Any]] = []
