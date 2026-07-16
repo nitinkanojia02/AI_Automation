@@ -171,9 +171,10 @@
                         Review the generated tests, select the ones you want, and approve only those for automation.
                     </div>
 
-                    <form method="post" action="/manual-tests/{{ workflow_name }}/generate">
-                        <button class="btn btn-primary w-100" type="submit">Generate Manual Tests</button>
+                    <form method="post" action="/manual-tests/{{ workflow_name }}/generate" class="d-grid" id="manual-generate-form">
+                        <button class="btn btn-primary w-100" type="submit" id="generate-manual-tests-btn">Generate Manual Tests</button>
                     </form>
+                    <div id="manual-generate-status" class="small text-muted mt-2 d-none">Generating manual tests...</div>
                 </div>
             </div>
         </div>
@@ -391,6 +392,20 @@ function addMissingManualTest() {
 
 document.addEventListener('DOMContentLoaded', function () {
     initAutoFitTextareas();
+
+    const generateForm = document.getElementById('manual-generate-form');
+    const generateButton = document.getElementById('generate-manual-tests-btn');
+    const generateStatus = document.getElementById('manual-generate-status');
+
+    if (generateForm && generateButton) {
+        generateForm.addEventListener('submit', function () {
+            generateButton.disabled = true;
+            generateButton.textContent = 'Generating...';
+            if (generateStatus) {
+                generateStatus.classList.remove('d-none');
+            }
+        });
+    }
 });
 </script>
 {% endblock %}
