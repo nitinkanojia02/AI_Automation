@@ -977,6 +977,31 @@ def validate_robot_alignment_with_resource_context(content: str, resource_contex
                     "Generated suite includes teardown but missed promoting the repeated startup pattern into Test Setup or Suite Setup. Prefer using the repeated page-open/page-ready keyword sequence as setup when it is shared by most tests."
                 )
 
+    setup_match = re.search(r"(?im)^\s*(Suite Setup|Test Setup)\s{2,}(.+)$", content)
+    setup_keyword_name = ""
+    if setup_match:
+        setup_keyword_name, _setup_args = scan_keyword_invocation(setup_match.group(2))
+        setup_keyword_name = clean_text(setup_keyword_name).lower()
+
+    if has_setup and test_step_sequences:
+        opener_like_keywords = [
+            name for name in page_keyword_names
+            if any(token in name for token in ["open ", "launch ", "guest state", "page is loaded", "page loaded"])
+        ]
+        repeated_opener_counts = {name: suite_keyword_counts.get(name, 0) for name in opener_like_keywords if suite_keyword_counts.get(name, 0)}
+        if repeated_opener_counts:
+            best_repeated_opener = max(repeated_opener_counts, key=repeated_opener_counts.get)
+            best_count = repeated_opener_counts[best_repeated_opener]
+            if best_count >= max(2, len(test_step_sequences) // 2):
+                if setup_keyword_name and setup_keyword_name != best_repeated_opener:
+                    warnings.append(
+                        f"Generated suite uses setup '{setup_keyword_name}' but repeatedly invokes higher-level page startup keyword '{best_repeated_opener}' inside test bodies. Prefer the strongest reusable semantic setup abstraction instead of a lower-level opener."
+                    )
+                elif not setup_keyword_name:
+                    warnings.append(
+                        "Generated suite appears to have setup configured, but the repeated highest-level page startup abstraction is still being invoked inside test bodies. Prefer moving that semantic opener into setup."
+                    )
+
     repeated_open_keywords = {
         name for name in page_keyword_names
         if any(token in name for token in ["open ", "launch ", "guest state", "page is loaded", "page loaded"])
@@ -1344,6 +1369,30 @@ def validate_robot_content(content: str, allowed_resources: list[str]) -> tuple[
     if len(common_prefix) >= 2 and any(clean_text(step).lower() in repetitive_start_keywords for step in common_prefix):
         warnings.append("Generated suite repeats the same startup steps across tests; prefer moving repeated opening/navigation/wait steps into Test Setup or Suite Setup")
 
+    if has_setup and all_test_steps:
+        page_startup_keywords = {
+            clean_text(name).lower()
+            for name in resource_keyword_names
+            if any(token in clean_text(name).lower() for token in ["open ", "launch ", "guest state", "page is loaded", "page loaded"])
+        }
+        repeated_page_startup = {
+            name: sum(1 for steps in all_test_steps if steps and clean_text(steps[0]).lower() == name)
+            for name in page_startup_keywords
+        }
+        repeated_page_startup = {name: count for name, count in repeated_page_startup.items() if count >= max(2, len(all_test_steps) // 2)}
+        setup_lines = re.findall(r"(?im)^\s*(?:Suite Setup|Test Setup)\s{2,}(.+)$", content)
+        configured_setup_keywords = set()
+        for line in setup_lines:
+            kw_name, _args = scan_keyword_invocation(line)
+            if kw_name:
+                configured_setup_keywords.add(clean_text(kw_name).lower())
+        if repeated_page_startup:
+            strongest_startup = max(repeated_page_startup, key=repeated_page_startup.get)
+            if strongest_startup not in configured_setup_keywords:
+                warnings.append(
+                    f"Generated suite has setup configured but still repeats semantic page startup keyword '{strongest_startup}' at the beginning of most tests. Prefer promoting that higher-level page setup abstraction into Test Setup or Suite Setup."
+                )
+
     if not re.search(r"(?im)^AUT-[A-Z0-9]{2,8}-[A-Z0-9_]{3,20}\d{2}:\s+.+$", content):
         warnings.append("Generated suite test case names should follow the concise format AUT-<APPCODE>-<FEATURECODE><NN>: <Title>")
 
@@ -1385,6 +1434,11 @@ def validate_robot_content(content: str, allowed_resources: list[str]) -> tuple[
             if re.search(pattern, content):
                 warnings.append("Generated suite appears to contain inline literal test data; prefer page-resource variables instead of direct values in test cases")
                 break
+
+    if re.search(r"(?im)^\s*Wait Until Element Is Not Visible\s{2,}(?:xpath=|css=|id=|name=)", content):
+        warnings.append(
+            "Generated suite contains raw negative visibility checks in test bodies. Prefer reusable page-resource validation keywords for guest-state or authenticated-only absence expectations when the manual outcomes imply a stable page-level assertion."
+        )
 
     is_valid = len(errors) == 0
     message_parts = []

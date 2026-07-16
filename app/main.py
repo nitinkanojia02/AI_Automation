@@ -1493,7 +1493,8 @@ def build_keyword_review_prompt(
         "- Do not invent unsupported locators, messages, page flows, or framework keywords.\n"
         "- Do not add markdown fences or explanation text.\n"
         "- Do not emit duplicate keywordName values in the final reviewed artifact. Each retained keyword must have a unique semantic name.\n"
-        "- Do not emit implementation lines that reference non-canonical locator variables when the approved page metadata already establishes a cleaner canonical variable name for the same target element.\n\n"
+        "- Do not emit implementation lines that reference non-canonical locator variables when the approved page metadata already establishes a cleaner canonical variable name for the same target element.\n"
+        "- When the approved manual outcomes imply authenticated-state absence checks, prefer reusable page-level validation keywords that express guest-state absence semantically instead of leaving raw ad hoc negative waits for downstream suites.\n\n"
         "Review and normalization rules:\n"
         "- Treat candidate_keywords as the primary semantic lineage, but improve weak implementation choices when approved evidence supports a better reusable abstraction.\n"
         "- Infer reusable interaction preferences dynamically from common_resource_context and existing_page_resource.\n"
@@ -2056,6 +2057,7 @@ def save_keywords_for_workflow(workflow: dict, keywords: list[dict]):
         for item in approved_elements
         if clean_text(str(item.get("approvedName", "")))
     }
+    approved_variable_names = set(canonical_variable_by_target.values())
 
     disallowed_resource_keywords = {
         "open page",
@@ -2077,10 +2079,22 @@ def save_keywords_for_workflow(workflow: dict, keywords: list[dict]):
         canonical_variable = canonical_variable_by_target.get(target_element, "")
         for line in lines:
             updated_line = str(line).rstrip()
-            if canonical_variable:
-                updated_line = re.sub(r"\$\{AUTO_[A-Z0-9_]+\}", f"${{{canonical_variable}}}", updated_line)
+            tokens = re.findall(r"\$\{([A-Z0-9_]+)\}", updated_line)
+            if canonical_variable and any(token.startswith("AUTO_") for token in tokens):
+                auto_tokens = [token for token in tokens if token.startswith("AUTO_")]
+                if len(set(auto_tokens)) == 1:
+                    updated_line = re.sub(r"\$\{AUTO_[A-Z0-9_]+\}", f"${{{canonical_variable}}}", updated_line)
             normalized_lines.append(updated_line)
         return normalized_lines
+
+    def implementation_contains_noncanonical_variables(lines: list[str]) -> bool:
+        for line in lines:
+            for token in re.findall(r"\$\{([A-Z0-9_]+)\}", str(line)):
+                if token.startswith("AUTO_"):
+                    return True
+                if approved_variable_names and token not in approved_variable_names and token.endswith(("_BUTTON", "_FIELD", "_TEXTBOX", "_LINK", "_ICON", "_LABEL", "_INPUT", "_DROPDOWN", "_CHECKBOX", "_RADIO")):
+                    return True
+        return False
 
     normalized_keywords = []
     seen_keyword_names: set[str] = set()
@@ -2096,7 +2110,7 @@ def save_keywords_for_workflow(workflow: dict, keywords: list[dict]):
             implementation = [line.rstrip() for line in implementation.splitlines() if line.strip()]
         implementation = [str(line).rstrip() for line in implementation if clean_text(str(line))]
         implementation = normalize_implementation_variables(implementation, target_element)
-        if not implementation:
+        if not implementation or implementation_contains_noncanonical_variables(implementation):
             continue
 
         normalized_keyword_name = keyword_name.lower()
