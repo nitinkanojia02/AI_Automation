@@ -600,25 +600,25 @@ def extract_story_sections(workflow_input: Dict[str, Any]) -> Dict[str, List[str
         ):
             raw_blocks.extend(_collect_text_blocks(parent.get(key)))
 
+    combined_text = "\n".join(block for block in raw_blocks if clean_text(block))
+    combined_text = re.sub(r"\s*\n\s*", "\n", combined_text)
+    combined_text = re.sub(r"[ \t]+", " ", combined_text).strip()
+
     sections: Dict[str, List[str]] = {name: [] for name in section_names}
-    for block in raw_blocks:
-        normalized_block = re.sub(r"\s+", " ", block).strip()
-        if not normalized_block:
-            continue
-        lower_block = normalized_block.lower()
-        for idx, name in enumerate(section_names):
-            marker = name.lower()
-            start = lower_block.find(marker)
-            if start == -1:
-                continue
-            end = len(normalized_block)
-            for next_name in section_names[idx + 1:]:
-                next_pos = lower_block.find(next_name.lower(), start + len(marker))
-                if next_pos != -1:
-                    end = min(end, next_pos)
-            fragment = normalized_block[start:end].strip(" :-")
-            if fragment:
-                sections[name].append(fragment)
+    if not combined_text:
+        return sections
+
+    escaped_names = [re.escape(name) for name in section_names]
+    header_pattern = re.compile(rf"(?i)({'|'.join(escaped_names)})\b")
+    matches = list(header_pattern.finditer(combined_text))
+
+    for idx, match in enumerate(matches):
+        name = match.group(1).lower()
+        start = match.start()
+        end = matches[idx + 1].start() if idx + 1 < len(matches) else len(combined_text)
+        fragment = combined_text[start:end].strip(" :-\n\t")
+        if fragment:
+            sections[name].append(clean_text(fragment))
 
     deduped_sections: Dict[str, List[str]] = {}
     for name, values in sections.items():
@@ -655,7 +655,11 @@ def parse_acceptance_criteria(workflow_input: Dict[str, Any]) -> List[str]:
                 raw_candidates.extend(line.strip(" -\t") for line in re.split(r"\n+", value) if line.strip())
 
     story_sections = extract_story_sections(workflow_input)
-    raw_candidates.extend(story_sections.get("acceptance criteria", []))
+    for section_value in story_sections.get("acceptance criteria", []):
+        cleaned_section = clean_text(re.sub(r"^acceptance criteria\s*", "", section_value, flags=re.IGNORECASE))
+        if cleaned_section:
+            parts = re.split(r"(?=Given\s)", cleaned_section, flags=re.IGNORECASE)
+            raw_candidates.extend(part.strip() for part in parts if part.strip())
 
     seen = set()
     normalized: List[str] = []
