@@ -136,6 +136,59 @@ def make_test_id_prefix(workflow_name: str) -> str:
     return prefix[:3].ljust(3, "X")
 
 
+def build_compact_story_context(workflow_input: Dict[str, Any], max_chars: int = 6000) -> Dict[str, Any]:
+    keys_to_keep = [
+        "workflowName",
+        "module",
+        "feature",
+        "scenarioIntent",
+        "resourceFiles",
+        "fields",
+        "testData",
+        "approvedElements",
+        "observedPreconditions",
+        "observedSteps",
+        "observedExpectedResult",
+        "observedValidations",
+    ]
+    compact: Dict[str, Any] = {}
+    for key in keys_to_keep:
+        value = workflow_input.get(key)
+        if value in (None, "", [], {}):
+            continue
+        compact[key] = value
+
+    external_context = workflow_input.get("externalContext")
+    if isinstance(external_context, dict):
+        reduced_context = {}
+        for key in ["description", "acceptanceCriteria", "notes", "references"]:
+            value = external_context.get(key)
+            if value in (None, "", [], {}):
+                continue
+            reduced_context[key] = value
+        if reduced_context:
+            compact["externalContext"] = reduced_context
+
+    serialized = pretty_json(compact)
+    if len(serialized) <= max_chars:
+        return compact
+
+    for key in ["approvedElements", "observedSteps", "observedValidations", "externalContext", "testData", "fields"]:
+        if key not in compact:
+            continue
+        candidate = dict(compact)
+        candidate.pop(key, None)
+        serialized_candidate = pretty_json(candidate)
+        if len(serialized_candidate) <= max_chars:
+            return candidate
+        compact = candidate
+
+    serialized = pretty_json(compact)
+    if len(serialized) > max_chars:
+        compact["_truncated"] = True
+    return compact
+
+
 def build_prompt(workflow_input: Dict[str, Any]) -> str:
     reuse_context = infer_workflow_reuse_context(workflow_input)
     requirement_units = extract_requirement_units(workflow_input)
@@ -146,6 +199,7 @@ def build_prompt(workflow_input: Dict[str, Any]) -> str:
             "source": item["source"],
             "requirement": item["text"],
         })
+    compact_workflow_input = build_compact_story_context(workflow_input)
     return f"""
 You are AI Layer 1: a senior QA test designer operating inside a multi-layer AI-assisted automation framework.
 Your output is a reviewable manual-test artifact that will feed downstream keyword/resource generation, Robot generation, and additional AI review and governance layers.
@@ -289,7 +343,7 @@ Additional generation instructions for acceptance criteria:
 - expectedResult must be a single clear string, not a serialized list.
 
 Workflow Input:
-{pretty_json(workflow_input)}
+{pretty_json(compact_workflow_input)}
 
 Inferred Existing Resource Reuse Context:
 {pretty_json(reuse_context)}
