@@ -1451,6 +1451,61 @@ def build_keyword_generation_prompt(
         f"Input JSON:\n{json.dumps(payload, indent=2)}"
     )
 
+def build_keyword_review_prompt(
+    workflow: dict,
+    approved_elements: list[dict],
+    approved_manual_tests: list[dict],
+    candidate_keywords: list[dict],
+    existing_page_resource: str,
+    common_resource_context: list[dict] | None = None,
+) -> str:
+    common_resource_context = common_resource_context or []
+    payload = {
+        "workflow": clean_workflow_for_prompting(workflow),
+        "approved_elements": approved_elements,
+        "approved_manual_tests": approved_manual_tests,
+        "candidate_keywords": candidate_keywords,
+        "existing_page_resource": existing_page_resource,
+        "common_resource_context": common_resource_context,
+        "review_goals": [
+            "Preserve approved semantic keyword names and target-element grounding.",
+            "Improve implementation quality using dynamic common/shared helper discovery rather than hardcoded mappings.",
+            "Normalize inconsistent low-level interaction patterns when stronger reusable common helpers are discoverable from shared resource context.",
+            "Keep reviewed keyword artifacts compact, reusable, page-specific, and suitable as the implementation lineage for final resource generation.",
+        ],
+    }
+    return (
+        "You are AI Layer K2: a reviewed-keyword normalization and refinement specialist for an AI-first Robot Framework automation framework.\n"
+        "Your task is to review and refine a candidate page-keyword artifact before it becomes the approved reviewed keyword lineage used for final page resource generation.\n\n"
+        "Primary objective:\n"
+        "- Return a cleaned, normalized, implementation-aware reviewed keyword artifact for one page.\n"
+        "- Preserve approved semantic keyword names and approved target-element grounding whenever feasible.\n"
+        "- Improve implementation consistency through AI reasoning based on approved artifacts and discovered shared/common helpers.\n"
+        "- Do not rely on hardcoded interaction maps or workflow-specific code assumptions.\n\n"
+        "Mandatory rules:\n"
+        "- Return only a valid JSON array.\n"
+        "- Each array item must be an object with exactly these keys: keywordId, keywordName, targetElement, action, arguments, implementation, approved.\n"
+        "- Keep keywordName business-readable and aligned with approved element names.\n"
+        "- Keep targetElement grounded in approved elements whenever the keyword acts on a specific element.\n"
+        "- implementation must be an array of Robot Framework keyword lines only.\n"
+        "- approved must be true for retained keywords.\n"
+        "- Do not invent unsupported locators, messages, page flows, or framework keywords.\n"
+        "- Do not add markdown fences or explanation text.\n\n"
+        "Review and normalization rules:\n"
+        "- Treat candidate_keywords as the primary semantic lineage, but improve weak implementation choices when approved evidence supports a better reusable abstraction.\n"
+        "- Infer reusable interaction preferences dynamically from common_resource_context and existing_page_resource.\n"
+        "- When both a low-level framework interaction and a higher-level shared/common helper can satisfy the same intent, prefer the discovered shared/common helper if it is clearly supported by the provided context.\n"
+        "- If one candidate keyword already uses a reusable shared/common helper for an interaction pattern and another semantically similar candidate uses lower-level framework steps for the same pattern, normalize toward the reusable helper style when supported by the shared/common context.\n"
+        "- Preserve page-specific validations and reusable atomic page actions.\n"
+        "- Remove or simplify scenario-wrapper keywords when they are redundant and not useful as stable page-level abstractions.\n"
+        "- Avoid duplicate keywords that share the same semantic intent but differ only by argument usage or literal examples.\n"
+        "- Keep implementations concise, maintainable, and suitable for downstream page resource generation.\n"
+        "- Prefer reviewed implementations that make downstream resource generation naturally preserve common helper usage.\n"
+        "- If the shared/common context does not clearly support a reusable helper, keep a valid low-level implementation rather than inventing one.\n\n"
+        f"Input JSON:\n{json.dumps(payload, indent=2)}"
+    )
+
+
 def review_and_refine_page_elements(workflow: dict, review_data: dict) -> tuple[list[dict], dict | None]:
     workflow_name = derive_canonical_workflow_name(workflow, review_data["page_name"])
     raw_elements = review_data.get("raw_elements", [])
@@ -1696,6 +1751,26 @@ def get_keyword_review_data(workflow: dict):
                     )
                     reviewed_keywords = json.loads(strip_markdown_fences(reviewed_keywords_raw))
                     if isinstance(reviewed_keywords, list):
+                        keyword_review_prompt = build_keyword_review_prompt(
+                            workflow,
+                            approved_elements,
+                            approved_manual_tests,
+                            reviewed_keywords,
+                            read_text(resource_path),
+                            common_resource_context,
+                        )
+                        reviewed_keywords_refined_raw = call_ai_with_workflow_session(
+                            workflow_name=workflow_name,
+                            stage="keyword_artifact_refine",
+                            endpoint=endpoint,
+                            token=token,
+                            prompt=keyword_review_prompt,
+                            timeout_seconds=ai_cfg.get("timeout_seconds", 120),
+                            verify_ssl=ai_cfg.get("verify_ssl", False),
+                        )
+                        refined_reviewed_keywords = json.loads(strip_markdown_fences(reviewed_keywords_refined_raw))
+                        if isinstance(refined_reviewed_keywords, list) and refined_reviewed_keywords:
+                            reviewed_keywords = refined_reviewed_keywords
                         normalized_reviewed = []
                         source_artifact = "refined"
                         for idx, item in enumerate(reviewed_keywords, start=1):
@@ -1712,6 +1787,8 @@ def get_keyword_review_data(workflow: dict):
                             if isinstance(implementation, str):
                                 implementation = [line.rstrip() for line in implementation.splitlines() if clean_text(line)]
                             implementation = [str(line).rstrip() for line in implementation if clean_text(str(line))]
+                            if not implementation:
+                                continue
                             arguments = item.get("arguments", [])
                             if isinstance(arguments, str):
                                 arguments = [arg.strip() for arg in arguments.split(",") if arg.strip()]
