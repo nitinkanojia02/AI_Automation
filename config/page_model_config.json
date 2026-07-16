@@ -13,7 +13,8 @@
   "ai": {
     "enabled": true,
     "endpoint": "https://gains.dovercorp.com/se/gains-api/chat",
-    "token_env_var": "DEVEX_AI_TOKEN"
+    "token_env_var": "DEVEX_AI_TOKEN",
+    "timeout_seconds": 120
   },
 
   "application_code": "WT",
