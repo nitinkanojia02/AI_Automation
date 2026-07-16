@@ -8,6 +8,8 @@ ${LOGIN_PAGE_IDENTIFIER}    login
 ${CUSTOMER_SEARCH_PAGE_IDENTIFIER}    customer-search
 ${VEHICLE_SURVEY_PAGE_IDENTIFIER}    vehicle-survey
 ${SURVEY_PAGE_IDENTIFIER}    survey
+${LOGOUT_TEXT}    Logout
+${SIGN_OUT_TEXT}    Sign Out
 ${PERSON_PROFILE_BUTTON}    id=auto_person_btn
 ${BACK_BUTTON}    id=auto_back_btn
 ${NOTIFICATION_BUTTON}    id=auto_notification_btn
@@ -18,26 +20,12 @@ ${SITE_SURVEY_BUTTON}    id=auto_btn_SiteSurvey
 
 *** Keywords ***
 Open Home Page
-    [Documentation]    Open the Home page using the configured Home page URL.
+    [Documentation]    Navigate directly to the Home page guest state URL.
     Go To Url    ${HOME_PAGE_URL}
+    Wait For Element To Be Ready    ${PERSON_PROFILE_BUTTON}
 
-Open Home Page In Guest State
-    [Documentation]    Open the Home page directly in guest state and verify approved guest controls are available.
-    Open Home Page
-    Verify Home Page Guest Controls Are Visible
-
-Verify Browser Url Contains Home Path
-    [Documentation]    Verify the current browser URL contains the Home page path.
-    ${current_url}=    Get Location
-    Should Contain    ${current_url}    ${HOME_PAGE_PATH}
-
-Verify Home Page Is Loaded
-    [Documentation]    Verify the Home page is loaded successfully in guest state.
-    Verify Browser Url Contains Home Path
-    Verify Home Page Guest Controls Are Visible
-
-Verify Home Page Guest Controls Are Visible
-    [Documentation]    Verify all approved guest-state Home page controls are visible and enabled.
+Verify Home Page Guest Controls Visible
+    [Documentation]    Verify all approved guest-state controls are visible on the Home page.
     Wait For Element To Be Ready    ${PERSON_PROFILE_BUTTON}
     Wait For Element To Be Ready    ${BACK_BUTTON}
     Wait For Element To Be Ready    ${NOTIFICATION_BUTTON}
@@ -46,46 +34,50 @@ Verify Home Page Guest Controls Are Visible
     Wait For Element To Be Ready    ${CLEAN_SURVEY_BUTTON}
     Wait For Element To Be Ready    ${SITE_SURVEY_BUTTON}
 
-Verify Person Profile Button
-    [Documentation]    Verify the Person/Profile button is visible and enabled.
-    Wait For Element To Be Ready    ${PERSON_PROFILE_BUTTON}
+Verify Home Page Guest Controls Enabled
+    [Documentation]    Verify all approved guest-state controls are enabled on the Home page.
+    Wait Until Element Is Enabled    ${PERSON_PROFILE_BUTTON}
+    Wait Until Element Is Enabled    ${BACK_BUTTON}
+    Wait Until Element Is Enabled    ${NOTIFICATION_BUTTON}
+    Wait Until Element Is Enabled    ${HOME_BUTTON}
+    Wait Until Element Is Enabled    ${CUSTOMER_SIGNUP_BUTTON}
+    Wait Until Element Is Enabled    ${CLEAN_SURVEY_BUTTON}
+    Wait Until Element Is Enabled    ${SITE_SURVEY_BUTTON}
 
-Verify Notification Button
-    [Documentation]    Verify the Notification button is visible and enabled.
-    Wait For Element To Be Ready    ${NOTIFICATION_BUTTON}
+Verify Authenticated User Indicators Are Not Visible
+    [Documentation]    Verify authenticated user indicators and authenticated-only actions are not visible in guest state.
+    Page Should Not Contain    ${LOGOUT_TEXT}
+    Page Should Not Contain    ${SIGN_OUT_TEXT}
 
-Verify Guest Accessible Feature Buttons
-    [Documentation]    Verify guest-accessible feature buttons are visible and enabled.
-    Wait For Element To Be Ready    ${CUSTOMER_SIGNUP_BUTTON}
-    Wait For Element To Be Ready    ${CLEAN_SURVEY_BUTTON}
-    Wait For Element To Be Ready    ${SITE_SURVEY_BUTTON}
+Verify Home Page Loaded In Guest State
+    [Documentation]    Verify the Home page is loaded in guest state with approved controls visible and enabled.
+    Location Should Contain    ${HOME_PAGE_PATH}
+    Verify Home Page Guest Controls Visible
+    Verify Home Page Guest Controls Enabled
+    Verify Authenticated User Indicators Are Not Visible
 
 Verify Login Page Opened
     [Documentation]    Verify the Login page or Login view is opened from the Home page.
-    ${current_url}=    Get Location
-    Should Contain    ${current_url}    ${LOGIN_PAGE_IDENTIFIER}
+    Location Should Contain    ${LOGIN_PAGE_IDENTIFIER}
 
 Verify Customer Search Page Opened
-    [Documentation]    Verify navigation to the customer-search workflow.
-    ${current_url}=    Get Location
-    Should Contain    ${current_url}    ${CUSTOMER_SEARCH_PAGE_IDENTIFIER}
+    [Documentation]    Verify navigation to the customer-search page.
+    Location Should Contain    ${CUSTOMER_SEARCH_PAGE_IDENTIFIER}
 
 Verify Vehicle Survey Page Opened
-    [Documentation]    Verify navigation to the vehicle-survey workflow.
-    ${current_url}=    Get Location
-    Should Contain    ${current_url}    ${VEHICLE_SURVEY_PAGE_IDENTIFIER}
+    [Documentation]    Verify navigation to the vehicle-survey page.
+    Location Should Contain    ${VEHICLE_SURVEY_PAGE_IDENTIFIER}
 
 Verify Survey Page Opened
-    [Documentation]    Verify navigation to the survey workflow.
-    ${current_url}=    Get Location
-    Should Contain    ${current_url}    ${SURVEY_PAGE_IDENTIFIER}
+    [Documentation]    Verify navigation to the survey page.
+    Location Should Contain    ${SURVEY_PAGE_IDENTIFIER}
 
 Verify Home Page Remains In Guest State
-    [Documentation]    Verify the Home page remains in guest state with approved guest controls visible.
-    Verify Home Page Guest Controls Are Visible
+    [Documentation]    Verify the Home page remains loaded in guest state after interaction.
+    Verify Home Page Loaded In Guest State
 
 Click Person Profile Button
-    [Documentation]    Click the Person/Profile button from the Home page guest state.
+    [Documentation]    Click the Person/Profile button from the Home page.
     Click When Ready    ${PERSON_PROFILE_BUTTON}
 
 Click Back Button
@@ -111,8 +103,3 @@ Click Clean Survey Button
 Click Site Survey Button
     [Documentation]    Click the Site survey button from the Home page.
     Click When Ready    ${SITE_SURVEY_BUTTON}
-
-Refresh Home Page
-    [Documentation]    Refresh the current Home page view and verify guest controls remain available.
-    Reload Page
-    Verify Home Page Remains In Guest State

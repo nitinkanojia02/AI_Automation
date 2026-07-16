@@ -2,19 +2,19 @@
   "pageName": "home_page",
   "keywords": [
     {
-      "keywordId": "KW_001",
+      "keywordId": "KW_004",
       "keywordName": "Click Person Profile Button",
       "targetElement": "person_profile_button",
       "action": "click",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Click the Person/Profile button from the Home page guest state.",
+        "[Documentation]    Click the Person/Profile button from the Home page.",
         "    Click When Ready    ${PERSON_PROFILE_BUTTON}"
       ],
       "approved": true
     },
     {
-      "keywordId": "KW_002",
+      "keywordId": "KW_005",
       "keywordName": "Click Back Button",
       "targetElement": "back_button",
       "action": "click",
@@ -26,7 +26,7 @@
       "approved": true
     },
     {
-      "keywordId": "KW_003",
+      "keywordId": "KW_006",
       "keywordName": "Click Notification Button",
       "targetElement": "notification_button",
       "action": "click",
@@ -38,7 +38,7 @@
       "approved": true
     },
     {
-      "keywordId": "KW_004",
+      "keywordId": "KW_007",
       "keywordName": "Click Home Button",
       "targetElement": "home_button",
       "action": "click",
@@ -50,7 +50,7 @@
       "approved": true
     },
     {
-      "keywordId": "KW_005",
+      "keywordId": "KW_008",
       "keywordName": "Click Customer Signup Button",
       "targetElement": "customer_signup_button",
       "action": "click",
@@ -62,7 +62,7 @@
       "approved": true
     },
     {
-      "keywordId": "KW_006",
+      "keywordId": "KW_009",
       "keywordName": "Click Clean Survey Button",
       "targetElement": "clean_survey_button",
       "action": "click",
@@ -74,7 +74,7 @@
       "approved": true
     },
     {
-      "keywordId": "KW_007",
+      "keywordId": "KW_010",
       "keywordName": "Click Site Survey Button",
       "targetElement": "site_survey_button",
       "action": "click",
@@ -86,92 +86,17 @@
       "approved": true
     },
     {
-      "keywordId": "KW_008",
-      "keywordName": "Open Home Page",
-      "targetElement": "",
-      "action": "generic",
-      "arguments": [],
-      "implementation": [
-        "[Documentation]    Open the Home page using the configured Home page URL.",
-        "    Open Browser To Url    ${HOME_PAGE_URL}"
-      ],
-      "approved": true
-    },
-    {
-      "keywordId": "KW_009",
-      "keywordName": "Verify Home Page Guest Controls Are Visible",
-      "targetElement": "",
-      "action": "verify",
-      "arguments": [],
-      "implementation": [
-        "[Documentation]    Verify all approved guest-state Home page controls are visible and enabled.",
-        "    Wait For Element To Be Ready    ${AUTO_PERSON_BTN_BUTTON}",
-        "    Wait For Element To Be Ready    ${AUTO_BACK_BTN_BUTTON}",
-        "    Wait For Element To Be Ready    ${AUTO_NOTIFICATION_BTN_BUTTON}",
-        "    Wait For Element To Be Ready    ${AUTO_HOME_BTN_BUTTON}",
-        "    Wait For Element To Be Ready    ${AUTO_BTN_CUSTOMER_SIGNUP_BUTTON}",
-        "    Wait For Element To Be Ready    ${AUTO_BTN_CLEAN_SURVEY_BUTTON}",
-        "    Wait For Element To Be Ready    ${AUTO_BTN_SITE_SURVEY_BUTTON}"
-      ],
-      "approved": true
-    },
-    {
-      "keywordId": "KW_010",
-      "keywordName": "Verify Browser Url Contains Home Path",
-      "targetElement": "",
-      "action": "verify",
-      "arguments": [],
-      "implementation": [
-        "[Documentation]    Verify the current browser URL contains the Home page path.",
-        "    Location Should Contain    ${HOME_PAGE_PATH}"
-      ],
-      "approved": true
-    },
-    {
       "keywordId": "KW_011",
-      "keywordName": "Verify Customer Search Page Opened",
+      "keywordName": "Verify Home Page Loaded In Guest State",
       "targetElement": "",
       "action": "verify",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Verify navigation to the customer-search workflow.",
-        "    Location Should Contain    ${CUSTOMER_SEARCH_PAGE_IDENTIFIER}"
-      ],
-      "approved": true
-    },
-    {
-      "keywordId": "KW_012",
-      "keywordName": "Verify Vehicle Survey Page Opened",
-      "targetElement": "",
-      "action": "verify",
-      "arguments": [],
-      "implementation": [
-        "[Documentation]    Verify navigation to the vehicle-survey workflow.",
-        "    Location Should Contain    ${VEHICLE_SURVEY_PAGE_IDENTIFIER}"
-      ],
-      "approved": true
-    },
-    {
-      "keywordId": "KW_013",
-      "keywordName": "Verify Survey Page Opened",
-      "targetElement": "",
-      "action": "verify",
-      "arguments": [],
-      "implementation": [
-        "[Documentation]    Verify navigation to the survey workflow.",
-        "    Location Should Contain    ${SURVEY_PAGE_IDENTIFIER}"
-      ],
-      "approved": true
-    },
-    {
-      "keywordId": "KW_014",
-      "keywordName": "Verify Login Page Opened",
-      "targetElement": "",
-      "action": "verify",
-      "arguments": [],
-      "implementation": [
-        "[Documentation]    Verify the Login page or Login view is opened from the Home page.",
-        "    Location Should Contain    ${LOGIN_PAGE_IDENTIFIER}"
+        "[Documentation]    Verify the Home page is loaded in guest state with approved controls visible and enabled.",
+        "    Location Should Be    ${HOME_PAGE_URL}",
+        "    Verify Home Page Guest Controls Visible",
+        "    Verify Home Page Guest Controls Enabled",
+        "    Verify Authenticated User Indicators Are Not Visible"
       ],
       "approved": true
     }
