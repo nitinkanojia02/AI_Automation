@@ -387,6 +387,7 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
         "- Use only valid, existing Robot Framework/SeleniumLibrary/BuiltIn keywords or keywords provided by the imported resources. Never invent unsupported keywords. If a negative URL assertion is needed, prefer a valid built-in assertion or a valid page/resource verification keyword for no-navigation behavior.\n"
         "- Prefer wait-oriented verification patterns over immediate absence checks. When verifying UI state, favor visible-state waits such as Wait Until Element Is Visible or Wait Until Element Is Not Visible, or equivalent approved resource keywords, instead of direct page/DOM absence checks whenever visibility is the real user-observable outcome.\n"
         "- For negative UI assertions about an element not appearing, not remaining visible, being dismissed, or being hidden, prefer Wait Until Element Is Not Visible or an equivalent approved resource/page validation keyword. Avoid direct reliance on Page Should Not Contain Element when the user expectation is about visibility in the UI.\n"
+        "- Do not add speculative negative assertions for controls, labels, or indicators that are not grounded in approved page-resource elements or approved page-resource validation keywords. If the resource context does not provide a grounded absence validation, do not invent placeholder text checks.\n"
         "- For positive UI assertions about an element appearing or becoming usable, prefer Wait Until Element Is Visible or an equivalent approved resource/page validation keyword before or as part of the assertion.\n"
         "- Before finalizing the suite, review whether repeated opening/navigation/waiting steps are duplicated at the start of many tests. If so, move those repeated startup actions into Test Setup or Suite Setup unless a specific test intentionally requires a different startup sequence.\n"
         "- Before finalizing the suite, self-review every keyword call and remove or replace any keyword that is not part of Robot built-ins, SeleniumLibrary, or the imported resource context.\n\n"
@@ -556,6 +557,7 @@ def build_review_prompt(manual_data: dict, resource_context: List[Dict], generat
         "- Preserve specialized interaction intent such as copy-paste, Enter key submission, repeated clicking, whitespace handling, or duplicate submission prevention; do not simplify these into a generic login-only sequence.\n"
         "- Prefer business-readable resource keyword calls over low-level one-off steps.\n"
         "- Prefer wait-based visibility assertions over immediate DOM-absence assertions. When validating that an element appears, disappears, remains hidden, or is dismissed in the UI, use Wait Until Element Is Visible or Wait Until Element Is Not Visible, or equivalent approved resource keywords, instead of Page Should Not Contain Element when visibility is the true intent.\n"
+        "- Do not preserve or introduce speculative absence checks backed only by invented text variables or placeholder strings. Negative UI validations must be grounded in approved page-resource elements or approved page-resource validation keywords.\n"
         "- Replace any unsupported or invented keyword with a valid existing Robot built-in, SeleniumLibrary keyword, or imported resource keyword.\n"
         "- Treat allowed_builtin_keywords and allowed_selenium_keywords from the input JSON as the approved non-resource keyword inventory. If a keyword is not in those lists or in imported resource_context, replace it instead of returning it.\n"
         "- Self-audit the final suite for keyword existence: every called keyword must come from Robot built-ins, SeleniumLibrary, or the imported resource files.\n"
@@ -643,6 +645,7 @@ def build_validation_review_prompt(manual_data: dict, resource_context: List[Dic
         "- Positive login/navigation tests must include a post-login observable verification when such a keyword exists in resource_context. If such a success keyword does not exist, preserve the test but do not invent unsupported keywords.\n"
         "- Negative authentication tests must include stronger rejection assertions when supported by resource_context; do not rely only on page-ready checks unless that is the only available resource validation.\n"
         "- For UI visibility assertions, prefer wait-based visibility semantics such as Wait Until Element Is Visible and Wait Until Element Is Not Visible, or equivalent approved resource validation keywords. Avoid immediate absence checks like Page Should Not Contain Element when the user-observable intent is hidden/not visible.\n"
+        "- Only keep negative visibility assertions when the page-resource context grounds them in approved elements or approved validation keywords. Remove speculative text-only absence checks for indicators that are not part of the approved artifact lineage.\n"
         "- For generic clicking, waiting, navigation, and text/password entry, prefer approved shared/common resource helpers over direct SeleniumLibrary calls whenever the shared/common helper already exists in resource_context.\n"
         "- Preserve specialized interaction intent such as Enter key submission and repeated clicking.\n"
         "- Reuse semantic resource variables over inline literals whenever available in resource_context, especially for reusable usernames, passwords, URLs, paths, expected validation texts, and semantically meaningful credential variants such as uppercase, lowercase, mixed-case, or other reusable edge-case data.\n"
@@ -1162,6 +1165,10 @@ def validate_robot_content(content: str, allowed_resources: list[str]) -> tuple[
         warnings.append(
             "Generated suite uses Page Should Not Contain Element. For UI-hidden/dismissed/absent-in-view expectations, prefer wait-based visibility semantics such as Wait Until Element Is Not Visible or an equivalent approved resource validation keyword."
         )
+    if re.search(r"(?im)^\s*(?:Page Should Not Contain|Wait Until Element Is Not Visible)\b.*\$\{(?:[A-Z0-9_]*TEXT|[A-Z0-9_]*LABEL|[A-Z0-9_]*MESSAGE|[A-Z0-9_]*INDICATOR|[A-Z0-9_]*STATUS)\}", content):
+        warnings.append(
+            "Generated suite contains speculative negative assertions backed by text/indicator variables. Prefer only grounded page-resource absence validations tied to approved elements or approved resource keywords."
+        )
 
     def normalize_keyword_token(value: str) -> str:
         return clean_text(value).lower()
@@ -1438,6 +1445,10 @@ def validate_robot_content(content: str, allowed_resources: list[str]) -> tuple[
     if re.search(r"(?im)^\s*Wait Until Element Is Not Visible\s{2,}(?:xpath=|css=|id=|name=)", content):
         warnings.append(
             "Generated suite contains raw negative visibility checks in test bodies. Prefer reusable page-resource validation keywords for guest-state or authenticated-only absence expectations when the manual outcomes imply a stable page-level assertion."
+        )
+    if re.search(r"(?im)^\s*(?:Page Should Not Contain|Wait Until Element Is Not Visible)\b.*(?:Logout|Sign Out|\$\{LOGOUT_TEXT\}|\$\{SIGN_OUT_TEXT\})", content):
+        warnings.append(
+            "Generated suite contains negative assertions for synthetic authenticated-user indicators that are not grounded in approved page elements. Remove speculative placeholder-style checks and prefer only approved page-state validations."
         )
 
     is_valid = len(errors) == 0

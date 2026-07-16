@@ -13,13 +13,11 @@ AUT-WT-HOME02: Verify guest-state controls and guest-accessible feature buttons 
     [Tags]    WT-HOME02    positive
     Verify Home Page Guest Controls Visible
     Verify Home Page Guest Controls Enabled
-    Verify Authenticated User Indicators Are Not Visible
 
 AUT-WT-HOME03: Verify Person Profile button opens the Login page from guest Home state
     [Tags]    WT-HOME03    positive
     Click Person Profile Button
     Verify Login Page Opened
-    Verify Authenticated User Indicators Are Not Visible
 
 AUT-WT-HOME04: Verify Customer signup button navigates to the customer-search page
     [Tags]    WT-HOME04    positive
@@ -58,7 +56,6 @@ AUT-WT-HOME09: Verify Home button keeps the user on the Home page when already i
 AUT-WT-HOME10: Verify Back button behavior from initial guest Home page load
     [Tags]    WT-HOME10    edge
     Click Back Button
-    Verify Authenticated User Indicators Are Not Visible
     Verify Home Page Guest Controls Visible
 
 AUT-WT-HOME11: Verify Notification button is visible and interactive in guest Home state

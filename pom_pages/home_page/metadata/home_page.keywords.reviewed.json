@@ -96,7 +96,6 @@
         "    Location Should Be    ${HOME_PAGE_URL}",
         "    Verify Home Page Guest Controls Visible",
         "    Verify Home Page Guest Controls Enabled",
-        "    Verify Authenticated User Indicators Are Not Visible"
       ],
       "approved": true
     }

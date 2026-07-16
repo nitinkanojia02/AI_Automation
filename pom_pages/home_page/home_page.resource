@@ -8,8 +8,6 @@ ${LOGIN_PAGE_IDENTIFIER}    login
 ${CUSTOMER_SEARCH_PAGE_IDENTIFIER}    customer-search
 ${VEHICLE_SURVEY_PAGE_IDENTIFIER}    vehicle-survey
 ${SURVEY_PAGE_IDENTIFIER}    survey
-${LOGOUT_TEXT}    Logout
-${SIGN_OUT_TEXT}    Sign Out
 ${PERSON_PROFILE_BUTTON}    id=auto_person_btn
 ${BACK_BUTTON}    id=auto_back_btn
 ${NOTIFICATION_BUTTON}    id=auto_notification_btn
@@ -44,17 +42,11 @@ Verify Home Page Guest Controls Enabled
     Wait Until Element Is Enabled    ${CLEAN_SURVEY_BUTTON}
     Wait Until Element Is Enabled    ${SITE_SURVEY_BUTTON}
 
-Verify Authenticated User Indicators Are Not Visible
-    [Documentation]    Verify authenticated user indicators and authenticated-only actions are not visible in guest state.
-    Page Should Not Contain    ${LOGOUT_TEXT}
-    Page Should Not Contain    ${SIGN_OUT_TEXT}
-
 Verify Home Page Loaded In Guest State
     [Documentation]    Verify the Home page is loaded in guest state with approved controls visible and enabled.
     Location Should Contain    ${HOME_PAGE_PATH}
     Verify Home Page Guest Controls Visible
     Verify Home Page Guest Controls Enabled
-    Verify Authenticated User Indicators Are Not Visible
 
 Verify Login Page Opened
     [Documentation]    Verify the Login page or Login view is opened from the Home page.
