@@ -1472,6 +1472,7 @@ def build_keyword_review_prompt(
             "Improve implementation quality using dynamic common/shared helper discovery rather than hardcoded mappings.",
             "Normalize inconsistent low-level interaction patterns when stronger reusable common helpers are discoverable from shared resource context.",
             "Keep reviewed keyword artifacts compact, reusable, page-specific, and suitable as the implementation lineage for final resource generation.",
+            "Repair duplicate names, technical variable leakage, and keyword-name versus implementation-scope mismatches before the reviewed artifact is saved.",
         ],
     }
     return (
@@ -1490,7 +1491,9 @@ def build_keyword_review_prompt(
         "- implementation must be an array of Robot Framework keyword lines only.\n"
         "- approved must be true for retained keywords.\n"
         "- Do not invent unsupported locators, messages, page flows, or framework keywords.\n"
-        "- Do not add markdown fences or explanation text.\n\n"
+        "- Do not add markdown fences or explanation text.\n"
+        "- Do not emit duplicate keywordName values in the final reviewed artifact. Each retained keyword must have a unique semantic name.\n"
+        "- Do not emit implementation lines that reference non-canonical locator variables when the approved page metadata already establishes a cleaner canonical variable name for the same target element.\n\n"
         "Review and normalization rules:\n"
         "- Treat candidate_keywords as the primary semantic lineage, but improve weak implementation choices when approved evidence supports a better reusable abstraction.\n"
         "- Infer reusable interaction preferences dynamically from common_resource_context and existing_page_resource.\n"
@@ -1499,6 +1502,9 @@ def build_keyword_review_prompt(
         "- Preserve page-specific validations and reusable atomic page actions.\n"
         "- Remove or simplify scenario-wrapper keywords when they are redundant and not useful as stable page-level abstractions.\n"
         "- Avoid duplicate keywords that share the same semantic intent but differ only by argument usage or literal examples.\n"
+        "- The implementation scope must match the keyword name. If a keyword name is singular and element-scoped, its implementation should validate or act on that element only. If an implementation validates a group, state, or collection of controls, rename it to a matching group/state-level keyword instead of keeping a misleading singular element name.\n"
+        "- Replace technical locator-driven variable references with the best available reviewed semantic variable names inferred from approved elements and existing page resource context.\n"
+        "- Where approved manual expected outcomes describe visible guest-state presence, enabled state, absence of authenticated-only controls, or graceful state retention, prefer stable reusable page-level validation keywords that reflect those exact observable outcomes.\n"
         "- Keep implementations concise, maintainable, and suitable for downstream page resource generation.\n"
         "- Prefer reviewed implementations that make downstream resource generation naturally preserve common helper usage.\n"
         "- If the shared/common context does not clearly support a reusable helper, keep a valid low-level implementation rather than inventing one.\n\n"
@@ -2045,6 +2051,11 @@ def save_keywords_for_workflow(workflow: dict, keywords: list[dict]):
         to_keyword_title(name).lower(): name
         for name in approved_elements_by_name
     }
+    canonical_variable_by_target = {
+        clean_text(str(item.get("approvedName", ""))): to_robot_variable_name(clean_text(str(item.get("approvedName", ""))))
+        for item in approved_elements
+        if clean_text(str(item.get("approvedName", "")))
+    }
 
     disallowed_resource_keywords = {
         "open page",
@@ -2061,13 +2072,18 @@ def save_keywords_for_workflow(workflow: dict, keywords: list[dict]):
                 return element_name
         return ""
 
-    approved_keywords_by_name = {
-        clean_text(str(item.get("keywordName", ""))).lower(): item
-        for item in keywords
-        if clean_text(str(item.get("keywordName", "")))
-    }
+    def normalize_implementation_variables(lines: list[str], target_element: str) -> list[str]:
+        normalized_lines: list[str] = []
+        canonical_variable = canonical_variable_by_target.get(target_element, "")
+        for line in lines:
+            updated_line = str(line).rstrip()
+            if canonical_variable:
+                updated_line = re.sub(r"\$\{AUTO_[A-Z0-9_]+\}", f"${{{canonical_variable}}}", updated_line)
+            normalized_lines.append(updated_line)
+        return normalized_lines
 
     normalized_keywords = []
+    seen_keyword_names: set[str] = set()
     for idx, keyword in enumerate(keywords, start=1):
         keyword_name = clean_text(str(keyword.get("keywordName", "")))
         if not keyword_name or keyword_name.lower() in disallowed_resource_keywords:
@@ -2079,6 +2095,14 @@ def save_keywords_for_workflow(workflow: dict, keywords: list[dict]):
         if isinstance(implementation, str):
             implementation = [line.rstrip() for line in implementation.splitlines() if line.strip()]
         implementation = [str(line).rstrip() for line in implementation if clean_text(str(line))]
+        implementation = normalize_implementation_variables(implementation, target_element)
+        if not implementation:
+            continue
+
+        normalized_keyword_name = keyword_name.lower()
+        if normalized_keyword_name in seen_keyword_names:
+            continue
+        seen_keyword_names.add(normalized_keyword_name)
 
         arguments = keyword.get("arguments", [])
         if isinstance(arguments, str):

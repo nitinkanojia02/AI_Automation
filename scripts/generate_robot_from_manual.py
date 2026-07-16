@@ -889,27 +889,49 @@ def validate_robot_alignment_with_resource_context(content: str, resource_contex
     }
 
     suite_called_keywords: list[str] = []
+    test_step_sequences: list[list[str]] = []
+    current_sequence: list[str] = []
     in_test_cases = False
     for raw_line in content.splitlines():
         stripped = raw_line.strip()
         lowered = stripped.lower()
         if lowered == "*** test cases ***":
             in_test_cases = True
+            current_sequence = []
             continue
         if lowered.startswith("***") and lowered != "*** test cases ***":
+            if current_sequence:
+                test_step_sequences.append(current_sequence)
             in_test_cases = False
+            current_sequence = []
             continue
         if not in_test_cases:
+            continue
+        if stripped and not raw_line.startswith((" ", "\t")):
+            if current_sequence:
+                test_step_sequences.append(current_sequence)
+            current_sequence = []
             continue
         if raw_line.startswith((" ", "\t")) and stripped and not stripped.startswith("["):
             parts = [part.strip() for part in re.split(r"\s{2,}|\t+", stripped) if part.strip()]
             if parts:
-                suite_called_keywords.append(clean_text(parts[0]).lower())
+                keyword_name = clean_text(parts[0]).lower()
+                suite_called_keywords.append(keyword_name)
+                current_sequence.append(keyword_name)
+    if current_sequence:
+        test_step_sequences.append(current_sequence)
 
     common_helper_names = {
         clean_text(str(keyword.get("name", ""))).lower()
         for resource in resource_context
         if resource.get("type") == "common"
+        for keyword in resource.get("keywords", [])
+        if clean_text(str(keyword.get("name", "")))
+    }
+    page_keyword_names = {
+        clean_text(str(keyword.get("name", ""))).lower()
+        for resource in resource_context
+        if resource.get("type") != "common"
         for keyword in resource.get("keywords", [])
         if clean_text(str(keyword.get("name", "")))
     }
@@ -937,6 +959,33 @@ def validate_robot_alignment_with_resource_context(content: str, resource_contex
         if suite_keyword_counts.get(low_level_name, 0) and preferred_helper in common_helper_names:
             warnings.append(
                 f"Generated suite uses low-level keyword '{low_level_name}' even though shared/common helper '{preferred_helper}' is available and should be preferred"
+            )
+
+    has_setup = bool(re.search(r"(?im)^\s*(?:Suite Setup|Test Setup)\s+.+$", content))
+    has_teardown = bool(re.search(r"(?im)^\s*(?:Suite Teardown|Test Teardown)\s+.+$", content))
+    if has_teardown and not has_setup:
+        repeated_start_candidates = []
+        for steps in test_step_sequences:
+            if steps:
+                repeated_start_candidates.append(steps[0])
+            if len(steps) >= 2:
+                repeated_start_candidates.append(" > ".join(steps[:2]))
+        if repeated_start_candidates:
+            top_pattern = max(set(repeated_start_candidates), key=repeated_start_candidates.count)
+            if repeated_start_candidates.count(top_pattern) >= max(2, len(test_step_sequences) // 2):
+                warnings.append(
+                    "Generated suite includes teardown but missed promoting the repeated startup pattern into Test Setup or Suite Setup. Prefer using the repeated page-open/page-ready keyword sequence as setup when it is shared by most tests."
+                )
+
+    repeated_open_keywords = {
+        name for name in page_keyword_names
+        if any(token in name for token in ["open ", "launch ", "guest state", "page is loaded", "page loaded"])
+    }
+    if not has_setup and repeated_open_keywords:
+        repeated_opener_usage = sum(suite_keyword_counts.get(name, 0) for name in repeated_open_keywords)
+        if repeated_opener_usage >= 2:
+            warnings.append(
+                "Generated suite repeatedly invokes a page-opening/page-readiness keyword inside test bodies instead of lifting it into Test Setup or Suite Setup."
             )
 
     return len(errors) == 0, ("Warnings:\n" + "\n".join(warnings)) if warnings else ""
@@ -1178,6 +1227,52 @@ def validate_robot_content(content: str, allowed_resources: list[str]) -> tuple[
 
     if has_teardown and not has_setup:
         warnings.append("Generated suite includes teardown but no setup; repair the suite to include setup for browser opening and initial navigation using approved shared/common or page resource helpers")
+
+    startup_sequences: list[list[str]] = []
+    current_steps: list[str] = []
+    in_test_cases_for_setup_review = False
+    for raw_line in content.splitlines():
+        stripped = raw_line.strip()
+        lowered = stripped.lower()
+        if lowered == "*** test cases ***":
+            in_test_cases_for_setup_review = True
+            current_steps = []
+            continue
+        if lowered.startswith("***") and lowered != "*** test cases ***":
+            if current_steps:
+                startup_sequences.append(current_steps)
+            in_test_cases_for_setup_review = False
+            current_steps = []
+            continue
+        if not in_test_cases_for_setup_review:
+            continue
+        if stripped and not raw_line.startswith((" ", "\t")):
+            if current_steps:
+                startup_sequences.append(current_steps)
+            current_steps = []
+            continue
+        if raw_line.startswith((" ", "\t")) and stripped and not stripped.startswith("["):
+            keyword_name, _arguments = scan_keyword_invocation(stripped)
+            if keyword_name:
+                current_steps.append(clean_text(keyword_name).lower())
+    if current_steps:
+        startup_sequences.append(current_steps)
+
+    if not has_setup and startup_sequences:
+        startup_prefixes: dict[str, int] = {}
+        for steps in startup_sequences:
+            for prefix_length in (1, 2):
+                if len(steps) >= prefix_length:
+                    prefix = " > ".join(steps[:prefix_length])
+                    startup_prefixes[prefix] = startup_prefixes.get(prefix, 0) + 1
+        repeated_prefixes = [
+            prefix for prefix, count in startup_prefixes.items()
+            if count >= max(2, len(startup_sequences) // 2)
+        ]
+        if repeated_prefixes:
+            warnings.append(
+                "Generated suite repeats the same startup pattern across most tests but does not use Test Setup or Suite Setup; prefer promoting the repeated page-open/page-ready sequence into setup."
+            )
 
     if re.search(r"(?is)\*\*\*\s*settings\s*\*\*\*.*?\n\s*\n\s*(?:Test Setup|Suite Setup|Test Teardown|Suite Teardown|Resource)", content):
         warnings.append("Generated suite contains unnecessary blank lines inside the Settings section; keep Settings compact")
