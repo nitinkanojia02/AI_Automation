@@ -21,8 +21,7 @@ Enter Username Textbox
 Enter Password Textbox
     [Documentation]    Enter password into the password textbox.
     [Arguments]    ${password}
-    Wait For Element To Be Ready    ${PASSWORD_FIELD}
-    Input Password    ${PASSWORD_FIELD}    ${password}
+    Input Text When Ready    ${PASSWORD_FIELD}    ${password}
 
 Click Sign In Button
     [Documentation]    Click the sign in button.

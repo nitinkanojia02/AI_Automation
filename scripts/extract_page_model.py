@@ -897,40 +897,35 @@ def generate_keyword(var_name: str, label: str, role: str) -> str:
     if role in {"button", "link", "radio", "element"}:
         return f"""Click {label_title}
     [Documentation]    {keyword_doc("Click", label_title, role)}
-    Wait Until Element Is Visible    ${{{var_name}}}    10s
-    Click Element    ${{{var_name}}}"""
+    Click When Ready    ${{{var_name}}}"""
 
     if role == "textbox":
         return f"""Enter {label_title}
     [Documentation]    {keyword_doc("Enter text", label_title, role)}
     [Arguments]    ${{text}}
-    Wait Until Element Is Visible    ${{{var_name}}}    10s
-    Input Text    ${{{var_name}}}    ${{text}}"""
+    Input Text When Ready    ${{{var_name}}}    ${{text}}"""
 
     if role == "password":
         return f"""Enter {label_title}
     [Documentation]    {keyword_doc("Enter password", label_title, role)}
     [Arguments]    ${{password}}
-    Wait Until Element Is Visible    ${{{var_name}}}    10s
-    Input Password    ${{{var_name}}}    ${{password}}"""
+    Input Text When Ready    ${{{var_name}}}    ${{password}}"""
 
     if role == "dropdown":
         return f"""Select {label_title}
     [Documentation]    {keyword_doc("Select dropdown value", label_title, role)}
     [Arguments]    ${{value}}
-    Wait Until Element Is Visible    ${{{var_name}}}    10s
+    Wait For Element To Be Ready    ${{{var_name}}}
     Select From List By Label    ${{{var_name}}}    ${{value}}"""
 
     if role == "checkbox":
         return f"""Select {label_title}
     [Documentation]    {keyword_doc("Select checkbox", label_title, role)}
-    Wait Until Element Is Visible    ${{{var_name}}}    10s
-    Select Checkbox    ${{{var_name}}}"""
+    Click When Ready    ${{{var_name}}}"""
 
     return f"""Click {label_title}
     [Documentation]    {keyword_doc("Click", label_title, role)}
-    Wait Until Element Is Visible    ${{{var_name}}}    10s
-    Click Element    ${{{var_name}}}"""
+    Click When Ready    ${{{var_name}}}"""
 
 def generate_resource(url: str, elements: List[dict]) -> str:
     used_names, variables, keywords = set(), [], []

@@ -2497,6 +2497,24 @@ def validate_generated_resource_against_approved_artifacts(
                 "Generated page resource does not reuse retrieved common/shared keywords even though common resource context is available; prefer common wrappers over raw SeleniumLibrary calls."
             )
 
+        helper_preference_rules = [
+            ("input text when ready", ["input text", "input password"], "Input Text When Ready"),
+            ("click when ready", ["click element"], "Click When Ready"),
+            (
+                "wait for element to be ready",
+                ["wait until element is visible", "wait until element is enabled"],
+                "Wait For Element To Be Ready",
+            ),
+        ]
+        for preferred_helper, low_level_keywords, helper_display_name in helper_preference_rules:
+            if preferred_helper not in common_keyword_names:
+                continue
+            for low_level_keyword in low_level_keywords:
+                if re.search(rf"(?im)^\s*{re.escape(low_level_keyword)}\b", resource_content):
+                    errors.append(
+                        f"Generated page resource uses low-level keyword '{low_level_keyword}' even though shared/common helper '{helper_display_name}' is available and should be preferred."
+                    )
+
     forbidden_builtin_hits = [
         keyword_name for keyword_name in forbidden_builtin_assertion_keywords
         if re.search(rf"(?im)^\s*{re.escape(keyword_name)}\b", resource_content)
