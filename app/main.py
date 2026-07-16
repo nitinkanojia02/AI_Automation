@@ -1495,8 +1495,9 @@ def build_keyword_review_prompt(
         "- Do not emit duplicate keywordName values in the final reviewed artifact. Each retained keyword must have a unique semantic name.\n"
         "- Do not emit implementation lines that reference non-canonical locator variables when the approved page metadata already establishes a cleaner canonical variable name for the same target element.\n"
         "- When the approved manual outcomes imply absence checks, create page-level absence validations only for controls or indicators that are explicitly grounded in approved elements, approved reviewed keywords, or stable existing page-resource evidence.\n"
-        "- Do not invent self-created placeholder indicators, text aliases, or synthetic absence-only variables for controls that are not grounded in approved page artifacts.\n"
-        "- If authenticated-state absence is mentioned in manual expectations but there is no approved element or stable page-resource evidence for a specific indicator, keep the reviewed artifact focused on grounded positive page-state validations instead of generating speculative negative keywords.\n\n"
+        "- Do not invent self-created placeholder indicators, text aliases, synthetic absence-only variables, or speculative element/variable names that are not grounded in approved page artifacts.\n"
+        "- If authenticated-state absence is mentioned in manual expectations but there is no approved element or stable page-resource evidence for a specific indicator, keep the reviewed artifact focused on grounded positive page-state validations instead of generating speculative negative keywords.\n"
+        "- If a negative validation cannot be grounded in approved elements, approved reviewed keywords, or stable existing page-resource evidence, omit it instead of fabricating placeholder data or synthetic artifact entries.\n\n"
         "Review and normalization rules:\n"
         "- Treat candidate_keywords as the primary semantic lineage, but improve weak implementation choices when approved evidence supports a better reusable abstraction.\n"
         "- Infer reusable interaction preferences dynamically from common_resource_context and existing_page_resource.\n"
@@ -2089,40 +2090,6 @@ def save_keywords_for_workflow(workflow: dict, keywords: list[dict]):
             normalized_lines.append(updated_line)
         return normalized_lines
 
-    grounded_existing_resource_variables: set[str] = set()
-    existing_resource_path = get_resource_path(page_name)
-    existing_resource_text = read_text(existing_resource_path)
-    if existing_resource_text:
-        try:
-            parsed_existing_resource = parse_resource_file(existing_resource_path)
-            grounded_existing_resource_variables = {
-                clean_text(str(variable.get("name", ""))).upper()
-                for variable in parsed_existing_resource.get("variables", [])
-                if clean_text(str(variable.get("name", "")))
-            }
-        except Exception:
-            grounded_existing_resource_variables = set(re.findall(r"\$\{([A-Z0-9_]+)\}", existing_resource_text))
-
-    allowed_non_locator_variables = {
-        "HOME_PAGE_URL", "HOME_PAGE_PATH", "LOGIN_PAGE_IDENTIFIER", "CUSTOMER_SEARCH_PAGE_IDENTIFIER",
-        "VEHICLE_SURVEY_PAGE_IDENTIFIER", "SURVEY_PAGE_IDENTIFIER"
-    }
-
-    def implementation_contains_noncanonical_variables(lines: list[str]) -> bool:
-        for line in lines:
-            for token in re.findall(r"\$\{([A-Z0-9_]+)\}", str(line)):
-                if token.startswith("AUTO_"):
-                    return True
-                if token in approved_variable_names or token in allowed_non_locator_variables:
-                    continue
-                if grounded_existing_resource_variables and token in grounded_existing_resource_variables and token not in approved_variable_names:
-                    return True
-                if token.endswith(("_TEXT", "_LABEL", "_MESSAGE", "_INDICATOR", "_STATUS")) and token not in approved_variable_names:
-                    return True
-                if approved_variable_names and token not in approved_variable_names and token.endswith(("_BUTTON", "_FIELD", "_TEXTBOX", "_LINK", "_ICON", "_INPUT", "_DROPDOWN", "_CHECKBOX", "_RADIO")):
-                    return True
-        return False
-
     normalized_keywords = []
     seen_keyword_names: set[str] = set()
     for idx, keyword in enumerate(keywords, start=1):
@@ -2137,7 +2104,7 @@ def save_keywords_for_workflow(workflow: dict, keywords: list[dict]):
             implementation = [line.rstrip() for line in implementation.splitlines() if line.strip()]
         implementation = [str(line).rstrip() for line in implementation if clean_text(str(line))]
         implementation = normalize_implementation_variables(implementation, target_element)
-        if not implementation or implementation_contains_noncanonical_variables(implementation):
+        if not implementation:
             continue
 
         normalized_keyword_name = keyword_name.lower()

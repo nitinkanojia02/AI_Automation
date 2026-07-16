@@ -942,12 +942,6 @@ def validate_robot_alignment_with_resource_context(content: str, resource_contex
     for name in suite_called_keywords:
         suite_keyword_counts[name] = suite_keyword_counts.get(name, 0) + 1
 
-    preferred_low_level_overrides = {
-        "input text": "input text when ready",
-        "input password": "input text when ready",
-        "click element": "click when ready",
-    }
-
     if approved_resource_keyword_names:
         called_approved_keywords = [name for name in suite_called_keywords if name in approved_resource_keyword_names]
         if not called_approved_keywords:
@@ -957,12 +951,6 @@ def validate_robot_alignment_with_resource_context(content: str, resource_contex
         called_common_helpers = [name for name in suite_called_keywords if name in common_helper_names]
         if not called_common_helpers:
             warnings.append("Generated suite does not appear to call retrieved common/shared helper keywords")
-
-    for low_level_name, preferred_helper in preferred_low_level_overrides.items():
-        if suite_keyword_counts.get(low_level_name, 0) and preferred_helper in common_helper_names:
-            warnings.append(
-                f"Generated suite uses low-level keyword '{low_level_name}' even though shared/common helper '{preferred_helper}' is available and should be preferred"
-            )
 
     has_setup = bool(re.search(r"(?im)^\s*(?:Suite Setup|Test Setup)\s+.+$", content))
     has_teardown = bool(re.search(r"(?im)^\s*(?:Suite Teardown|Test Teardown)\s+.+$", content))
@@ -1446,9 +1434,9 @@ def validate_robot_content(content: str, allowed_resources: list[str]) -> tuple[
         warnings.append(
             "Generated suite contains raw negative visibility checks in test bodies. Prefer reusable page-resource validation keywords for guest-state or authenticated-only absence expectations when the manual outcomes imply a stable page-level assertion."
         )
-    if re.search(r"(?im)^\s*(?:Page Should Not Contain|Wait Until Element Is Not Visible)\b.*(?:Logout|Sign Out|\$\{LOGOUT_TEXT\}|\$\{SIGN_OUT_TEXT\})", content):
+    if re.search(r"(?im)^\s*(?:Page Should Not Contain|Wait Until Element Is Not Visible)\b.*\$\{(?:[A-Z0-9_]*TEXT|[A-Z0-9_]*LABEL|[A-Z0-9_]*MESSAGE|[A-Z0-9_]*INDICATOR|[A-Z0-9_]*STATUS)\}", content):
         warnings.append(
-            "Generated suite contains negative assertions for synthetic authenticated-user indicators that are not grounded in approved page elements. Remove speculative placeholder-style checks and prefer only approved page-state validations."
+            "Generated suite contains negative assertions backed by speculative text or indicator variables rather than grounded page-resource validations. Prefer approved page-state validations and avoid placeholder-style absence checks."
         )
 
     is_valid = len(errors) == 0
