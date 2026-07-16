@@ -198,8 +198,8 @@ Mandatory coverage requirements:
 12. Acceptance criteria involving shared or upstream controls must still generate tests even when those controls are not newly extracted on the current page.
 13. For navigation criteria such as Back button or Home button returning to a previous page, generate explicit navigation tests instead of replacing them with generic exploratory cases.
 14. Prioritize mandatory acceptance-criteria coverage before adding additional exploratory edge cases.
-15. If the workflow includes explicit approved credentials, required navigation controls, transition expectations, or reusable resource guidance, generate tests that reflect those exact story details before adding extra generic exploratory scenarios.
-16. Do not let optional edge or accessibility-style tests displace mandatory user-story scenarios such as back/home navigation, post-login transition validation, or approved-credential usage.
+15. If the workflow includes explicit approved business data, required navigation controls, transition expectations, state changes, or reusable resource guidance, generate tests that reflect those exact story details before adding extra generic exploratory scenarios.
+16. Do not let optional edge or accessibility-style tests displace mandatory user-story scenarios such as required navigation, transition validation, state-change validation, or approved business-data usage.
 
 Schema rules:
 1. Every test case object must contain exactly these keys:
@@ -268,10 +268,10 @@ Important behavior:
 - If approvedElements expose navigation controls, action buttons, messages, masked fields, or other meaningful UI states, generate grounded manual tests for them where relevant.
 - If observedValidations exist, transform them into concrete manual test cases, not summary text.
 - Write expectedResult values so downstream automation and keyword generation can create observable assertions and reusable validations, not vague outcomes.
-- For positive authentication/navigation cases, expectedResult should explicitly mention authenticated state, landing page, redirect, dashboard/home visibility, URL change, or equivalent observable outcome.
-- If approved test credentials are provided in the workflow story, reflect that approved data in the relevant positive login/manual test wording instead of replacing it with generic 'valid credentials' phrasing everywhere.
-- For negative authentication or validation cases, expectedResult should explicitly mention observable rejection, validation messaging, no navigation, protected-area denial, disabled submission, or continued presence of the login/form state where applicable.
-- If the story requires transition validation such as logged-in user name visibility or additional authenticated-only features becoming available, create explicit manual tests for those outcomes instead of leaving them implied inside a generic successful login test.
+- For positive transition or navigation cases, expectedResult should explicitly mention the destination state, landing view/page, redirect, visible state change, role-specific UI change, URL change, or another equivalent observable outcome.
+- If approved business data is provided in the workflow story, reflect that approved data in the relevant positive scenario wording instead of replacing it with generic placeholder phrasing everywhere.
+- For negative validation or failed-transition cases, expectedResult should explicitly mention observable rejection, validation messaging, lack of navigation, denial of protected access, disabled submission, or continued presence of the current state where applicable.
+- If the story requires transition validation such as identity changes, role/state-specific UI changes, newly available capabilities, or destination-state evidence, create explicit manual tests for those outcomes instead of leaving them implied inside a generic successful flow test.
 - For edge interaction scenarios such as Enter key, repeated clicking, whitespace handling, copy-paste, and long input, expectedResult should describe the exact observable behavior that automation must verify.
 - Avoid producing shallow variants that differ only in wording but not in observable intent.
 - Prefer tests whose expectedResult can be validated by visible UI state, message, field behavior, redirect behavior, enabled/disabled state, masking behavior, or other observable outcomes.
@@ -283,11 +283,11 @@ Mandatory Acceptance Criteria Coverage Map:
 
 Additional generation instructions for acceptance criteria:
 - Generate at least one explicit test case for each mandatory acceptance criterion above.
-- If a criterion mentions Back button, Home button, Forgot Password, or other shared/upstream controls, still generate the scenario even if that control is reused from another approved resource.
-- Do not omit explicit navigation scenarios because of missing local extraction.
-- Mine imported story sections such as Validation Expectations, Transition Expectations, Approved Test Data Guidance, Entry Conditions, and Generation Guidance as mandatory scenario sources, not as background-only prose.
-- If the story provides approved credentials, include them explicitly in the relevant positive scenario wording so downstream layers preserve that approved data lineage.
-- If the story requires post-login authenticated-state evidence like logged-in user name visibility or authenticated-only features, generate dedicated manual tests for those outcomes instead of leaving them implicit.
+- If a criterion mentions shared, upstream, reused, or cross-page controls, still generate the scenario even if that control is reused from another approved resource.
+- Do not omit explicit navigation or transition scenarios because of missing local extraction.
+- Mine imported story sections such as validation expectations, transition expectations, approved data guidance, entry conditions, and generation guidance as mandatory scenario sources, not as background-only prose.
+- If the story provides approved business data or concrete expected observations, include them explicitly in the relevant scenario wording so downstream layers preserve that lineage.
+- If the story requires destination-state evidence, state-change evidence, role-specific UI changes, or newly available capabilities, generate dedicated manual tests for those outcomes instead of leaving them implicit.
 - Do not treat URLs, headings, or descriptive labels as standalone test cases.
 - expectedResult must be a single clear string, not a serialized list.
 
@@ -556,7 +556,9 @@ def extract_story_sections(workflow_input: Dict[str, Any]) -> Dict[str, List[str
         "entry conditions",
         "test credentials",
         "approved test data guidance",
-        "login page elements",
+        "page elements",
+        "screen elements",
+        "view elements",
         "behavior rules",
         "validation expectations",
         "transition expectations",
@@ -734,15 +736,13 @@ def extract_requirement_units(workflow_input: Dict[str, Any]) -> List[Dict[str, 
     lower_story = f"{story_text} {section_text}".lower()
 
     generic_patterns = [
-        (r"back button[^.\n]*home page", "Back button navigation should return to Home page"),
-        (r"home button[^.\n]*home page", "Home button navigation should return to Home page"),
-        (r"forgot password[^.\n]*(open|navigate|workflow|destination)", "Forgot Password should open the supported recovery flow"),
-        (r"password[^.\n]*masked", "Password input should be masked by default"),
-        (r"person/profile button[^.\n]*login page", "Person/Profile button from Home page should open the Login page"),
-        (r"logged-in user name|logged in user name", "Successful login should show the logged-in user name on the Home page"),
-        (r"authenticated-only features should become available|additional authenticated-only features should become available", "Successful login should make authenticated-only features available on the Home page"),
-        (r"valid username\s*:?[ ]*krisadmin", "Positive login scenarios should use the approved valid username krisadmin"),
-        (r"valid password\s*:?[ ]*carwash#1", "Positive login scenarios should use the approved valid password Carwash#1"),
+        (r"back button[^.\n]*(return|navigate)", "Back-button navigation should return to the previous supported page or state"),
+        (r"home button[^.\n]*(return|navigate)", "Home-button navigation should return to the designated home or landing page"),
+        (r"forgot password[^.\n]*(open|navigate|workflow|destination)", "Recovery-navigation control should open the supported recovery flow"),
+        (r"password[^.\n]*masked", "Sensitive secret input should be masked by default"),
+        (r"logged[- ]in user name|signed[- ]in user name|user identity.*visible", "Successful completion should reveal the expected identity or user-specific state indicator"),
+        (r"authenticated-only features should become available|additional [a-z\- ]*features should become available|role-specific.*available", "Successful completion should reveal newly available state-specific capabilities"),
+        (r"valid [a-z0-9_ -]+\s*:|approved [a-z0-9_ -]+data|approved [a-z0-9_ -]+credentials", "Positive scenarios should use approved business data provided by the workflow story"),
     ]
     for pattern, text in generic_patterns:
         if re.search(pattern, lower_story, flags=re.IGNORECASE):
@@ -785,14 +785,14 @@ def criterion_is_covered(criterion: str, test_cases: List[Dict[str, Any]]) -> bo
 
     lowered = criterion.lower()
     special_patterns = []
-    if "back button" in lowered and "home page" in lowered:
-        special_patterns.append({"back", "button", "home", "page"})
-    if "home button" in lowered and "home page" in lowered:
-        special_patterns.append({"home", "button", "page"})
+    if "back button" in lowered:
+        special_patterns.append({"back", "button"})
+    if "home button" in lowered:
+        special_patterns.append({"home", "button"})
     if "forgot password" in lowered:
         special_patterns.append({"forgot", "password"})
-    if "person/profile button" in lowered and "login page" in lowered:
-        special_patterns.append({"person", "profile", "button", "login", "page"})
+    if any(token in lowered for token in ["profile button", "person button", "account button", "entry control"]) and any(token in lowered for token in ["open", "entry", "destination", "page", "view"]):
+        special_patterns.append({"button", "open"})
 
     for tc in test_cases:
         candidate_key = test_case_signature(tc)
@@ -820,28 +820,28 @@ def classify_requirement(text: str) -> Dict[str, Any]:
         "fields": [],
     }
 
-    if "back button" in lowered and "home page" in lowered:
+    if "back button" in lowered:
         requirement.update({
             "category": "navigation",
-            "title": "Verify Back button returns user to Home page",
+            "title": "Verify Back button returns to the supported previous page or state",
             "type": "positive",
             "steps": [
-                "Open the current workflow page",
+                "Open the current workflow page or state",
                 "Click the Back button",
             ],
-            "expectedResult": "The application navigates back to the Home page and the current page is no longer active.",
+            "expectedResult": "The application returns to the supported previous page or previous state and the current page or state is no longer active.",
             "fields": ["back_button"],
         })
-    elif "home button" in lowered and "home page" in lowered:
+    elif "home button" in lowered:
         requirement.update({
             "category": "navigation",
-            "title": "Verify Home button returns user to Home page",
+            "title": "Verify Home button returns to the designated landing page",
             "type": "positive",
             "steps": [
-                "Open the current workflow page",
+                "Open the current workflow page or state",
                 "Click the Home button",
             ],
-            "expectedResult": "The application navigates to the Home page and the current page is no longer active.",
+            "expectedResult": "The application navigates to the designated landing page and the current page or state is no longer active.",
             "fields": ["home_button"],
         })
     elif "forgot password" in lowered:
