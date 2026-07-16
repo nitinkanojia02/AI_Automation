@@ -145,7 +145,6 @@ def build_prompt(workflow_input: Dict[str, Any]) -> str:
             "id": item["id"],
             "source": item["source"],
             "requirement": item["text"],
-            "mustGenerateAtLeastOneTest": True,
         })
     return f"""
 You are AI Layer 1: a senior QA test designer operating inside a multi-layer AI-assisted automation framework.
@@ -282,12 +281,10 @@ Mandatory Acceptance Criteria Coverage Map:
 {pretty_json(mandatory_scenarios)}
 
 Additional generation instructions for acceptance criteria:
-- Generate at least one explicit test case for each mandatory acceptance criterion above.
-- If a criterion mentions shared, upstream, reused, or cross-page controls, still generate the scenario even if that control is reused from another approved resource.
-- Do not omit explicit navigation or transition scenarios because of missing local extraction.
-- Mine imported story sections such as validation expectations, transition expectations, approved data guidance, entry conditions, and generation guidance as mandatory scenario sources, not as background-only prose.
-- If the story provides approved business data or concrete expected observations, include them explicitly in the relevant scenario wording so downstream layers preserve that lineage.
-- If the story requires destination-state evidence, state-change evidence, role-specific UI changes, or newly available capabilities, generate dedicated manual tests for those outcomes instead of leaving them implicit.
+- Cover the requirement units above with explicit, observable manual scenarios.
+- Treat extracted story sections as requirement sources, not as background-only prose.
+- Preserve concrete business data and observable outcomes from the workflow wherever they are explicitly provided.
+- Turn explicit transitions, state changes, validations, and control behaviors into dedicated scenarios instead of leaving them implied inside generic success cases.
 - Do not treat URLs, headings, or descriptive labels as standalone test cases.
 - expectedResult must be a single clear string, not a serialized list.
 

@@ -2791,6 +2791,8 @@ def generate_manual_tests_for_workflow(workflow_name: str) -> dict:
         token=token,
         prompt=prompt,
     )
+    if not generated:
+        raise HTTPException(status_code=502, detail="Manual test AI returned no content for generation stage.")
     reviewed_manual = call_manual_ai_with_workflow_session(
         workflow_name=workflow_name,
         stage="manual_review",
