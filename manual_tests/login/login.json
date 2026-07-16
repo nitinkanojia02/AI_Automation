@@ -1,0 +1,535 @@
+{
+  "workflowName": "login",
+  "feature": "LOGIN",
+  "applicationCode": "WT",
+  "testIdentifierPrefix": "LOGIN",
+  "resourceFiles": [
+    "login_page/login_page.resource"
+  ],
+  "preconditions": [
+    "Launch the application and navigate to http://localhost/washtabui/home",
+    "Verify the Home page is loaded in guest state before opening the Login page",
+    "Open the Login page using the Home page person/profile button"
+  ],
+  "testCases": [
+    {
+      "id": "LOGIN_TC_001",
+      "title": "Open Login page from Home page guest state using person/profile button",
+      "type": "positive",
+      "steps": [
+        "Navigate to http://localhost/washtabui/home",
+        "Verify the Home page is displayed in guest state",
+        "Click the person/profile button on the Home page"
+      ],
+      "expectedResult": "The Login page opens within the SPA flow and the username field, password field, and SIGN IN button are displayed, visible, and interactive without a full browser page reload.",
+      "fields": [
+        "username_field",
+        "password_field",
+        "sign_in_button"
+      ],
+      "interactionIntent": {
+        "inputMethod": "type",
+        "submissionMethod": "click",
+        "interactionPattern": "standard",
+        "validationType": "navigation_success"
+      }
+    },
+    {
+      "id": "LOGIN_TC_002",
+      "title": "Verify Login page controls are visible and enabled after opening from Home page",
+      "type": "positive",
+      "steps": [
+        "Navigate to the Home page",
+        "Click the person/profile button to open the Login page",
+        "Inspect the Login page controls"
+      ],
+      "expectedResult": "The username field accepts keyboard input, the password field accepts masked input, and the SIGN IN button is visible, enabled, and clickable.",
+      "fields": [
+        "username_field",
+        "password_field",
+        "sign_in_button"
+      ],
+      "interactionIntent": {
+        "inputMethod": "type",
+        "submissionMethod": "click",
+        "interactionPattern": "standard",
+        "validationType": "navigation_success"
+      }
+    },
+    {
+      "id": "LOGIN_TC_003",
+      "title": "Verify password input is masked by default during typing",
+      "type": "positive",
+      "steps": [
+        "Open the Login page from the Home page",
+        "Click inside the password field",
+        "Type a sample password into the password field"
+      ],
+      "expectedResult": "Each typed password character is displayed as a masked symbol or hidden value and the readable plain text password is not visible anywhere on the Login page.",
+      "fields": [
+        "password_field"
+      ],
+      "interactionIntent": {
+        "inputMethod": "type",
+        "submissionMethod": "click",
+        "interactionPattern": "standard",
+        "validationType": "navigation_success"
+      }
+    },
+    {
+      "id": "LOGIN_TC_004",
+      "title": "Login successfully with valid username and valid password using SIGN IN button",
+      "type": "positive",
+      "steps": [
+        "Open the Login page from the Home page",
+        "Enter a valid username into the username field",
+        "Enter a valid password into the password field",
+        "Click the SIGN IN button"
+      ],
+      "expectedResult": "Authentication succeeds, the application returns to the Home page in authenticated state, guest-state controls are no longer shown, and the person/profile button is replaced by authenticated-user identity or logged-in user UI.",
+      "fields": [
+        "username_field",
+        "password_field",
+        "sign_in_button"
+      ],
+      "interactionIntent": {
+        "inputMethod": "type",
+        "submissionMethod": "click",
+        "interactionPattern": "standard",
+        "validationType": "navigation_success"
+      }
+    },
+    {
+      "id": "LOGIN_TC_005",
+      "title": "Login successfully by submitting credentials using Enter key from password field",
+      "type": "edge",
+      "steps": [
+        "Open the Login page from the Home page",
+        "Enter a valid username into the username field",
+        "Enter a valid password into the password field",
+        "Press the Enter key while the cursor focus remains inside the password field"
+      ],
+      "expectedResult": "A single login request is submitted from the keyboard action, the user is authenticated successfully, and the application transitions back to authenticated Home page state.",
+      "fields": [
+        "username_field",
+        "password_field"
+      ],
+      "interactionIntent": {
+        "inputMethod": "type",
+        "submissionMethod": "keyboard_enter",
+        "interactionPattern": "standard",
+        "validationType": "navigation_success"
+      }
+    },
+    {
+      "id": "LOGIN_TC_006",
+      "title": "Reject login with invalid username and valid password",
+      "type": "negative",
+      "steps": [
+        "Open the Login page from the Home page",
+        "Enter an invalid username into the username field",
+        "Enter a valid password into the password field",
+        "Click the SIGN IN button"
+      ],
+      "expectedResult": "Authentication fails, visible login rejection feedback is displayed, the user remains unauthenticated, and authenticated Home page UI is not displayed.",
+      "fields": [
+        "username_field",
+        "password_field",
+        "sign_in_button"
+      ],
+      "interactionIntent": {
+        "inputMethod": "type",
+        "submissionMethod": "click",
+        "interactionPattern": "standard",
+        "validationType": "navigation_success"
+      }
+    },
+    {
+      "id": "LOGIN_TC_007",
+      "title": "Reject login with valid username and invalid password",
+      "type": "negative",
+      "steps": [
+        "Open the Login page from the Home page",
+        "Enter a valid username into the username field",
+        "Enter an invalid password into the password field",
+        "Click the SIGN IN button"
+      ],
+      "expectedResult": "Authentication fails, visible login error feedback is displayed, the Login page remains active or the Home page remains in guest state, and authenticated-user controls are not shown.",
+      "fields": [
+        "username_field",
+        "password_field",
+        "sign_in_button"
+      ],
+      "interactionIntent": {
+        "inputMethod": "type",
+        "submissionMethod": "click",
+        "interactionPattern": "standard",
+        "validationType": "navigation_success"
+      }
+    },
+    {
+      "id": "LOGIN_TC_008",
+      "title": "Reject login with invalid username and invalid password",
+      "type": "negative",
+      "steps": [
+        "Open the Login page from the Home page",
+        "Enter an invalid username into the username field",
+        "Enter an invalid password into the password field",
+        "Click the SIGN IN button"
+      ],
+      "expectedResult": "Authentication is rejected, visible error feedback is displayed to the user, the Login page remains displayed, and no authenticated Home state transition occurs.",
+      "fields": [
+        "username_field",
+        "password_field",
+        "sign_in_button"
+      ],
+      "interactionIntent": {
+        "inputMethod": "type",
+        "submissionMethod": "click",
+        "interactionPattern": "standard",
+        "validationType": "error_message"
+      }
+    },
+    {
+      "id": "LOGIN_TC_009",
+      "title": "Display required field validation when SIGN IN is clicked with both fields empty",
+      "type": "negative",
+      "steps": [
+        "Open the Login page from the Home page",
+        "Leave the username field empty",
+        "Leave the password field empty",
+        "Click the SIGN IN button"
+      ],
+      "expectedResult": "Validation feedback for both required fields is displayed, authentication is not attempted, and the Login page remains open without navigation to authenticated Home state.",
+      "fields": [
+        "username_field",
+        "password_field",
+        "sign_in_button"
+      ],
+      "interactionIntent": {
+        "inputMethod": "type",
+        "submissionMethod": "click",
+        "interactionPattern": "standard",
+        "validationType": "required_field"
+      }
+    },
+    {
+      "id": "LOGIN_TC_010",
+      "title": "Display username required validation when password is entered but username is blank",
+      "type": "negative",
+      "steps": [
+        "Open the Login page from the Home page",
+        "Leave the username field empty",
+        "Enter a password into the password field",
+        "Click the SIGN IN button"
+      ],
+      "expectedResult": "A visible validation message indicating the username is required is displayed and the user remains on the Login page without successful authentication.",
+      "fields": [
+        "username_field",
+        "password_field",
+        "sign_in_button"
+      ],
+      "interactionIntent": {
+        "inputMethod": "type",
+        "submissionMethod": "click",
+        "interactionPattern": "standard",
+        "validationType": "required_field"
+      }
+    },
+    {
+      "id": "LOGIN_TC_011",
+      "title": "Display password required validation when username is entered but password is blank",
+      "type": "negative",
+      "steps": [
+        "Open the Login page from the Home page",
+        "Enter a username into the username field",
+        "Leave the password field empty",
+        "Click the SIGN IN button"
+      ],
+      "expectedResult": "A visible validation message indicating the password is required is displayed and the application remains in unauthenticated state.",
+      "fields": [
+        "username_field",
+        "password_field",
+        "sign_in_button"
+      ],
+      "interactionIntent": {
+        "inputMethod": "type",
+        "submissionMethod": "click",
+        "interactionPattern": "standard",
+        "validationType": "required_field"
+      }
+    },
+    {
+      "id": "LOGIN_TC_012",
+      "title": "Reject login when username field contains only whitespace characters",
+      "type": "negative",
+      "steps": [
+        "Open the Login page from the Home page",
+        "Enter only space characters into the username field",
+        "Enter a valid password into the password field",
+        "Click the SIGN IN button"
+      ],
+      "expectedResult": "Whitespace-only username input is treated as invalid or empty, validation or login rejection feedback is displayed, and the application does not authenticate the user.",
+      "fields": [
+        "username_field",
+        "password_field",
+        "sign_in_button"
+      ],
+      "interactionIntent": {
+        "inputMethod": "type",
+        "submissionMethod": "click",
+        "interactionPattern": "whitespace",
+        "validationType": "required_field"
+      }
+    },
+    {
+      "id": "LOGIN_TC_013",
+      "title": "Reject login when password field contains only whitespace characters",
+      "type": "negative",
+      "steps": [
+        "Open the Login page from the Home page",
+        "Enter a valid username into the username field",
+        "Enter only space characters into the password field",
+        "Click the SIGN IN button"
+      ],
+      "expectedResult": "Whitespace-only password input is treated as invalid or empty, validation or login rejection feedback is displayed, and authenticated Home state is not reached.",
+      "fields": [
+        "username_field",
+        "password_field",
+        "sign_in_button"
+      ],
+      "interactionIntent": {
+        "inputMethod": "type",
+        "submissionMethod": "click",
+        "interactionPattern": "whitespace",
+        "validationType": "required_field"
+      }
+    },
+    {
+      "id": "LOGIN_TC_014",
+      "title": "Validate handling of leading and trailing spaces in username and password fields",
+      "type": "edge",
+      "steps": [
+        "Open the Login page from the Home page",
+        "Enter a valid username with leading and trailing spaces into the username field",
+        "Enter a valid password with leading and trailing spaces into the password field",
+        "Click the SIGN IN button"
+      ],
+      "expectedResult": "Leading and trailing spaces are consistently handled according to implemented business behavior, the application remains stable, and the resulting authentication outcome is clearly observable.",
+      "fields": [
+        "username_field",
+        "password_field",
+        "sign_in_button"
+      ],
+      "interactionIntent": {
+        "inputMethod": "type",
+        "submissionMethod": "click",
+        "interactionPattern": "whitespace",
+        "validationType": "navigation_success"
+      }
+    },
+    {
+      "id": "LOGIN_TC_015",
+      "title": "Verify pasted credentials can be submitted successfully",
+      "type": "edge",
+      "steps": [
+        "Open the Login page from the Home page",
+        "Paste a valid username into the username field",
+        "Paste a valid password into the password field",
+        "Click the SIGN IN button"
+      ],
+      "expectedResult": "Pasted values remain in the input fields, the password stays masked after paste action, and successful authentication redirects the user to authenticated Home page state.",
+      "fields": [
+        "username_field",
+        "password_field",
+        "sign_in_button"
+      ],
+      "interactionIntent": {
+        "inputMethod": "paste",
+        "submissionMethod": "click",
+        "interactionPattern": "standard",
+        "validationType": "navigation_success"
+      }
+    },
+    {
+      "id": "LOGIN_TC_016",
+      "title": "Prevent duplicate authentication transition when SIGN IN button is clicked repeatedly",
+      "type": "edge",
+      "steps": [
+        "Open the Login page from the Home page",
+        "Enter valid credentials into the username and password fields",
+        "Rapidly click the SIGN IN button multiple times"
+      ],
+      "expectedResult": "Only one authentication flow is processed, the application transitions to authenticated Home state once, and duplicate login sessions, duplicate redirects, or repeated page transitions are not observed.",
+      "fields": [
+        "username_field",
+        "password_field",
+        "sign_in_button"
+      ],
+      "interactionIntent": {
+        "inputMethod": "type",
+        "submissionMethod": "click",
+        "interactionPattern": "standard",
+        "validationType": "navigation_success"
+      }
+    },
+    {
+      "id": "LOGIN_TC_017",
+      "title": "Verify Login page is reached through Home page SPA navigation flow",
+      "type": "positive",
+      "steps": [
+        "Navigate to http://localhost/washtabui/home",
+        "Verify the application starts on the Home page in guest state",
+        "Open the Login page using the person/profile button"
+      ],
+      "expectedResult": "The Login page is opened through the Home page navigation flow inside the SPA and the login form appears without exposing a separate standalone login page workflow.",
+      "fields": [
+        "username_field",
+        "password_field",
+        "sign_in_button"
+      ],
+      "interactionIntent": {
+        "inputMethod": "type",
+        "submissionMethod": "click",
+        "interactionPattern": "standard",
+        "validationType": "navigation_success"
+      }
+    },
+    {
+      "id": "LOGIN_TC_018",
+      "title": "Verify authenticated Home state after successful login removes guest state indicators",
+      "type": "positive",
+      "steps": [
+        "Open the Login page from the Home page",
+        "Enter valid username and password values",
+        "Click the SIGN IN button",
+        "Observe the Home page after authentication completes"
+      ],
+      "expectedResult": "The application returns to the Home page in authenticated state, guest-state UI is no longer displayed, authenticated-user UI is visible, and authenticated-only features become accessible.",
+      "fields": [
+        "username_field",
+        "password_field",
+        "sign_in_button"
+      ],
+      "interactionIntent": {
+        "inputMethod": "type",
+        "submissionMethod": "click",
+        "interactionPattern": "standard",
+        "validationType": "navigation_success"
+      }
+    },
+    {
+      "id": "LOGIN_TC_019",
+      "title": "Verify special characters in username field do not bypass authentication validation",
+      "type": "negative",
+      "steps": [
+        "Open the Login page from the Home page",
+        "Enter unsupported or special characters into the username field",
+        "Enter a valid password into the password field",
+        "Click the SIGN IN button"
+      ],
+      "expectedResult": "The application rejects or validates unsupported username input appropriately, visible error feedback is displayed if validation fails, and authenticated state is not granted.",
+      "fields": [
+        "username_field",
+        "password_field",
+        "sign_in_button"
+      ],
+      "interactionIntent": {
+        "inputMethod": "type",
+        "submissionMethod": "click",
+        "interactionPattern": "special_characters",
+        "validationType": "navigation_success"
+      }
+    },
+    {
+      "id": "LOGIN_TC_020",
+      "title": "Verify special characters in password field remain masked and do not break login flow",
+      "type": "edge",
+      "steps": [
+        "Open the Login page from the Home page",
+        "Enter a valid username into the username field",
+        "Enter a password containing special characters into the password field",
+        "Click the SIGN IN button"
+      ],
+      "expectedResult": "Special characters entered in the password field remain masked, the Login page layout and controls remain stable, and the authentication outcome is processed without application errors.",
+      "fields": [
+        "username_field",
+        "password_field",
+        "sign_in_button"
+      ],
+      "interactionIntent": {
+        "inputMethod": "type",
+        "submissionMethod": "click",
+        "interactionPattern": "special_characters",
+        "validationType": "navigation_success"
+      }
+    },
+    {
+      "id": "LOGIN_TC_021",
+      "title": "Verify very long username and password values are handled without UI failure",
+      "type": "edge",
+      "steps": [
+        "Open the Login page from the Home page",
+        "Enter an excessively long value into the username field",
+        "Enter an excessively long value into the password field",
+        "Click the SIGN IN button"
+      ],
+      "expectedResult": "The Login page remains responsive and visually stable, entered values remain contained within the input fields, and oversized invalid credentials do not authenticate the user.",
+      "fields": [
+        "username_field",
+        "password_field",
+        "sign_in_button"
+      ],
+      "interactionIntent": {
+        "inputMethod": "type",
+        "submissionMethod": "click",
+        "interactionPattern": "standard",
+        "validationType": "error_message"
+      }
+    },
+    {
+      "id": "LOGIN_TC_022",
+      "title": "Verify login failure keeps user in unauthenticated state after failed attempt",
+      "type": "negative",
+      "steps": [
+        "Open the Login page from the Home page",
+        "Enter invalid credentials",
+        "Click the SIGN IN button",
+        "Observe the application state after rejection"
+      ],
+      "expectedResult": "The application remains in unauthenticated state, authenticated-user UI is not displayed on the Home page, and the user stays on the Login page or guest Home experience.",
+      "fields": [
+        "username_field",
+        "password_field",
+        "sign_in_button"
+      ],
+      "interactionIntent": {
+        "inputMethod": "type",
+        "submissionMethod": "click",
+        "interactionPattern": "standard",
+        "validationType": "error_message"
+      }
+    },
+    {
+      "id": "LOGIN_TC_023",
+      "title": "Verify keyboard tab navigation moves focus through login controls in logical order",
+      "type": "edge",
+      "steps": [
+        "Open the Login page from the Home page",
+        "Press the Tab key repeatedly starting from the username field"
+      ],
+      "expectedResult": "Keyboard focus moves in sequence from the username field to the password field and then to the SIGN IN button without skipping controls or trapping focus.",
+      "fields": [
+        "username_field",
+        "password_field",
+        "sign_in_button"
+      ],
+      "interactionIntent": {
+        "inputMethod": "type",
+        "submissionMethod": "click",
+        "interactionPattern": "standard",
+        "validationType": "navigation_success"
+      }
+    }
+  ]
+}
