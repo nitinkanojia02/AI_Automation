@@ -1,0 +1,36 @@
+{
+  "pageName": "login_page",
+  "pageUrl": "None",
+  "variables": [
+    {
+      "variableName": "PAGE_URL",
+      "value": "None",
+      "source": "approved_page",
+      "kind": "page_url"
+    },
+    {
+      "variableName": "USERNAME_TEXTBOX",
+      "value": "id=ion-input-0",
+      "source": "approved_element",
+      "kind": "locator",
+      "approvedName": "username_textbox",
+      "type": "textbox"
+    },
+    {
+      "variableName": "PASSWORD_TEXTBOX",
+      "value": "id=password",
+      "source": "approved_element",
+      "kind": "locator",
+      "approvedName": "password_textbox",
+      "type": "password"
+    },
+    {
+      "variableName": "SIGN_IN_BUTTON",
+      "value": "xpath=//ion-button[normalize-space(.)='SIGN IN']",
+      "source": "approved_element",
+      "kind": "locator",
+      "approvedName": "sign_in_button",
+      "type": "button"
+    }
+  ]
+}
