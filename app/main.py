@@ -233,11 +233,17 @@ def call_manual_ai_with_workflow_session(
     endpoint: str,
     token: str,
     prompt: str,
+    timeout_seconds: int = 120,
 ) -> dict:
     context = build_session_context(workflow_name, stage)
     effective_prompt = prompt if not context else f"{context}\n\n{prompt}"
     append_session_message(workflow_name, "user", stage, prompt)
-    response = call_devex_ai(endpoint=endpoint, token=token, prompt=effective_prompt)
+    response = call_devex_ai(
+        endpoint=endpoint,
+        token=token,
+        prompt=effective_prompt,
+        timeout_sec=timeout_seconds,
+    )
     append_session_message(workflow_name, "assistant", stage, json.dumps(response, indent=2, ensure_ascii=False))
     return response
 
@@ -2790,6 +2796,7 @@ def generate_manual_tests_for_workflow(workflow_name: str) -> dict:
         endpoint=endpoint,
         token=token,
         prompt=prompt,
+        timeout_seconds=ai_cfg.get("timeout_seconds", 120),
     )
     if not generated:
         raise HTTPException(status_code=502, detail="Manual test AI returned no content for generation stage.")
@@ -2799,6 +2806,7 @@ def generate_manual_tests_for_workflow(workflow_name: str) -> dict:
         endpoint=endpoint,
         token=token,
         prompt=build_manual_review_prompt(generated),
+        timeout_seconds=ai_cfg.get("timeout_seconds", 120),
     )
     refined_manual = call_manual_ai_with_workflow_session(
         workflow_name=workflow_name,
@@ -2806,6 +2814,7 @@ def generate_manual_tests_for_workflow(workflow_name: str) -> dict:
         endpoint=endpoint,
         token=token,
         prompt=build_manual_refiner_prompt(generated, reviewed_manual or generated),
+        timeout_seconds=ai_cfg.get("timeout_seconds", 120),
     )
     final_json = normalize_manual_test(refined_manual or reviewed_manual or generated, workflow_input)
     is_valid, validation_message = validate_manual_content(final_json)
@@ -2827,6 +2836,7 @@ def generate_manual_tests_for_workflow(workflow_name: str) -> dict:
             endpoint=endpoint,
             token=token,
             prompt=expansion_prompt,
+            timeout_seconds=ai_cfg.get("timeout_seconds", 120),
         )
         expanded_reviewed = call_manual_ai_with_workflow_session(
             workflow_name=workflow_name,
@@ -2834,6 +2844,7 @@ def generate_manual_tests_for_workflow(workflow_name: str) -> dict:
             endpoint=endpoint,
             token=token,
             prompt=build_manual_review_prompt(expanded),
+            timeout_seconds=ai_cfg.get("timeout_seconds", 120),
         )
         expanded_refined = call_manual_ai_with_workflow_session(
             workflow_name=workflow_name,
@@ -2841,6 +2852,7 @@ def generate_manual_tests_for_workflow(workflow_name: str) -> dict:
             endpoint=endpoint,
             token=token,
             prompt=build_manual_refiner_prompt(expanded, expanded_reviewed or expanded),
+            timeout_seconds=ai_cfg.get("timeout_seconds", 120),
         )
         expanded_json = normalize_manual_test(expanded_refined or expanded_reviewed or expanded, workflow_input)
         expanded_valid, expanded_message = validate_manual_content(expanded_json)
