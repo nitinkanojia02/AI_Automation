@@ -6,7 +6,7 @@
   "applicationCode": "WT",
   "testIdentifierPrefix": "HOME",
   "status": "approved_artifact_memory",
-  "generatedAt": "2026-07-17T08:08:43.343473+00:00",
+  "generatedAt": "2026-07-17T08:48:56.454626+00:00",
   "businessContext": {
     "userStory": [
       "Home page should support guest state controls, guest navigation, and login entry from the Person button",
@@ -178,18 +178,10 @@
         ],
         "keywordNames": [
           "Open Home Page",
-          "Verify Guest Home Page Loaded",
           "Verify Guest Home Controls Are Visible And Enabled",
-          "Verify Home Guest State Controls Are Visible",
-          "Verify Home Guest State Controls Are Enabled",
+          "Verify Guest Home Page Loaded",
           "Verify Person Profile Button",
           "Verify Guest Feature Buttons Are Ready",
-          "Verify Back Button",
-          "Verify Notification Button",
-          "Verify Home Button",
-          "Verify Customer Signup Button",
-          "Verify Clean Survey Button",
-          "Verify Site Survey Button",
           "Verify Login Page Opened",
           "Verify Customer Search Page Opened",
           "Verify Vehicle Survey Page Opened",
@@ -244,18 +236,10 @@
         ],
         "keywords": [
           "Open Home Page",
-          "Verify Guest Home Page Loaded",
           "Verify Guest Home Controls Are Visible And Enabled",
-          "Verify Home Guest State Controls Are Visible",
-          "Verify Home Guest State Controls Are Enabled",
+          "Verify Guest Home Page Loaded",
           "Verify Person Profile Button",
           "Verify Guest Feature Buttons Are Ready",
-          "Verify Back Button",
-          "Verify Notification Button",
-          "Verify Home Button",
-          "Verify Customer Signup Button",
-          "Verify Clean Survey Button",
-          "Verify Site Survey Button",
           "Verify Login Page Opened",
           "Verify Customer Search Page Opened",
           "Verify Vehicle Survey Page Opened",
@@ -295,7 +279,7 @@
       {
         "page": "home_page",
         "name": "home_button",
-        "type": "link",
+        "type": "button",
         "locator": "id=auto_home_btn"
       },
       {
@@ -322,90 +306,114 @@
     "approvedScenarios": [
       {
         "id": "HOME_TC_001",
-        "title": "Verify Home page loads successfully in guest state from the SPA landing URL",
+        "title": "Verify Home page loads successfully in guest state for an unauthenticated user",
         "type": "positive",
-        "expectedResult": "The Home page loads successfully in guest state and displays the Person/Profile button, Back button, Notification button, Home button, Customer signup button, Clean survey button, and Site survey button as visible interactive controls."
+        "expectedResult": "The Home page loads successfully in guest state and displays guest-accessible controls without showing authenticated user state information."
       },
       {
         "id": "HOME_TC_002",
-        "title": "Verify all approved guest-state controls are visible and enabled on Home page",
+        "title": "Verify guest-state shared Home controls are visible and enabled on initial page load",
         "type": "positive",
-        "expectedResult": "The Person/Profile button, Back button, Notification button, Home button, Customer signup button, Clean survey button, and Site survey button are visible, enabled, focusable, and appear actionable in guest state."
+        "expectedResult": "The Person/Profile button, Back button, Notification button, Home button, Customer signup button, Clean survey button, and Site survey button are all visible and enabled in guest state."
       },
       {
         "id": "HOME_TC_003",
-        "title": "Verify Person/Profile button opens the Login page from guest Home state",
+        "title": "Verify clicking the Person/Profile button from guest Home state opens the Login page",
         "type": "positive",
-        "expectedResult": "The application opens the Login page or Login view from the guest-state Home page without requiring prior authentication."
+        "expectedResult": "The application opens the Login page or Login view from the Home page guest state."
       },
       {
         "id": "HOME_TC_004",
-        "title": "Verify Customer signup button navigates to the customer-search page",
+        "title": "Verify clicking the Customer signup button from guest Home state opens the customer-search page",
         "type": "positive",
-        "expectedResult": "The application navigates from the guest-state Home page to the customer-search page."
+        "expectedResult": "The application navigates from the guest Home page to the customer-search page."
       },
       {
         "id": "HOME_TC_005",
-        "title": "Verify Clean survey button navigates to the vehicle-survey page",
+        "title": "Verify clicking the Clean survey button from guest Home state opens the vehicle-survey page",
         "type": "positive",
-        "expectedResult": "The application navigates from the guest-state Home page to the vehicle-survey page."
+        "expectedResult": "The application navigates from the guest Home page to the vehicle-survey page."
       },
       {
         "id": "HOME_TC_006",
-        "title": "Verify Site survey button navigates to the survey page",
+        "title": "Verify clicking the Site survey button from guest Home state opens the survey page",
         "type": "positive",
-        "expectedResult": "The application navigates from the guest-state Home page to the survey page."
+        "expectedResult": "The application navigates from the guest Home page to the survey page."
       },
       {
         "id": "HOME_TC_009",
-        "title": "Verify Home page remains the same SPA Home resource in guest state",
-        "type": "positive",
-        "expectedResult": "The application continues to display the same Home page resource in guest state without redirecting to a separate authenticated Home implementation."
+        "title": "Verify Person/Profile button remains enabled and responsive after returning to Home page",
+        "type": "edge",
+        "expectedResult": "The Person/Profile button remains enabled after returning to the Home page and opens the Login page or Login view again without requiring a page refresh."
       },
       {
-        "id": "HOME_TC_010",
+        "id": "HOME_TC_014",
+        "title": "Verify shared Home shell controls remain visible in guest state after navigation back to Home",
+        "type": "positive",
+        "expectedResult": "The Back button, Notification button, Home button, and Person/Profile button are visible and enabled again after returning to the Home guest state."
+      },
+      {
+        "id": "HOME_TC_015",
         "title": "Verify Home button is visible and enabled in guest state",
         "type": "positive",
-        "expectedResult": "The Home button is visible and enabled, and clicking it keeps the user within the Home experience without breaking guest-state navigation."
+        "expectedResult": "The Home button is visible, enabled, and displayed as part of the shared Home page shell controls in guest state."
       },
       {
-        "id": "HOME_TC_011",
+        "id": "HOME_TC_016",
         "title": "Verify Notification button is visible and enabled in guest state",
         "type": "positive",
-        "expectedResult": "The Notification button is visible and enabled for interaction in guest state without causing application instability."
+        "expectedResult": "The Notification button is visible, enabled, and displayed as part of the shared Home page shell controls in guest state."
       },
       {
-        "id": "HOME_TC_012",
+        "id": "HOME_TC_017",
         "title": "Verify Back button is visible and enabled in guest state",
         "type": "positive",
-        "expectedResult": "The Back button is visible and enabled in the shared Home shell while the application remains operational in guest state."
+        "expectedResult": "The Back button is visible, enabled, and displayed as part of the shared Home page shell controls in guest state."
       },
       {
         "id": "HOME_TC_018",
-        "title": "Verify guest-accessible feature buttons remain actionable before authentication",
+        "title": "Verify guest Home page can be refreshed without losing guest-state controls",
+        "type": "edge",
+        "expectedResult": "The Home page reloads successfully in guest state and all approved guest-accessible controls remain visible and enabled after refresh."
+      },
+      {
+        "id": "HOME_TC_019",
+        "title": "Verify direct URL access to Home page always opens guest state when no authenticated session exists",
         "type": "positive",
-        "expectedResult": "Each approved guest-accessible feature button remains enabled and successfully navigates to its supported destination while the user is unauthenticated."
+        "expectedResult": "The SPA opens directly into the Home page guest state and does not redirect to an authenticated experience."
+      },
+      {
+        "id": "HOME_TC_020",
+        "title": "Verify guest-accessible feature buttons remain actionable after opening and leaving Login view",
+        "type": "edge",
+        "expectedResult": "The Site survey button remains enabled and successfully opens the survey page after the user returns from the Login view without signing in."
       }
     ],
     "validations": [
-      "The Home page loads successfully in guest state and displays the Person/Profile button, Back button, Notification button, Home button, Customer signup button, Clean survey button, and Site survey button as visible interactive controls.",
-      "The Person/Profile button, Back button, Notification button, Home button, Customer signup button, Clean survey button, and Site survey button are visible, enabled, focusable, and appear actionable in guest state.",
-      "The Home button is visible and enabled, and clicking it keeps the user within the Home experience without breaking guest-state navigation.",
-      "The Notification button is visible and enabled for interaction in guest state without causing application instability.",
-      "The Back button is visible and enabled in the shared Home shell while the application remains operational in guest state.",
-      "Each approved guest-accessible feature button remains enabled and successfully navigates to its supported destination while the user is unauthenticated."
+      "The Person/Profile button, Back button, Notification button, Home button, Customer signup button, Clean survey button, and Site survey button are all visible and enabled in guest state.",
+      "The Person/Profile button remains enabled after returning to the Home page and opens the Login page or Login view again without requiring a page refresh.",
+      "The Back button, Notification button, Home button, and Person/Profile button are visible and enabled again after returning to the Home guest state.",
+      "The Home button is visible, enabled, and displayed as part of the shared Home page shell controls in guest state.",
+      "The Notification button is visible, enabled, and displayed as part of the shared Home page shell controls in guest state.",
+      "The Back button is visible, enabled, and displayed as part of the shared Home page shell controls in guest state.",
+      "The Home page reloads successfully in guest state and all approved guest-accessible controls remain visible and enabled after refresh.",
+      "The Site survey button remains enabled and successfully opens the survey page after the user returns from the Login view without signing in."
     ],
     "transitions": [
-      "The Home page loads successfully in guest state and displays the Person/Profile button, Back button, Notification button, Home button, Customer signup button, Clean survey button, and Site survey button as visible interactive controls.",
-      "The Person/Profile button, Back button, Notification button, Home button, Customer signup button, Clean survey button, and Site survey button are visible, enabled, focusable, and appear actionable in guest state.",
-      "The application opens the Login page or Login view from the guest-state Home page without requiring prior authentication.",
-      "The application navigates from the guest-state Home page to the customer-search page.",
-      "The application navigates from the guest-state Home page to the vehicle-survey page.",
-      "The application navigates from the guest-state Home page to the survey page.",
-      "The application continues to display the same Home page resource in guest state without redirecting to a separate authenticated Home implementation.",
-      "The Notification button is visible and enabled for interaction in guest state without causing application instability.",
-      "The Back button is visible and enabled in the shared Home shell while the application remains operational in guest state.",
-      "Each approved guest-accessible feature button remains enabled and successfully navigates to its supported destination while the user is unauthenticated."
+      "The Home page loads successfully in guest state and displays guest-accessible controls without showing authenticated user state information.",
+      "The Person/Profile button, Back button, Notification button, Home button, Customer signup button, Clean survey button, and Site survey button are all visible and enabled in guest state.",
+      "The application opens the Login page or Login view from the Home page guest state.",
+      "The application navigates from the guest Home page to the customer-search page.",
+      "The application navigates from the guest Home page to the vehicle-survey page.",
+      "The application navigates from the guest Home page to the survey page.",
+      "The Person/Profile button remains enabled after returning to the Home page and opens the Login page or Login view again without requiring a page refresh.",
+      "The Back button, Notification button, Home button, and Person/Profile button are visible and enabled again after returning to the Home guest state.",
+      "The Home button is visible, enabled, and displayed as part of the shared Home page shell controls in guest state.",
+      "The Notification button is visible, enabled, and displayed as part of the shared Home page shell controls in guest state.",
+      "The Back button is visible, enabled, and displayed as part of the shared Home page shell controls in guest state.",
+      "The Home page reloads successfully in guest state and all approved guest-accessible controls remain visible and enabled after refresh.",
+      "The SPA opens directly into the Home page guest state and does not redirect to an authenticated experience.",
+      "The Site survey button remains enabled and successfully opens the survey page after the user returns from the Login view without signing in."
     ]
   },
   "automationKnowledge": {
@@ -415,12 +423,6 @@
         "name": "Open Home Page",
         "targetElement": "",
         "action": "generic"
-      },
-      {
-        "page": "home_page",
-        "name": "Verify Guest Home Controls Are Visible And Enabled",
-        "targetElement": "",
-        "action": "verify"
       },
       {
         "page": "home_page",
@@ -472,44 +474,53 @@
       },
       {
         "page": "home_page",
-        "name": "Verify Guest Feature Buttons Are Ready",
-        "targetElement": "",
+        "name": "Verify Customer Signup Button",
+        "targetElement": "customer_signup_button",
         "action": "verify"
       }
     ],
     "approvedTests": [
       {
-        "name": "AUT-WT-HOME01: Verify Home page loads successfully in guest state from the SPA landing URL"
+        "name": "AUT-WT-HOME01: Verify Home page loads successfully in guest state for an unauthenticated user"
       },
       {
-        "name": "AUT-WT-HOME02: Verify all approved guest-state controls are visible and enabled on Home page"
+        "name": "AUT-WT-HOME02: Verify guest-state shared Home controls are visible and enabled on initial page load"
       },
       {
-        "name": "AUT-WT-HOME03: Verify Person/Profile button opens the Login page from guest Home state"
+        "name": "AUT-WT-HOME03: Verify clicking the Person/Profile button from guest Home state opens the Login page"
       },
       {
-        "name": "AUT-WT-HOME04: Verify Customer signup button navigates to the customer-search page"
+        "name": "AUT-WT-HOME04: Verify clicking the Customer signup button from guest Home state opens the customer-search page"
       },
       {
-        "name": "AUT-WT-HOME05: Verify Clean survey button navigates to the vehicle-survey page"
+        "name": "AUT-WT-HOME05: Verify clicking the Clean survey button from guest Home state opens the vehicle-survey page"
       },
       {
-        "name": "AUT-WT-HOME06: Verify Site survey button navigates to the survey page"
+        "name": "AUT-WT-HOME06: Verify clicking the Site survey button from guest Home state opens the survey page"
       },
       {
-        "name": "AUT-WT-HOME07: Verify Home page remains the same SPA Home resource in guest state"
+        "name": "AUT-WT-HOME07: Verify Person/Profile button remains enabled and responsive after returning to Home page"
       },
       {
-        "name": "AUT-WT-HOME08: Verify Home button is visible and enabled in guest state"
+        "name": "AUT-WT-HOME08: Verify shared Home shell controls remain visible in guest state after navigation back to Home"
       },
       {
-        "name": "AUT-WT-HOME09: Verify Notification button is visible and enabled in guest state"
+        "name": "AUT-WT-HOME09: Verify Home button is visible and enabled in guest state"
       },
       {
-        "name": "AUT-WT-HOME10: Verify Back button is visible and enabled in guest state"
+        "name": "AUT-WT-HOME10: Verify Notification button is visible and enabled in guest state"
       },
       {
-        "name": "AUT-WT-HOME11: Verify guest-accessible feature buttons remain actionable before authentication"
+        "name": "AUT-WT-HOME11: Verify Back button is visible and enabled in guest state"
+      },
+      {
+        "name": "AUT-WT-HOME12: Verify guest Home page can be refreshed without losing guest-state controls"
+      },
+      {
+        "name": "AUT-WT-HOME13: Verify direct URL access to Home page always opens guest state when no authenticated session exists"
+      },
+      {
+        "name": "AUT-WT-HOME14: Verify guest-accessible feature buttons remain actionable after opening and leaving Login view"
       }
     ],
     "wrapperExpectations": [
