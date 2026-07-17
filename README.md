@@ -49,6 +49,21 @@ That means the generator should first infer:
 
 Only then should it generate new downstream artifacts.
 
+### Mandatory consumption rule
+Workflow knowledge is not just a saved artifact for later reference. It is mandatory generation context.
+
+Before generating:
+- manual tests
+- downstream page/resource logic
+- Robot Framework suites
+
+…the framework must assemble and provide:
+- the current workflow knowledge draft for the workflow being generated
+- relevant approved upstream workflow knowledge artifacts
+- approved resource context retrieved from those knowledge artifacts and current workflow resources
+
+This keeps AI grounded in application intelligence, workflow intelligence, approved ownership boundaries, approved navigation journeys, approved variables, approved locators, approved keywords, approved validations, and approved automation lineage.
+
 ## Executive Summary
 
 This repository contains a FastAPI-based MVP that helps users turn workflow input and live page understanding into reviewable automation artifacts and Robot Framework tests.

@@ -6,7 +6,7 @@
   "applicationCode": "WT",
   "testIdentifierPrefix": "LOGIN",
   "status": "approved_artifact_memory",
-  "generatedAt": "2026-07-17T06:55:17.547848+00:00",
+  "generatedAt": "2026-07-17T07:25:48.977393+00:00",
   "businessContext": {
     "userStory": [
       "Login Feature",
@@ -152,12 +152,57 @@
   },
   "resourceKnowledge": {
     "authoritativeResources": [
-      "login_page/login_page.resource"
+      "login_page/login_page.resource",
+      "home_page/home_page.resource"
     ],
     "sharedResources": [
       "resources/common_keywords.resource"
     ],
     "resourceSummaries": [
+      {
+        "resourceFile": "pom_pages/home_page/home_page.resource",
+        "type": "page",
+        "variableNames": [
+          "HOME_PAGE_URL",
+          "HOME_PAGE_PATH",
+          "LOGIN_PAGE_IDENTIFIER",
+          "CUSTOMER_SEARCH_PAGE_IDENTIFIER",
+          "VEHICLE_SURVEY_PAGE_IDENTIFIER",
+          "SURVEY_PAGE_IDENTIFIER",
+          "PERSON_PROFILE_BUTTON",
+          "BACK_BUTTON",
+          "NOTIFICATION_BUTTON",
+          "HOME_BUTTON",
+          "CUSTOMER_SIGNUP_BUTTON",
+          "CLEAN_SURVEY_BUTTON",
+          "SITE_SURVEY_BUTTON"
+        ],
+        "keywordNames": [
+          "Open Home Page",
+          "Verify Guest Home Page Loaded",
+          "Verify Home Guest State Controls Are Visible",
+          "Verify Home Guest State Controls Are Enabled",
+          "Verify Person Profile Button",
+          "Verify Back Button",
+          "Verify Notification Button",
+          "Verify Home Button",
+          "Verify Customer Signup Button",
+          "Verify Clean Survey Button",
+          "Verify Site Survey Button",
+          "Verify Login Page Opened",
+          "Verify Customer Search Page Opened",
+          "Verify Vehicle Survey Page Opened",
+          "Verify Survey Page Opened",
+          "Verify Home Page Remains In Guest State",
+          "Click Person Profile Button",
+          "Click Back Button",
+          "Click Notification Button",
+          "Click Home Button",
+          "Click Customer Signup Button",
+          "Click Clean Survey Button",
+          "Click Site Survey Button"
+        ]
+      },
       {
         "resourceFile": "resources/common_keywords.resource",
         "type": "common",
@@ -178,7 +223,51 @@
         ]
       }
     ],
-    "resourceOwnership": []
+    "resourceOwnership": [
+      {
+        "resource": "pom_pages/home_page/home_page.resource",
+        "variables": [
+          "HOME_PAGE_URL",
+          "HOME_PAGE_PATH",
+          "LOGIN_PAGE_IDENTIFIER",
+          "CUSTOMER_SEARCH_PAGE_IDENTIFIER",
+          "VEHICLE_SURVEY_PAGE_IDENTIFIER",
+          "SURVEY_PAGE_IDENTIFIER",
+          "PERSON_PROFILE_BUTTON",
+          "BACK_BUTTON",
+          "NOTIFICATION_BUTTON",
+          "HOME_BUTTON",
+          "CUSTOMER_SIGNUP_BUTTON",
+          "CLEAN_SURVEY_BUTTON",
+          "SITE_SURVEY_BUTTON"
+        ],
+        "keywords": [
+          "Open Home Page",
+          "Verify Guest Home Page Loaded",
+          "Verify Home Guest State Controls Are Visible",
+          "Verify Home Guest State Controls Are Enabled",
+          "Verify Person Profile Button",
+          "Verify Back Button",
+          "Verify Notification Button",
+          "Verify Home Button",
+          "Verify Customer Signup Button",
+          "Verify Clean Survey Button",
+          "Verify Site Survey Button",
+          "Verify Login Page Opened",
+          "Verify Customer Search Page Opened",
+          "Verify Vehicle Survey Page Opened",
+          "Verify Survey Page Opened",
+          "Verify Home Page Remains In Guest State",
+          "Click Person Profile Button",
+          "Click Back Button",
+          "Click Notification Button",
+          "Click Home Button",
+          "Click Customer Signup Button",
+          "Click Clean Survey Button",
+          "Click Site Survey Button"
+        ]
+      }
+    ]
   },
   "elementKnowledge": {
     "approvedElements": []
@@ -385,7 +474,8 @@
   },
   "downstreamGuidance": {
     "mustReuseResources": [
-      "login_page/login_page.resource"
+      "login_page/login_page.resource",
+      "home_page/home_page.resource"
     ],
     "upstreamWorkflowKnowledge": [
       "home"
@@ -401,7 +491,8 @@
     "workflowInput": "workflow_inputs/login.json",
     "approvedManualTests": "manual_tests/login/login.json",
     "approvedResourceFiles": [
-      "login_page/login_page.resource"
+      "login_page/login_page.resource",
+      "home_page/home_page.resource"
     ]
   }
 }

@@ -12,10 +12,12 @@ import urllib3
 
 try:
     from scripts.workflow_context import infer_workflow_reuse_context
+    from scripts.workflow_knowledge import build_workflow_knowledge_context, discover_relevant_workflow_knowledge
 except ModuleNotFoundError:
     import sys
     sys.path.append(str(Path(__file__).resolve().parent.parent))
     from scripts.workflow_context import infer_workflow_reuse_context
+    from scripts.workflow_knowledge import build_workflow_knowledge_context, discover_relevant_workflow_knowledge
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -256,7 +258,9 @@ def parse_resource_file(resource_path: Path) -> Dict:
 
 def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
     prompt_manual_data = json.loads(json.dumps(manual_data))
+    current_workflow_knowledge = build_workflow_knowledge_context(prompt_manual_data)
     reuse_context = infer_workflow_reuse_context(prompt_manual_data)
+    relevant_workflow_knowledge = discover_relevant_workflow_knowledge(prompt_manual_data)
     if isinstance(prompt_manual_data.get("fields"), list):
         prompt_manual_data["fields"] = [
             field for field in prompt_manual_data["fields"]
@@ -300,6 +304,8 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
         "common_resource_hint": "../resources/common_keywords.resource",
         "identifier_policy": identifier_policy,
         "inferred_reuse_context": reuse_context,
+        "current_workflow_knowledge": current_workflow_knowledge,
+        "relevant_workflow_knowledge": relevant_workflow_knowledge,
         "intent_preservation_notes": [
             "Preserve manual interaction intent from steps and any interactionIntent metadata.",
             "Use interactionIntent as AI guidance, not as a hardcoded routing table.",
@@ -331,7 +337,10 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
         "- Never invent or define new custom keywords in the generated test suite. User-created/custom wrapper intelligence belongs to approved upstream resource files, not to AI-generated suite code.\n"
         "- If a needed behavior is not already available through imported resource_context or approved framework keywords, compose the test only from existing approved keywords; do not create a new abstraction name.\n"
         "- Treat resource_context as including both page-specific resources and shared/common resources. Use common/shared keywords for generic browser lifecycle, navigation, waiting, clicking, and text entry behaviors, and avoid duplicating them in suite logic.\n"
-        "- Treat retrieved_common_keywords, retrieved_page_keywords, and retrieved_page_variables as RAG-like retrieved context. Reuse them explicitly instead of free-form invention.\n"
+        "- Treat retrieved_common_keywords, retrieved_page_keywords, retrieved_page_variables, current_workflow_knowledge, and relevant_workflow_knowledge as RAG-like retrieved context. Reuse them explicitly instead of free-form invention.\n"
+        "- current_workflow_knowledge is the concise approved-memory draft for the current workflow assembled from current workflow context plus approved artifacts already available. Use it to keep the suite aligned with the workflow's business journey, ownership boundaries, and approved test intent.\n"
+        "- relevant_workflow_knowledge is approved cumulative workflow memory created from approved user story context, approved element extraction, approved manual tests, approved resource keywords, and approved automation from prior workflows. Consult it before creating navigation/setup assumptions for the current suite.\n"
+        "- If relevant_workflow_knowledge shows that an upstream workflow already owns navigation, page opening, state validation, or reusable controls needed by this workflow, reuse that approved upstream knowledge and imported upstream resources instead of inventing new suite abstractions.\n"
         "- Shared/common resource keywords take priority over raw SeleniumLibrary keywords for generic interactions. If a shared helper such as Open Browser Session, Close Browser Session, Open Browser To Url, Go To Url, Wait For Element To Be Ready, Click When Ready, or Input Text When Ready exists in retrieved_common_keywords, use that helper rather than direct SeleniumLibrary calls.\n"
         "- If a page keyword or page variable already exists in retrieved_page_keywords or retrieved_page_variables, preserve and reuse it instead of creating a parallel name.\n"
         "- Prefer common/shared wrapper keywords for text and password entry. If no explicit password-specific shared helper exists, use the common/shared text-entry wrapper that already exists rather than raw SeleniumLibrary Input Password.\n"

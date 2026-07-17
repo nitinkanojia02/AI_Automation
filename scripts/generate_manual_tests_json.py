@@ -9,11 +9,13 @@ from typing import Any, Dict, List, Optional
 try:
     from scripts.generate_robot_from_manual import build_manual_review_prompt, validate_manual_content
     from scripts.workflow_context import infer_workflow_reuse_context
+    from scripts.workflow_knowledge import build_workflow_knowledge_context, discover_relevant_workflow_knowledge
 except ModuleNotFoundError:
     import sys
     sys.path.append(str(Path(__file__).resolve().parent.parent))
     from scripts.generate_robot_from_manual import build_manual_review_prompt, validate_manual_content
     from scripts.workflow_context import infer_workflow_reuse_context
+    from scripts.workflow_knowledge import build_workflow_knowledge_context, discover_relevant_workflow_knowledge
 
 import requests
 
@@ -190,7 +192,9 @@ def build_compact_story_context(workflow_input: Dict[str, Any], max_chars: int =
 
 
 def build_prompt(workflow_input: Dict[str, Any]) -> str:
+    current_workflow_knowledge = build_workflow_knowledge_context(workflow_input)
     reuse_context = infer_workflow_reuse_context(workflow_input)
+    relevant_workflow_knowledge = discover_relevant_workflow_knowledge(workflow_input)
     requirement_units = extract_requirement_units(workflow_input)
     mandatory_scenarios = []
     for item in requirement_units:
@@ -224,12 +228,15 @@ Behavior-faithfulness requirement:
 Context usage requirements:
 1. Treat approvedElements as the approved UI ground truth for this workflow.
 2. Use observedPreconditions, observedSteps, observedExpectedResult, observedValidations, testData, scenarioIntent, fields, resourceFiles, and approvedElements together.
-3. Use approved elements to infer realistic UI actions, visible validations, control-state checks, navigation checks, and field-level scenarios.
-4. Use user-supplied testData and workflow context to infer positive, negative, and edge data combinations.
-5. Use expected observations and validations to derive concrete observable expectedResult values.
-6. Do not limit generation to only explicitly listed workflow steps if the approved page elements clearly support additional meaningful scenarios.
-7. Never generate a manual test, step, field reference, validation, or expected result around an element that is not present in approvedElements unless that behavior is explicitly stated in the workflow input itself (for example in observedSteps, observedValidations, preconditions, fields, or user story text).
-8. If an element was not approved, treat it as out of scope and do not infer new tests from it.
+3. Before generating tests, consult the supplied relevant workflow knowledge artifacts and reuse approved upstream application knowledge, navigation knowledge, resource ownership knowledge, and validation knowledge when the current workflow depends on prior approved workflows.
+4. Use approved elements to infer realistic UI actions, visible validations, control-state checks, navigation checks, and field-level scenarios.
+5. Use user-supplied testData and workflow context to infer positive, negative, and edge data combinations.
+6. Use expected observations and validations to derive concrete observable expectedResult values.
+7. Do not limit generation to only explicitly listed workflow steps if the approved page elements clearly support additional meaningful scenarios.
+8. Never generate a manual test, step, field reference, validation, or expected result around an element that is not present in approvedElements unless that behavior is explicitly stated in the workflow input itself (for example in observedSteps, observedValidations, preconditions, fields, or user story text).
+9. If an element was not approved, treat it as out of scope and do not infer new tests from it.
+10. Treat workflow knowledge artifacts as approved application memory. They summarize approved user-story knowledge, approved element knowledge, approved manual coverage, approved keyword/resource knowledge, and approved automation knowledge from prior workflows. Reuse them before inventing any new page ownership or navigation assumptions.
+11. Also use the supplied current workflow knowledge draft as the concise approved-memory view of the current workflow input. Keep generation aligned with that draft so downstream stages preserve application and workflow intelligence consistently.
 
 Mandatory coverage requirements:
 1. testCases must be a non-empty array.
@@ -347,6 +354,12 @@ Workflow Input:
 
 Inferred Existing Resource Reuse Context:
 {pretty_json(reuse_context)}
+
+Current Workflow Knowledge Draft:
+{pretty_json(current_workflow_knowledge)}
+
+Relevant Approved Workflow Knowledge Artifacts:
+{pretty_json(relevant_workflow_knowledge)}
 """.strip()
 
 

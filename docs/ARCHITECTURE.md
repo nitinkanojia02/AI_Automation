@@ -62,10 +62,13 @@ A downstream workflow such as `login` must consult relevant upstream workflow kn
 
 The framework should therefore prefer this order for generation context:
 1. current approved workflow input
-2. relevant approved workflow knowledge artifacts
-3. approved resource context retrieved from those artifacts
-4. current-stage approved artifacts
-5. AI inference inside that approved boundary
+2. current workflow knowledge draft built from the current workflow plus currently approved artifacts
+3. relevant approved workflow knowledge artifacts
+4. approved resource context retrieved from those artifacts
+5. current-stage approved artifacts
+6. AI inference inside that approved boundary
+
+This ordering is mandatory for downstream generation stages. Manual generation, resource/keyword generation, and Robot suite generation must consume workflow knowledge explicitly rather than relying only on raw user-story text or prompt-only inference.
 
 ---
 

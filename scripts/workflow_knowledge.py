@@ -4,6 +4,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List
 
+try:
+    from scripts.workflow_context import infer_workflow_reuse_context
+except ModuleNotFoundError:
+    import sys
+    sys.path.append(str(BASE_DIR))
+    from scripts.workflow_context import infer_workflow_reuse_context
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 WORKFLOW_INPUT_DIR = BASE_DIR / "workflow_inputs"
 MANUAL_DIR = BASE_DIR / "manual_tests"
@@ -459,20 +466,20 @@ def extract_upstream_workflow_candidates(workflow_input: Dict[str, Any], resourc
     return [item for item in candidates if item and item != current_slug][:10]
 
 
-def build_workflow_knowledge(workflow_slug: str) -> Dict[str, Any]:
-    workflow_path = WORKFLOW_INPUT_DIR / f'{workflow_slug}.json'
-    workflow_input = load_json(workflow_path)
-    manual_path = MANUAL_DIR / workflow_slug / f'{workflow_slug}.json'
-    manual_data = safe_load_json(manual_path) or {}
-    story_sections = collect_workflow_story_lines(workflow_input)
-    approved_elements = load_approved_elements_for_workflow(workflow_input)
-    resource_knowledge = collect_resource_knowledge(workflow_input)
-    navigation_model = derive_navigation_model(workflow_input, story_sections)
+def build_workflow_knowledge_context(workflow_input: Dict[str, Any]) -> Dict[str, Any]:
+    workflow_name = clean_text(workflow_input.get('workflowName')) or clean_text(workflow_input.get('feature')) or 'workflow'
+    workflow_slug = slugify(workflow_name)
+    enriched_workflow_input = dict(workflow_input)
+    enriched_workflow_input['inferredReuseContext'] = infer_workflow_reuse_context(enriched_workflow_input)
+    story_sections = collect_workflow_story_lines(enriched_workflow_input)
+    approved_elements = load_approved_elements_for_workflow(enriched_workflow_input)
+    resource_knowledge = collect_resource_knowledge(enriched_workflow_input)
+    navigation_model = derive_navigation_model(enriched_workflow_input, story_sections)
 
-    feature = clean_text(workflow_input.get('feature')) or clean_text(workflow_input.get('workflowName')) or workflow_slug
-    application_code = clean_text(workflow_input.get('applicationCode'))
-    test_identifier_prefix = clean_text(workflow_input.get('testIdentifierPrefix'))
-    upstream_workflow_slugs = extract_upstream_workflow_candidates(workflow_input, resource_knowledge, story_sections)
+    feature = clean_text(enriched_workflow_input.get('feature')) or clean_text(enriched_workflow_input.get('workflowName')) or workflow_slug
+    application_code = clean_text(enriched_workflow_input.get('applicationCode'))
+    test_identifier_prefix = clean_text(enriched_workflow_input.get('testIdentifierPrefix'))
+    upstream_workflow_slugs = extract_upstream_workflow_candidates(enriched_workflow_input, resource_knowledge, story_sections)
 
     downstream_guidance = {
         'mustReuseResources': resource_knowledge.get('authoritativeResources', []),
@@ -485,10 +492,10 @@ def build_workflow_knowledge(workflow_slug: str) -> Dict[str, Any]:
         'generationRule': 'Downstream generation must consume approved workflow knowledge plus approved resource context before creating new artifacts.',
     }
 
-    knowledge = {
-        'workflowName': clean_text(workflow_input.get('workflowName')) or workflow_slug,
+    return {
+        'workflowName': clean_text(enriched_workflow_input.get('workflowName')) or workflow_slug,
         'workflowSlug': workflow_slug,
-        'module': clean_text(workflow_input.get('module')),
+        'module': clean_text(enriched_workflow_input.get('module')),
         'feature': feature,
         'applicationCode': application_code,
         'testIdentifierPrefix': test_identifier_prefix,
@@ -510,14 +517,29 @@ def build_workflow_knowledge(workflow_slug: str) -> Dict[str, Any]:
         'elementKnowledge': {
             'approvedElements': approved_elements,
         },
-        'manualCoverage': collect_manual_coverage(manual_data),
-        'automationKnowledge': collect_automation_knowledge(workflow_slug, workflow_input),
+        'manualCoverage': {},
+        'automationKnowledge': {},
         'downstreamGuidance': downstream_guidance,
         'provenance': {
-            'workflowInput': str(workflow_path.relative_to(BASE_DIR)).replace('\\', '/'),
-            'approvedManualTests': str(manual_path.relative_to(BASE_DIR)).replace('\\', '/') if manual_path.exists() else '',
+            'workflowInput': '',
+            'approvedManualTests': '',
             'approvedResourceFiles': resource_knowledge.get('authoritativeResources', []),
         },
+    }
+
+
+def build_workflow_knowledge(workflow_slug: str) -> Dict[str, Any]:
+    workflow_path = WORKFLOW_INPUT_DIR / f'{workflow_slug}.json'
+    workflow_input = load_json(workflow_path)
+    manual_path = MANUAL_DIR / workflow_slug / f'{workflow_slug}.json'
+    manual_data = safe_load_json(manual_path) or {}
+    knowledge = build_workflow_knowledge_context(workflow_input)
+    knowledge['manualCoverage'] = collect_manual_coverage(manual_data)
+    knowledge['automationKnowledge'] = collect_automation_knowledge(workflow_slug, workflow_input)
+    knowledge['provenance'] = {
+        'workflowInput': str(workflow_path.relative_to(BASE_DIR)).replace('\\', '/'),
+        'approvedManualTests': str(manual_path.relative_to(BASE_DIR)).replace('\\', '/') if manual_path.exists() else '',
+        'approvedResourceFiles': (knowledge.get('resourceKnowledge') or {}).get('authoritativeResources', []),
     }
     return knowledge
 
@@ -533,6 +555,100 @@ def save_workflow_knowledge(workflow_slug: str) -> Path:
 def load_workflow_knowledge(workflow_slug: str) -> Dict[str, Any] | None:
     path = WORKFLOW_KNOWLEDGE_DIR / f'{workflow_slug}.json'
     return safe_load_json(path)
+
+
+def summarize_workflow_knowledge_for_generation(payload: Dict[str, Any]) -> Dict[str, Any]:
+    business = payload.get('businessContext') if isinstance(payload.get('businessContext'), dict) else {}
+    resources = payload.get('resourceKnowledge') if isinstance(payload.get('resourceKnowledge'), dict) else {}
+    elements = payload.get('elementKnowledge') if isinstance(payload.get('elementKnowledge'), dict) else {}
+    manual = payload.get('manualCoverage') if isinstance(payload.get('manualCoverage'), dict) else {}
+    automation = payload.get('automationKnowledge') if isinstance(payload.get('automationKnowledge'), dict) else {}
+    downstream = payload.get('downstreamGuidance') if isinstance(payload.get('downstreamGuidance'), dict) else {}
+    return {
+        'workflowSlug': clean_text(payload.get('workflowSlug')),
+        'workflowName': clean_text(payload.get('workflowName')),
+        'feature': clean_text(payload.get('feature')),
+        'applicationCode': clean_text(payload.get('applicationCode')),
+        'businessContext': {
+            'userStory': unique_strings(ensure_list(business.get('userStory')), limit=4),
+            'applicationContext': unique_strings(ensure_list(business.get('applicationContext')), limit=4),
+            'entryConditions': unique_strings(ensure_list(business.get('entryConditions')), limit=4),
+            'acceptanceCriteria': unique_strings(ensure_list(business.get('acceptanceCriteria')), limit=6),
+            'behaviorRules': unique_strings(ensure_list(business.get('behaviorRules')), limit=6),
+            'validationExpectations': unique_strings(ensure_list(business.get('validationExpectations')), limit=6),
+            'transitionExpectations': unique_strings(ensure_list(business.get('transitionExpectations')), limit=6),
+            'reuseGuidance': unique_strings(ensure_list(business.get('reuseGuidance')), limit=6),
+            'approvedTestDataGuidance': unique_strings(ensure_list(business.get('approvedTestDataGuidance')), limit=4),
+        },
+        'navigationModel': {
+            'entryPoint': payload.get('navigationModel', {}).get('entryPoint', {}),
+            'target': payload.get('navigationModel', {}).get('target', {}),
+            'journey': ensure_list(payload.get('navigationModel', {}).get('journey'))[:6],
+        },
+        'resourceKnowledge': {
+            'authoritativeResources': unique_strings(ensure_list(resources.get('authoritativeResources')), limit=10),
+            'sharedResources': unique_strings(ensure_list(resources.get('sharedResources')), limit=10),
+            'resourceOwnership': [
+                {
+                    'resource': clean_text(item.get('resource')),
+                    'variables': unique_strings(ensure_list(item.get('variables')), limit=12),
+                    'keywords': unique_strings(ensure_list(item.get('keywords')), limit=16),
+                }
+                for item in ensure_list(resources.get('resourceOwnership'))[:8]
+                if isinstance(item, dict) and clean_text(item.get('resource'))
+            ],
+        },
+        'elementKnowledge': {
+            'approvedElements': [
+                {
+                    'page': clean_text(item.get('page')),
+                    'name': clean_text(item.get('name')),
+                    'type': clean_text(item.get('type')),
+                    'locator': clean_text(item.get('locator')),
+                }
+                for item in ensure_list(elements.get('approvedElements'))[:20]
+                if isinstance(item, dict) and clean_text(item.get('name'))
+            ]
+        },
+        'manualCoverage': {
+            'approvedScenarios': [
+                {
+                    'id': clean_text(item.get('id')),
+                    'title': clean_text(item.get('title')),
+                    'type': clean_text(item.get('type')),
+                    'expectedResult': clean_text(item.get('expectedResult')),
+                }
+                for item in ensure_list(manual.get('approvedScenarios'))[:12]
+                if isinstance(item, dict) and clean_text(item.get('title'))
+            ],
+            'validations': unique_strings(ensure_list(manual.get('validations')), limit=10),
+            'transitions': unique_strings(ensure_list(manual.get('transitions')), limit=10),
+        },
+        'automationKnowledge': {
+            'approvedKeywords': [
+                {
+                    'page': clean_text(item.get('page')),
+                    'name': clean_text(item.get('name')),
+                    'targetElement': clean_text(item.get('targetElement')),
+                    'action': clean_text(item.get('action')),
+                }
+                for item in ensure_list(automation.get('approvedKeywords'))[:20]
+                if isinstance(item, dict) and clean_text(item.get('name'))
+            ],
+            'approvedTests': [
+                {'name': clean_text(item.get('name'))}
+                for item in ensure_list(automation.get('approvedTests'))[:12]
+                if isinstance(item, dict) and clean_text(item.get('name'))
+            ],
+            'wrapperExpectations': unique_strings(ensure_list(automation.get('wrapperExpectations')), limit=6),
+        },
+        'downstreamGuidance': {
+            'mustReuseResources': unique_strings(ensure_list(downstream.get('mustReuseResources')), limit=10),
+            'upstreamWorkflowKnowledge': unique_strings(ensure_list(downstream.get('upstreamWorkflowKnowledge')), limit=10),
+            'mustNotInvent': unique_strings(ensure_list(downstream.get('mustNotInvent')), limit=8),
+            'generationRule': clean_text(downstream.get('generationRule')),
+        },
+    }
 
 
 def discover_relevant_workflow_knowledge(workflow_input: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -593,7 +709,7 @@ def discover_relevant_workflow_knowledge(workflow_input: Dict[str, Any]) -> List
             'workflowSlug': workflow_slug,
             'workflowName': clean_text(payload.get('workflowName')),
             'score': score,
-            'knowledge': payload,
+            'knowledge': summarize_workflow_knowledge_for_generation(payload),
         })
 
     results.sort(key=lambda item: (-int(item.get('score', 0)), item.get('workflowSlug', '')))

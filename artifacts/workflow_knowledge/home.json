@@ -6,7 +6,7 @@
   "applicationCode": "WT",
   "testIdentifierPrefix": "HOME",
   "status": "approved_artifact_memory",
-  "generatedAt": "2026-07-17T06:55:17.539959+00:00",
+  "generatedAt": "2026-07-17T07:25:48.963890+00:00",
   "businessContext": {
     "userStory": [
       "Home page should support guest state controls, guest navigation, and login entry from the Person button",
