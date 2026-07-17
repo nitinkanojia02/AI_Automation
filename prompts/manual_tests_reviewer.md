@@ -24,6 +24,8 @@ Coverage preservation rules:
 - Preserve behavior-specific scenarios when the difference changes the required automation action or validation, even if the business outcome is similar
 
 Review emphasis:
+- Treat current_workflow_knowledge and relevant_workflow_knowledge as mandatory approved-memory context during review
+- Preserve upstream workflow reuse guidance, approved navigation journey, approved ownership boundaries, and approved business-visible outcomes from workflow knowledge
 - Repair vague expected results into observable outcomes that can be asserted later
 - Keep scenario wording faithful to what the user intended to do, not just the end state
 - Avoid flattening specialized interactions into generic 'enter data and submit' phrasing when the source artifact is more specific

@@ -18,6 +18,8 @@ Review goals:
 Review rules:
 - Return ONLY Robot Framework code
 - Do not return markdown or explanations
+- Treat current_workflow_knowledge and relevant_workflow_knowledge as mandatory approved-memory context during review and repair
+- Preserve upstream workflow reuse guidance, approved navigation journey, approved ownership boundaries, state-transition expectations, and approved business-visible outcomes from workflow knowledge
 - Import ../resources/common_keywords.resource
 - Use only approved page resources and shared common resources
 - Prefer resource/common keywords over low-level suite logic

@@ -18,6 +18,8 @@ Goals:
 Refinement rules:
 - Return ONLY Robot Framework code
 - Do not return markdown or explanation
+- Treat current_workflow_knowledge and relevant_workflow_knowledge as mandatory approved-memory context during final refinement
+- Preserve upstream workflow reuse guidance, approved navigation journey, approved ownership boundaries, state-transition expectations, and approved business-visible outcomes from workflow knowledge
 - Do not modify page-resource content
 - Use only imported resource files and ../resources/common_keywords.resource
 - Keep only *** Settings *** and *** Test Cases *** unless a tiny local helper is absolutely unavoidable

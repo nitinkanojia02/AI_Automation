@@ -16,6 +16,8 @@ Goals:
 8. Strengthen expectedResult wording into observable evidence that later layers can assert
 
 Refinement rules:
+- Treat current_workflow_knowledge and relevant_workflow_knowledge as mandatory approved-memory context during refinement
+- Preserve upstream workflow reuse guidance, approved navigation journey, approved ownership boundaries, and approved business-visible outcomes from workflow knowledge
 - Preserve meaningful positive, negative, UI, validation, navigation, and edge scenarios
 - Do not collapse broad coverage into a minimal subset
 - Keep field-level distinctions when they materially affect observable behavior

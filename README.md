@@ -50,10 +50,11 @@ That means the generator should first infer:
 Only then should it generate new downstream artifacts.
 
 ### Mandatory consumption rule
-Workflow knowledge is not just a saved artifact for later reference. It is mandatory generation context.
+Workflow knowledge is not just a saved artifact for later reference. It is mandatory generation and review context.
 
-Before generating:
+Before generating or reviewing:
 - manual tests
+- page element review/refinement
 - downstream page/resource logic
 - Robot Framework suites
 

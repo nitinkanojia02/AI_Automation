@@ -68,7 +68,7 @@ The framework should therefore prefer this order for generation context:
 5. current-stage approved artifacts
 6. AI inference inside that approved boundary
 
-This ordering is mandatory for downstream generation stages. Manual generation, resource/keyword generation, and Robot suite generation must consume workflow knowledge explicitly rather than relying only on raw user-story text or prompt-only inference.
+This ordering is mandatory for downstream generation and review stages. Manual generation/review, page element review/refinement, resource/keyword generation, and Robot suite generation/review/repair must consume workflow knowledge explicitly rather than relying only on raw user-story text or prompt-only inference.
 
 ---
 
