@@ -2,7 +2,7 @@
   "pageName": "login_page",
   "keywords": [
     {
-      "keywordId": "KW_LOGIN_001",
+      "keywordId": "KW_001",
       "keywordName": "Enter Username Textbox",
       "targetElement": "username_textbox",
       "action": "input",
@@ -10,13 +10,13 @@
         "text"
       ],
       "implementation": [
-        "[Documentation]    Enter text into the Username field.",
-        "Input Text When Ready    ${USER_NAME_TEXTBOX}    ${text}"
+        "[Documentation]    Enter text into the username field.",
+        "    Input Text When Ready    ${USER_NAME_TEXTBOX}    ${text}"
       ],
       "approved": true
     },
     {
-      "keywordId": "KW_LOGIN_002",
+      "keywordId": "KW_002",
       "keywordName": "Enter Password Textbox",
       "targetElement": "password_textbox",
       "action": "input",
@@ -24,65 +24,78 @@
         "password"
       ],
       "implementation": [
-        "[Documentation]    Enter password into the Password field.",
-        "Input Password When Ready    ${PASSWORD}    ${password}"
+        "[Documentation]    Enter password into the password field.",
+        "    Input Password When Ready    ${PASSWORD}    ${password}"
       ],
       "approved": true
     },
     {
-      "keywordId": "KW_LOGIN_003",
+      "keywordId": "KW_003",
       "keywordName": "Click Sign In Button",
       "targetElement": "sign_in_button",
       "action": "click",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Click the Sign In button.",
-        "Click When Ready    ${SIGN_IN_BUTTON}"
+        "[Documentation]    Click the sign in button.",
+        "    Click When Ready    ${SIGN_IN_BUTTON}"
       ],
       "approved": true
     },
     {
-      "keywordId": "KW_LOGIN_004",
+      "keywordId": "KW_004",
       "keywordName": "Verify Username Textbox",
       "targetElement": "username_textbox",
       "action": "verify",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Verify Login page controls are visible and enabled.",
-        "Wait For Element To Be Ready    ${USER_NAME_TEXTBOX}",
-        "Wait For Element To Be Ready    ${PASSWORD}",
-        "Wait For Element To Be Ready    ${SIGN_IN_BUTTON}"
+        "[Documentation]    Verify username, password, and sign in controls are visible and enabled.",
+        "    Wait For Element To Be Ready    ${USER_NAME_TEXTBOX}",
+        "    Wait For Element To Be Ready    ${PASSWORD}",
+        "    Wait For Element To Be Ready    ${SIGN_IN_BUTTON}"
       ],
       "approved": true
     },
     {
-      "keywordId": "KW_LOGIN_005",
+      "keywordId": "KW_005",
+      "keywordName": "Verify Back Button",
+      "targetElement": "back_button",
+      "action": "verify",
+      "arguments": [],
+      "implementation": [
+        "[Documentation]    Verify back and home navigation buttons are visible and enabled.",
+        "    Wait For Element To Be Ready    ${BACK_BUTTON}",
+        "    Wait For Element To Be Ready    ${HOME_BUTTON}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_006",
       "keywordName": "Verify Password Textbox",
       "targetElement": "password_textbox",
       "action": "verify",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Verify the Password field uses masked input behavior.",
-        "Wait For Element To Be Ready    ${PASSWORD}",
-        "Element Attribute Value Should Be    ${PASSWORD}    type    password"
+        "[Documentation]    Verify the password field masks entered characters.",
+        "    Wait For Element To Be Ready    ${PASSWORD}",
+        "    Element Attribute Value Should Be    ${PASSWORD}    type    password"
       ],
       "approved": true
     },
     {
-      "keywordId": "KW_LOGIN_006",
+      "keywordId": "KW_007",
       "keywordName": "Verify Authentication Failed Message",
       "targetElement": "authentication_failed_message",
       "action": "verify",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Verify the generic Failed authentication message is displayed.",
-        "Wait For Element To Be Ready    xpath=//*[contains(normalize-space(.),'${AUTHENTICATION_FAILED_MESSAGE}')]"
+        "[Documentation]    Verify the generic failed authentication message is displayed.",
+        "    Wait For Element To Be Ready    ${AUTHENTICATION_FAILED_MESSAGE}"
       ],
       "approved": true
     },
     {
-      "keywordId": "KW_LOGIN_007",
-      "keywordName": "Perform Login",
+      "keywordId": "KW_008",
+      "keywordName": "Login With Credentials",
       "targetElement": "sign_in_button",
       "action": "generic",
       "arguments": [
@@ -90,10 +103,10 @@
         "password"
       ],
       "implementation": [
-        "[Documentation]    Enter login credentials and submit the Sign In request.",
-        "Enter User Name    ${username}",
-        "Enter Password    ${password}",
-        "Click Sign In Button"
+        "[Documentation]    Perform login using provided credentials.",
+        "    Enter User Name    ${username}",
+        "    Enter Password    ${password}",
+        "    Click Sign In Button"
       ],
       "approved": true
     }
