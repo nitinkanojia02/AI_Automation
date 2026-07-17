@@ -346,6 +346,11 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
         "- Do not synthesize convenience keywords such as multi-action navigation helpers when the same flow can be expressed by existing approved upstream resource keywords in setup or test bodies.\n"
         "- Shared/common resource keywords take priority over raw SeleniumLibrary keywords for generic interactions. If a shared helper such as Open Browser Session, Close Browser Session, Open Browser To Url, Go To Url, Wait For Element To Be Ready, Click When Ready, or Input Text When Ready exists in retrieved_common_keywords, use that helper rather than direct SeleniumLibrary calls.\n"
         "- If a page keyword or page variable already exists in retrieved_page_keywords or retrieved_page_variables, preserve and reuse it instead of creating a parallel name.\n"
+        "- Enforce the reuse hierarchy strictly: prefer an approved page-resource keyword first, then an approved page-resource variable, and only fall back to a lower-level literal or raw library form when no approved reusable artifact exists in retrieved context.\n"
+        "- Never emit a literal URL, locator, credential, expected text, or reusable business value in the suite when the same value already exists behind an approved semantic resource variable in retrieved_page_variables or retrieved common resource variables.\n"
+        "- Never call a low-level generic interaction keyword with a raw locator literal when an approved semantic page variable already exists for that same locator in retrieved_page_variables.\n"
+        "- If an approved semantic page keyword already exists for the intended page action, use that page keyword instead of calling a generic wrapper directly with the page variable or a raw literal.\n"
+        "- Treat literal-value leakage as a quality defect: replace direct URLs, direct locators, direct reusable credentials, and other reusable business literals with approved semantic resource variables or approved page keywords whenever retrieved context already provides them.\n"
         "- Prefer common/shared wrapper keywords for text and password entry. If no explicit password-specific shared helper exists, use the common/shared text-entry wrapper that already exists rather than raw SeleniumLibrary Input Password.\n"
         "- Include *** Settings *** and *** Test Cases *** sections.\n"
         "- Do NOT include a *** Variables *** section in the generated .robot file.\n"
@@ -1261,6 +1266,66 @@ def validate_robot_alignment_with_resource_context(content: str, resource_contex
                 warnings.append(
                     "Generated suite uses synthetic abstraction(s) where approved upstream/page resource reuse is expected from workflow knowledge and retrieved context. Replace invented convenience keywords with direct reuse of approved resource keywords."
                 )
+
+    approved_variable_values: dict[str, set[str]] = {}
+    for resource in resource_context:
+        for variable in resource.get("variables", []):
+            var_name = clean_text(str(variable.get("name", "")))
+            raw_value = str(variable.get("value", "") or "").strip()
+            if not var_name or not raw_value:
+                continue
+            approved_variable_values.setdefault(raw_value, set()).add(var_name)
+
+    literal_value_hits: dict[str, set[str]] = {}
+    generic_wrapper_literals: dict[str, set[str]] = {}
+    generic_wrapper_names = {
+        "go to url",
+        "click when ready",
+        "wait for element to be ready",
+        "input text when ready",
+        "input text",
+        "input password",
+        "wait until page contains element",
+    }
+
+    for raw_line in content.splitlines():
+        stripped = raw_line.strip()
+        if not raw_line.startswith((" ", "\t")) or not stripped or stripped.startswith("["):
+            continue
+        parts = [part.strip() for part in re.split(r"\s{2,}|\t+", stripped) if part.strip()]
+        if len(parts) < 2:
+            continue
+        keyword_name = clean_text(parts[0]).lower()
+        arguments = parts[1:]
+        for arg in arguments:
+            candidate = arg.strip()
+            if not candidate or candidate.startswith("${"):
+                continue
+            matched_variables = approved_variable_values.get(candidate)
+            if matched_variables:
+                literal_value_hits.setdefault(candidate, set()).update(matched_variables)
+                if keyword_name in generic_wrapper_names:
+                    generic_wrapper_literals.setdefault(keyword_name, set()).update(matched_variables)
+
+    if literal_value_hits:
+        samples: list[str] = []
+        for literal, variable_names in list(literal_value_hits.items())[:8]:
+            mapped_names = ", ".join(sorted(variable_names)[:3])
+            samples.append(f"'{literal}' -> {mapped_names}")
+        warnings.append(
+            "Generated suite leaks literal reusable values even though approved semantic resource variables already exist. Replace those literals with approved variables: "
+            + "; ".join(samples)
+        )
+
+    if generic_wrapper_literals:
+        samples: list[str] = []
+        for keyword_name, variable_names in list(generic_wrapper_literals.items())[:8]:
+            mapped_names = ", ".join(sorted(variable_names)[:3])
+            samples.append(f"{keyword_name} -> {mapped_names}")
+        warnings.append(
+            "Generated suite calls low-level generic interaction keywords with literal reusable values even though approved semantic resource variables already exist. Prefer semantic variables, and prefer approved page keywords over generic wrappers when available: "
+            + "; ".join(samples)
+        )
 
     has_setup = bool(re.search(r"(?im)^\s*(?:Suite Setup|Test Setup)\s+.+$", content))
     has_teardown = bool(re.search(r"(?im)^\s*(?:Suite Teardown|Test Teardown)\s+.+$", content))

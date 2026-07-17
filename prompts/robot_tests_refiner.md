@@ -38,6 +38,9 @@ Refinement rules:
 - Eliminate AI-created shared/common helper abstractions and replace them with direct reuse of approved upstream/page resource keywords already available in workflow knowledge or retrieved resource context
 - Do not preserve synthetic combined navigation helpers if the same flow can be represented by existing approved resource keywords composed through setup or normal test steps
 - Prefer semantic resource variables over inline reusable literals
+- Reject literal URL, locator, credential, expected-text, or other reusable business-value leakage when an approved semantic resource variable already exists in retrieved resource context
+- Follow the reuse hierarchy strictly: approved page keyword first, then approved page variable, and only then a lower-level generic interaction when no approved reusable artifact exists
+- If an approved page keyword already captures the intended action, replace direct generic wrapper usage with that semantic page keyword instead of preserving the lower-level call
 - Use canonical semantic variables only; avoid depending on duplicate aliases or noisy derived variables when built-ins or inline composition are sufficient
 - Treat semantically meaningful credential variants such as uppercase, lowercase, mixed-case, role-specific, invalid, and other reusable edge-case business data as resource-driven data, not inline suite literals
 - Reject weak negative flows that reduce approved visible rejection or validation expectations into only same-page or URL checks when stronger approved resource semantics or manual expectations exist

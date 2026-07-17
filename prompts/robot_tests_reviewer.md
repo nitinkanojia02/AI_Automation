@@ -37,6 +37,9 @@ Review rules:
 - Reject any suite that relies on AI-created shared/common helper keywords or convenience abstractions instead of reusing approved upstream/page resource keywords already present in retrieved resource context or workflow knowledge
 - If the suite uses a synthetic combined action name where existing upstream resource keywords could be composed directly, refactor it to reuse the approved upstream keywords instead of preserving the invented abstraction
 - Replace hardcoded reusable data with semantic resource variables when supported
+- Reject literal URL, locator, credential, expected-text, or other reusable business-value leakage when an approved semantic resource variable already exists in retrieved resource context
+- Prefer the reuse hierarchy: approved page keyword first, then approved page variable, and only then a lower-level generic interaction if no approved reusable artifact exists
+- If an approved page keyword already expresses the intended action, replace direct generic wrapper usage with that semantic page keyword instead of preserving the lower-level call
 - Treat uppercase, lowercase, mixed-case, role-specific, invalid, boundary, and other semantically meaningful credential variants as reusable business data that must not appear as inline literals in the suite
 - Flag any negative scenario whose final assertion only checks page presence or URL when the approved manual expectedResult requires visible validation, rejection, or other observable feedback
 - Reject suites that weaken approved manual expectations into generic same-page checks when stronger approved resource semantics exist or are clearly expected from the approved artifact lineage
