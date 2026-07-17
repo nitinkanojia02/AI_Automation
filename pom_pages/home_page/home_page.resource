@@ -18,9 +18,10 @@ ${SITE_SURVEY_BUTTON}    id=auto_btn_SiteSurvey
 
 *** Keywords ***
 Open Home Page
-    [Documentation]    Open the SPA Home page in guest state.
+    [Documentation]    Open the application Home page in guest state.
     Open Browser To Url    ${HOME_PAGE_URL}
     Wait For Element To Be Ready    ${PERSON_PROFILE_BUTTON}
+    Wait For Element To Be Ready    ${HOME_BUTTON}
 
 Verify Guest Home Controls Are Visible And Enabled
     [Documentation]    Verify approved guest-state and shared Home controls are visible and enabled.
@@ -32,21 +33,13 @@ Verify Guest Home Controls Are Visible And Enabled
     Wait For Element To Be Ready    ${CLEAN_SURVEY_BUTTON}
     Wait For Element To Be Ready    ${SITE_SURVEY_BUTTON}
 
-Verify Guest Home Page Loaded
-    [Documentation]    Verify the Home page is loaded in guest state.
+Verify Home Page Loaded In Guest State
+    [Documentation]    Verify the Home page is loaded in guest state with guest-accessible controls available.
     ${current_url}=    Get Location
     Should Contain    ${current_url}    ${HOME_PAGE_PATH}
-    Verify Guest Home Controls Are Visible And Enabled
-
-Verify Person Profile Button
-    [Documentation]    Verify the Person/Profile button is visible and enabled in guest state.
     Wait For Element To Be Ready    ${PERSON_PROFILE_BUTTON}
-
-Verify Guest Feature Buttons Are Ready
-    [Documentation]    Verify guest-accessible feature buttons are visible and enabled.
+    Wait For Element To Be Ready    ${HOME_BUTTON}
     Wait For Element To Be Ready    ${CUSTOMER_SIGNUP_BUTTON}
-    Wait For Element To Be Ready    ${CLEAN_SURVEY_BUTTON}
-    Wait For Element To Be Ready    ${SITE_SURVEY_BUTTON}
 
 Verify Login Page Opened
     [Documentation]    Verify the Login page or Login view is opened from the Home page.
@@ -69,8 +62,15 @@ Verify Survey Page Opened
     Should Contain    ${current_url}    ${SURVEY_PAGE_IDENTIFIER}
 
 Verify Home Page Remains In Guest State
-    [Documentation]    Verify the Home page remains loaded in guest state after navigation.
-    Verify Guest Home Page Loaded
+    [Documentation]    Verify the Home page remains loaded in guest state after navigation or refresh.
+    Verify Home Page Loaded In Guest State
+    Verify Guest Home Controls Are Visible And Enabled
+
+Verify Guest Feature Buttons Are Ready
+    [Documentation]    Verify guest-accessible feature buttons are visible and enabled.
+    Wait For Element To Be Ready    ${CUSTOMER_SIGNUP_BUTTON}
+    Wait For Element To Be Ready    ${CLEAN_SURVEY_BUTTON}
+    Wait For Element To Be Ready    ${SITE_SURVEY_BUTTON}
 
 Click Person Profile Button
     [Documentation]    Click the Person/Profile button from the Home page.
@@ -85,17 +85,17 @@ Click Notification Button
     Click When Ready    ${NOTIFICATION_BUTTON}
 
 Click Home Button
-    [Documentation]    Click the Home button while remaining in guest state.
+    [Documentation]    Click the Home button from the Home page shell.
     Click When Ready    ${HOME_BUTTON}
 
 Click Customer Signup Button
-    [Documentation]    Click the Customer signup button from the guest Home page.
+    [Documentation]    Click the Customer signup button from guest Home state.
     Click When Ready    ${CUSTOMER_SIGNUP_BUTTON}
 
 Click Clean Survey Button
-    [Documentation]    Click the Clean survey button from the guest Home page.
+    [Documentation]    Click the Clean survey button from guest Home state.
     Click When Ready    ${CLEAN_SURVEY_BUTTON}
 
 Click Site Survey Button
-    [Documentation]    Click the Site survey button from the guest Home page.
+    [Documentation]    Click the Site survey button from guest Home state.
     Click When Ready    ${SITE_SURVEY_BUTTON}

@@ -268,7 +268,7 @@
     },
     {
       "approvedName": "home_button",
-      "type": "button",
+      "type": "link",
       "locator": "id=auto_home_btn",
       "approved": true
     },
@@ -293,70 +293,77 @@
   ],
   "reviewSummary": {
     "overall_quality": "medium",
-    "summary": "The draft captures the core guest-state navigation controls required for the Home page workflow, but it includes noisy non-business elements, weak generic locators, and inconsistent semantic naming. Important validation-related absence indicators for authenticated-only controls are also missing.",
+    "summary": "The draft captures the primary guest-state navigation controls required for the Home workflow, but it includes noisy non-actionable elements, weak generic locators, and inconsistent semantic naming. The artifact also lacks explicit validation-related elements for guest-state negative verification expectations.",
     "issues": [
       {
         "severity": "high",
-        "type": "noise",
-        "element_name": "background_content",
-        "message": "The background content container is decorative layout infrastructure and does not provide meaningful automation value for workflow validation or interaction.",
-        "suggested_fix": "Remove the background_content element from the approved page model."
-      },
-      {
-        "severity": "high",
-        "type": "locator",
-        "element_name": "element_8",
-        "message": "The locator xpath=//a is overly generic, brittle, and likely to match multiple links across the application.",
-        "suggested_fix": "Remove this duplicate wrapper element entirely because the Home button is already modeled with a stable ID locator."
-      },
-      {
-        "severity": "medium",
-        "type": "duplicate",
-        "element_name": "element_8",
-        "message": "This anchor element appears to be the native internal anchor rendered by the ion-button for the Home button and duplicates the already modeled Home button control.",
-        "suggested_fix": "Keep only the home_button element using id=auto_home_btn."
-      },
-      {
-        "severity": "medium",
         "type": "naming",
         "element_name": "person_button",
-        "message": "The name does not fully reflect the business meaning described in the workflow, which consistently refers to the control as Person/Profile.",
-        "suggested_fix": "Rename to person_profile_button for clearer semantic meaning and downstream keyword generation quality."
+        "message": "The element name is too generic and does not reflect the workflow terminology used throughout the approved workflow context.",
+        "suggested_fix": "Rename to 'person_profile_button' to align with workflow intent and downstream keyword readability."
       },
       {
         "severity": "medium",
         "type": "naming",
         "element_name": "customersignup_button",
-        "message": "The element name is compressed and less readable than the business terminology used in the workflow.",
-        "suggested_fix": "Rename to customer_signup_button."
+        "message": "The element name lacks readability and business clarity due to concatenated wording.",
+        "suggested_fix": "Rename to 'customer_signup_button'."
       },
       {
         "severity": "medium",
         "type": "naming",
         "element_name": "cleansurvey_button",
-        "message": "The element name lacks readable semantic separation.",
-        "suggested_fix": "Rename to clean_survey_button."
+        "message": "The element name lacks readability and business clarity due to concatenated wording.",
+        "suggested_fix": "Rename to 'clean_survey_button'."
       },
       {
         "severity": "medium",
         "type": "naming",
         "element_name": "sitesurvey_button",
-        "message": "The element name lacks readable semantic separation.",
-        "suggested_fix": "Rename to site_survey_button."
+        "message": "The element name lacks readability and business clarity due to concatenated wording.",
+        "suggested_fix": "Rename to 'site_survey_button'."
+      },
+      {
+        "severity": "high",
+        "type": "noise",
+        "element_name": "element_8",
+        "message": "This element is a duplicate low-level anchor wrapper for the Home button and does not represent a distinct actionable business control.",
+        "suggested_fix": "Remove this element and retain only the primary Home button element using the stable id locator."
+      },
+      {
+        "severity": "high",
+        "type": "locator",
+        "element_name": "element_8",
+        "message": "The locator 'xpath=//a' is overly generic, brittle, and likely to match multiple links across the application.",
+        "suggested_fix": "Remove the element entirely or replace with a uniquely identifiable locator if a distinct navigation control is truly needed."
+      },
+      {
+        "severity": "medium",
+        "type": "noise",
+        "element_name": "background_content",
+        "message": "The background content container is layout-only and does not provide meaningful automation value for workflow interaction or validation.",
+        "suggested_fix": "Remove the element from the approved page model."
+      },
+      {
+        "severity": "medium",
+        "type": "classification",
+        "element_name": "home_button",
+        "message": "The underlying native control behaves as a navigational anchor rather than a traditional button.",
+        "suggested_fix": "Consider classifying this element as a navigation control or link if downstream frameworks distinguish navigation semantics."
+      },
+      {
+        "severity": "high",
+        "type": "validation_gap",
+        "element_name": "",
+        "message": "The workflow explicitly requires verification that authenticated-only controls and the logged-in user name button are not visible in guest state, but no observable validation elements support these assertions.",
+        "suggested_fix": "Add identifiable guest-state exclusion indicators or authenticated-user display elements if available in the DOM to support negative visibility assertions."
       },
       {
         "severity": "medium",
         "type": "validation_gap",
         "element_name": "",
-        "message": "The workflow explicitly requires validation that authenticated-only controls and logged-in user identity controls are not visible in guest state, but no corresponding validation-oriented elements were identified.",
-        "suggested_fix": "Attempt to identify authenticated-only controls, logged-in user name display elements, or user identity indicators so downstream automation can perform observable negative-state validation."
-      },
-      {
-        "severity": "low",
-        "type": "classification",
-        "element_name": "home_button",
-        "message": "The rendered native control inside the shadow DOM is an anchor element rather than a traditional button, which may matter for accessibility or navigation validation.",
-        "suggested_fix": "Retain the semantic business classification as a navigation button but document that the native implementation is anchor-based."
+        "message": "No explicit page-state identifier or guest-state indicator element is modeled for strong Home page loaded validation beyond navigation controls.",
+        "suggested_fix": "Add a stable Home page header, title, shell container, or guest-state indicator element if available."
       }
     ],
     "approved_elements": [
@@ -376,13 +383,13 @@
         "name": "notification_button",
         "type": "button",
         "locator": "id=auto_notification_btn",
-        "description": "Shared Home shell notification access control."
+        "description": "Shared Home shell notification control."
       },
       {
         "name": "home_button",
-        "type": "button",
+        "type": "navigation_control",
         "locator": "id=auto_home_btn",
-        "description": "Shared Home shell navigation control that keeps the user within the Home experience."
+        "description": "Shared Home shell navigation control for returning to Home."
       },
       {
         "name": "customer_signup_button",

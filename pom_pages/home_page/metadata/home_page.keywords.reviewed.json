@@ -8,8 +8,9 @@
       "action": "generic",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Open the application Home page in guest state.",
-        "    Open Browser To Url    ${HOME_PAGE_URL}"
+        "Open Browser To Url    ${HOME_PAGE_URL}",
+        "Wait For Element To Be Ready    ${AUTO_PERSON_BTN_BUTTON}",
+        "Wait For Element To Be Ready    ${AUTO_HOME_BTN_BUTTON}"
       ],
       "approved": true
     },
@@ -20,8 +21,7 @@
       "action": "click",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Click the Person/Profile button from the Home page.",
-        "    Click When Ready    ${PERSON_PROFILE_BUTTON}"
+        "Click When Ready    ${PERSON_PROFILE_BUTTON}"
       ],
       "approved": true
     },
@@ -32,8 +32,7 @@
       "action": "click",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Click the Back button from the Home page shell.",
-        "    Click When Ready    ${BACK_BUTTON}"
+        "Click When Ready    ${BACK_BUTTON}"
       ],
       "approved": true
     },
@@ -44,8 +43,7 @@
       "action": "click",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Click the Notification button from the Home page shell.",
-        "    Click When Ready    ${NOTIFICATION_BUTTON}"
+        "Click When Ready    ${NOTIFICATION_BUTTON}"
       ],
       "approved": true
     },
@@ -56,8 +54,7 @@
       "action": "click",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Click the Home button from the Home page shell.",
-        "    Click When Ready    ${HOME_BUTTON}"
+        "Click When Ready    ${HOME_BUTTON}"
       ],
       "approved": true
     },
@@ -68,8 +65,7 @@
       "action": "click",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Click the Customer signup button from guest Home state.",
-        "    Click When Ready    ${CUSTOMER_SIGNUP_BUTTON}"
+        "Click When Ready    ${CUSTOMER_SIGNUP_BUTTON}"
       ],
       "approved": true
     },
@@ -80,8 +76,7 @@
       "action": "click",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Click the Clean survey button from guest Home state.",
-        "    Click When Ready    ${CLEAN_SURVEY_BUTTON}"
+        "Click When Ready    ${CLEAN_SURVEY_BUTTON}"
       ],
       "approved": true
     },
@@ -92,37 +87,37 @@
       "action": "click",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Click the Site survey button from guest Home state.",
-        "    Click When Ready    ${SITE_SURVEY_BUTTON}"
+        "Click When Ready    ${SITE_SURVEY_BUTTON}"
       ],
       "approved": true
     },
     {
       "keywordId": "KW_009",
-      "keywordName": "Verify Person Profile Button",
-      "targetElement": "person_profile_button",
+      "keywordName": "Verify Guest Home Controls Are Visible And Enabled",
+      "targetElement": "",
       "action": "verify",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Verify the Home page is loaded in guest state with shared shell controls visible and enabled.",
-        "    Wait For Element To Be Ready    ${PERSON_PROFILE_BUTTON}",
-        "    Wait For Element To Be Ready    ${PERSON_PROFILE_BUTTON}",
-        "    Wait For Element To Be Ready    ${PERSON_PROFILE_BUTTON}",
-        "    Wait For Element To Be Ready    ${PERSON_PROFILE_BUTTON}"
+        "Wait For Element To Be Ready    ${AUTO_PERSON_BTN_BUTTON}",
+        "Wait For Element To Be Ready    ${AUTO_BACK_BTN_BUTTON}",
+        "Wait For Element To Be Ready    ${AUTO_NOTIFICATION_BTN_BUTTON}",
+        "Wait For Element To Be Ready    ${AUTO_HOME_BTN_BUTTON}",
+        "Wait For Element To Be Ready    ${AUTO_BTN_CUSTOMER_SIGNUP_BUTTON}",
+        "Wait For Element To Be Ready    ${AUTO_BTN_CLEAN_SURVEY_BUTTON}",
+        "Wait For Element To Be Ready    ${AUTO_BTN_SITE_SURVEY_BUTTON}"
       ],
       "approved": true
     },
     {
       "keywordId": "KW_010",
-      "keywordName": "Verify Customer Signup Button",
-      "targetElement": "customer_signup_button",
+      "keywordName": "Verify Home Page Loaded In Guest State",
+      "targetElement": "",
       "action": "verify",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Verify all guest-accessible feature buttons are visible and enabled.",
-        "    Wait For Element To Be Ready    ${CUSTOMER_SIGNUP_BUTTON}",
-        "    Wait For Element To Be Ready    ${CUSTOMER_SIGNUP_BUTTON}",
-        "    Wait For Element To Be Ready    ${CUSTOMER_SIGNUP_BUTTON}"
+        "Wait For Element To Be Ready    ${AUTO_PERSON_BTN_BUTTON}",
+        "Wait For Element To Be Ready    ${AUTO_HOME_BTN_BUTTON}",
+        "Wait For Element To Be Ready    ${AUTO_BTN_CUSTOMER_SIGNUP_BUTTON}"
       ],
       "approved": true
     }

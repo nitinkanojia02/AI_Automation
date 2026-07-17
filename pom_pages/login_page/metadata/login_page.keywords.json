@@ -1,0 +1,128 @@
+{
+  "pageName": "login_page",
+  "keywords": [
+    {
+      "keywordId": "KW_001",
+      "keywordName": "Enter Username Textbox",
+      "targetElement": "username_textbox",
+      "action": "input",
+      "arguments": [
+        "text"
+      ],
+      "implementation": [
+        "[Documentation]    Enter text into the username field.",
+        "    Input Text When Ready    ${USER_NAME_TEXTBOX}    ${text}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_002",
+      "keywordName": "Enter Password Textbox",
+      "targetElement": "password_textbox",
+      "action": "input",
+      "arguments": [
+        "password"
+      ],
+      "implementation": [
+        "[Documentation]    Enter password into the password field.",
+        "    Input Password When Ready    ${PASSWORD}    ${password}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_003",
+      "keywordName": "Click Sign In Button",
+      "targetElement": "sign_in_button",
+      "action": "click",
+      "arguments": [],
+      "implementation": [
+        "[Documentation]    Click the sign in button.",
+        "    Click When Ready    ${SIGN_IN_BUTTON}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_004",
+      "keywordName": "Verify Username Textbox",
+      "targetElement": "username_textbox",
+      "action": "verify",
+      "arguments": [],
+      "implementation": [
+        "[Documentation]    Verify login form fields and sign in button are visible and enabled.",
+        "    Wait For Element To Be Ready    ${USER_NAME_TEXTBOX}",
+        "    Wait For Element To Be Ready    ${PASSWORD}",
+        "    Wait For Element To Be Ready    ${SIGN_IN_BUTTON}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_005",
+      "keywordName": "Verify Password Textbox",
+      "targetElement": "password_textbox",
+      "action": "verify",
+      "arguments": [],
+      "implementation": [
+        "[Documentation]    Verify the password field masks entered characters.",
+        "    Wait For Element To Be Ready    ${PASSWORD}",
+        "    ${field_type}=    Get Element Attribute    ${PASSWORD}    type",
+        "    Should Be Equal    ${field_type}    password"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_006",
+      "keywordName": "Login With Credentials",
+      "targetElement": "",
+      "action": "generic",
+      "arguments": [
+        "username",
+        "password"
+      ],
+      "implementation": [
+        "[Documentation]    Enter username and password credentials and submit the login form.",
+        "    Enter User Name    ${username}",
+        "    Enter Password    ${password}",
+        "    Click Sign In Button"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_007",
+      "keywordName": "Login With Valid Credentials",
+      "targetElement": "",
+      "action": "generic",
+      "arguments": [],
+      "implementation": [
+        "[Documentation]    Authenticate using approved valid credentials.",
+        "    Login With Credentials    ${VALID_USERNAME}    ${VALID_PASSWORD}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_009",
+      "keywordName": "Generate Long Username Value",
+      "targetElement": "",
+      "action": "generic",
+      "arguments": [],
+      "implementation": [
+        "[Documentation]    Generate a long username value for edge validation scenarios.",
+        "    ${long_username}=    Evaluate    \"${VALID_USERNAME}\" * ${LONG_INPUT_MULTIPLIER}",
+        "    [Return]    ${long_username}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_010",
+      "keywordName": "Generate Long Password Value",
+      "targetElement": "",
+      "action": "generic",
+      "arguments": [],
+      "implementation": [
+        "[Documentation]    Generate a long password value for edge validation scenarios.",
+        "    ${long_password}=    Evaluate    \"${VALID_PASSWORD}\" * ${LONG_INPUT_MULTIPLIER}",
+        "    [Return]    ${long_password}"
+      ],
+      "approved": true
+    }
+  ]
+}

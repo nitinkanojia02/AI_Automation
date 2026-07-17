@@ -38,7 +38,7 @@
       "source": "approved_element",
       "kind": "locator",
       "approvedName": "home_button",
-      "type": "button"
+      "type": "link"
     },
     {
       "variableName": "CUSTOMER_SIGNUP_BUTTON",
