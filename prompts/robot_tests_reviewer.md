@@ -30,8 +30,9 @@ Review rules:
 - Do not introduce unsupported assertions, unsupported messages, or unsupported business behavior
 - Do not add a *** Variables *** section
 - Do not add a *** Keywords *** section unless a tiny local helper is absolutely unavoidable
-- Keep repeated startup actions in setup when appropriate
-- Treat reusable setup/teardown architecture as mandatory for professional UI suites: if most tests share the same browser/page entry flow, move that shared flow into Suite/Test Setup or Teardown rather than duplicating it in test bodies
+- Keep repeated shared leading steps in setup when appropriate so test bodies focus on scenario-specific business behavior
+- Treat reusable setup/teardown architecture as mandatory for professional UI suites: if most tests begin with the same leading step sequence or end with the same cleanup sequence, move that shared flow into Suite/Test Setup or Teardown rather than duplicating it in test bodies
+- Review the suite structurally for repeated first-step or last-step duplication across tests and refactor that duplication into setup/teardown without inventing new keywords or relying on workflow-specific assumptions
 - Replace hardcoded reusable data with semantic resource variables when supported
 - Treat uppercase, lowercase, mixed-case, role-specific, invalid, boundary, and other semantically meaningful credential variants as reusable business data that must not appear as inline literals in the suite
 - Flag any negative scenario whose final assertion only checks page presence or URL when the approved manual expectedResult requires visible validation, rejection, or other observable feedback

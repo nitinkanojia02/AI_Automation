@@ -31,8 +31,9 @@ Refinement rules:
 - For negative scenarios, use stronger approved validation evidence instead of only same-page checks when such evidence exists
 - Do not invent unsupported validation messages or unsupported business behavior
 - Avoid invented keywords, unsupported assertions, and invalid library APIs
-- Prefer setup/teardown for repeated startup or cleanup behavior
-- Treat missing reusable setup for dominant shared browser/page entry flow as a quality defect; professional suites should move repeated environment-entry mechanics out of test bodies unless a test intentionally needs a unique startup path
+- Prefer setup/teardown for repeated shared leading or trailing test-body behavior
+- Treat missing reusable setup/teardown for dominant repeated leading or trailing step sequences as a quality defect; professional suites should move repeated mechanics out of test bodies unless a test intentionally needs a unique setup or cleanup path
+- Refine the suite structurally: if the same first steps or last steps appear across many tests, extract that repeated flow into setup/teardown rather than leaving duplication in the test bodies
 - Prefer semantic resource variables over inline reusable literals
 - Use canonical semantic variables only; avoid depending on duplicate aliases or noisy derived variables when built-ins or inline composition are sufficient
 - Treat semantically meaningful credential variants such as uppercase, lowercase, mixed-case, role-specific, invalid, and other reusable edge-case business data as resource-driven data, not inline suite literals

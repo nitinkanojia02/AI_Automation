@@ -1051,92 +1051,20 @@ def promote_repeated_setup_teardown(content: str) -> str:
     has_test_setup = bool(re.search(r"(?im)^\s*Test Setup\s{2,}.+$", settings_text))
     has_test_teardown = bool(re.search(r"(?im)^\s*Test Teardown\s{2,}.+$", settings_text))
 
-    explicit_teardown_keywords = {
-        "close browser session",
-        "close browser",
-        "close all browsers",
-        "capture page screenshot",
-        "capture screenshot",
-        "log source",
-    }
-    startup_exclusion_keywords = explicit_teardown_keywords | {
-        "verify",
-        "page should",
-        "location should",
-        "title should",
-        "element should",
-        "run keyword if",
-        "should be equal",
-        "should contain",
-        "should not contain",
-    }
-
     prefix_counts: dict[tuple[str, ...], int] = {}
     suffix_counts: dict[tuple[str, ...], int] = {}
-
-    def keyword_name_from_step(raw_line: str) -> str:
-        keyword_name, _arguments = scan_keyword_invocation(raw_line)
-        return clean_text(keyword_name).lower()
-
-    def keyword_is_teardown_like(keyword_name: str) -> bool:
-        if not keyword_name:
-            return False
-        if keyword_name in explicit_teardown_keywords:
-            return True
-        return any(token in keyword_name for token in ("close browser", "teardown", "cleanup", "screenshot"))
-
-    def keyword_is_startup_candidate(keyword_name: str) -> bool:
-        if not keyword_name:
-            return False
-        if keyword_is_teardown_like(keyword_name):
-            return False
-        if keyword_name in startup_exclusion_keywords:
-            return False
-        return any(
-            token in keyword_name
-            for token in (
-                "open",
-                "launch",
-                "navigate",
-                "go to",
-                "load",
-                "ready",
-                "start",
-                "login page",
-                "home page",
-                "landing",
-            )
-        )
-
-    def leading_candidate_steps(step_lines: list[str]) -> list[str]:
-        selected: list[str] = []
-        for line in step_lines[:3]:
-            name = keyword_name_from_step(line)
-            if not keyword_is_startup_candidate(name):
-                break
-            selected.append(line)
-        return selected
-
-    def trailing_candidate_steps(step_lines: list[str]) -> list[str]:
-        selected: list[str] = []
-        for line in reversed(step_lines[-2:]):
-            name = keyword_name_from_step(line)
-            if not keyword_is_teardown_like(name):
-                break
-            selected.insert(0, line)
-        return selected
 
     for test in tests:
         executable_steps = extract_executable_steps(test["body"])
         step_lines = [line for _idx, line in executable_steps]
-        startup_steps = leading_candidate_steps(step_lines)
-        cleanup_steps = trailing_candidate_steps(step_lines)
-        for length in range(len(startup_steps), 0, -1):
-            key = tuple(normalize_step_line(line) for line in startup_steps[:length])
+        max_prefix = min(3, len(step_lines))
+        max_suffix = min(2, len(step_lines))
+        for length in range(max_prefix, 0, -1):
+            key = tuple(normalize_step_line(line) for line in step_lines[:length])
             if all(key):
                 prefix_counts[key] = prefix_counts.get(key, 0) + 1
-        for length in range(len(cleanup_steps), 0, -1):
-            key = tuple(normalize_step_line(line) for line in cleanup_steps[-length:])
+        for length in range(max_suffix, 0, -1):
+            key = tuple(normalize_step_line(line) for line in step_lines[-length:])
             if all(key):
                 suffix_counts[key] = suffix_counts.get(key, 0) + 1
 
@@ -1721,15 +1649,15 @@ def validate_robot_content(content: str, allowed_resources: list[str]) -> tuple[
             if not common_prefix:
                 break
 
-    repetitive_start_keywords = {
-        "open login page", "open browser to url", "go to url", "wait for page to be ready",
-        "wait until element is visible", "wait until page contains", "open browser session"
-    }
-    if len(common_prefix) >= 2 and any(clean_text(step).lower() in repetitive_start_keywords for step in common_prefix):
-        warnings.append("Generated suite repeats the same startup steps across tests; prefer moving repeated opening/navigation/wait steps into Test Setup or Suite Setup")
+    if len(common_prefix) >= 2:
+        repeated_prefix = " > ".join(clean_text(step) for step in common_prefix if clean_text(step))
+        if repeated_prefix:
+            warnings.append(
+                f"Generated suite repeats the same leading step flow across tests ('{repeated_prefix}'); prefer moving repeated shared entry mechanics into Test Setup or Suite Setup so test bodies focus on scenario-specific behavior."
+            )
 
     if all_test_steps:
-        semantic_start_sequences: dict[str, int] = {}
+        repeated_start_sequences: dict[str, int] = {}
         for steps in all_test_steps:
             if not steps:
                 continue
@@ -1738,29 +1666,21 @@ def validate_robot_content(content: str, allowed_resources: list[str]) -> tuple[
                 continue
             for prefix_length in range(min(3, len(normalized_steps)), 0, -1):
                 prefix = " > ".join(normalized_steps[:prefix_length])
-                semantic_start_sequences[prefix] = semantic_start_sequences.get(prefix, 0) + 1
-        repeated_semantic_starts = {
-            seq: count for seq, count in semantic_start_sequences.items()
+                repeated_start_sequences[prefix] = repeated_start_sequences.get(prefix, 0) + 1
+        dominant_repeated_starts = {
+            seq: count for seq, count in repeated_start_sequences.items()
             if count >= max(2, len(all_test_steps) // 2)
         }
-        if repeated_semantic_starts:
-            strongest_sequence = max(repeated_semantic_starts, key=lambda item: (repeated_semantic_starts[item], len(item)))
+        if dominant_repeated_starts:
+            strongest_sequence = max(dominant_repeated_starts, key=lambda item: (dominant_repeated_starts[item], len(item)))
             if not has_setup:
                 warnings.append(
-                    f"Generated suite repeats the same semantic startup flow across tests ('{strongest_sequence}') but does not use Test Setup or Suite Setup. Promote the shared entry flow into setup so test bodies start closer to the business action under test."
+                    f"Generated suite repeats the same leading step sequence across tests ('{strongest_sequence}') but does not use Test Setup or Suite Setup. Promote the shared sequence into setup so test bodies start closer to the business action under test."
                 )
             else:
-                setup_lines = re.findall(r"(?im)^\s*(?:Suite Setup|Test Setup)\s{2,}(.+)$", content)
-                configured_setup_keywords = set()
-                for line in setup_lines:
-                    kw_name, _args = scan_keyword_invocation(line)
-                    if kw_name:
-                        configured_setup_keywords.add(clean_text(kw_name).lower())
-                first_step_of_sequence = strongest_sequence.split(" > ")[0]
-                if first_step_of_sequence and first_step_of_sequence not in configured_setup_keywords:
-                    warnings.append(
-                        f"Generated suite has setup configured, but the dominant shared startup flow still begins inside test bodies with '{first_step_of_sequence}'. Strengthen setup so repeated entry mechanics move out of the tests."
-                    )
+                warnings.append(
+                    f"Generated suite has setup configured, but a dominant repeated leading step sequence ('{strongest_sequence}') still remains in test bodies. Strengthen setup so shared entry mechanics move out of the tests."
+                )
 
     if has_setup and all_test_steps:
         page_startup_keywords = {
