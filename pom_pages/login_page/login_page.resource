@@ -5,44 +5,61 @@ Resource    ../../resources/common_keywords.resource
 ${USERNAME_TEXTBOX}    xpath=//input[@placeholder='User Name']
 ${PASSWORD_TEXTBOX}    id=password
 ${SIGN_IN_BUTTON}    xpath=//ion-button[contains(normalize-space(.),'SIGN IN') or @text='Login']
-${HOME_PAGE_URL}    http://localhost/washtabui/home
+${BACK_BUTTON}    id=auto_back_btn
+${HOME_BUTTON}    id=auto_home_btn
+${AUTHENTICATION_FAILED_MESSAGE}    xpath=//*[contains(normalize-space(.),'Failed')]
 ${VALID_USERNAME}    krisadmin
 ${VALID_PASSWORD}    Carwash#1
 ${INVALID_USERNAME}    invaliduser
-${INVALID_PASSWORD}    invalidpass
-${INVALID_USERNAME_WITH_VALID_PASSWORD}    krisadmin1
-${INVALID_PASSWORD_WITH_VALID_USERNAME}    Carwash#123
-${USERNAME_UPPERCASE_VARIANT}    KRISADMIN
-${PASSWORD_LOWERCASE_VARIANT}    carwash#1
-${LOGIN_ERROR_TEXT}    invalid
-${REQUIRED_FIELD_VALIDATION_TEXT}    required
+${INVALID_PASSWORD}    WrongPass#1
+${CASE_SENSITIVE_INVALID_USERNAME}    KRISADMIN
+${CASE_SENSITIVE_INVALID_PASSWORD}    CARWASH#1
+${AUTHENTICATION_FAILED_TEXT}    Failed
+${LONG_INPUT_MULTIPLIER}    50
 
 *** Keywords ***
 Enter Username Textbox
-    [Documentation]    Enter text into the username textbox.
+    [Documentation]    Enter text into the Username field.
     [Arguments]    ${text}
     Input Text When Ready    ${USERNAME_TEXTBOX}    ${text}
 
 Enter Password Textbox
-    [Documentation]    Enter password into the password textbox.
+    [Documentation]    Enter password into the Password field.
     [Arguments]    ${password}
     Input Password When Ready    ${PASSWORD_TEXTBOX}    ${password}
 
 Click Sign In Button
-    [Documentation]    Click the sign in button.
+    [Documentation]    Click the Sign In button.
     Click When Ready    ${SIGN_IN_BUTTON}
 
+Click Back Button
+    [Documentation]    Click the Back button on the Login page.
+    Click When Ready    ${BACK_BUTTON}
+
+Click Home Button
+    [Documentation]    Click the Home button on the Login page.
+    Click When Ready    ${HOME_BUTTON}
+
 Verify Login Form Loaded
-    [Documentation]    Verify login form fields and sign in button are visible and enabled.
+    [Documentation]    Verify Login page controls are visible and enabled.
     Wait For Element To Be Ready    ${USERNAME_TEXTBOX}
     Wait For Element To Be Ready    ${PASSWORD_TEXTBOX}
     Wait For Element To Be Ready    ${SIGN_IN_BUTTON}
+    Wait For Element To Be Ready    ${BACK_BUTTON}
+    Wait For Element To Be Ready    ${HOME_BUTTON}
 
 Verify Password Field Is Masked
-    [Documentation]    Verify the password field masks entered characters.
+    [Documentation]    Verify the Password field uses masked input behavior.
     Wait For Element To Be Ready    ${PASSWORD_TEXTBOX}
-    ${password_type}=    Get Element Attribute    ${PASSWORD_TEXTBOX}    type
-    Should Be Equal    ${password_type}    password
+    Element Attribute Value Should Be    ${PASSWORD_TEXTBOX}    type    password
+
+Verify Authentication Failed Message
+    [Documentation]    Verify the generic Failed authentication message is displayed.
+    Wait For Element To Be Ready    ${AUTHENTICATION_FAILED_MESSAGE}
+
+Verify Login Page Remains Visible
+    [Documentation]    Verify the application remains on the Login page in unauthenticated state.
+    Verify Login Form Loaded
 
 Login With Credentials
     [Documentation]    Enter username and password credentials and submit the login form.
@@ -55,24 +72,20 @@ Login With Valid Credentials
     [Documentation]    Authenticate using approved valid credentials.
     Login With Credentials    ${VALID_USERNAME}    ${VALID_PASSWORD}
 
-Verify Login Page Remains Visible
-    [Documentation]    Verify the login page remains visible after failed authentication or validation.
-    Verify Login Form Loaded
+Login With Invalid Credentials
+    [Documentation]    Attempt login using invalid username and invalid password.
+    Login With Credentials    ${INVALID_USERNAME}    ${INVALID_PASSWORD}
 
-Verify Authentication Error Message
-    [Documentation]    Verify authentication error feedback is displayed.
-    Page Should Contain    ${LOGIN_ERROR_TEXT}
-
-Verify Required Validation
-    [Documentation]    Verify required field validation feedback is displayed.
-    Page Should Contain    ${REQUIRED_FIELD_VALIDATION_TEXT}
+Login With Case Sensitive Invalid Credentials
+    [Documentation]    Attempt login using uppercase credential variants to validate case sensitivity.
+    Login With Credentials    ${CASE_SENSITIVE_INVALID_USERNAME}    ${CASE_SENSITIVE_INVALID_PASSWORD}
 
 Generate Long Username Value
     [Documentation]    Generate a long username value for edge validation scenarios.
-    ${long_username}=    Evaluate    "${VALID_USERNAME}" * 50
+    ${long_username}=    Evaluate    "${VALID_USERNAME}" * ${LONG_INPUT_MULTIPLIER}
     [Return]    ${long_username}
 
 Generate Long Password Value
     [Documentation]    Generate a long password value for edge validation scenarios.
-    ${long_password}=    Evaluate    "${VALID_PASSWORD}" * 50
+    ${long_password}=    Evaluate    "${VALID_PASSWORD}" * ${LONG_INPUT_MULTIPLIER}
     [Return]    ${long_password}

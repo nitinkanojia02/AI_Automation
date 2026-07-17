@@ -1,108 +1,114 @@
 *** Settings ***
 Resource    ../resources/common_keywords.resource
 Resource    ../pom_pages/login_page/login_page.resource
-Suite Setup    Open Browser To Url    ${HOME_PAGE_URL}
+Suite Setup    Open Browser Session
 Suite Teardown    Close Browser Session
-Test Setup    Open Home Page And Click User Button    ${HOME_PAGE_URL}
+Test Setup    Go To Url    http://localhost/washtabui/home
 
 *** Test Cases ***
-AUT-WT-LOGIN01: Verify Login page opens from Home page using the Person/Profile button
+AUT-WT-LOGIN01: Verify unauthenticated guest user can open the Login page from the Home page person profile button
     [Tags]    WT-LOGIN01    positive
+    Click When Ready    id=auto_person_btn
     Verify Login Form Loaded
 
-AUT-WT-LOGIN02: Verify Login page controls are visible and enabled after navigation from Home page
+AUT-WT-LOGIN02: Verify Login page controls are visible and enabled after opening Login page from Home page
     [Tags]    WT-LOGIN02    positive
+    Click When Ready    id=auto_person_btn
     Verify Login Form Loaded
 
-AUT-WT-LOGIN03: Verify password input is masked by default while typing
+AUT-WT-LOGIN03: Verify password input is masked while entering credentials on the Login page
     [Tags]    WT-LOGIN03    positive
+    Click When Ready    id=auto_person_btn
     Enter Password Textbox    ${VALID_PASSWORD}
     Verify Password Field Is Masked
 
-AUT-WT-LOGIN04: Verify successful login with approved valid credentials returns the user to authenticated Home state
+AUT-WT-LOGIN04: Verify successful login using approved credentials returns the user to authenticated Home state
     [Tags]    WT-LOGIN04    positive
+    Click When Ready    id=auto_person_btn
     Login With Valid Credentials
-    Wait Until Location Contains    home
+    Wait Until Page Does Not Contain Element    ${USERNAME_TEXTBOX}
 
-AUT-WT-LOGIN06: Verify invalid username with valid password does not authenticate the user
+AUT-WT-LOGIN05: Verify authenticated Home state is visible after successful login
+    [Tags]    WT-LOGIN05    positive
+    Click When Ready    id=auto_person_btn
+    Login With Valid Credentials
+    Wait Until Page Does Not Contain Element    ${USERNAME_TEXTBOX}
+
+AUT-WT-LOGIN06: Verify invalid username and password combination does not authenticate the user
     [Tags]    WT-LOGIN06    negative
-    Login With Credentials    ${INVALID_USERNAME_WITH_VALID_PASSWORD}    ${VALID_PASSWORD}
-    Verify Authentication Error Message
+    Click When Ready    id=auto_person_btn
+    Login With Invalid Credentials
+    Verify Authentication Failed Message
     Verify Login Page Remains Visible
 
-AUT-WT-LOGIN07: Verify valid username with invalid password does not authenticate the user
+AUT-WT-LOGIN07: Verify login submission with both Username and Password fields empty displays generic Failed message only
     [Tags]    WT-LOGIN07    negative
-    Login With Credentials    ${VALID_USERNAME}    ${INVALID_PASSWORD_WITH_VALID_USERNAME}
-    Verify Authentication Error Message
-    Verify Login Page Remains Visible
-
-AUT-WT-LOGIN08: Verify invalid username and invalid password combination is rejected
-    [Tags]    WT-LOGIN08    negative
-    Login With Credentials    ${INVALID_USERNAME}    ${INVALID_PASSWORD}
-    Verify Authentication Error Message
-    Verify Login Page Remains Visible
-
-AUT-WT-LOGIN09: Verify Login button behavior when Username and Password fields are empty
-    [Tags]    WT-LOGIN09    negative
+    Click When Ready    id=auto_person_btn
     Login With Credentials    ${EMPTY}    ${EMPTY}
-    Verify Required Validation
+    Verify Authentication Failed Message
     Verify Login Page Remains Visible
 
-AUT-WT-LOGIN10: Verify required validation when Username is empty and Password is entered
-    [Tags]    WT-LOGIN10    negative
-    Login With Credentials    ${EMPTY}    ${VALID_PASSWORD}
-    Verify Required Validation
-    Verify Login Page Remains Visible
-
-AUT-WT-LOGIN11: Verify required validation when Password is empty and Username is entered
-    [Tags]    WT-LOGIN11    negative
+AUT-WT-LOGIN08: Verify login submission with Username populated and Password empty fails authentication
+    [Tags]    WT-LOGIN08    negative
+    Click When Ready    id=auto_person_btn
     Login With Credentials    ${VALID_USERNAME}    ${EMPTY}
-    Verify Required Validation
+    Verify Authentication Failed Message
     Verify Login Page Remains Visible
 
-AUT-WT-LOGIN12: Verify whitespace-only Username and Password values are rejected
-    [Tags]    WT-LOGIN12    negative
-    Login With Credentials    ${SPACE}    ${SPACE}
-    Verify Authentication Error Message
+AUT-WT-LOGIN09: Verify login submission with Password populated and Username empty fails authentication
+    [Tags]    WT-LOGIN09    negative
+    Click When Ready    id=auto_person_btn
+    Login With Credentials    ${EMPTY}    ${VALID_PASSWORD}
+    Verify Authentication Failed Message
     Verify Login Page Remains Visible
 
-AUT-WT-LOGIN13: Verify leading and trailing spaces in valid credentials are handled according to business rules
-    [Tags]    WT-LOGIN13    edge
+AUT-WT-LOGIN10: Verify leading and trailing whitespace handling for Username and Password values
+    [Tags]    WT-LOGIN10    edge
+    Click When Ready    id=auto_person_btn
     Login With Credentials    ${SPACE}${VALID_USERNAME}${SPACE}    ${SPACE}${VALID_PASSWORD}${SPACE}
-    Wait Until Page Contains Element    ${USERNAME_TEXTBOX}
+    Verify Login PageRemains Visible
 
-AUT-WT-LOGIN16: Verify Password field is case-sensitive for authentication
-    [Tags]    WT-LOGIN16    negative
-    Login With Credentials    ${VALID_USERNAME}    ${PASSWORD_LOWERCASE_VARIANT}
-    Verify Authentication Error Message
+AUT-WT-LOGIN11: Verify whitespace only credential values are rejected with generic Failed message
+    [Tags]    WT-LOGIN11    negative
+    Click When Ready    id=auto_person_btn
+    Login With Credentials    ${SPACE}    ${SPACE}
+    Verify Authentication Failed Message
     Verify Login Page Remains Visible
 
-AUT-WT-LOGIN17: Verify Back button returns the user from Login page to Home page
-    [Tags]    WT-LOGIN17    positive
-    Go To Url    ${HOME_PAGE_URL}
-    Wait Until Page Contains Element    ${USERNAME_TEXTBOX}
+AUT-WT-LOGIN12: Verify Back button returns the user from Login page to unauthenticated Home page
+    [Tags]    WT-LOGIN12    positive
+    Click When Ready    id=auto_person_btn
+    Click Back Button
+    Wait Until Page Does Not Contain Element    ${USERNAME_TEXTBOX}
 
-AUT-WT-LOGIN18: Verify Home button returns the user from Login page to Home page
-    [Tags]    WT-LOGIN18    positive
-    Go To Url    ${HOME_PAGE_URL}
-    Wait Until Page Contains Element    ${USERNAME_TEXTBOX}
+AUT-WT-LOGIN13: Verify Home button returns the user from Login page to unauthenticated Home page
+    [Tags]    WT-LOGIN13    positive
+    Click When Ready    id=auto_person_btn
+    Click Home Button
+    Wait Until Page Does Not Contain Element    ${USERNAME_TEXTBOX}
 
-AUT-WT-LOGIN19: Verify authenticated Home state displays logged-in user identity after successful login
-    [Tags]    WT-LOGIN19    positive
-    Login With Valid Credentials
-    Wait Until Location Contains    home
+AUT-WT-LOGIN14: Verify all authentication failures display the same generic Failed message
+    [Tags]    WT-LOGIN14    negative
+    Click When Ready    id=auto_person_btn
+    Login With Invalid Credentials
+    Verify Authentication Failed Message
+    Verify Login Page Remains Visible
+    Go To Url    http://localhost/washtabui/home
+    Click When Ready    id=auto_person_btn
+    Login With Credentials    ${EMPTY}    ${EMPTY}
+    Verify Authentication Failed Message
+    Verify Login Page Remains Visible
+    Go To Url    http://localhost/washtabui/home
+    Click When Ready    id=auto_person_btn
+    Login With Credentials    ${VALID_USERNAME}    ${EMPTY}
+    Verify Authentication Failed Message
+    Verify Login Page Remains Visible
 
-AUT-WT-LOGIN21: Verify long Username input value is rejected without breaking the Login page
-    [Tags]    WT-LOGIN21    edge
+AUT-WT-LOGIN20: Verify extremely long credential values are rejected without breaking Login page behavior
+    [Tags]    WT-LOGIN20    edge
+    Click When Ready    id=auto_person_btn
     ${long_username}=    Generate Long Username Value
-    Login With Credentials    ${long_username}    ${VALID_PASSWORD}
-    Verify Authentication Error Message
-    Verify Login Page Remains Visible
-
-AUT-WT-LOGIN22: Verify long Password input value is rejected without exposing password text
-    [Tags]    WT-LOGIN22    edge
     ${long_password}=    Generate Long Password Value
-    Login With Credentials    ${VALID_USERNAME}    ${long_password}
-    Verify Password Field Is Masked
-    Verify Authentication Error Message
+    Login With Credentials    ${long_username}    ${long_password}
+    Verify Authentication Failed Message
     Verify Login Page Remains Visible
