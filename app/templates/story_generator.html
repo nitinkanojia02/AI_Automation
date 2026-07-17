@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row g-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h2 class="card-title mb-1">Workflow Story Generator</h2>
+                        <div class="text-muted">Paste raw business notes, acceptance criteria, navigation details, validations, and test data. The MVP will normalize them into a framework-ready workflow story you can copy into Azure DevOps.</div>
+                    </div>
+                </div>
+                <form method="post" action="/story/generate">
+                    <div class="mb-3">
+                        <label class="form-label">Raw Input</label>
+                        <textarea class="form-control code" name="raw_input" rows="14" placeholder="Paste raw workflow notes, user story details, acceptance criteria, validations, reuse guidance, test data, and navigation journey here...">{{ story_raw_input or '' }}</textarea>
+                    </div>
+                    <div class="d-flex gap-2 mb-3">
+                        <button type="submit" class="btn btn-success">Generate User Story</button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="copyGeneratedStory()" {% if not story_output %}disabled{% endif %}>Copy Output</button>
+                    </div>
+                    <div>
+                        <label class="form-label">Generated Framework-Ready User Story</label>
+                        <textarea id="generated_story_output" class="form-control code" rows="18" readonly placeholder="Generated workflow story will appear here...">{{ story_output or '' }}</textarea>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+function copyGeneratedStory() {
+    const output = document.getElementById('generated_story_output');
+    if (!output || !output.value) {
+        return;
+    }
+    output.select();
+    output.setSelectionRange(0, output.value.length);
+    navigator.clipboard.writeText(output.value).then(() => {
+        output.blur();
+    }).catch(() => {
+        document.execCommand('copy');
+        output.blur();
+    });
+}
+</script>
+{% endblock %}
