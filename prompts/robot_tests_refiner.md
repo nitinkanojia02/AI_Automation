@@ -32,6 +32,7 @@ Refinement rules:
 - Do not invent unsupported validation messages or unsupported business behavior
 - Avoid invented keywords, unsupported assertions, and invalid library APIs
 - Prefer setup/teardown for repeated startup or cleanup behavior
+- Treat missing reusable setup for dominant shared browser/page entry flow as a quality defect; professional suites should move repeated environment-entry mechanics out of test bodies unless a test intentionally needs a unique startup path
 - Prefer semantic resource variables over inline reusable literals
 - Use canonical semantic variables only; avoid depending on duplicate aliases or noisy derived variables when built-ins or inline composition are sufficient
 - Treat semantically meaningful credential variants such as uppercase, lowercase, mixed-case, role-specific, invalid, and other reusable edge-case business data as resource-driven data, not inline suite literals

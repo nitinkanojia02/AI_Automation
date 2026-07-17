@@ -363,7 +363,9 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
         "- Respect the exact keyword signatures from the imported resource files. Never call a resource keyword without all mandatory arguments defined in its [Arguments] section.\n"
         "- When a page-specific open/navigation keyword is available and a page URL variable exists in the page resource, prefer a no-argument page keyword design or pass the required page URL variable explicitly if the keyword still requires an argument.\n"
         "- Prefer reusable setup/teardown from shared/common resources for opening and closing browser or preparing generic page state.\n"
+        "- Treat setup/teardown design as mandatory automation architecture, not optional cleanup. If approved resource context exposes a stable page-open, browser-open, page-ready, or cleanup abstraction and that startup pattern is shared by multiple tests, the suite must elevate that repeated flow into Suite Setup, Test Setup, Suite Teardown, or Test Teardown instead of duplicating it inside test bodies.\n"
         "- If the resource layer appears to provide page-open, page-ready, browser-open, browser-close, or cleanup keywords, use them intelligently in suite/test setup and teardown rather than repeating those actions inside every test. Repeated startup actions such as opening the page, opening the browser, navigating to the feature URL, or waiting for the page to be ready should be promoted into Test Setup or Suite Setup whenever that preserves test independence and intent.\n"
+        "- A professional suite should keep repeated environment-entry mechanics out of individual test bodies unless a specific test intentionally overrides the normal startup path.\n"
         "- If test data is reused across test cases, reference a variable from the resource file rather than declaring suite variables.\n"
         "- Use resource variables only for semantically meaningful reusable data such as valid credentials, one canonical invalid credential set, role-specific users, locked users, or other clearly distinct business data supported by the resource context.\n"
         "- Do not create or rely on unnecessary wrapper variables for blank, whitespace-only, padded, or trivially derived values when Robot built-ins and inline composition are sufficient.\n"
@@ -562,6 +564,7 @@ def build_review_prompt(manual_data: dict, resource_context: List[Dict], generat
         "- Prefer common/shared resource keywords for generic browser lifecycle, page opening, navigation, waiting, clicking, and text entry when suitable. Raw SeleniumLibrary keywords in the suite should be replaced by shared/common resource keywords whenever a suitable helper exists.\n"
         "- For generic field entry, including password fields, prefer common/shared wrapper keywords over low-level SeleniumLibrary entry keywords whenever the wrapper can satisfy the intent. If the shared/common layer already exposes Input Text When Ready or an equivalent reusable text-entry helper, use it instead of direct Input Password unless a dedicated shared password helper exists and is more appropriate.\n"
         "- If resource keywords suggest page lifecycle operations, use Suite/Test Setup and Teardown intelligently. Repeated startup actions such as open-page, navigate, and page-ready waits should normally be lifted into setup instead of being duplicated in every test.\n"
+        "- Treat setup/teardown architecture as a first-class review concern. If most tests begin with the same business-entry flow or page-open sequence, refactor that repeated startup into setup so individual tests focus on the behavior under test.\n"
         "- If the reviewed suite contains Test Teardown or Suite Teardown for browser cleanup, it should normally also contain a corresponding Test Setup or Suite Setup for browser opening and initial navigation whenever the tests are UI/browser-based. Repair missing setup instead of returning a teardown-only browser suite.\n"
         "- Every test must contain explicit validation aligned to expectedResult.\n"
         "- Prefer page-resource validation keywords over generic visibility checks when the expected result mentions authentication errors, validation messages, redirect behavior, blocked login, duplicate submission prevention, or success outcomes.\n"
@@ -656,6 +659,7 @@ def build_validation_review_prompt(manual_data: dict, resource_context: List[Dic
         "- Never return a suite that introduces a custom keyword name not present in imported resource_context or approved framework keyword inventories. Replace invented suite actions with existing upstream resource keywords or valid framework keywords only.\n"
         "- Preserve compact formatting and one blank line between test cases.\n"
         "- Use Test Setup / Test Teardown when repeated startup and cleanup behavior exists.\n"
+        "- Treat missing reusable setup as a quality defect, not a cosmetic issue, when repeated startup behavior clearly exists across tests.\n"
         "- A UI/browser suite must not end up teardown-only. If browser cleanup exists, ensure an appropriate setup exists for browser opening and initial navigation using approved shared/common helpers or approved page-open keywords.\n"
         "- Every test must end with an observable validation aligned to expectedResult.\n"
         "- Positive navigation or state-transition tests must include an observable destination-state verification when such a keyword exists in resource_context. If such a success keyword does not exist, preserve the test but do not invent unsupported keywords.\n"
@@ -1321,6 +1325,15 @@ def validate_robot_content(content: str, allowed_resources: list[str]) -> tuple[
     if not has_teardown:
         warnings.append("Generated suite does not include Suite Teardown or Test Teardown; prefer reusable teardown keywords when resource context supports them")
 
+    settings_section_match = re.search(r"(?is)\*\*\*\s*settings\s*\*\*\*(.*?)(?:\n\*\*\*|\Z)", content)
+    settings_section = settings_section_match.group(1) if settings_section_match else ""
+    setup_definitions = re.findall(r"(?im)^\s*(Suite Setup|Test Setup)\s{2,}(.+)$", settings_section)
+    teardown_definitions = re.findall(r"(?im)^\s*(Suite Teardown|Test Teardown)\s{2,}(.+)$", settings_section)
+    if len(setup_definitions) > 2:
+        warnings.append("Generated suite defines too many setup entries; prefer one coherent suite/test setup strategy instead of scattered startup logic")
+    if len(teardown_definitions) > 2:
+        warnings.append("Generated suite defines too many teardown entries; prefer one coherent suite/test teardown strategy instead of scattered cleanup logic")
+
     if has_teardown and not has_setup:
         warnings.append("Generated suite includes teardown but no setup; repair the suite to include setup for browser opening and initial navigation using approved shared/common or page resource helpers")
 
@@ -1439,6 +1452,40 @@ def validate_robot_content(content: str, allowed_resources: list[str]) -> tuple[
     }
     if len(common_prefix) >= 2 and any(clean_text(step).lower() in repetitive_start_keywords for step in common_prefix):
         warnings.append("Generated suite repeats the same startup steps across tests; prefer moving repeated opening/navigation/wait steps into Test Setup or Suite Setup")
+
+    if all_test_steps:
+        semantic_start_sequences: dict[str, int] = {}
+        for steps in all_test_steps:
+            if not steps:
+                continue
+            normalized_steps = [clean_text(step).lower() for step in steps[:3] if clean_text(step)]
+            if not normalized_steps:
+                continue
+            for prefix_length in range(min(3, len(normalized_steps)), 0, -1):
+                prefix = " > ".join(normalized_steps[:prefix_length])
+                semantic_start_sequences[prefix] = semantic_start_sequences.get(prefix, 0) + 1
+        repeated_semantic_starts = {
+            seq: count for seq, count in semantic_start_sequences.items()
+            if count >= max(2, len(all_test_steps) // 2)
+        }
+        if repeated_semantic_starts:
+            strongest_sequence = max(repeated_semantic_starts, key=lambda item: (repeated_semantic_starts[item], len(item)))
+            if not has_setup:
+                warnings.append(
+                    f"Generated suite repeats the same semantic startup flow across tests ('{strongest_sequence}') but does not use Test Setup or Suite Setup. Promote the shared entry flow into setup so test bodies start closer to the business action under test."
+                )
+            else:
+                setup_lines = re.findall(r"(?im)^\s*(?:Suite Setup|Test Setup)\s{2,}(.+)$", content)
+                configured_setup_keywords = set()
+                for line in setup_lines:
+                    kw_name, _args = scan_keyword_invocation(line)
+                    if kw_name:
+                        configured_setup_keywords.add(clean_text(kw_name).lower())
+                first_step_of_sequence = strongest_sequence.split(" > ")[0]
+                if first_step_of_sequence and first_step_of_sequence not in configured_setup_keywords:
+                    warnings.append(
+                        f"Generated suite has setup configured, but the dominant shared startup flow still begins inside test bodies with '{first_step_of_sequence}'. Strengthen setup so repeated entry mechanics move out of the tests."
+                    )
 
     if has_setup and all_test_steps:
         page_startup_keywords = {
