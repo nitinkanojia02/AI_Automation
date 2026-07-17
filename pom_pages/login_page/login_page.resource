@@ -11,12 +11,11 @@ ${AUTHENTICATION_FAILED_MESSAGE}    xpath=//*[contains(normalize-space(.),'Faile
 ${VALID_USERNAME}    krisadmin
 ${VALID_PASSWORD}    Carwash#1
 ${INVALID_USERNAME}    invaliduser
-${INVALID_PASSWORD}    WrongPass#1
-${UPPERCASE_INVALID_USERNAME}    KRISADMIN
-${UPPERCASE_INVALID_PASSWORD}    CARWASH#1
-${SPECIAL_CHARACTER_USERNAME}    !@#$%^&*
-${SPECIAL_CHARACTER_PASSWORD}    <>?:{}|+
-${GENERIC_FAILED_MESSAGE_TEXT}    Failed
+${INVALID_PASSWORD}    InvalidPass#1
+${INVALID_PASSWORD_FOR_VALID_USER}    WrongPassword#1
+${CASE_SENSITIVE_USERNAME}    KRISADMIN
+${CASE_SENSITIVE_PASSWORD}    CARWASH#1
+${GENERIC_AUTH_FAILED_MESSAGE_TEXT}    Failed
 
 *** Keywords ***
 Enter Username Textbox
@@ -42,26 +41,29 @@ Click Home Button
     Click When Ready    ${HOME_BUTTON}
 
 Verify Login Form Loaded
-    [Documentation]    Verify Login page controls are visible and enabled.
+    [Documentation]    Verify login form controls are visible and enabled.
     Wait For Element To Be Ready    ${USERNAME_TEXTBOX}
     Wait For Element To Be Ready    ${PASSWORD_TEXTBOX}
     Wait For Element To Be Ready    ${SIGN_IN_BUTTON}
 
-Verify Navigation Buttons Are Visible
+Verify Navigation Buttons Loaded
     [Documentation]    Verify back and home navigation buttons are visible and enabled.
     Wait For Element To Be Ready    ${BACK_BUTTON}
     Wait For Element To Be Ready    ${HOME_BUTTON}
 
 Verify Password Field Is Masked
-    [Documentation]    Verify the Password field uses masked input behavior.
+    [Documentation]    Verify the password field masks entered characters.
     Wait For Element To Be Ready    ${PASSWORD_TEXTBOX}
     ${password_field_type}=    Get Element Attribute    ${PASSWORD_TEXTBOX}    type
     Should Be Equal    ${password_field_type}    password
 
 Verify Authentication Failed Message Displayed
-    [Documentation]    Verify the generic Failed authentication message is displayed.
+    [Documentation]    Verify the generic failed authentication message is displayed.
     Wait For Element To Be Ready    ${AUTHENTICATION_FAILED_MESSAGE}
-    Element Text Should Contain    ${AUTHENTICATION_FAILED_MESSAGE}    ${GENERIC_FAILED_MESSAGE_TEXT}
+
+Verify Login Page Still Visible
+    [Documentation]    Verify the login page remains visible after failed authentication.
+    Verify Login Form Loaded
 
 Login With Credentials
     [Documentation]    Perform login using provided credentials.
@@ -69,7 +71,3 @@ Login With Credentials
     Enter Username Textbox    ${username}
     Enter Password Textbox    ${password}
     Click Sign In Button
-
-Verify Login Page Remains Visible
-    [Documentation]    Verify the application remains on the Login page in unauthenticated state.
-    Verify Login Form Loaded

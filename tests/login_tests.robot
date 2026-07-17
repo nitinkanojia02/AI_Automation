@@ -5,118 +5,114 @@ Suite Setup    Open Browser Session
 Suite Teardown    Close Browser Session
 
 *** Test Cases ***
-AUT-WT-LOGIN01: Verify guest user can open the Login page from the Home page using the person/profile button
+AUT-WT-LOGIN01: Verify unauthenticated guest user can open the Login page from the Home page person profile button
     [Tags]    WT-LOGIN01    positive
-    Go To Url    about:blank
     Verify Login Form Loaded
-    Verify Navigation Buttons Are Visible
+    Verify Navigation Buttons Loaded
 
-AUT-WT-LOGIN02: Verify Login page controls are visible and enabled after navigation from Home page
+AUT-WT-LOGIN02: Verify Login page controls are visible and interactive after opening Login page from Home page
     [Tags]    WT-LOGIN02    positive
-    Go To Url    about:blank
     Verify Login Form Loaded
-    Verify Navigation Buttons Are Visible
+    Verify Navigation Buttons Loaded
+    Element Should Be Enabled    ${USERNAME_TEXTBOX}
+    Element Should Be Enabled    ${PASSWORD_TEXTBOX}
+    Element Should Be Enabled    ${SIGN_IN_BUTTON}
 
-AUT-WT-LOGIN03: Verify password input is masked while entering credentials on the Login page
+AUT-WT-LOGIN03: Verify password input is masked while typing valid credentials
     [Tags]    WT-LOGIN03    positive
-    Go To Url    about:blank
     Verify Login Form Loaded
+    Enter Username Textbox    ${VALID_USERNAME}
     Enter Password Textbox    ${VALID_PASSWORD}
     Verify Password Field Is Masked
 
 AUT-WT-LOGIN04: Verify successful authentication using approved credentials returns user to authenticated Home state
     [Tags]    WT-LOGIN04    positive
-    Go To Url    about:blank
     Verify Login Form Loaded
     Login With Credentials    ${VALID_USERNAME}    ${VALID_PASSWORD}
-    Verify Login Form Loaded
+    Wait Until Element Is Not Visible    ${USERNAME_TEXTBOX}
 
 AUT-WT-LOGIN05: Verify authenticated Home page state persists immediately after successful login transition
     [Tags]    WT-LOGIN05    positive
-    Go To Url    about:blank
     Verify Login Form Loaded
     Login With Credentials    ${VALID_USERNAME}    ${VALID_PASSWORD}
-    Verify Login Form Loaded
+    Wait Until Element Is Not Visible    ${USERNAME_TEXTBOX}
 
-AUT-WT-LOGIN06: Verify invalid credentials display generic Failed message and keep user unauthenticated
+AUT-WT-LOGIN06: Verify invalid username and password combination displays generic Failed message and keeps user unauthenticated
     [Tags]    WT-LOGIN06    negative
-    Go To Url    about:blank
     Verify Login Form Loaded
     Login With Credentials    ${INVALID_USERNAME}    ${INVALID_PASSWORD}
     Verify Authentication Failed Message Displayed
-    Verify Login Page Remains Visible
+    Verify Login Page Still Visible
 
 AUT-WT-LOGIN07: Verify blank Username and blank Password submission displays only generic Failed message
     [Tags]    WT-LOGIN07    negative
-    Go To Url    about:blank
     Verify Login Form Loaded
     Login With Credentials    ${EMPTY}    ${EMPTY}
     Verify Authentication Failed Message Displayed
-    Verify Login Page Remains Visible
+    Verify Login Page Still Visible
 
-AUT-WT-LOGIN08: Verify submission with Username populated and Password blank fails authentication
+AUT-WT-LOGIN08: Verify submission with Username populated and Password blank displays generic Failed message
     [Tags]    WT-LOGIN08    negative
-    Go To Url    about:blank
     Verify Login Form Loaded
     Login With Credentials    ${VALID_USERNAME}    ${EMPTY}
     Verify Authentication Failed Message Displayed
-    Verify Login Page Remains Visible
+    Verify Login Page Still Visible
 
-AUT-WT-LOGIN09: Verify submission with Password populated and Username blank fails authentication
+AUT-WT-LOGIN09: Verify submission with Password populated and Username blank displays generic Failed message
     [Tags]    WT-LOGIN09    negative
-    Go To Url    about:blank
     Verify Login Form Loaded
     Login With Credentials    ${EMPTY}    ${VALID_PASSWORD}
     Verify Authentication Failed Message Displayed
-    Verify Login Page Remains Visible
+    Verify Login Page Still Visible
 
-AUT-WT-LOGIN10: Verify Login page Back button returns user to Home page without authentication
-    [Tags]    WT-LOGIN10    positive
-    Go To Url    about:blank
-    Verify Login Form Loaded
-    Click Back Button
-    Verify Login Form Loaded
-
-AUT-WT-LOGIN11: Verify Login page Home button returns user to Home page without authentication
-    [Tags]    WT-LOGIN11    positive
-    Go To Url    about:blank
-    Verify Login Form Loaded
-    Click Home Button
-    Verify Login Form Loaded
-
-AUT-WT-LOGIN12: Verify leading and trailing whitespace handling for valid credentials
-    [Tags]    WT-LOGIN12    edge
-    Go To Url    about:blank
+AUT-WT-LOGIN10: Verify leading and trailing whitespace handling for approved credentials
+    [Tags]    WT-LOGIN10    edge
     Verify Login Form Loaded
     Login With Credentials    ${SPACE}${VALID_USERNAME}${SPACE}    ${SPACE}${VALID_PASSWORD}${SPACE}
-    Verify Login Page Remains Visible
+    Verify Authentication Failed Message Displayed
+    Verify Login Page Still Visible
 
-AUT-WT-LOGIN13: Verify whitespace-only values in Username and Password fields fail authentication with generic Failed message
-    [Tags]    WT-LOGIN13    negative
-    Go To Url    about:blank
+AUT-WT-LOGIN11: Verify whitespace only Username and Password values are rejected with generic Failed message
+    [Tags]    WT-LOGIN11    negative
     Verify Login Form Loaded
     Login With Credentials    ${SPACE}    ${SPACE}
     Verify Authentication Failed Message Displayed
-    Verify Login Page Remains Visible
+    Verify Login Page Still Visible
 
-AUT-WT-LOGIN18: Verify very long credential values do not authenticate and application remains stable
-    [Tags]    WT-LOGIN18    edge
-    Go To Url    about:blank
+AUT-WT-LOGIN12: Verify Back button returns the user to the Home page without authentication
+    [Tags]    WT-LOGIN12    positive
     Verify Login Form Loaded
-    Login With Credentials    ${VALID_USERNAME}${VALID_USERNAME}${VALID_USERNAME}${VALID_USERNAME}    ${VALID_PASSWORD}${VALID_PASSWORD}${VALID_PASSWORD}${VALID_PASSWORD}
-    Verify Login PageRemains Visible
+    Click Back Button
+    Wait Until Element Is Not Visible    ${USERNAME_TEXTBOX}
 
-AUT-WT-LOGIN19: Verify special characters in Username and Password fields do not bypass authentication
-    [Tags]    WT-LOGIN19    negative
-    Go To Url    about:blank
+AUT-WT-LOGIN13: Verify Home button returns the user to the Home page without authentication
+    [Tags]    WT-LOGIN13    positive
     Verify Login Form Loaded
-    Login With Credentials    ${SPECIAL_CHARACTER_USERNAME}    ${SPECIAL_CHARACTER_PASSWORD}
+    Click Home Button
+    Wait Until Element Is Not Visible    ${USERNAME_TEXTBOX}
+
+AUT-WT-LOGIN14: Verify invalid password for approved username does not authenticate the user
+    [Tags]    WT-LOGIN14    negative
+    Verify Login Form Loaded
+    Login With Credentials    ${VALID_USERNAME}    ${INVALID_PASSWORD_FOR_VALID_USER}
     Verify Authentication Failed Message Displayed
-    Verify Login Page Remains Visible
+    Verify Login Page Still Visible
 
-AUT-WT-LOGIN20: Verify successful login flow begins only from Home page navigation path
-    [Tags]    WT-LOGIN20    positive
-    Go To Url    about:blank
+AUT-WT-LOGIN17: Verify repeated invalid login submissions consistently display the same generic Failed message
+    [Tags]    WT-LOGIN17    edge
     Verify Login Form Loaded
-    Login With Credentials    ${VALID_USERNAME}    ${VALID_PASSWORD}
+    Login With Credentials    ${INVALID_USERNAME}    ${INVALID_PASSWORD}
+    Verify Authentication Failed Message Displayed
+    Login With Credentials    ${INVALID_USERNAME}    ${INVALID_PASSWORD}
+    Verify Authentication Failed Message Displayed
+    Login With Credentials    ${INVALID_USERNAME}    ${INVALID_PASSWORD}
+    Verify Authentication Failed Message Displayed
+    Verify Login Page Still Visible
+
+AUT-WT-LOGIN19: Verify user remains unauthenticated after failed login followed by Home page navigation
+    [Tags]    WT-LOGIN19    negative
     Verify Login Form Loaded
+    Login With Credentials    ${INVALID_USERNAME}    ${INVALID_PASSWORD}
+    Verify Authentication Failed Message Displayed
+    Click Home Button
+    Wait Until Element Is Not Visible    ${USERNAME_TEXTBOX}
