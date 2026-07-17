@@ -292,6 +292,15 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
     identifier_policy = derive_standard_test_identifier(prompt_manual_data)
     allowed_builtin_keywords, allowed_selenium_keywords = get_framework_keyword_catalog()
 
+    authoritative_resource_files = []
+    resource_knowledge = current_workflow_knowledge.get("resourceKnowledge") if isinstance(current_workflow_knowledge, dict) else {}
+    if isinstance(resource_knowledge, dict):
+        authoritative_resource_files = [
+            str(item).replace("\\", "/").strip()
+            for item in (resource_knowledge.get("authoritativeResources") or [])
+            if str(item).strip()
+        ]
+
     payload = {
         "manual_test": prompt_manual_data,
         "resource_context": resource_context,
@@ -306,6 +315,7 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
         "inferred_reuse_context": reuse_context,
         "current_workflow_knowledge": current_workflow_knowledge,
         "relevant_workflow_knowledge": relevant_workflow_knowledge,
+        "authoritative_resource_files": authoritative_resource_files,
         "intent_preservation_notes": [
             "Preserve manual interaction intent from steps and any interactionIntent metadata.",
             "Use interactionIntent as AI guidance, not as a hardcoded routing table.",
@@ -330,7 +340,7 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
         "Mandatory output rules:\n"
         "- Use only the provided resource files and the shared common resource hint.\n"
         "- Always import ../resources/common_keywords.resource in the suite Settings section.\n"
-        "- Also import the page resource files listed in manual_test.resourceFiles.\n"
+        "- Import all relevant page resources required by the workflow journey, not just the local workflow page resource. This includes the page resource files listed in manual_test.resourceFiles plus any authoritative upstream page resources identified in authoritative_resource_files, inferred_reuse_context, current_workflow_knowledge, or relevant_workflow_knowledge when those upstream resources are needed for entry, navigation, state validation, or return-path validation.\n"
         "- Use provided keyword names and variable names from resource_context wherever possible.\n"
         "- Treat the final approved page resource files in resource_context as the authoritative source of truth for page variables and page keywords. Prefer those exact approved names over inferred, legacy, metadata-derived, or paraphrased alternatives.\n"
         "- Prefer existing keywords from resource_context over inventing new ones.\n"
@@ -341,6 +351,8 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
         "- current_workflow_knowledge is the concise approved-memory draft for the current workflow assembled from current workflow context plus approved artifacts already available. Use it to keep the suite aligned with the workflow's business journey, ownership boundaries, and approved test intent.\n"
         "- relevant_workflow_knowledge is approved cumulative workflow memory created from approved user story context, approved element extraction, approved manual tests, approved resource keywords, and approved automation from prior workflows. Consult it before creating navigation/setup assumptions for the current suite.\n"
         "- If relevant_workflow_knowledge shows that an upstream workflow already owns navigation, page opening, state validation, or reusable controls needed by this workflow, reuse that approved upstream knowledge and imported upstream resources instead of inventing new suite abstractions.\n"
+        "- If workflow knowledge says the target page is not directly accessed by URL and must be reached through an upstream page journey, do not bypass that journey with placeholder URLs, synthetic direct opens, or direct page landing assumptions. Reuse the upstream page-resource actions and validations that express the approved entry path.\n"
+        "- If workflow knowledge defines a success transition or return-state destination, the suite must validate that destination state using approved upstream/page resource keywords instead of re-validating the origin page after a successful transition.\n"
         "- Never invent or define new keywords in shared/common resource space. Common/shared resource files are framework/user-owned reference layers and may be reused, but AI must not extend them with new convenience abstractions.\n"
         "- If workflow knowledge or retrieved resource context already provides upstream page/resource actions needed for navigation or state transition, reuse those existing approved keywords directly instead of coining a new combined action name.\n"
         "- Do not synthesize convenience keywords such as multi-action navigation helpers when the same flow can be expressed by existing approved upstream resource keywords in setup or test bodies.\n"
@@ -1152,9 +1164,10 @@ def promote_repeated_setup_teardown(content: str) -> str:
 
 
 
-def validate_robot_alignment_with_resource_context(content: str, resource_context: list[dict]) -> tuple[bool, str]:
+def validate_robot_alignment_with_resource_context(content: str, resource_context: list[dict], manual_data: dict | None = None) -> tuple[bool, str]:
     errors: list[str] = []
     warnings: list[str] = []
+    manual_data = manual_data or {}
 
     approved_resource_keyword_names = {
         clean_text(str(keyword.get("name", ""))).lower()
@@ -1162,6 +1175,27 @@ def validate_robot_alignment_with_resource_context(content: str, resource_contex
         for keyword in resource.get("keywords", [])
         if clean_text(str(keyword.get("name", "")))
     }
+    imported_resources = {
+        match.group(1).strip()
+        for match in re.finditer(r"(?im)^\s*Resource\s{2,}(.+?)\s*$", content)
+    }
+    current_workflow_knowledge = build_workflow_knowledge_context(manual_data)
+    relevant_workflow_knowledge = discover_relevant_workflow_knowledge(manual_data) if manual_data else []
+    authoritative_resources: set[str] = set()
+    resource_knowledge = current_workflow_knowledge.get("resourceKnowledge") if isinstance(current_workflow_knowledge, dict) else {}
+    if isinstance(resource_knowledge, dict):
+        for item in resource_knowledge.get("authoritativeResources") or []:
+            normalized = str(item).replace("\\", "/").strip()
+            if normalized:
+                authoritative_resources.add(normalized)
+    for knowledge_item in relevant_workflow_knowledge if isinstance(relevant_workflow_knowledge, list) else []:
+        knowledge_payload = knowledge_item.get("knowledge") if isinstance(knowledge_item, dict) else {}
+        rk = knowledge_payload.get("resourceKnowledge") if isinstance(knowledge_payload, dict) else {}
+        if isinstance(rk, dict):
+            for item in rk.get("authoritativeResources") or []:
+                normalized = str(item).replace("\\", "/").strip()
+                if normalized:
+                    authoritative_resources.add(normalized)
 
     suite_called_keywords: list[str] = []
     test_step_sequences: list[list[str]] = []
@@ -1317,6 +1351,29 @@ def validate_robot_alignment_with_resource_context(content: str, resource_contex
             + "; ".join(samples)
         )
 
+    missing_authoritative_imports = []
+    for resource in sorted(authoritative_resources):
+        expected_import = "../pom_pages/" + resource
+        if expected_import not in imported_resources:
+            missing_authoritative_imports.append(expected_import)
+    if missing_authoritative_imports:
+        warnings.append(
+            "Generated suite is missing authoritative upstream/current page resource imports required by workflow knowledge. Import and reuse these approved resources directly: "
+            + ", ".join(missing_authoritative_imports[:8])
+        )
+
+    if re.search(r"(?im)^\s+Go To Url\s{2,}about:blank\s*$", content):
+        warnings.append(
+            "Generated suite uses placeholder direct-navigation value 'about:blank'. When workflow knowledge defines an approved journey and reusable resource variables/keywords, do not bypass that journey with placeholder direct opens."
+        )
+
+    current_navigation = current_workflow_knowledge.get("navigationModel") if isinstance(current_workflow_knowledge, dict) else {}
+    journey_text = json.dumps(current_navigation, ensure_ascii=False).lower() if current_navigation else ""
+    if "not directly accessed by url" in json.dumps(current_workflow_knowledge, ensure_ascii=False).lower() and re.search(r"(?im)^\s+Go To Url\s{2,}.+$", content):
+        warnings.append(
+            "Workflow knowledge indicates the target page is not directly accessed by URL, but the suite still performs direct URL navigation in test bodies. Reuse the approved upstream entry flow instead of bypassing the journey."
+        )
+
     if generic_wrapper_literals:
         samples: list[str] = []
         for keyword_name, variable_names in list(generic_wrapper_literals.items())[:8]:
@@ -1368,6 +1425,22 @@ def validate_robot_alignment_with_resource_context(content: str, resource_contex
             else:
                 warnings.append(
                     f"Generated suite repeats the same leading step sequence across tests ('{strongest_sequence}') but does not use Test Setup or Suite Setup. Promote the shared sequence into setup so test bodies start closer to the business action under test."
+                )
+
+    if isinstance(current_workflow_knowledge, dict):
+        knowledge_blob = json.dumps(current_workflow_knowledge, ensure_ascii=False).lower()
+        success_mentions_authenticated_home = "authenticated home" in knowledge_blob or "authenticated state" in knowledge_blob
+        if success_mentions_authenticated_home:
+            success_tests_with_origin_recheck = 0
+            for sequence in test_step_sequences:
+                if not sequence:
+                    continue
+                joined = " > ".join(sequence)
+                if "login with credentials" in joined and "verify login form loaded" in joined:
+                    success_tests_with_origin_recheck += 1
+            if success_tests_with_origin_recheck:
+                warnings.append(
+                    "Workflow knowledge indicates successful transition to a different destination state, but one or more tests still re-verify the origin page after success. Replace origin-page success checks with approved destination-state validation from upstream/current resources."
                 )
 
     return len(errors) == 0, ("Warnings:\n" + "\n".join(warnings)) if warnings else ""
@@ -2116,7 +2189,7 @@ def process_manual_file(config: dict, manual_json_path: Path):
         robot_content = rewrite_suite_to_prefer_common_wrappers(robot_content, resource_context)
         robot_content = promote_repeated_setup_teardown(robot_content)
         is_valid, validation_message = validate_robot_content(robot_content, resource_files)
-    alignment_valid, alignment_message = validate_robot_alignment_with_resource_context(robot_content, resource_context)
+    alignment_valid, alignment_message = validate_robot_alignment_with_resource_context(robot_content, resource_context, manual_data)
     manual_expected_outcomes = collect_manual_expected_outcomes(manual_data)
     resource_validation_keywords = collect_resource_validation_keywords(resource_context)
     assertion_warning = warn_on_assertion_quality(manual_expected_outcomes, robot_content, resource_validation_keywords)
