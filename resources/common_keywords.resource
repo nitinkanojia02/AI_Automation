@@ -46,6 +46,13 @@ Input Text When Ready
     Click Element    ${locator}
     Input Text    ${locator}    ${text}
 
+Input Password When Ready
+    [Documentation]    Waits for an element and then inputs the provided password.
+    [Arguments]    ${locator}    ${password}    ${timeout}=${DEFAULT_TIMEOUT}
+    Wait For Element To Be Ready    ${locator}    ${timeout}
+    Click Element    ${locator}
+    Input Text    ${locator}    ${password}
+
 Open Home Page And Click User Button
     [Arguments]    ${url}    ${browser}=${BROWSER}
     Go To Url    ${url}
