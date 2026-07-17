@@ -35,6 +35,8 @@ Refinement rules:
 - Treat missing reusable setup/teardown for dominant repeated leading or trailing step sequences as a quality defect; professional suites should move repeated mechanics out of test bodies unless a test intentionally needs a unique setup or cleanup path
 - Refine the suite structurally: if the same first steps, leading sequences, trailing sequences, or cleanup sequences appear across many tests, extract that repeated flow into setup/teardown rather than leaving duplication in the test bodies
 - Do not infer setup/teardown from hardcoded page names or keyword mappings; infer it from repeated suite structure plus approved workflow/resource context
+- Eliminate AI-created shared/common helper abstractions and replace them with direct reuse of approved upstream/page resource keywords already available in workflow knowledge or retrieved resource context
+- Do not preserve synthetic combined navigation helpers if the same flow can be represented by existing approved resource keywords composed through setup or normal test steps
 - Prefer semantic resource variables over inline reusable literals
 - Use canonical semantic variables only; avoid depending on duplicate aliases or noisy derived variables when built-ins or inline composition are sufficient
 - Treat semantically meaningful credential variants such as uppercase, lowercase, mixed-case, role-specific, invalid, and other reusable edge-case business data as resource-driven data, not inline suite literals

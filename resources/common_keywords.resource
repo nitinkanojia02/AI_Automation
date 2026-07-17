@@ -53,7 +53,3 @@ Input Password When Ready
     Click Element    ${locator}
     Input Text    ${locator}    ${password}
 
-Open Home Page And Click User Button
-    [Arguments]    ${url}    ${browser}=${BROWSER}
-    Go To Url    ${url}
-    Click When Ready   //ion-button[@class='header-icon-btn ng-star-inserted ion-color ion-color-light md button button-solid in-toolbar ion-activatable ion-focusable hydrated']

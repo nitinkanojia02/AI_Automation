@@ -341,6 +341,9 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
         "- current_workflow_knowledge is the concise approved-memory draft for the current workflow assembled from current workflow context plus approved artifacts already available. Use it to keep the suite aligned with the workflow's business journey, ownership boundaries, and approved test intent.\n"
         "- relevant_workflow_knowledge is approved cumulative workflow memory created from approved user story context, approved element extraction, approved manual tests, approved resource keywords, and approved automation from prior workflows. Consult it before creating navigation/setup assumptions for the current suite.\n"
         "- If relevant_workflow_knowledge shows that an upstream workflow already owns navigation, page opening, state validation, or reusable controls needed by this workflow, reuse that approved upstream knowledge and imported upstream resources instead of inventing new suite abstractions.\n"
+        "- Never invent or define new keywords in shared/common resource space. Common/shared resource files are framework/user-owned reference layers and may be reused, but AI must not extend them with new convenience abstractions.\n"
+        "- If workflow knowledge or retrieved resource context already provides upstream page/resource actions needed for navigation or state transition, reuse those existing approved keywords directly instead of coining a new combined action name.\n"
+        "- Do not synthesize convenience keywords such as multi-action navigation helpers when the same flow can be expressed by existing approved upstream resource keywords in setup or test bodies.\n"
         "- Shared/common resource keywords take priority over raw SeleniumLibrary keywords for generic interactions. If a shared helper such as Open Browser Session, Close Browser Session, Open Browser To Url, Go To Url, Wait For Element To Be Ready, Click When Ready, or Input Text When Ready exists in retrieved_common_keywords, use that helper rather than direct SeleniumLibrary calls.\n"
         "- If a page keyword or page variable already exists in retrieved_page_keywords or retrieved_page_variables, preserve and reuse it instead of creating a parallel name.\n"
         "- Prefer common/shared wrapper keywords for text and password entry. If no explicit password-specific shared helper exists, use the common/shared text-entry wrapper that already exists rather than raw SeleniumLibrary Input Password.\n"
@@ -562,6 +565,8 @@ def build_review_prompt(manual_data: dict, resource_context: List[Dict], generat
         "- Reuse one canonical invalid username/password pair across similar negative scenarios unless the approved manual tests clearly require distinct invalid data classes.\n"
         "- Prefer common/shared resource keywords for generic browser lifecycle, page opening, navigation, waiting, clicking, and text entry when suitable. Raw SeleniumLibrary keywords in the suite should be replaced by shared/common resource keywords whenever a suitable helper exists.\n"
         "- For generic field entry, including password fields, prefer common/shared wrapper keywords over low-level SeleniumLibrary entry keywords whenever the wrapper can satisfy the intent. If the shared/common layer already exposes Input Text When Ready or an equivalent reusable text-entry helper, use it instead of direct Input Password unless a dedicated shared password helper exists and is more appropriate.\n"
+        "- Reject AI-created shared/common convenience keywords. If approved upstream resource keywords already exist for the needed navigation or action flow, compose those approved keywords directly instead of keeping a synthetic abstraction.\n"
+        "- Treat invention of shared/common helper abstractions as a framework-governance defect when retrieved resource context already contains approved reusable page/shared keywords for the same flow.\n"
         "- Use Suite/Test Setup and Teardown intelligently when the reviewed suite shows repeated shared leading or trailing sequences across tests.\n"
         "- Treat setup/teardown architecture as a first-class review concern. If most tests begin with the same leading steps or end with the same trailing cleanup, refactor that repeated structure into setup/teardown so individual tests focus on the behavior under test.\n"
         "- If the reviewed suite contains teardown but still leaves the dominant shared opening sequence inside most test bodies, repair the suite so shared repeated structure is lifted into setup instead of returning a teardown-heavy but setup-weak suite.\n"
@@ -1234,6 +1239,29 @@ def validate_robot_alignment_with_resource_context(content: str, resource_contex
                 "Wrapper-priority violation: shared/common text-entry wrapper 'Input Text When Ready' exists, but the suite still uses direct SeleniumLibrary Input Text/Input Password calls. Shared wrapper keywords must take precedence for field entry."
             )
 
+    if approved_resource_keyword_names and suite_called_keywords:
+        allowed_non_resource = get_framework_keyword_catalog()[0] | get_framework_keyword_catalog()[1]
+        unapproved_called_keywords = [
+            name for name in suite_called_keywords
+            if name not in approved_resource_keyword_names and name not in allowed_non_resource
+        ]
+        if unapproved_called_keywords:
+            deduped_unapproved: list[str] = []
+            seen_unapproved: set[str] = set()
+            for name in unapproved_called_keywords:
+                if name in seen_unapproved:
+                    continue
+                seen_unapproved.add(name)
+                deduped_unapproved.append(name)
+            warnings.append(
+                "Generated suite appears to rely on non-approved custom keyword(s) not present in retrieved shared/page resource context. Reuse existing approved upstream/page/shared keywords instead of inventing new abstractions: "
+                + ", ".join(deduped_unapproved[:8])
+            )
+            if relevant_workflow_knowledge:
+                warnings.append(
+                    "Generated suite uses synthetic abstraction(s) where approved upstream/page resource reuse is expected from workflow knowledge and retrieved context. Replace invented convenience keywords with direct reuse of approved resource keywords."
+                )
+
     has_setup = bool(re.search(r"(?im)^\s*(?:Suite Setup|Test Setup)\s+.+$", content))
     has_teardown = bool(re.search(r"(?im)^\s*(?:Suite Teardown|Test Teardown)\s+.+$", content))
     if has_teardown and not has_setup:
@@ -1256,35 +1284,26 @@ def validate_robot_alignment_with_resource_context(content: str, resource_contex
         setup_keyword_name, _setup_args = scan_keyword_invocation(setup_match.group(2))
         setup_keyword_name = clean_text(setup_keyword_name).lower()
 
-    if has_setup and test_step_sequences:
-        opener_like_keywords = [
-            name for name in page_keyword_names
-            if any(token in name for token in ["open ", "launch ", "guest state", "page is loaded", "page loaded"])
-        ]
-        repeated_opener_counts = {name: suite_keyword_counts.get(name, 0) for name in opener_like_keywords if suite_keyword_counts.get(name, 0)}
-        if repeated_opener_counts:
-            best_repeated_opener = max(repeated_opener_counts, key=repeated_opener_counts.get)
-            best_count = repeated_opener_counts[best_repeated_opener]
-            if best_count >= max(2, len(test_step_sequences) // 2):
-                if setup_keyword_name and setup_keyword_name != best_repeated_opener:
+    repeated_leading_sequences: dict[str, int] = {}
+    for steps in test_step_sequences:
+        max_prefix = min(3, len(steps))
+        for length in range(max_prefix, 1, -1):
+            key = " > ".join(steps[:length])
+            repeated_leading_sequences[key] = repeated_leading_sequences.get(key, 0) + 1
+            break
+    if repeated_leading_sequences:
+        strongest_sequence = max(repeated_leading_sequences, key=repeated_leading_sequences.get)
+        strongest_count = repeated_leading_sequences[strongest_sequence]
+        if strongest_count >= max(2, len(test_step_sequences) // 2):
+            if has_setup:
+                if setup_keyword_name and setup_keyword_name not in strongest_sequence:
                     warnings.append(
-                        f"Generated suite uses setup '{setup_keyword_name}' but repeatedly invokes higher-level page startup keyword '{best_repeated_opener}' inside test bodies. Prefer the strongest reusable semantic setup abstraction instead of a lower-level opener."
+                        f"Generated suite uses setup '{setup_keyword_name}' but still repeats the dominant shared leading sequence '{strongest_sequence}' inside test bodies. Strengthen setup so the shared opening flow is fully reused."
                     )
-                elif not setup_keyword_name:
-                    warnings.append(
-                        "Generated suite appears to have setup configured, but the repeated highest-level page startup abstraction is still being invoked inside test bodies. Prefer moving that semantic opener into setup."
-                    )
-
-    repeated_open_keywords = {
-        name for name in page_keyword_names
-        if any(token in name for token in ["open ", "launch ", "guest state", "page is loaded", "page loaded"])
-    }
-    if not has_setup and repeated_open_keywords:
-        repeated_opener_usage = sum(suite_keyword_counts.get(name, 0) for name in repeated_open_keywords)
-        if repeated_opener_usage >= 2:
-            warnings.append(
-                "Generated suite repeatedly leaves the same shared leading sequence inside test bodies instead of lifting that reused opening flow into Test Setup or Suite Setup."
-            )
+            else:
+                warnings.append(
+                    f"Generated suite repeats the same leading step sequence across tests ('{strongest_sequence}') but does not use Test Setup or Suite Setup. Promote the shared sequence into setup so test bodies start closer to the business action under test."
+                )
 
     return len(errors) == 0, ("Warnings:\n" + "\n".join(warnings)) if warnings else ""
 

@@ -34,6 +34,8 @@ Review rules:
 - Treat reusable setup/teardown architecture as mandatory for professional UI suites: if most tests begin with the same leading step sequence or end with the same cleanup sequence, move that shared flow into Suite/Test Setup or Teardown rather than duplicating it in test bodies
 - Review the suite structurally for repeated first-step, leading-sequence, trailing-sequence, or cleanup duplication across tests and refactor that duplication into setup/teardown without inventing new keywords or relying on workflow-specific assumptions
 - Do not decide setup/teardown based on hardcoded page or keyword assumptions; infer it from repeated suite structure plus approved workflow/resource context
+- Reject any suite that relies on AI-created shared/common helper keywords or convenience abstractions instead of reusing approved upstream/page resource keywords already present in retrieved resource context or workflow knowledge
+- If the suite uses a synthetic combined action name where existing upstream resource keywords could be composed directly, refactor it to reuse the approved upstream keywords instead of preserving the invented abstraction
 - Replace hardcoded reusable data with semantic resource variables when supported
 - Treat uppercase, lowercase, mixed-case, role-specific, invalid, boundary, and other semantically meaningful credential variants as reusable business data that must not appear as inline literals in the suite
 - Flag any negative scenario whose final assertion only checks page presence or URL when the approved manual expectedResult requires visible validation, rejection, or other observable feedback
