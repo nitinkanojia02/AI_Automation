@@ -3454,6 +3454,53 @@ def load_workflow_story_normalizer_prompt() -> str:
     return prompt
 
 
+def call_devex_ai_text_fallback(endpoint: str, token: str, prompt: str, timeout_sec: int = 120) -> str:
+    headers = {"Authorization": f"Bearer {token}"}
+    try:
+        resp = requests.post(
+            endpoint,
+            headers=headers,
+            data={"query": prompt},
+            files=[],
+            timeout=timeout_sec,
+            verify=False,
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Story generation request failed: {exc}") from exc
+
+    if resp.status_code >= 400:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Devex AI request failed ({resp.status_code}): {resp.text[:500]}",
+        )
+
+    raw_text = (resp.text or "").strip()
+    if not raw_text:
+        raise HTTPException(status_code=502, detail="Story generator returned empty content.")
+
+    try:
+        parsed = resp.json()
+    except ValueError:
+        return clean_multiline_text(raw_text)
+
+    if isinstance(parsed, dict):
+        candidate_keys = ["response", "content", "result", "answer", "text", "output"]
+        for key in candidate_keys:
+            value = parsed.get(key)
+            if isinstance(value, str) and clean_multiline_text(value):
+                return clean_multiline_text(value)
+        if len(parsed) == 1:
+            only_value = next(iter(parsed.values()))
+            if isinstance(only_value, str) and clean_multiline_text(only_value):
+                return clean_multiline_text(only_value)
+        return clean_multiline_text(raw_text)
+
+    if isinstance(parsed, str) and clean_multiline_text(parsed):
+        return clean_multiline_text(parsed)
+
+    return clean_multiline_text(raw_text)
+
+
 def generate_workflow_story_from_raw_input(raw_input: str) -> str:
     cleaned_input = clean_multiline_text(raw_input)
     if not cleaned_input:
@@ -3474,29 +3521,12 @@ def generate_workflow_story_from_raw_input(raw_input: str) -> str:
     timeout_seconds = int(ai_cfg.get("timeout_seconds", 120) or 120)
     instruction_prompt = load_workflow_story_normalizer_prompt()
     final_prompt = f"{instruction_prompt}\n\nRaw Input:\n{cleaned_input}\n"
-    response = call_devex_ai(
+    return call_devex_ai_text_fallback(
         endpoint=endpoint,
         token=token,
         prompt=final_prompt,
         timeout_sec=timeout_seconds,
     )
-
-    if isinstance(response, dict):
-        candidate_keys = ["response", "content", "result", "answer", "text", "output"]
-        for key in candidate_keys:
-            value = response.get(key)
-            if isinstance(value, str) and clean_multiline_text(value):
-                return clean_multiline_text(value)
-        if len(response) == 1:
-            only_value = next(iter(response.values()))
-            if isinstance(only_value, str) and clean_multiline_text(only_value):
-                return clean_multiline_text(only_value)
-        raise HTTPException(status_code=502, detail="Story generator returned an unexpected response payload.")
-
-    if isinstance(response, str) and clean_multiline_text(response):
-        return clean_multiline_text(response)
-
-    raise HTTPException(status_code=502, detail="Story generator returned empty content.")
 
 
 @app.get("/workflow/new")
