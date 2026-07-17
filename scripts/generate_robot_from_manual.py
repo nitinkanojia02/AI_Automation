@@ -1051,26 +1051,94 @@ def promote_repeated_setup_teardown(content: str) -> str:
     has_test_setup = bool(re.search(r"(?im)^\s*Test Setup\s{2,}.+$", settings_text))
     has_test_teardown = bool(re.search(r"(?im)^\s*Test Teardown\s{2,}.+$", settings_text))
 
+    explicit_teardown_keywords = {
+        "close browser session",
+        "close browser",
+        "close all browsers",
+        "capture page screenshot",
+        "capture screenshot",
+        "log source",
+    }
+    startup_exclusion_keywords = explicit_teardown_keywords | {
+        "verify",
+        "page should",
+        "location should",
+        "title should",
+        "element should",
+        "run keyword if",
+        "should be equal",
+        "should contain",
+        "should not contain",
+    }
+
     prefix_counts: dict[tuple[str, ...], int] = {}
     suffix_counts: dict[tuple[str, ...], int] = {}
-    test_prefix_steps: list[list[str]] = []
-    test_suffix_steps: list[list[str]] = []
+
+    def keyword_name_from_step(raw_line: str) -> str:
+        keyword_name, _arguments = scan_keyword_invocation(raw_line)
+        return clean_text(keyword_name).lower()
+
+    def keyword_is_teardown_like(keyword_name: str) -> bool:
+        if not keyword_name:
+            return False
+        if keyword_name in explicit_teardown_keywords:
+            return True
+        return any(token in keyword_name for token in ("close browser", "teardown", "cleanup", "screenshot"))
+
+    def keyword_is_startup_candidate(keyword_name: str) -> bool:
+        if not keyword_name:
+            return False
+        if keyword_is_teardown_like(keyword_name):
+            return False
+        if keyword_name in startup_exclusion_keywords:
+            return False
+        return any(
+            token in keyword_name
+            for token in (
+                "open",
+                "launch",
+                "navigate",
+                "go to",
+                "load",
+                "ready",
+                "start",
+                "login page",
+                "home page",
+                "landing",
+            )
+        )
+
+    def leading_candidate_steps(step_lines: list[str]) -> list[str]:
+        selected: list[str] = []
+        for line in step_lines[:3]:
+            name = keyword_name_from_step(line)
+            if not keyword_is_startup_candidate(name):
+                break
+            selected.append(line)
+        return selected
+
+    def trailing_candidate_steps(step_lines: list[str]) -> list[str]:
+        selected: list[str] = []
+        for line in reversed(step_lines[-2:]):
+            name = keyword_name_from_step(line)
+            if not keyword_is_teardown_like(name):
+                break
+            selected.insert(0, line)
+        return selected
 
     for test in tests:
         executable_steps = extract_executable_steps(test["body"])
         step_lines = [line for _idx, line in executable_steps]
-        test_prefix_steps.append(step_lines[:3])
-        test_suffix_steps.append(step_lines[-2:] if len(step_lines) >= 2 else step_lines[-1:])
-        for length in (3, 2, 1):
-            if len(step_lines) >= length:
-                key = tuple(normalize_step_line(line) for line in step_lines[:length])
-                if all(key):
-                    prefix_counts[key] = prefix_counts.get(key, 0) + 1
-        for length in (2, 1):
-            if len(step_lines) >= length:
-                key = tuple(normalize_step_line(line) for line in step_lines[-length:])
-                if all(key):
-                    suffix_counts[key] = suffix_counts.get(key, 0) + 1
+        startup_steps = leading_candidate_steps(step_lines)
+        cleanup_steps = trailing_candidate_steps(step_lines)
+        for length in range(len(startup_steps), 0, -1):
+            key = tuple(normalize_step_line(line) for line in startup_steps[:length])
+            if all(key):
+                prefix_counts[key] = prefix_counts.get(key, 0) + 1
+        for length in range(len(cleanup_steps), 0, -1):
+            key = tuple(normalize_step_line(line) for line in cleanup_steps[-length:])
+            if all(key):
+                suffix_counts[key] = suffix_counts.get(key, 0) + 1
 
     min_shared = max(2, (len(tests) + 1) // 2)
     chosen_prefix = max(prefix_counts, key=lambda k: (prefix_counts[k], len(k)), default=tuple())
