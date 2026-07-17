@@ -926,173 +926,6 @@ def rewrite_suite_to_prefer_common_wrappers(content: str, resource_context: list
     return "\n".join(rewritten_lines) + ("\n" if content.endswith("\n") else "")
 
 
-def repair_suite_to_reuse_upstream_keywords(content: str, resource_context: list[dict], manual_data: dict | None = None) -> str:
-    approved_keyword_names = {
-        clean_text(str(keyword.get("name", ""))).lower()
-        for resource in resource_context
-        for keyword in resource.get("keywords", [])
-        if clean_text(str(keyword.get("name", "")))
-    }
-    imported_page_resource_files = {
-        str(resource.get("file", "")).replace("\\", "/").strip().lower()
-        for resource in resource_context
-        if resource.get("type") == "page"
-    }
-    page_keyword_names = {
-        clean_text(str(keyword.get("name", ""))).lower(): clean_text(str(keyword.get("name", "")))
-        for resource in resource_context
-        if resource.get("type") == "page"
-        for keyword in resource.get("keywords", [])
-        if clean_text(str(keyword.get("name", "")))
-    }
-
-    open_home = page_keyword_names.get("open home page")
-    click_profile = page_keyword_names.get("click person profile button")
-    verify_login_opened = page_keyword_names.get("verify login page opened")
-    verify_guest_home = page_keyword_names.get("verify guest home page loaded")
-    click_back = page_keyword_names.get("click back button")
-    click_home = page_keyword_names.get("click home button")
-    verify_login_form = page_keyword_names.get("verify login form loaded")
-    verify_home_guest = page_keyword_names.get("verify home page remains in guest state") or verify_guest_home
-    home_resource_import = "pom_pages/home_page/home_page.resource" in imported_page_resource_files or any(
-        candidate.endswith("/home_page/home_page.resource") or candidate == "home_page/home_page.resource"
-        for candidate in imported_page_resource_files
-    )
-
-    workflow_blob = json.dumps(manual_data or {}, ensure_ascii=False).lower()
-    home_to_login_context = all(token in workflow_blob for token in ["home page", "login"]) and any(
-        token in workflow_blob for token in ["person/profile button", "person profile button", "profile button", "user button"]
-    )
-
-    def normalize_step_invocation(raw_text: str) -> tuple[str, list[str]]:
-        parts = [part.strip() for part in re.split(r"\s{2,}|\t+", raw_text.strip()) if part.strip()]
-        if not parts:
-            return "", []
-        token = clean_text(parts[0]).lower()
-        if token in {"test setup", "suite setup", "test teardown", "suite teardown", "resource", "library"}:
-            return token, parts[1:]
-        if token == "run keywords" and len(parts) > 1:
-            return token, parts[1:]
-        return token, parts[1:]
-
-    def rebuild_line(indent: str, keyword: str, arguments: list[str] | None = None) -> str:
-        args = arguments or []
-        if args:
-            return indent + keyword + "    " + "    ".join(args)
-        return indent + keyword
-
-    rewritten_lines: list[str] = []
-    replacements = 0
-    in_test_cases = False
-
-    for raw_line in content.splitlines():
-        stripped = raw_line.strip()
-        lowered = stripped.lower()
-        if lowered == "*** test cases ***":
-            in_test_cases = True
-            rewritten_lines.append(raw_line)
-            continue
-        if lowered.startswith("***") and lowered != "*** test cases ***":
-            in_test_cases = False
-            rewritten_lines.append(raw_line)
-            continue
-
-        resource_match = re.match(r"^(\s*)Resource\s{2,}(.+)$", raw_line)
-        if resource_match:
-            indent = resource_match.group(1)
-            resource_path = resource_match.group(2).strip()
-            normalized_resource_path = resource_path.replace("\\", "/").strip().lower()
-            rewritten_lines.append(raw_line)
-            if home_resource_import and normalized_resource_path == "../pom_pages/login_page/login_page.resource":
-                home_import_line = rebuild_line(indent, "Resource", ["../pom_pages/home_page/home_page.resource"])
-                if home_import_line not in rewritten_lines:
-                    rewritten_lines.append(home_import_line)
-                    replacements += 1
-            continue
-
-        setup_match = re.match(r"^(\s*)Test Setup\s{2,}(.+)$", raw_line)
-        if setup_match:
-            indent = setup_match.group(1)
-            setup_body = setup_match.group(2)
-            setup_parts = [part.strip() for part in re.split(r"\s{2,}|\t+", setup_body.strip()) if part.strip()]
-            setup_keyword_name = clean_text(setup_parts[0]).lower() if setup_parts else ""
-            if setup_keyword_name == "run keywords" and len(setup_parts) > 1:
-                setup_keyword_name = clean_text(setup_parts[1]).lower()
-            if (
-                home_to_login_context
-                and open_home
-                and click_profile
-                and (
-                    setup_keyword_name not in approved_keyword_names
-                    or setup_keyword_name in {
-                        "open home page and click user button",
-                        "open home page and click person profile button",
-                        "open login page from home page",
-                        "open login page from home",
-                    }
-                )
-            ):
-                setup_sequence = [open_home, click_profile]
-                rewritten_lines.append(rebuild_line(indent, "Test Setup", ["Run Keywords", setup_sequence[0], "AND", setup_sequence[1]]))
-                if verify_login_opened:
-                    rewritten_lines.append(rebuild_line(indent, "...", ["AND", verify_login_opened]))
-                replacements += 1
-                continue
-
-        if in_test_cases and raw_line.startswith((" ", "\t")) and stripped and not stripped.startswith("["):
-            indent = re.match(r"^\s*", raw_line).group(0)
-            keyword_name, arguments = normalize_step_invocation(stripped)
-            if keyword_name not in approved_keyword_names:
-                if home_to_login_context and keyword_name in {
-                    "open home page and click user button",
-                    "open home page and click person profile button",
-                    "open login page from home page",
-                    "open login page from home",
-                } and open_home and click_profile:
-                    rewritten_lines.append(rebuild_line(indent, open_home))
-                    rewritten_lines.append(rebuild_line(indent, click_profile))
-                    if verify_login_opened:
-                        rewritten_lines.append(rebuild_line(indent, verify_login_opened))
-                    replacements += 1
-                    continue
-                if keyword_name in {"verify back button returns the user to home page", "navigate back to home page"} and click_back:
-                    rewritten_lines.append(rebuild_line(indent, click_back))
-                    if verify_home_guest:
-                        rewritten_lines.append(rebuild_line(indent, verify_home_guest))
-                    replacements += 1
-                    continue
-                if keyword_name in {"verify home button returns the user to home page", "navigate home from login page"} and click_home:
-                    rewritten_lines.append(rebuild_line(indent, click_home))
-                    if verify_home_guest:
-                        rewritten_lines.append(rebuild_line(indent, verify_home_guest))
-                    replacements += 1
-                    continue
-            if keyword_name == "go to url" and arguments and len(arguments) == 1 and verify_home_guest:
-                only_arg = clean_text(arguments[0]).lower()
-                if only_arg in {"${home_page_url}", "${login_page_url}"}:
-                    rewritten_lines.append(rebuild_line(indent, verify_home_guest))
-                    replacements += 1
-                    continue
-            if keyword_name == "wait until location contains" and arguments and verify_login_opened:
-                arg_blob = " ".join(arguments).lower()
-                if "/washtabui/home" in arg_blob and verify_home_guest:
-                    rewritten_lines.append(rebuild_line(indent, verify_home_guest))
-                    replacements += 1
-                    continue
-                if "login" in arg_blob and verify_login_opened:
-                    rewritten_lines.append(rebuild_line(indent, verify_login_opened))
-                    replacements += 1
-                    continue
-            if keyword_name == "verify login form loaded" and verify_login_form:
-                rewritten_lines.append(rebuild_line(indent, verify_login_form))
-                continue
-
-        rewritten_lines.append(raw_line)
-
-    if replacements:
-        logger.info("Repaired %s suite step(s) to reuse upstream approved resource keywords", replacements)
-    return "\n".join(rewritten_lines) + ("\n" if content.endswith("\n") else "")
-
 
 def validate_robot_alignment_with_resource_context(content: str, resource_context: list[dict]) -> tuple[bool, str]:
     errors: list[str] = []
@@ -1889,7 +1722,6 @@ def process_manual_file(config: dict, manual_json_path: Path):
     robot_content = re.sub(r"\n```$", "", robot_content)
     robot_content = normalize_generated_robot_identifiers(robot_content, identifier_policy)
     robot_content = rewrite_suite_to_prefer_common_wrappers(robot_content, resource_context)
-    robot_content = repair_suite_to_reuse_upstream_keywords(robot_content, resource_context, manual_data)
 
     review_prompt = build_review_prompt(manual_data, resource_context, robot_content)
     reviewed_robot_content = call_ai_chat(
@@ -1904,7 +1736,6 @@ def process_manual_file(config: dict, manual_json_path: Path):
     reviewed_robot_content = re.sub(r"\n```$", "", reviewed_robot_content)
     robot_content = normalize_generated_robot_identifiers(reviewed_robot_content or robot_content, identifier_policy)
     robot_content = rewrite_suite_to_prefer_common_wrappers(robot_content, resource_context)
-    robot_content = repair_suite_to_reuse_upstream_keywords(robot_content, resource_context, manual_data)
 
     validation_review_prompt = build_validation_review_prompt(manual_data, resource_context, robot_content)
     validated_robot_content = call_ai_chat(
@@ -1919,7 +1750,6 @@ def process_manual_file(config: dict, manual_json_path: Path):
     validated_robot_content = re.sub(r"\n```$", "", validated_robot_content)
     robot_content = normalize_generated_robot_identifiers(validated_robot_content or robot_content, identifier_policy)
     robot_content = rewrite_suite_to_prefer_common_wrappers(robot_content, resource_context)
-    robot_content = repair_suite_to_reuse_upstream_keywords(robot_content, resource_context, manual_data)
 
     is_valid, validation_message = validate_robot_content(robot_content, resource_files)
     if validation_message and re.search(r"unknown or unsupported keyword", validation_message, flags=re.IGNORECASE):
@@ -1945,7 +1775,6 @@ def process_manual_file(config: dict, manual_json_path: Path):
         repaired_robot_content = re.sub(r"\n```$", "", repaired_robot_content)
         robot_content = normalize_generated_robot_identifiers(repaired_robot_content or robot_content, identifier_policy)
         robot_content = rewrite_suite_to_prefer_common_wrappers(robot_content, resource_context)
-        robot_content = repair_suite_to_reuse_upstream_keywords(robot_content, resource_context, manual_data)
         is_valid, validation_message = validate_robot_content(robot_content, resource_files)
 
     if validation_message:
@@ -1971,7 +1800,6 @@ def process_manual_file(config: dict, manual_json_path: Path):
         followup_robot_content = re.sub(r"\n```$", "", followup_robot_content)
         robot_content = normalize_generated_robot_identifiers(followup_robot_content or robot_content, identifier_policy)
         robot_content = rewrite_suite_to_prefer_common_wrappers(robot_content, resource_context)
-        robot_content = repair_suite_to_reuse_upstream_keywords(robot_content, resource_context, manual_data)
         is_valid, validation_message = validate_robot_content(robot_content, resource_files)
     alignment_valid, alignment_message = validate_robot_alignment_with_resource_context(robot_content, resource_context)
     manual_expected_outcomes = collect_manual_expected_outcomes(manual_data)

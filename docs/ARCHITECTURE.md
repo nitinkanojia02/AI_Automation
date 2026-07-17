@@ -16,6 +16,19 @@ The goal of the framework is to convert workflow intent and live application und
 
 It is intentionally designed as a layered, review-driven pipeline rather than a single-step generator.
 
+### Non-negotiable architecture rule
+
+The framework must not encode workflow-specific generation behavior through Python-side mappings, hardcoded page logic, keyword substitution tables, or resource-specific repair branches.
+
+Instead, the framework must:
+- infer reusable upstream/downstream relationships from approved workflow/business context
+- retrieve approved resource knowledge from prior stages and prior workflows
+- persist that knowledge as downstream-consumable artifacts or context objects
+- require AI generation to stay inside that approved knowledge boundary
+- validate that downstream suites reuse approved resource variables, locators, keywords, validations, and navigation knowledge before inventing anything new
+
+This means navigation journeys, page transitions, setup paths, and downstream assertions must be generated from approved workflow context plus retrieved approved resource knowledge, not from hardcoded workflow handlers.
+
 ---
 
 ## 3. Architectural Style
