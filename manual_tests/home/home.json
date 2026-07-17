@@ -1,0 +1,182 @@
+{
+  "workflowName": "home",
+  "feature": "HOME",
+  "applicationCode": "WT",
+  "testIdentifierPrefix": "HOME",
+  "resourceFiles": [
+    "home_page/home_page.resource"
+  ],
+  "preconditions": [
+    "Application is accessible at http://localhost/washtabui/home",
+    "User is not authenticated before starting the workflow",
+    "Home page is opened in guest state within the SPA application"
+  ],
+  "testCases": [
+    {
+      "id": "TC_HOME_001",
+      "title": "Verify Home page loads successfully in guest state when application is launched",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Launch the application in a browser",
+        "Navigate to http://localhost/washtabui/home",
+        "Allow the SPA Home page to finish loading"
+      ],
+      "expectedResult": "The Home page loads successfully in guest state and displays the approved guest-state Home controls without showing authenticated user information."
+    },
+    {
+      "id": "TC_HOME_002",
+      "title": "Verify Person/Profile button is visible and enabled in guest state",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the Home page in guest state",
+        "Locate the Person/Profile button",
+        "Observe the button state without clicking"
+      ],
+      "expectedResult": "The Person/Profile button is visible, enabled, and available for interaction on the Home page in guest state."
+    },
+    {
+      "id": "TC_HOME_003",
+      "title": "Verify Back button is visible and enabled in guest state",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the Home page in guest state",
+        "Locate the Back button",
+        "Observe the button state without clicking"
+      ],
+      "expectedResult": "The Back button is visible and enabled as part of the shared Home page shell controls."
+    },
+    {
+      "id": "TC_HOME_004",
+      "title": "Verify Notification button is visible and enabled in guest state",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the Home page in guest state",
+        "Locate the Notification button",
+        "Observe the button state without clicking"
+      ],
+      "expectedResult": "The Notification button is visible and enabled as part of the shared Home page shell controls."
+    },
+    {
+      "id": "TC_HOME_005",
+      "title": "Verify Home button is visible and enabled in guest state",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the Home page in guest state",
+        "Locate the Home button",
+        "Observe the button state without clicking"
+      ],
+      "expectedResult": "The Home button is visible and enabled as part of the shared Home page shell controls."
+    },
+    {
+      "id": "TC_HOME_006",
+      "title": "Verify Customer signup button is visible and enabled in guest state",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the Home page in guest state",
+        "Locate the Customer signup button",
+        "Observe the button state without clicking"
+      ],
+      "expectedResult": "The Customer signup button is visible and enabled for guest users."
+    },
+    {
+      "id": "TC_HOME_007",
+      "title": "Verify Clean survey button is visible and enabled in guest state",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the Home page in guest state",
+        "Locate the Clean survey button",
+        "Observe the button state without clicking"
+      ],
+      "expectedResult": "The Clean survey button is visible and enabled for guest users."
+    },
+    {
+      "id": "TC_HOME_008",
+      "title": "Verify Site survey button is visible and enabled in guest state",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the Home page in guest state",
+        "Locate the Site survey button",
+        "Observe the button state without clicking"
+      ],
+      "expectedResult": "The Site survey button is visible and enabled for guest users."
+    },
+    {
+      "id": "TC_HOME_009",
+      "title": "Verify clicking the Person/Profile button opens the Login page from guest Home state",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the Home page in guest state",
+        "Click the Person/Profile button"
+      ],
+      "expectedResult": "The Login page or Login view opens from the guest-state Home page and the transition occurs without requiring authentication first."
+    },
+    {
+      "id": "TC_HOME_010",
+      "title": "Verify clicking Customer signup navigates to the customer-search page",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the Home page in guest state",
+        "Click the Customer signup button"
+      ],
+      "expectedResult": "The application navigates to the customer-search page from the guest Home page."
+    },
+    {
+      "id": "TC_HOME_011",
+      "title": "Verify clicking Clean survey navigates to the vehicle-survey page",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the Home page in guest state",
+        "Click the Clean survey button"
+      ],
+      "expectedResult": "The application navigates to the vehicle-survey page from the guest Home page."
+    },
+    {
+      "id": "TC_HOME_012",
+      "title": "Verify clicking Site survey navigates to the survey page",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the Home page in guest state",
+        "Click the Site survey button"
+      ],
+      "expectedResult": "The application navigates to the survey page from the guest Home page."
+    },
+    {
+      "id": "TC_HOME_020",
+      "title": "Verify Home button remains visible and enabled after navigating back from a guest-accessible feature page",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the Home page in guest state",
+        "Click the Customer signup button",
+        "Use browser back navigation to return to the Home page",
+        "Locate the Home button"
+      ],
+      "expectedResult": "The user returns to the Home page in guest state and the Home button remains visible and enabled."
+    }
+  ]
+}

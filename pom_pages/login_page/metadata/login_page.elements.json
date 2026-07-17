@@ -1,0 +1,257 @@
+{
+  "pageName": "login_page",
+  "pageUrl": null,
+  "rawElements": [
+    {
+      "tag": "input",
+      "text": "User Name",
+      "attributes": {
+        "class": "native-input sc-ion-input-md",
+        "id": "ion-input-0",
+        "autocapitalize": "off",
+        "autocomplete": "off",
+        "autocorrect": "off",
+        "autofocus": "",
+        "name": "ion-input-0",
+        "placeholder": "User Name",
+        "spellcheck": "false",
+        "type": "text",
+        "style": ""
+      },
+      "label": "",
+      "visibility": {
+        "is_visible": true,
+        "is_in_viewport": true,
+        "is_covered": false,
+        "has_visible_descendant": false,
+        "width": 250,
+        "height": 24,
+        "x": 863,
+        "y": 458.453125
+      },
+      "shadow": null
+    },
+    {
+      "tag": "input",
+      "text": "Password",
+      "attributes": {
+        "class": "native-input sc-ion-input-md",
+        "id": "ion-input-1",
+        "autocapitalize": "off",
+        "autocomplete": "off",
+        "autocorrect": "off",
+        "name": "ion-input-1",
+        "placeholder": "Password",
+        "spellcheck": "false",
+        "type": "password",
+        "style": ""
+      },
+      "label": "",
+      "visibility": {
+        "is_visible": true,
+        "is_in_viewport": true,
+        "is_covered": false,
+        "has_visible_descendant": false,
+        "width": 250,
+        "height": 24,
+        "x": 863,
+        "y": 525.34375
+      },
+      "shadow": null
+    },
+    {
+      "tag": "ion-input",
+      "text": "password",
+      "attributes": {
+        "_ngcontent-ng-c665265675": "",
+        "type": "password",
+        "id": "password",
+        "clearonedit": "true",
+        "autocomplete": "off",
+        "class": "login-class ng-untouched ng-pristine ng-valid ion-untouched ion-pristine ion-valid sc-ion-input-md-h sc-ion-input-md-s md input-label-placement-start in-item hydrated",
+        "style": "-webkit-text-security: disc;"
+      },
+      "label": "",
+      "visibility": {
+        "is_visible": true,
+        "is_in_viewport": true,
+        "is_covered": false,
+        "has_visible_descendant": true,
+        "width": 250,
+        "height": 44,
+        "x": 863,
+        "y": 515.34375
+      },
+      "shadow": null
+    },
+    {
+      "tag": "ion-button",
+      "text": "SIGN IN",
+      "attributes": {
+        "_ngcontent-ng-c665265675": "",
+        "text": "Login",
+        "shape": "round",
+        "class": "ion-button-style md button button-round button-solid ion-activatable ion-focusable hydrated"
+      },
+      "label": "",
+      "visibility": {
+        "is_visible": true,
+        "is_in_viewport": true,
+        "is_covered": false,
+        "has_visible_descendant": false,
+        "width": 1134,
+        "height": 36,
+        "x": 393,
+        "y": 584.734375
+      },
+      "shadow": {
+        "has_shadow_root": true,
+        "has_native_control": true,
+        "text": "",
+        "icon_aria_label": "",
+        "aria_label": "",
+        "tag": "button",
+        "type": "button",
+        "disabled": false,
+        "placeholder": ""
+      }
+    },
+    {
+      "tag": "div",
+      "text": "background-content",
+      "attributes": {
+        "id": "background-content",
+        "part": "background",
+        "data-shadow-host-tag": "ion-content"
+      },
+      "label": "",
+      "visibility": {
+        "is_visible": true,
+        "is_in_viewport": true,
+        "is_covered": false,
+        "has_visible_descendant": false,
+        "width": 1920,
+        "height": 1080,
+        "x": 0,
+        "y": 0
+      },
+      "shadow": null
+    }
+  ],
+  "elements": [
+    {
+      "approvedName": "username_textbox",
+      "type": "textbox",
+      "locator": "xpath=//input[@placeholder='User Name']",
+      "approved": true
+    },
+    {
+      "approvedName": "password_textbox",
+      "type": "password",
+      "locator": "id=password",
+      "approved": true
+    },
+    {
+      "approvedName": "sign_in_button",
+      "type": "button",
+      "locator": "xpath=//ion-button[contains(.,'SIGN IN') or @text='Login']",
+      "approved": true
+    }
+  ],
+  "reviewSummary": {
+    "overall_quality": "medium",
+    "summary": "Core login controls were identified, but the artifact contains duplicate password elements, unstable locators, decorative noise, and is missing important validation and recovery navigation elements required for robust login automation.",
+    "issues": [
+      {
+        "severity": "high",
+        "type": "duplicate",
+        "element_name": "password",
+        "message": "Two separate password textbox elements represent the same functional control, creating ambiguity for downstream keyword and resource generation.",
+        "suggested_fix": "Keep only the most stable and semantically meaningful password field element using the stable id 'password'."
+      },
+      {
+        "severity": "high",
+        "type": "locator",
+        "element_name": "user_name_textbox",
+        "message": "Locator 'id=ion-input-0' appears framework-generated and brittle because Ionic incremental IDs can change between sessions or builds.",
+        "suggested_fix": "Use a stable attribute-based locator such as placeholder, associated label, form control name, or accessibility attribute."
+      },
+      {
+        "severity": "high",
+        "type": "locator",
+        "element_name": "password",
+        "message": "Locator 'id=ion-input-1' appears framework-generated and unstable for long-term automation maintenance.",
+        "suggested_fix": "Use the stable component id 'password' or another semantic attribute-based locator."
+      },
+      {
+        "severity": "medium",
+        "type": "naming",
+        "element_name": "password",
+        "message": "Element name is too generic and does not clearly indicate it is an input field.",
+        "suggested_fix": "Rename to 'password_textbox' for consistency and clarity."
+      },
+      {
+        "severity": "medium",
+        "type": "locator",
+        "element_name": "sign_in_button",
+        "message": "XPath locator depends entirely on visible text and may be brittle if UI text or capitalization changes.",
+        "suggested_fix": "Prefer a stable attribute, button text property, aria-label, or semantic selector if available."
+      },
+      {
+        "severity": "low",
+        "type": "noise",
+        "element_name": "background_content",
+        "message": "Background container is decorative/layout-only and provides no meaningful automation value.",
+        "suggested_fix": "Remove the element from the approved page model."
+      },
+      {
+        "severity": "high",
+        "type": "missing_element",
+        "element_name": "",
+        "message": "Forgot Password navigation element required by the workflow is missing from the page model.",
+        "suggested_fix": "Add a 'forgot_password_link' navigation element with a stable locator."
+      },
+      {
+        "severity": "high",
+        "type": "validation_gap",
+        "element_name": "",
+        "message": "No invalid login error message element is modeled even though failed authentication validation is a required workflow outcome.",
+        "suggested_fix": "Add a reusable authentication error banner/message element for failed login verification."
+      },
+      {
+        "severity": "high",
+        "type": "validation_gap",
+        "element_name": "",
+        "message": "Required field validation elements for username and password are missing despite explicit workflow validation requirements.",
+        "suggested_fix": "Add username required validation message and password required validation message elements."
+      },
+      {
+        "severity": "medium",
+        "type": "missing_element",
+        "element_name": "",
+        "message": "No explicit login page state indicator or form container element exists to verify the login modal/view is open from the Home page.",
+        "suggested_fix": "Add a stable login form container or login dialog title element for page state verification."
+      }
+    ],
+    "approved_elements": [
+      {
+        "name": "username_textbox",
+        "type": "textbox",
+        "locator": "xpath=//input[@placeholder='User Name']",
+        "description": "Username input field for authentication."
+      },
+      {
+        "name": "password_textbox",
+        "type": "textbox",
+        "locator": "id=password",
+        "description": "Masked password input field for authentication."
+      },
+      {
+        "name": "sign_in_button",
+        "type": "button",
+        "locator": "xpath=//ion-button[contains(.,'SIGN IN') or @text='Login']",
+        "description": "Submits login credentials for authentication."
+      }
+    ]
+  }
+}

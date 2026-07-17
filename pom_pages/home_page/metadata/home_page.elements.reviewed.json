@@ -1,0 +1,400 @@
+{
+  "pageName": "home_page",
+  "pageUrl": "http://localhost/washtabui/home",
+  "rawElements": [
+    {
+      "tag": "ion-button",
+      "text": "auto_person_btn",
+      "attributes": {
+        "_ngcontent-ng-c435036343": "",
+        "id": "auto_person_btn",
+        "color": "light",
+        "class": "header-icon-btn ng-star-inserted ion-color ion-color-light md button button-solid in-toolbar ion-activatable ion-focusable hydrated"
+      },
+      "label": "",
+      "visibility": {
+        "is_visible": true,
+        "is_in_viewport": true,
+        "is_covered": false,
+        "has_visible_descendant": false,
+        "width": 45,
+        "height": 45,
+        "x": 1665,
+        "y": 23
+      },
+      "shadow": {
+        "has_shadow_root": true,
+        "has_native_control": true,
+        "text": "",
+        "icon_aria_label": "",
+        "aria_label": "",
+        "tag": "button",
+        "type": "button",
+        "disabled": false,
+        "placeholder": ""
+      }
+    },
+    {
+      "tag": "ion-button",
+      "text": "auto_back_btn",
+      "attributes": {
+        "_ngcontent-ng-c435036343": "",
+        "id": "auto_back_btn",
+        "color": "light",
+        "class": "header-icon-btn ion-color ion-color-light md button button-solid in-toolbar ion-activatable ion-focusable hydrated"
+      },
+      "label": "",
+      "visibility": {
+        "is_visible": true,
+        "is_in_viewport": true,
+        "is_covered": false,
+        "has_visible_descendant": false,
+        "width": 45,
+        "height": 45,
+        "x": 1725,
+        "y": 23
+      },
+      "shadow": {
+        "has_shadow_root": true,
+        "has_native_control": true,
+        "text": "",
+        "icon_aria_label": "",
+        "aria_label": "",
+        "tag": "button",
+        "type": "button",
+        "disabled": false,
+        "placeholder": ""
+      }
+    },
+    {
+      "tag": "ion-button",
+      "text": "auto_notification_btn",
+      "attributes": {
+        "_ngcontent-ng-c435036343": "",
+        "id": "auto_notification_btn",
+        "color": "light",
+        "class": "header-icon-btn ion-color ion-color-light md button button-solid in-toolbar ion-activatable ion-focusable hydrated"
+      },
+      "label": "",
+      "visibility": {
+        "is_visible": true,
+        "is_in_viewport": true,
+        "is_covered": false,
+        "has_visible_descendant": false,
+        "width": 45,
+        "height": 45,
+        "x": 1785,
+        "y": 23
+      },
+      "shadow": {
+        "has_shadow_root": true,
+        "has_native_control": true,
+        "text": "",
+        "icon_aria_label": "",
+        "aria_label": "",
+        "tag": "button",
+        "type": "button",
+        "disabled": false,
+        "placeholder": ""
+      }
+    },
+    {
+      "tag": "ion-button",
+      "text": "auto_home_btn",
+      "attributes": {
+        "_ngcontent-ng-c435036343": "",
+        "id": "auto_home_btn",
+        "color": "light",
+        "class": "header-icon-btn ion-color ion-color-light md button button-solid in-toolbar ion-activatable ion-focusable hydrated",
+        "tabindex": "0"
+      },
+      "label": "",
+      "visibility": {
+        "is_visible": true,
+        "is_in_viewport": true,
+        "is_covered": false,
+        "has_visible_descendant": false,
+        "width": 45,
+        "height": 45,
+        "x": 1845,
+        "y": 23
+      },
+      "shadow": {
+        "has_shadow_root": true,
+        "has_native_control": true,
+        "text": "",
+        "icon_aria_label": "",
+        "aria_label": "",
+        "tag": "a",
+        "type": "",
+        "disabled": false,
+        "placeholder": ""
+      }
+    },
+    {
+      "tag": "app-main-button",
+      "text": "auto_btn_CustomerSignup",
+      "attributes": {
+        "_ngcontent-ng-c3791902258": "",
+        "tappable": "",
+        "id": "auto_btn_CustomerSignup",
+        "icsicon": "CustomerClubSignup-Bt",
+        "_nghost-ng-c3194704062": "",
+        "class": "ng-star-inserted"
+      },
+      "label": "",
+      "visibility": {
+        "is_visible": true,
+        "is_in_viewport": true,
+        "is_covered": false,
+        "has_visible_descendant": true,
+        "width": 547.1875,
+        "height": 17,
+        "x": 0,
+        "y": 358.484375
+      },
+      "shadow": null
+    },
+    {
+      "tag": "app-main-button",
+      "text": "auto_btn_CleanSurvey",
+      "attributes": {
+        "_ngcontent-ng-c3791902258": "",
+        "tappable": "",
+        "id": "auto_btn_CleanSurvey",
+        "icsicon": "Clean-Survey-Bt",
+        "_nghost-ng-c3194704062": "",
+        "class": "ng-star-inserted"
+      },
+      "label": "",
+      "visibility": {
+        "is_visible": true,
+        "is_in_viewport": true,
+        "is_covered": false,
+        "has_visible_descendant": true,
+        "width": 547.1875,
+        "height": 17,
+        "x": 547.1875,
+        "y": 358.484375
+      },
+      "shadow": null
+    },
+    {
+      "tag": "app-main-button",
+      "text": "auto_btn_SiteSurvey",
+      "attributes": {
+        "_ngcontent-ng-c3791902258": "",
+        "tappable": "",
+        "id": "auto_btn_SiteSurvey",
+        "icsicon": "Site-Survey-Bt",
+        "_nghost-ng-c3194704062": "",
+        "class": "ng-star-inserted"
+      },
+      "label": "",
+      "visibility": {
+        "is_visible": true,
+        "is_in_viewport": true,
+        "is_covered": false,
+        "has_visible_descendant": true,
+        "width": 547.1875,
+        "height": 17,
+        "x": 1094.375,
+        "y": 358.484375
+      },
+      "shadow": null
+    },
+    {
+      "tag": "a",
+      "text": "",
+      "attributes": {
+        "href": "/washtabui/home",
+        "class": "button-native",
+        "part": "native",
+        "data-shadow-host-tag": "ion-button"
+      },
+      "label": "",
+      "visibility": {
+        "is_visible": true,
+        "is_in_viewport": true,
+        "is_covered": false,
+        "has_visible_descendant": true,
+        "width": 45,
+        "height": 45,
+        "x": 1845,
+        "y": 23
+      },
+      "shadow": null
+    },
+    {
+      "tag": "div",
+      "text": "background-content",
+      "attributes": {
+        "id": "background-content",
+        "part": "background",
+        "data-shadow-host-tag": "ion-content"
+      },
+      "label": "",
+      "visibility": {
+        "is_visible": true,
+        "is_in_viewport": true,
+        "is_covered": false,
+        "has_visible_descendant": false,
+        "width": 1920,
+        "height": 1306,
+        "x": 0,
+        "y": 0
+      },
+      "shadow": null
+    }
+  ],
+  "elements": [
+    {
+      "approvedName": "person_profile_button",
+      "type": "button",
+      "locator": "id=auto_person_btn",
+      "approved": true
+    },
+    {
+      "approvedName": "back_button",
+      "type": "button",
+      "locator": "id=auto_back_btn",
+      "approved": true
+    },
+    {
+      "approvedName": "notification_button",
+      "type": "button",
+      "locator": "id=auto_notification_btn",
+      "approved": true
+    },
+    {
+      "approvedName": "home_button",
+      "type": "button",
+      "locator": "id=auto_home_btn",
+      "approved": true
+    },
+    {
+      "approvedName": "customer_signup_button",
+      "type": "button",
+      "locator": "id=auto_btn_CustomerSignup",
+      "approved": true
+    },
+    {
+      "approvedName": "clean_survey_button",
+      "type": "button",
+      "locator": "id=auto_btn_CleanSurvey",
+      "approved": true
+    },
+    {
+      "approvedName": "site_survey_button",
+      "type": "button",
+      "locator": "id=auto_btn_SiteSurvey",
+      "approved": true
+    }
+  ],
+  "reviewSummary": {
+    "overall_quality": "medium",
+    "summary": "The draft captures the primary guest-state navigation controls required by the workflow, but it includes noisy generic elements, inconsistent naming, and weak locators that reduce downstream automation reliability and page model clarity.",
+    "issues": [
+      {
+        "severity": "high",
+        "type": "locator",
+        "element_name": "element_8",
+        "message": "The locator xpath=//a is overly generic and likely to match multiple links across the SPA, making downstream automation brittle and ambiguous.",
+        "suggested_fix": "Remove the generic link element entirely because the Home button already represents the intended navigation control with a stable ID locator."
+      },
+      {
+        "severity": "medium",
+        "type": "noise",
+        "element_name": "background_content",
+        "message": "The background content container is a layout-only element and does not provide meaningful workflow interaction or validation value.",
+        "suggested_fix": "Remove the background_content element from the approved page model unless a future workflow explicitly requires content-area visibility validation."
+      },
+      {
+        "severity": "medium",
+        "type": "naming",
+        "element_name": "customersignup_button",
+        "message": "The element name lacks readability and business clarity because the words are concatenated.",
+        "suggested_fix": "Rename the element to customer_signup_button for consistent semantic naming."
+      },
+      {
+        "severity": "medium",
+        "type": "naming",
+        "element_name": "cleansurvey_button",
+        "message": "The element name lacks readability and business clarity because the words are concatenated.",
+        "suggested_fix": "Rename the element to clean_survey_button for consistent semantic naming."
+      },
+      {
+        "severity": "medium",
+        "type": "naming",
+        "element_name": "sitesurvey_button",
+        "message": "The element name lacks readability and business clarity because the words are concatenated.",
+        "suggested_fix": "Rename the element to site_survey_button for consistent semantic naming."
+      },
+      {
+        "severity": "medium",
+        "type": "naming",
+        "element_name": "person_button",
+        "message": "The workflow consistently refers to this control as the Person/Profile button, but the approved name loses that contextual meaning.",
+        "suggested_fix": "Rename the element to person_profile_button to align with workflow terminology and improve downstream keyword readability."
+      },
+      {
+        "severity": "low",
+        "type": "classification",
+        "element_name": "home_button",
+        "message": "The underlying shadow DOM native control is an anchor element rather than a pure button, which may affect navigation-oriented keyword generation.",
+        "suggested_fix": "Keep the semantic business meaning as a navigation button but document or model it as a navigation control if the framework distinguishes navigation actions from button clicks."
+      },
+      {
+        "severity": "medium",
+        "type": "validation_gap",
+        "element_name": "",
+        "message": "The workflow requires validation that authenticated-only controls and the logged-in user name button are absent in guest state, but no observable elements or negative-state indicators are modeled to support those assertions.",
+        "suggested_fix": "Add explicit absent-state verification guidance or identifiable authenticated-state controls if available in future extraction passes."
+      }
+    ],
+    "approved_elements": [
+      {
+        "name": "person_profile_button",
+        "type": "button",
+        "locator": "id=auto_person_btn",
+        "description": "Opens the Login page or Login view from the guest Home state."
+      },
+      {
+        "name": "back_button",
+        "type": "button",
+        "locator": "id=auto_back_btn",
+        "description": "Shared Home shell navigation control for backward navigation."
+      },
+      {
+        "name": "notification_button",
+        "type": "button",
+        "locator": "id=auto_notification_btn",
+        "description": "Shared Home shell notification access control visible in guest state."
+      },
+      {
+        "name": "home_button",
+        "type": "navigation_button",
+        "locator": "id=auto_home_btn",
+        "description": "Shared Home shell navigation control that routes to the Home page."
+      },
+      {
+        "name": "customer_signup_button",
+        "type": "button",
+        "locator": "id=auto_btn_CustomerSignup",
+        "description": "Navigates guest users to the customer-search page."
+      },
+      {
+        "name": "clean_survey_button",
+        "type": "button",
+        "locator": "id=auto_btn_CleanSurvey",
+        "description": "Navigates guest users to the vehicle-survey page."
+      },
+      {
+        "name": "site_survey_button",
+        "type": "button",
+        "locator": "id=auto_btn_SiteSurvey",
+        "description": "Navigates guest users to the survey page."
+      }
+    ]
+  }
+}
