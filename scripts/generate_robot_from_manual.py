@@ -939,6 +939,213 @@ def rewrite_suite_to_prefer_common_wrappers(content: str, resource_context: list
     return "\n".join(rewritten_lines) + ("\n" if content.endswith("\n") else "")
 
 
+def promote_repeated_setup_teardown(content: str) -> str:
+    lines = content.splitlines()
+
+    def split_robot_parts(all_lines: list[str]) -> tuple[list[str], list[str], list[str]]:
+        settings: list[str] = []
+        test_cases: list[str] = []
+        other: list[str] = []
+        section = None
+        for line in all_lines:
+            stripped = line.strip().lower()
+            if stripped == "*** settings ***":
+                section = "settings"
+                settings.append(line)
+                continue
+            if stripped == "*** test cases ***":
+                section = "test_cases"
+                test_cases.append(line)
+                continue
+            if stripped.startswith("***"):
+                section = "other"
+                other.append(line)
+                continue
+            if section == "settings":
+                settings.append(line)
+            elif section == "test_cases":
+                test_cases.append(line)
+            else:
+                other.append(line)
+        return settings, test_cases, other
+
+    def scan_keyword_invocation(raw_text: str) -> tuple[str, list[str]]:
+        stripped = raw_text.strip()
+        parts = [part.strip() for part in re.split(r"\s{2,}|\t+", stripped) if part.strip()]
+        if not parts:
+            return "", []
+        return parts[0], parts[1:]
+
+    def normalize_step_line(raw_line: str) -> str:
+        keyword_name, arguments = scan_keyword_invocation(raw_line)
+        if not keyword_name:
+            return ""
+        return "    " + clean_text(keyword_name) + ("    " + "    ".join(arguments) if arguments else "")
+
+    def parse_tests(test_lines: list[str]) -> tuple[list[str], list[dict]]:
+        header: list[str] = []
+        tests: list[dict] = []
+        current = None
+        seen_first_test = False
+        for line in test_lines:
+            stripped = line.strip()
+            if not seen_first_test:
+                header.append(line)
+                if stripped.lower() == "*** test cases ***":
+                    continue
+                if stripped and not line.startswith((" ", "\t")) and not stripped.startswith("***"):
+                    seen_first_test = True
+                    current = {"name": line, "body": []}
+                    tests.append(current)
+                    header.pop()
+                continue
+            if stripped and not line.startswith((" ", "\t")) and not stripped.startswith("***"):
+                current = {"name": line, "body": []}
+                tests.append(current)
+                continue
+            if current is not None:
+                current["body"].append(line)
+        return header, tests
+
+    def extract_executable_steps(test_body: list[str]) -> list[tuple[int, str]]:
+        steps: list[tuple[int, str]] = []
+        for idx, line in enumerate(test_body):
+            stripped = line.strip()
+            if not stripped or stripped.startswith("["):
+                continue
+            if not line.startswith((" ", "\t")):
+                continue
+            parts = [part.strip() for part in re.split(r"\s{2,}|\t+", stripped) if part.strip()]
+            if not parts:
+                continue
+            keyword_name = clean_text(parts[0]).lower()
+            if keyword_name in {"...", "and"}:
+                continue
+            steps.append((idx, line))
+        return steps
+
+    def build_run_keywords_line(label: str, step_lines: list[str]) -> str:
+        normalized_steps = [normalize_step_line(step) for step in step_lines if normalize_step_line(step)]
+        if not normalized_steps:
+            return ""
+        first_parts = [part.strip() for part in re.split(r"\s{2,}|\t+", normalized_steps[0].strip()) if part.strip()]
+        base = f"{label}    {first_parts[0]}"
+        if len(first_parts) > 1:
+            base += "    " + "    ".join(first_parts[1:])
+        if len(normalized_steps) == 1:
+            return base
+        continuation = [base.replace(f"{label}    ", f"{label}    Run Keywords    ", 1)]
+        for step in normalized_steps[1:]:
+            continuation.append("...    AND    " + step.strip())
+        return "\n".join(continuation)
+
+    settings_lines, test_case_lines, other_lines = split_robot_parts(lines)
+    if not test_case_lines:
+        return content
+
+    header_lines, tests = parse_tests(test_case_lines)
+    if len(tests) < 2:
+        return content
+
+    settings_text = "\n".join(settings_lines)
+    has_test_setup = bool(re.search(r"(?im)^\s*Test Setup\s{2,}.+$", settings_text))
+    has_test_teardown = bool(re.search(r"(?im)^\s*Test Teardown\s{2,}.+$", settings_text))
+
+    prefix_counts: dict[tuple[str, ...], int] = {}
+    suffix_counts: dict[tuple[str, ...], int] = {}
+    test_prefix_steps: list[list[str]] = []
+    test_suffix_steps: list[list[str]] = []
+
+    for test in tests:
+        executable_steps = extract_executable_steps(test["body"])
+        step_lines = [line for _idx, line in executable_steps]
+        test_prefix_steps.append(step_lines[:3])
+        test_suffix_steps.append(step_lines[-2:] if len(step_lines) >= 2 else step_lines[-1:])
+        for length in (3, 2, 1):
+            if len(step_lines) >= length:
+                key = tuple(normalize_step_line(line) for line in step_lines[:length])
+                if all(key):
+                    prefix_counts[key] = prefix_counts.get(key, 0) + 1
+        for length in (2, 1):
+            if len(step_lines) >= length:
+                key = tuple(normalize_step_line(line) for line in step_lines[-length:])
+                if all(key):
+                    suffix_counts[key] = suffix_counts.get(key, 0) + 1
+
+    min_shared = max(2, (len(tests) + 1) // 2)
+    chosen_prefix = max(prefix_counts, key=lambda k: (prefix_counts[k], len(k)), default=tuple())
+    chosen_suffix = max(suffix_counts, key=lambda k: (suffix_counts[k], len(k)), default=tuple())
+
+    promoted_setup = False
+    promoted_teardown = False
+
+    if chosen_prefix and prefix_counts.get(chosen_prefix, 0) >= min_shared and not has_test_setup:
+        setup_line = build_run_keywords_line("Test Setup", list(chosen_prefix))
+        if setup_line:
+            insert_index = 1 if settings_lines and settings_lines[0].strip().lower() == "*** settings ***" else 0
+            while insert_index < len(settings_lines) and not settings_lines[insert_index].strip():
+                insert_index += 1
+            settings_lines[insert_index:insert_index] = setup_line.splitlines()
+            promoted_setup = True
+            for test in tests:
+                executable_steps = extract_executable_steps(test["body"])
+                if len(executable_steps) < len(chosen_prefix):
+                    continue
+                candidate = tuple(normalize_step_line(line) for _idx, line in executable_steps[:len(chosen_prefix)])
+                if candidate != chosen_prefix:
+                    continue
+                indices_to_remove = {idx for idx, _line in executable_steps[:len(chosen_prefix)]}
+                test["body"] = [line for idx, line in enumerate(test["body"]) if idx not in indices_to_remove]
+                while test["body"] and not test["body"][0].strip():
+                    test["body"].pop(0)
+
+    if chosen_suffix and suffix_counts.get(chosen_suffix, 0) >= min_shared and not has_test_teardown:
+        teardown_line = build_run_keywords_line("Test Teardown", list(chosen_suffix))
+        if teardown_line:
+            insert_index = len(settings_lines)
+            settings_lines[insert_index:insert_index] = teardown_line.splitlines()
+            promoted_teardown = True
+            for test in tests:
+                executable_steps = extract_executable_steps(test["body"])
+                if len(executable_steps) < len(chosen_suffix):
+                    continue
+                candidate = tuple(normalize_step_line(line) for _idx, line in executable_steps[-len(chosen_suffix):])
+                if candidate != chosen_suffix:
+                    continue
+                indices_to_remove = {idx for idx, _line in executable_steps[-len(chosen_suffix):]}
+                test["body"] = [line for idx, line in enumerate(test["body"]) if idx not in indices_to_remove]
+                while test["body"] and not test["body"][-1].strip():
+                    test["body"].pop()
+
+    if not promoted_setup and not promoted_teardown:
+        return content
+
+    rebuilt_test_lines = list(header_lines)
+    for index, test in enumerate(tests):
+        if index > 0 and rebuilt_test_lines and rebuilt_test_lines[-1].strip():
+            rebuilt_test_lines.append("")
+        rebuilt_test_lines.append(test["name"])
+        rebuilt_test_lines.extend(test["body"])
+
+    rebuilt_sections = []
+    if settings_lines:
+        rebuilt_sections.extend(settings_lines)
+    if rebuilt_sections and rebuilt_sections[-1].strip():
+        rebuilt_sections.append("")
+    rebuilt_sections.extend(rebuilt_test_lines)
+    if other_lines:
+        if rebuilt_sections and rebuilt_sections[-1].strip():
+            rebuilt_sections.append("")
+        rebuilt_sections.extend(other_lines)
+
+    logger.info(
+        "Promoted repeated suite patterns into architecture helpers: setup=%s teardown=%s",
+        promoted_setup,
+        promoted_teardown,
+    )
+    return "\n".join(rebuilt_sections) + ("\n" if content.endswith("\n") else "")
+
+
 
 def validate_robot_alignment_with_resource_context(content: str, resource_context: list[dict]) -> tuple[bool, str]:
     errors: list[str] = []
@@ -1778,6 +1985,7 @@ def process_manual_file(config: dict, manual_json_path: Path):
     robot_content = re.sub(r"\n```$", "", robot_content)
     robot_content = normalize_generated_robot_identifiers(robot_content, identifier_policy)
     robot_content = rewrite_suite_to_prefer_common_wrappers(robot_content, resource_context)
+    robot_content = promote_repeated_setup_teardown(robot_content)
 
     review_prompt = build_review_prompt(manual_data, resource_context, robot_content)
     reviewed_robot_content = call_ai_chat(
@@ -1792,6 +2000,7 @@ def process_manual_file(config: dict, manual_json_path: Path):
     reviewed_robot_content = re.sub(r"\n```$", "", reviewed_robot_content)
     robot_content = normalize_generated_robot_identifiers(reviewed_robot_content or robot_content, identifier_policy)
     robot_content = rewrite_suite_to_prefer_common_wrappers(robot_content, resource_context)
+    robot_content = promote_repeated_setup_teardown(robot_content)
 
     validation_review_prompt = build_validation_review_prompt(manual_data, resource_context, robot_content)
     validated_robot_content = call_ai_chat(
@@ -1806,6 +2015,7 @@ def process_manual_file(config: dict, manual_json_path: Path):
     validated_robot_content = re.sub(r"\n```$", "", validated_robot_content)
     robot_content = normalize_generated_robot_identifiers(validated_robot_content or robot_content, identifier_policy)
     robot_content = rewrite_suite_to_prefer_common_wrappers(robot_content, resource_context)
+    robot_content = promote_repeated_setup_teardown(robot_content)
 
     is_valid, validation_message = validate_robot_content(robot_content, resource_files)
     if validation_message and re.search(r"unknown or unsupported keyword", validation_message, flags=re.IGNORECASE):
@@ -1831,6 +2041,7 @@ def process_manual_file(config: dict, manual_json_path: Path):
         repaired_robot_content = re.sub(r"\n```$", "", repaired_robot_content)
         robot_content = normalize_generated_robot_identifiers(repaired_robot_content or robot_content, identifier_policy)
         robot_content = rewrite_suite_to_prefer_common_wrappers(robot_content, resource_context)
+        robot_content = promote_repeated_setup_teardown(robot_content)
         is_valid, validation_message = validate_robot_content(robot_content, resource_files)
 
     if validation_message:
@@ -1856,6 +2067,7 @@ def process_manual_file(config: dict, manual_json_path: Path):
         followup_robot_content = re.sub(r"\n```$", "", followup_robot_content)
         robot_content = normalize_generated_robot_identifiers(followup_robot_content or robot_content, identifier_policy)
         robot_content = rewrite_suite_to_prefer_common_wrappers(robot_content, resource_context)
+        robot_content = promote_repeated_setup_teardown(robot_content)
         is_valid, validation_message = validate_robot_content(robot_content, resource_files)
     alignment_valid, alignment_message = validate_robot_alignment_with_resource_context(robot_content, resource_context)
     manual_expected_outcomes = collect_manual_expected_outcomes(manual_data)
