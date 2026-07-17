@@ -883,6 +883,45 @@ def build_keyword_signature_map(allowed_resources: list[str]) -> dict[str, dict]
     return signature_map
 
 
+def rewrite_suite_to_prefer_common_wrappers(content: str, resource_context: list[dict]) -> str:
+    common_keyword_names = {
+        clean_text(str(keyword.get("name", ""))).lower()
+        for resource in resource_context
+        if resource.get("type") == "common"
+        for keyword in resource.get("keywords", [])
+        if clean_text(str(keyword.get("name", "")))
+    }
+    if "input text when ready" not in common_keyword_names:
+        return content
+
+    rewritten_lines: list[str] = []
+    replacements = 0
+
+    for raw_line in content.splitlines():
+        line = raw_line
+        stripped = raw_line.strip()
+        if raw_line.startswith((" ", "\t")) and stripped and not stripped.startswith("["):
+            parts = [part.strip() for part in re.split(r"\s{2,}|\t+", stripped) if part.strip()]
+            if parts:
+                keyword_name = clean_text(parts[0]).lower()
+                arguments = parts[1:]
+                if keyword_name == "input password" and len(arguments) >= 2:
+                    indent = re.match(r"^\s*", raw_line).group(0)
+                    line = indent + "Input Text When Ready    " + "    ".join(arguments)
+                    replacements += 1
+                elif keyword_name == "input text" and len(arguments) >= 2:
+                    locator = arguments[0]
+                    if isinstance(locator, str) and locator.strip().startswith("${"):
+                        indent = re.match(r"^\s*", raw_line).group(0)
+                        line = indent + "Input Text When Ready    " + "    ".join(arguments)
+                        replacements += 1
+        rewritten_lines.append(line)
+
+    if replacements:
+        logger.info("Rewrote %s low-level text/password entry step(s) to shared wrapper usage", replacements)
+    return "\n".join(rewritten_lines) + ("\n" if content.endswith("\n") else "")
+
+
 def validate_robot_alignment_with_resource_context(content: str, resource_context: list[dict]) -> tuple[bool, str]:
     errors: list[str] = []
     warnings: list[str] = []
@@ -954,6 +993,10 @@ def validate_robot_alignment_with_resource_context(content: str, resource_contex
         called_common_helpers = [name for name in suite_called_keywords if name in common_helper_names]
         if not called_common_helpers:
             warnings.append("Generated suite does not appear to call retrieved common/shared helper keywords")
+        if "input text when ready" in common_helper_names and any(name in {"input text", "input password"} for name in suite_called_keywords):
+            warnings.append(
+                "Wrapper-priority violation: shared/common text-entry wrapper 'Input Text When Ready' exists, but the suite still uses direct SeleniumLibrary Input Text/Input Password calls. Shared wrapper keywords must take precedence for field entry."
+            )
 
     has_setup = bool(re.search(r"(?im)^\s*(?:Suite Setup|Test Setup)\s+.+$", content))
     has_teardown = bool(re.search(r"(?im)^\s*(?:Suite Teardown|Test Teardown)\s+.+$", content))
@@ -1660,6 +1703,7 @@ def process_manual_file(config: dict, manual_json_path: Path):
     reviewed_robot_content = re.sub(r"^```[a-zA-Z0-9_-]*\s*\n", "", reviewed_robot_content)
     reviewed_robot_content = re.sub(r"\n```$", "", reviewed_robot_content)
     robot_content = normalize_generated_robot_identifiers(reviewed_robot_content or robot_content, identifier_policy)
+    robot_content = rewrite_suite_to_prefer_common_wrappers(robot_content, resource_context)
 
     validation_review_prompt = build_validation_review_prompt(manual_data, resource_context, robot_content)
     validated_robot_content = call_ai_chat(
@@ -1673,6 +1717,7 @@ def process_manual_file(config: dict, manual_json_path: Path):
     validated_robot_content = re.sub(r"^```[a-zA-Z0-9_-]*\s*\n", "", validated_robot_content)
     validated_robot_content = re.sub(r"\n```$", "", validated_robot_content)
     robot_content = normalize_generated_robot_identifiers(validated_robot_content or robot_content, identifier_policy)
+    robot_content = rewrite_suite_to_prefer_common_wrappers(robot_content, resource_context)
 
     is_valid, validation_message = validate_robot_content(robot_content, resource_files)
     if validation_message and re.search(r"unknown or unsupported keyword", validation_message, flags=re.IGNORECASE):
@@ -1697,6 +1742,7 @@ def process_manual_file(config: dict, manual_json_path: Path):
         repaired_robot_content = re.sub(r"^```[a-zA-Z0-9_-]*\s*\n", "", repaired_robot_content)
         repaired_robot_content = re.sub(r"\n```$", "", repaired_robot_content)
         robot_content = normalize_generated_robot_identifiers(repaired_robot_content or robot_content, identifier_policy)
+        robot_content = rewrite_suite_to_prefer_common_wrappers(robot_content, resource_context)
         is_valid, validation_message = validate_robot_content(robot_content, resource_files)
 
     if validation_message:
@@ -1721,6 +1767,7 @@ def process_manual_file(config: dict, manual_json_path: Path):
         followup_robot_content = re.sub(r"^```[a-zA-Z0-9_-]*\s*\n", "", followup_robot_content)
         followup_robot_content = re.sub(r"\n```$", "", followup_robot_content)
         robot_content = normalize_generated_robot_identifiers(followup_robot_content or robot_content, identifier_policy)
+        robot_content = rewrite_suite_to_prefer_common_wrappers(robot_content, resource_context)
         is_valid, validation_message = validate_robot_content(robot_content, resource_files)
     alignment_valid, alignment_message = validate_robot_alignment_with_resource_context(robot_content, resource_context)
     manual_expected_outcomes = collect_manual_expected_outcomes(manual_data)
