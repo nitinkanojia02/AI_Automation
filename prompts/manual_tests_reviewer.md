@@ -26,6 +26,9 @@ Coverage preservation rules:
 Review emphasis:
 - Treat current_workflow_knowledge and relevant_workflow_knowledge as mandatory approved-memory context during review
 - Preserve upstream workflow reuse guidance, approved navigation journey, approved ownership boundaries, and approved business-visible outcomes from workflow knowledge
+- Enforce workflow knowledge → authoritative upstream resources → approved entry journey → approved destination-state validation as a mandatory review chain whenever the workflow depends on upstream navigation or state transitions
+- Reject or repair manual scenarios that assume the target page is already open when workflow knowledge says it must be reached through an approved upstream journey
+- Reject or repair manual scenarios that validate only origin-page disappearance or local-page state when workflow knowledge defines a destination page/state and authoritative upstream/current resources support that destination validation
 - Repair vague expected results into observable outcomes that can be asserted later
 - Keep scenario wording faithful to what the user intended to do, not just the end state
 - Avoid flattening specialized interactions into generic 'enter data and submit' phrasing when the source artifact is more specific

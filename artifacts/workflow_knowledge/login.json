@@ -6,7 +6,7 @@
   "applicationCode": "WT",
   "testIdentifierPrefix": "LOGIN",
   "status": "approved_artifact_memory",
-  "generatedAt": "2026-07-17T12:04:38.079237+00:00",
+  "generatedAt": "2026-07-17T12:15:47.905581+00:00",
   "businessContext": {
     "userStory": [
       "Login Feature",
@@ -149,6 +149,49 @@
       }
     ],
     "targetSignals": []
+  },
+  "journeyKnowledge": {
+    "directAccessPolicy": "must_use_entry_journey",
+    "entryJourney": [
+      "As a customer, I want to open the Login page from the Home page and sign in with approved credentials so that I can access authenticated account features and logged-in functionality.",
+      "The workflow begins on the Home page at http://localhost/washtabui/home in guest state.",
+      "The Login page is not directly accessed by URL in this workflow and must be opened through the Home page person/profile button.",
+      "After successful authentication, the application returns the user to the Home page in authenticated state.",
+      "Navigate to http://localhost/washtabui/home.",
+      "Verify the Home page is loaded in guest state.",
+      "Opening the Login page from the Home page.",
+      "Validating Login page controls and navigation behavior.",
+      "Verifying successful return to the Home page in authenticated state.",
+      "Start on the Home page in guest state."
+    ],
+    "successDestination": [
+      "As a customer, I want to open the Login page from the Home page and sign in with approved credentials so that I can access authenticated account features and logged-in functionality.",
+      "The workflow begins on the Home page at http://localhost/washtabui/home in guest state.",
+      "The Login page is not directly accessed by URL in this workflow and must be opened through the Home page person/profile button.",
+      "After successful authentication, the application returns the user to the Home page in authenticated state.",
+      "Verify the Home page is loaded in guest state.",
+      "Verify the user is unauthenticated before starting the workflow.",
+      "Opening the Login page from the Home page.",
+      "Verifying successful return to the Home page in authenticated state."
+    ],
+    "returnDestinations": [
+      "As a customer, I want to open the Login page from the Home page and sign in with approved credentials so that I can access authenticated account features and logged-in functionality.",
+      "The workflow begins on the Home page at http://localhost/washtabui/home in guest state.",
+      "The Login page is not directly accessed by URL in this workflow and must be opened through the Home page person/profile button.",
+      "After successful authentication, the application returns the user to the Home page in authenticated state.",
+      "Verify the Home page is loaded in guest state.",
+      "Verify the user is unauthenticated before starting the workflow.",
+      "Opening the Login page from the Home page.",
+      "Verifying successful return to the Home page in authenticated state."
+    ],
+    "authoritativeEntryResources": [
+      "login_page/login_page.resource",
+      "home_page/home_page.resource"
+    ],
+    "authoritativeDestinationValidationResources": [
+      "login_page/login_page.resource",
+      "home_page/home_page.resource"
+    ]
   },
   "resourceKnowledge": {
     "authoritativeResources": [

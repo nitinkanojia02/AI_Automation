@@ -18,6 +18,9 @@ Goals:
 Refinement rules:
 - Treat current_workflow_knowledge and relevant_workflow_knowledge as mandatory approved-memory context during refinement
 - Preserve upstream workflow reuse guidance, approved navigation journey, approved ownership boundaries, and approved business-visible outcomes from workflow knowledge
+- Enforce workflow knowledge → authoritative upstream resources → approved entry journey → approved destination-state validation as a mandatory refinement chain whenever the workflow depends on upstream navigation or state transitions
+- Refine scenarios so they explicitly establish the approved upstream entry journey when workflow knowledge says the target page is not directly accessed directly by URL
+- Replace origin-page disappearance or local-page-only success checks with explicit destination-state validation when workflow knowledge and authoritative resources support that destination validation
 - Preserve meaningful positive, negative, UI, validation, navigation, and edge scenarios
 - Do not collapse broad coverage into a minimal subset
 - Keep field-level distinctions when they materially affect observable behavior

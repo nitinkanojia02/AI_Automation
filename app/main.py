@@ -25,7 +25,7 @@ from scripts.generate_manual_tests_json import (
     normalize_manual_test,
     validate_config as validate_manual_config,
 )
-from scripts.workflow_knowledge import save_workflow_knowledge
+from scripts.workflow_knowledge import save_workflow_knowledge, build_workflow_knowledge_context, discover_relevant_workflow_knowledge
 from scripts.generate_robot_from_manual import (
     build_manual_refiner_prompt,
     build_manual_review_prompt,
@@ -2179,6 +2179,8 @@ def build_resource_generation_prompt(
         "lineage_rule": "Approved reviewed artifacts are the semantic source of truth. Preserve approved variable names and approved keyword names exactly whenever feasible.",
     }
     workflow_expected_outcomes = collect_workflow_expected_outcomes(workflow)
+    current_workflow_knowledge = build_workflow_knowledge_context(workflow)
+    relevant_workflow_knowledge = discover_relevant_workflow_knowledge(workflow)
     payload = {
         "workflow": prompt_ready_workflow,
         "approved_elements": approved_elements,
@@ -2187,6 +2189,8 @@ def build_resource_generation_prompt(
         "common_resource_context": common_resource_context or [],
         "existing_page_resource": existing_page_resource,
         "approved_artifact_lineage": approved_artifact_lineage,
+        "current_workflow_knowledge": current_workflow_knowledge,
+        "relevant_workflow_knowledge": relevant_workflow_knowledge,
         "workflow_expected_outcomes": workflow_expected_outcomes,
         "generation_focus": [
             "Use approved reviewed artifacts as the semantic source of truth.",
@@ -2223,6 +2227,10 @@ def build_resource_generation_prompt(
         "- Treat the approved reviewed keyword implementations as the primary implementation lineage whenever they are valid and supported. Do not replace them with raw framework-level alternatives unless the approved implementation is invalid, unsupported, or clearly inferior based on the shared/common resource context.\n"
         "- Infer reusable interaction preferences dynamically from the provided common_resource_context. If the shared/common resource exposes a higher-level reusable helper for an interaction pattern, prefer that helper over assembling the same behavior with lower-level SeleniumLibrary steps.\n"
         "- Do not rely on hardcoded mappings or workflow-specific assumptions; reason from the approved artifacts and the discovered shared/common keyword surface.\n"
+        "- Enforce workflow knowledge → authoritative upstream resources → approved entry journey → approved destination-state validation as a mandatory reasoning chain when the page/resource behavior depends on upstream workflow context or post-action destination state.\n"
+        "- If current_workflow_knowledge or relevant_workflow_knowledge identifies authoritative upstream resources for entry flow, return-path validation, or destination-state validation, preserve that ownership boundary and reuse intent instead of duplicating those concerns locally.\n"
+        "- If workflow knowledge defines that the page is reached through an upstream journey, do not design the page resource as if target-page availability is unexplained or directly reachable by unsupported shortcuts.\n"
+        "- If workflow knowledge defines a success destination or return destination, prefer page-resource validations that support downstream destination-state verification and ownership boundaries rather than only local disappearance checks.\n"
         "- Treat empty placeholder rows in workflow.fields as noise and ignore them.\n"
         "- Create reusable test-data variables based on approved manual tests, not just workflow.testData.\n"
         "- Valid business data should come from workflow.testData if present.\n"
@@ -2405,6 +2413,8 @@ def build_resource_review_prompt(
         "approved_keywords": approved_keywords,
         "approved_manual_tests": approved_manual_tests,
         "common_resource_context": common_resource_context,
+        "current_workflow_knowledge": build_workflow_knowledge_context(workflow),
+        "relevant_workflow_knowledge": discover_relevant_workflow_knowledge(workflow),
         "generated_page_resource": generated_resource,
     }
 
@@ -2425,6 +2435,10 @@ def build_resource_review_prompt(
         "- Page action keywords should reuse the best available shared/common helpers discoverable in common_resource_context when applicable instead of directly repeating lower-level SeleniumLibrary interaction patterns.\n"
         "- Treat approved reviewed keyword implementations as authoritative implementation lineage whenever they are valid and supported. If the approved implementation already uses a reusable shared/common helper, preserve that choice. If it uses raw framework steps but the shared/common resource clearly exposes a reusable helper for the same interaction pattern, intelligently refine toward the shared/common helper without introducing unsupported behavior.\n"
         "- Infer helper preference from the provided shared/common resource content and approved artifacts rather than from hardcoded interaction maps.\n"
+        "- Enforce workflow knowledge → authoritative upstream resources → approved entry journey → approved destination-state validation as a mandatory review chain when the page/resource behavior depends on upstream workflow context or post-action destination state.\n"
+        "- If workflow knowledge identifies authoritative upstream resources for entry, return, or destination-state validation, keep those ownership boundaries explicit and do not duplicate them as local page-resource behavior.\n"
+        "- Reject or repair page-resource behavior that assumes unsupported direct access when workflow knowledge says the page is reached through an upstream journey.\n"
+        "- Reject or repair page-resource validations that stop at local disappearance when workflow knowledge and approved artifacts support a stronger destination-state validation chain.\n"
         "- If a common/shared keyword already exists or is implied by common_resource_context, do not recreate it here.\n"
         "- Remove business-flow keywords that are too generic or duplicate shared/common behavior.\n"
         "- Keep reusable page-specific actions and page-specific validations.\n"

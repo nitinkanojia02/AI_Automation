@@ -6,7 +6,7 @@
   "applicationCode": "WT",
   "testIdentifierPrefix": "HOME",
   "status": "approved_artifact_memory",
-  "generatedAt": "2026-07-17T09:58:23.652812+00:00",
+  "generatedAt": "2026-07-17T12:15:47.885605+00:00",
   "businessContext": {
     "userStory": [
       "Home page should support guest state controls, guest navigation, and login entry from the Person button",
@@ -150,9 +150,51 @@
     ],
     "targetSignals": []
   },
+  "journeyKnowledge": {
+    "directAccessPolicy": "direct_access_allowed",
+    "entryJourney": [
+      "As a guest user, I want the Home page to display the guest-state controls and guest-accessible feature buttons, so that I can use the application before login and open the Login page from the Person/Profile button.",
+      "The Home page is the primary landing page for both unauthenticated users and authenticated users.",
+      "This workflow covers only the guest-state behavior of the Home page before login.",
+      "The Home page in this workflow should be treated as the guest state of the existing Home page, not as a separate page from the authenticated Home state.",
+      "When the application is launched and the user has not signed in, the Home page should load in guest state.",
+      "In guest state, the Home page displays the approved guest and shared controls, including",
+      "Clicking the Person/Profile button should open the Login page or Login view.",
+      "Guest-accessible feature buttons should navigate to their supported destinations."
+    ],
+    "successDestination": [
+      "As a guest user, I want the Home page to display the guest-state controls and guest-accessible feature buttons, so that I can use the application before login and open the Login page from the Person/Profile button.",
+      "The Home page is the primary landing page for both unauthenticated users and authenticated users.",
+      "This workflow covers only the guest-state behavior of the Home page before login.",
+      "The Home page in this workflow should be treated as the guest state of the existing Home page, not as a separate page from the authenticated Home state.",
+      "When the application is launched and the user has not signed in, the Home page should load in guest state.",
+      "In guest state, the Home page displays the approved guest and shared controls, including",
+      "Guest-accessible feature buttons should navigate to their supported destinations.",
+      "Authenticated-only controls and authenticated-only feature buttons should not be visible or should not be actionable."
+    ],
+    "returnDestinations": [
+      "As a guest user, I want the Home page to display the guest-state controls and guest-accessible feature buttons, so that I can use the application before login and open the Login page from the Person/Profile button.",
+      "The Home page is the primary landing page for both unauthenticated users and authenticated users.",
+      "This workflow covers only the guest-state behavior of the Home page before login.",
+      "The Home page in this workflow should be treated as the guest state of the existing Home page, not as a separate page from the authenticated Home state.",
+      "When the application is launched and the user has not signed in, the Home page should load in guest state.",
+      "In guest state, the Home page displays the approved guest and shared controls, including",
+      "Person/Profile button Back button Notification button Home button Guest-accessible feature buttons Known guest-accessible feature buttons include",
+      "In guest state"
+    ],
+    "authoritativeEntryResources": [
+      "home_page/home_page.resource",
+      "login_page/login_page.resource"
+    ],
+    "authoritativeDestinationValidationResources": [
+      "home_page/home_page.resource",
+      "login_page/login_page.resource"
+    ]
+  },
   "resourceKnowledge": {
     "authoritativeResources": [
-      "home_page/home_page.resource"
+      "home_page/home_page.resource",
+      "login_page/login_page.resource"
     ],
     "sharedResources": [
       "resources/common_keywords.resource"
@@ -196,6 +238,39 @@
         ]
       },
       {
+        "resourceFile": "pom_pages/login_page/login_page.resource",
+        "type": "page",
+        "variableNames": [
+          "USERNAME_TEXTBOX",
+          "PASSWORD_TEXTBOX",
+          "SIGN_IN_BUTTON",
+          "BACK_BUTTON",
+          "HOME_BUTTON",
+          "AUTHENTICATION_FAILED_MESSAGE",
+          "VALID_USERNAME",
+          "VALID_PASSWORD",
+          "INVALID_USERNAME",
+          "INVALID_PASSWORD",
+          "INVALID_PASSWORD_FOR_VALID_USER",
+          "CASE_SENSITIVE_USERNAME",
+          "CASE_SENSITIVE_PASSWORD",
+          "GENERIC_AUTH_FAILED_MESSAGE_TEXT"
+        ],
+        "keywordNames": [
+          "Enter Username Textbox",
+          "Enter Password Textbox",
+          "Click Sign In Button",
+          "Click Back Button",
+          "Click Home Button",
+          "Verify Login Form Loaded",
+          "Verify Navigation Buttons Loaded",
+          "Verify Password Field Is Masked",
+          "Verify Authentication Failed Message Displayed",
+          "Verify Login Page Still Visible",
+          "Login With Credentials"
+        ]
+      },
+      {
         "resourceFile": "resources/common_keywords.resource",
         "type": "common",
         "variableNames": [
@@ -210,8 +285,7 @@
           "Wait For Element To Be Ready",
           "Click When Ready",
           "Input Text When Ready",
-          "Input Password When Ready",
-          "Open Home Page And Click User Button"
+          "Input Password When Ready"
         ]
       }
     ],
@@ -250,6 +324,38 @@
           "Click Customer Signup Button",
           "Click Clean Survey Button",
           "Click Site Survey Button"
+        ]
+      },
+      {
+        "resource": "pom_pages/login_page/login_page.resource",
+        "variables": [
+          "USERNAME_TEXTBOX",
+          "PASSWORD_TEXTBOX",
+          "SIGN_IN_BUTTON",
+          "BACK_BUTTON",
+          "HOME_BUTTON",
+          "AUTHENTICATION_FAILED_MESSAGE",
+          "VALID_USERNAME",
+          "VALID_PASSWORD",
+          "INVALID_USERNAME",
+          "INVALID_PASSWORD",
+          "INVALID_PASSWORD_FOR_VALID_USER",
+          "CASE_SENSITIVE_USERNAME",
+          "CASE_SENSITIVE_PASSWORD",
+          "GENERIC_AUTH_FAILED_MESSAGE_TEXT"
+        ],
+        "keywords": [
+          "Enter Username Textbox",
+          "Enter Password Textbox",
+          "Click Sign In Button",
+          "Click Back Button",
+          "Click Home Button",
+          "Verify Login Form Loaded",
+          "Verify Navigation Buttons Loaded",
+          "Verify Password Field Is Masked",
+          "Verify Authentication Failed Message Displayed",
+          "Verify Login Page Still Visible",
+          "Login With Credentials"
         ]
       }
     ]
@@ -506,9 +612,12 @@
   },
   "downstreamGuidance": {
     "mustReuseResources": [
-      "home_page/home_page.resource"
+      "home_page/home_page.resource",
+      "login_page/login_page.resource"
     ],
-    "upstreamWorkflowKnowledge": [],
+    "upstreamWorkflowKnowledge": [
+      "login"
+    ],
     "mustNotInvent": [
       "suite-level custom keywords",
       "duplicate ownership for controls already owned in approved upstream resources",
@@ -520,7 +629,8 @@
     "workflowInput": "workflow_inputs/home.json",
     "approvedManualTests": "manual_tests/home/home.json",
     "approvedResourceFiles": [
-      "home_page/home_page.resource"
+      "home_page/home_page.resource",
+      "login_page/login_page.resource"
     ]
   }
 }

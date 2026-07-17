@@ -518,6 +518,43 @@ def build_workflow_knowledge_context(workflow_input: Dict[str, Any]) -> Dict[str
         'generationRule': 'Downstream generation must consume approved workflow knowledge plus approved resource context before creating new artifacts.',
     }
 
+    direct_access_policy = "must_use_entry_journey" if any(
+        "not directly accessed by url" in item.lower() or "must be opened" in item.lower()
+        for item in story_sections.get('applicationContext', []) + story_sections.get('behaviorRules', []) + story_sections.get('reuseGuidance', [])
+    ) else "direct_access_allowed"
+
+    entry_journey = unique_strings(
+        [
+            item.get('action', '')
+            for item in navigation_model.get('journey', [])
+            if isinstance(item, dict) and clean_text(item.get('action', ''))
+        ]
+        + select_relevant_lines(
+            story_sections.get('acceptanceCriteria', []) + story_sections.get('reuseGuidance', []) + story_sections.get('entryConditions', []),
+            ["open", "click", "navigate", "return", "login page", "home page", "entry"],
+            limit=10,
+        ),
+        limit=10,
+    )
+
+    success_destination = unique_strings(
+        select_relevant_lines(
+            story_sections.get('transitionExpectations', []) + story_sections.get('validationExpectations', []) + story_sections.get('acceptanceCriteria', []),
+            ["authenticated", "return to", "home page", "redirect", "destination", "visible after successful", "logged in"],
+            limit=8,
+        ),
+        limit=8,
+    )
+
+    return_destinations = unique_strings(
+        select_relevant_lines(
+            story_sections.get('transitionExpectations', []) + story_sections.get('acceptanceCriteria', []) + story_sections.get('reuseGuidance', []),
+            ["back button", "home button", "return to", "guest state", "unauthenticated", "home page"],
+            limit=8,
+        ),
+        limit=8,
+    )
+
     return {
         'workflowName': clean_text(enriched_workflow_input.get('workflowName')) or workflow_slug,
         'workflowSlug': workflow_slug,
@@ -539,6 +576,14 @@ def build_workflow_knowledge_context(workflow_input: Dict[str, Any]) -> Dict[str
             'reuseGuidance': story_sections.get('reuseGuidance', []),
         },
         'navigationModel': navigation_model,
+        'journeyKnowledge': {
+            'directAccessPolicy': direct_access_policy,
+            'entryJourney': entry_journey,
+            'successDestination': success_destination,
+            'returnDestinations': return_destinations,
+            'authoritativeEntryResources': resource_knowledge.get('authoritativeResources', []),
+            'authoritativeDestinationValidationResources': resource_knowledge.get('authoritativeResources', []),
+        },
         'resourceKnowledge': resource_knowledge,
         'elementKnowledge': {
             'approvedElements': approved_elements,
@@ -610,6 +655,14 @@ def summarize_workflow_knowledge_for_generation(payload: Dict[str, Any]) -> Dict
             'entryPoint': payload.get('navigationModel', {}).get('entryPoint', {}),
             'target': payload.get('navigationModel', {}).get('target', {}),
             'journey': ensure_list(payload.get('navigationModel', {}).get('journey'))[:6],
+        },
+        'journeyKnowledge': {
+            'directAccessPolicy': clean_text((payload.get('journeyKnowledge') or {}).get('directAccessPolicy')),
+            'entryJourney': unique_strings(ensure_list((payload.get('journeyKnowledge') or {}).get('entryJourney')), limit=8),
+            'successDestination': unique_strings(ensure_list((payload.get('journeyKnowledge') or {}).get('successDestination')), limit=8),
+            'returnDestinations': unique_strings(ensure_list((payload.get('journeyKnowledge') or {}).get('returnDestinations')), limit=8),
+            'authoritativeEntryResources': unique_strings(ensure_list((payload.get('journeyKnowledge') or {}).get('authoritativeEntryResources')), limit=10),
+            'authoritativeDestinationValidationResources': unique_strings(ensure_list((payload.get('journeyKnowledge') or {}).get('authoritativeDestinationValidationResources')), limit=10),
         },
         'resourceKnowledge': {
             'authoritativeResources': unique_strings(ensure_list(resources.get('authoritativeResources')), limit=10),

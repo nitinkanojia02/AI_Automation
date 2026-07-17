@@ -237,6 +237,10 @@ Context usage requirements:
 9. If an element was not approved, treat it as out of scope and do not infer new tests from it.
 10. Treat workflow knowledge artifacts as approved application memory. They summarize approved user-story knowledge, approved element knowledge, approved manual coverage, approved keyword/resource knowledge, and approved automation knowledge from prior workflows. Reuse them before inventing any new page ownership or navigation assumptions.
 11. Also use the supplied current workflow knowledge draft as the concise approved-memory view of the current workflow input. Keep generation aligned with that draft so downstream stages preserve application and workflow intelligence consistently.
+12. Use workflow knowledge → authoritative upstream resources → approved entry journey → approved destination-state validation as a mandatory reasoning chain for scenario design whenever the workflow depends on upstream navigation or post-action state transitions.
+13. If workflow knowledge indicates the target page is not directly accessed by URL, do not design manual scenarios as if the target page is the unexplained starting point; model the approved upstream entry journey explicitly.
+14. If workflow knowledge defines a success destination or return destination, generate explicit manual coverage for those destination states instead of validating only local-page disappearance or remaining on the origin page.
+15. If workflow knowledge identifies authoritative upstream resources for entry flow, return-path validation, or destination-state validation, preserve that reuse intent explicitly in scenario steps and expected results.
 
 Mandatory coverage requirements:
 1. testCases must be a non-empty array.
