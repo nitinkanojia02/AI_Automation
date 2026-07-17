@@ -399,6 +399,12 @@ def clean_text(value: str) -> str:
     return re.sub(r"\s+", " ", (value or "").strip())
 
 
+def clean_multiline_text(value: str) -> str:
+    value = (value or "").replace("\r\n", "\n").replace("\r", "\n")
+    lines = [line.rstrip() for line in value.split("\n")]
+    return "\n".join(lines).strip()
+
+
 def compact_code(value: str) -> str:
     return re.sub(r"[^A-Za-z0-9]+", "", clean_text(value)).upper()
 
@@ -2820,7 +2826,7 @@ def generate_manual_tests_for_workflow(workflow_name: str) -> dict:
             stage="manual_review",
             endpoint=endpoint,
             token=token,
-            prompt=build_manual_review_prompt(generated),
+            prompt=build_manual_review_prompt(generated, workflow_with_elements),
             timeout_seconds=timeout_seconds,
         )
         refined_manual = call_manual_ai_with_workflow_session(
@@ -2828,7 +2834,7 @@ def generate_manual_tests_for_workflow(workflow_name: str) -> dict:
             stage="manual_refinement",
             endpoint=endpoint,
             token=token,
-            prompt=build_manual_refiner_prompt(generated, reviewed_manual or generated),
+            prompt=build_manual_refiner_prompt(generated, reviewed_manual or generated, workflow_with_elements),
             timeout_seconds=timeout_seconds,
         )
         final_json = normalize_manual_test(refined_manual or reviewed_manual or generated, workflow_input)
@@ -2858,7 +2864,7 @@ def generate_manual_tests_for_workflow(workflow_name: str) -> dict:
                 stage="manual_expansion_review",
                 endpoint=endpoint,
                 token=token,
-                prompt=build_manual_review_prompt(expanded),
+                prompt=build_manual_review_prompt(expanded, workflow_with_elements),
                 timeout_seconds=timeout_seconds,
             )
             expanded_refined = call_manual_ai_with_workflow_session(
@@ -3336,6 +3342,38 @@ def home(request: Request):
         "workflow_rows": workflow_rows,
     })
 
+
+@app.get("/story")
+def story_generator_page(request: Request):
+    return render_template(request, "story_generator.html", {
+        "story_raw_input": "",
+        "story_output": "",
+    })
+
+
+@app.post("/story/generate")
+async def generate_workflow_story_route(request: Request, raw_input: str = Form("")):
+    raw_value = clean_multiline_text(raw_input)
+    try:
+        story_output = generate_workflow_story_from_raw_input(raw_value)
+        return render_template(request, "story_generator.html", {
+            "story_raw_input": raw_value,
+            "story_output": story_output,
+            "success_message": "Workflow story generated successfully. Review and copy it into Azure DevOps if needed.",
+        })
+    except HTTPException as exc:
+        return render_template(request, "story_generator.html", {
+            "story_raw_input": raw_value,
+            "story_output": "",
+            "error_message": exc.detail,
+        }, status_code=exc.status_code)
+    except Exception as exc:
+        return render_template(request, "story_generator.html", {
+            "story_raw_input": raw_value,
+            "story_output": "",
+            "error_message": f"Workflow story generation failed: {str(exc)}",
+        }, status_code=400)
+
 @app.post("/workflow/delete/{workflow_name}")
 def delete_workflow(workflow_name: str):
     workflow = load_workflow_or_404(workflow_name)
@@ -3407,6 +3445,58 @@ def get_navigation_resource_catalog() -> dict:
         if locator_variable_names:
             catalog[page_name] = sorted(set(locator_variable_names))
     return catalog
+
+
+def load_workflow_story_normalizer_prompt() -> str:
+    prompt = read_text_file(WORKFLOW_STORY_NORMALIZER_PROMPT_PATH).strip()
+    if not prompt:
+        raise HTTPException(status_code=500, detail="Workflow story normalizer prompt is not configured.")
+    return prompt
+
+
+def generate_workflow_story_from_raw_input(raw_input: str) -> str:
+    cleaned_input = clean_multiline_text(raw_input)
+    if not cleaned_input:
+        raise HTTPException(status_code=400, detail="Raw input is required to generate a workflow story.")
+    if len(cleaned_input) < 30:
+        raise HTTPException(status_code=400, detail="Please provide more workflow details before generating the user story.")
+
+    config = validate_manual_config(load_manual_config())
+    ai_cfg = config.get("ai", {})
+    if not ai_cfg.get("enabled"):
+        raise HTTPException(status_code=400, detail="AI story generation is disabled in configuration.")
+
+    endpoint = clean_text(str(ai_cfg.get("endpoint", "")))
+    token = get_manual_ai_token(ai_cfg)
+    if not endpoint or not token:
+        raise HTTPException(status_code=400, detail="Devex AI endpoint or token is not configured for story generation.")
+
+    timeout_seconds = int(ai_cfg.get("timeout_seconds", 120) or 120)
+    instruction_prompt = load_workflow_story_normalizer_prompt()
+    final_prompt = f"{instruction_prompt}\n\nRaw Input:\n{cleaned_input}\n"
+    response = call_devex_ai(
+        endpoint=endpoint,
+        token=token,
+        prompt=final_prompt,
+        timeout_sec=timeout_seconds,
+    )
+
+    if isinstance(response, dict):
+        candidate_keys = ["response", "content", "result", "answer", "text", "output"]
+        for key in candidate_keys:
+            value = response.get(key)
+            if isinstance(value, str) and clean_multiline_text(value):
+                return clean_multiline_text(value)
+        if len(response) == 1:
+            only_value = next(iter(response.values()))
+            if isinstance(only_value, str) and clean_multiline_text(only_value):
+                return clean_multiline_text(only_value)
+        raise HTTPException(status_code=502, detail="Story generator returned an unexpected response payload.")
+
+    if isinstance(response, str) and clean_multiline_text(response):
+        return clean_multiline_text(response)
+
+    raise HTTPException(status_code=502, detail="Story generator returned empty content.")
 
 
 @app.get("/workflow/new")
@@ -4076,6 +4166,7 @@ async def save_keyword_review(request: Request, workflow_name: str):
 
     save_keywords_for_workflow(workflow, normalized_keywords)
     generate_resource_for_workflow(workflow, normalized_keywords)
+    save_workflow_knowledge(workflow_name)
 
     return RedirectResponse(url=f"/automation/{workflow_name}", status_code=HTTP_303_SEE_OTHER)
 
@@ -4182,6 +4273,7 @@ async def save_manual_tests(request: Request, workflow_name: str):
         updated = update_manual_with_ui_cases(original, cases)
         write_json(manual_path, updated)
         export_manual_tests_to_excel(workflow_name, workflow, updated)
+        save_workflow_knowledge(workflow_name)
 
         page_name = ""
         pages = workflow.get("pages", []) if isinstance(workflow, dict) else []
