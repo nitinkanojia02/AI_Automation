@@ -25,6 +25,7 @@ from scripts.generate_manual_tests_json import (
     normalize_manual_test,
     validate_config as validate_manual_config,
 )
+from scripts.workflow_knowledge import save_workflow_knowledge
 from scripts.generate_robot_from_manual import (
     build_manual_refiner_prompt,
     build_manual_review_prompt,
@@ -56,6 +57,8 @@ WORKFLOW_DIR = BASE_DIR / "workflow_inputs"
 MANUAL_DIR = BASE_DIR / "manual_tests"
 TESTS_DIR = BASE_DIR / "tests"
 POM_DIR = BASE_DIR / "pom_pages"
+PROMPTS_DIR = BASE_DIR / "prompts"
+WORKFLOW_STORY_NORMALIZER_PROMPT_PATH = PROMPTS_DIR / "workflow_story_normalizer.md"
 
 
 def get_page_dir(page_name: str) -> Path:
@@ -114,6 +117,10 @@ def write_json(path: Path, data):
 def write_text_file(path: Path, content: str):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding="utf-8")
+
+
+def read_text_file(path: Path) -> str:
+    return path.read_text(encoding="utf-8") if path.exists() else ""
 
 
 CONFIG = read_json(CONFIG_PATH) if CONFIG_PATH.exists() else {}
@@ -2859,7 +2866,7 @@ def generate_manual_tests_for_workflow(workflow_name: str) -> dict:
                 stage="manual_expansion_refinement",
                 endpoint=endpoint,
                 token=token,
-                prompt=build_manual_refiner_prompt(expanded, expanded_reviewed or expanded),
+                prompt=build_manual_refiner_prompt(expanded, expanded_reviewed or expanded, workflow_with_elements),
                 timeout_seconds=timeout_seconds,
             )
             expanded_json = normalize_manual_test(expanded_refined or expanded_reviewed or expanded, workflow_input)
@@ -3307,6 +3314,7 @@ def generate_automation_for_workflow(workflow_name: str) -> str:
     target = get_automation_path(workflow_name, workflow)
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(robot_content, encoding="utf-8")
+    save_workflow_knowledge(workflow_name)
     return robot_content
 
 # -------------------------------------------------------------------
