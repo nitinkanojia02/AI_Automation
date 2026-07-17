@@ -1,0 +1,407 @@
+{
+  "workflowName": "login",
+  "workflowSlug": "login",
+  "module": "Imported",
+  "feature": "Login Feature",
+  "applicationCode": "WT",
+  "testIdentifierPrefix": "LOGIN",
+  "status": "approved_artifact_memory",
+  "generatedAt": "2026-07-17T06:55:17.547848+00:00",
+  "businessContext": {
+    "userStory": [
+      "Login Feature",
+      "As a customer, I want to open the Login page from the Home page and sign in with my credentials so that I can access my authenticated account experience and the additional features available after login.",
+      "This application is a single page application.",
+      "The Login page is not directly accessed by URL.",
+      "The user begins on the Home page at: http://localhost/washtabui/home The Login page/view is opened by clicking the person/profile button on the Home page.",
+      "After successful authentication, the application returns to the Home page in an authenticated state.",
+      "Launch the application.",
+      "Navigate to http://localhost/washtabui/home .",
+      "Ensure the Home page loads successfully in guest state.",
+      "Open the Login page by clicking the person/profile button.",
+      "The following valid credentials should be used for successful authentication scenarios: Valid Username : krisadmin Valid Password : Carwash#1 These valid credentials should be treated as approved test data for positive login scenarios in this workflow.",
+      "The Login page contains: Username field Password field Login button Password masking behavior Back button Home button These controls should be modeled as in the Login page POM/resource where appropriate, while allowing shared shell navigation controls to be reused from the upstream Home page resource when they are already owned there."
+    ],
+    "applicationContext": [
+      "As a customer, I want to open the Login page from the Home page and sign in with my credentials so that I can access my authenticated account experience and the additional features available after login.",
+      "This application is a single page application.",
+      "The Login page is not directly accessed by URL.",
+      "The user begins on the Home page at: http://localhost/washtabui/home The Login page/view is opened by clicking the person/profile button on the Home page.",
+      "After successful authentication, the application returns to the Home page in an authenticated state.",
+      "Launch the application.",
+      "Ensure the Home page loads successfully in guest state.",
+      "Open the Login page by clicking the person/profile button.",
+      "The Login page contains: Username field Password field Login button Password masking behavior Back button Home button These controls should be modeled as in the Login page POM/resource where appropriate, while allowing shared shell navigation controls to be reused from the upstream Home page resource when they are already owned there.",
+      "The Login page should open only through the Home page person/profile button in this workflow."
+    ],
+    "entryConditions": [],
+    "acceptanceCriteria": [
+      "As a customer, I want to open the Login page from the Home page and sign in with my credentials so that I can access my authenticated account experience and the additional features available after login.",
+      "This application is a single page application.",
+      "The Login page is not directly accessed by URL.",
+      "The user begins on the Home page at",
+      "http://localhost/washtabui/home",
+      "The Login page/view is opened by clicking the person/profile button on the Home page.",
+      "After successful authentication, the application returns to the Home page in an authenticated state.",
+      "Launch the application.",
+      "Navigate to http://localhost/washtabui/home .",
+      "Ensure the Home page loads successfully in guest state.",
+      "Open the Login page by clicking the person/profile button.",
+      "The following valid credentials should be used for successful authentication scenarios",
+      "Valid Username : krisadmin Valid Password : Carwash#1 These valid credentials should be treated as approved test data for positive login scenarios in this workflow.",
+      "The Login page contains",
+      "Username field Password field Login button Password masking behavior Back button Home button These controls should be modeled as in the Login page POM/resource where appropriate, while allowing shared shell navigation controls to be reused from the upstream Home page resource when they are already owned there.",
+      "The Login page should open only through the Home page person/profile button in this workflow.",
+      "Username and Password are required fields unless business behavior states otherwise.",
+      "Password input should be masked by default.",
+      "Valid credentials should authenticate the user successfully.",
+      "For positive authentication scenarios, the workflow should use the approved valid credentials"
+    ],
+    "behaviorRules": [
+      "As a customer, I want to open the Login page from the Home page and sign in with my credentials so that I can access my authenticated account experience and the additional features available after login.",
+      "After successful authentication, the application returns to the Home page in an authenticated state.",
+      "The following valid credentials should be used for successful authentication scenarios: Valid Username : krisadmin Valid Password : Carwash#1 These valid credentials should be treated as approved test data for positive login scenarios in this workflow.",
+      "The Login page contains: Username field Password field Login button Password masking behavior Back button Home button These controls should be modeled as in the Login page POM/resource where appropriate, while allowing shared shell navigation controls to be reused from the upstream Home page resource when they are already owned there.",
+      "The Login page should open only through the Home page person/profile button in this workflow.",
+      "Username and Password are required fields unless business behavior states otherwise.",
+      "Password input should be masked by default.",
+      "Valid credentials should authenticate the user successfully.",
+      "For positive authentication scenarios, the workflow should use the approved valid credentials: Username : krisadmin Password : Carwash#1 Invalid credentials should not authenticate the user.",
+      "Failed login should keep the user on the Login page or in the unauthenticated state, with the expected error feedback displayed.",
+      "Successful login should transition the application back to the Home page in authenticated state.",
+      "Leading and trailing spaces in entered values should be handled according to expected business behavior and must be validated."
+    ],
+    "validationExpectations": [
+      "As a customer, I want to open the Login page from the Home page and sign in with my credentials so that I can access my authenticated account experience and the additional features available after login.",
+      "This application is a single page application.",
+      "The Login page is not directly accessed by URL.",
+      "The user begins on the Home page at",
+      "http://localhost/washtabui/home",
+      "The Login page/view is opened by clicking the person/profile button on the Home page.",
+      "After successful authentication, the application returns to the Home page in an authenticated state.",
+      "Launch the application.",
+      "Navigate to http://localhost/washtabui/home .",
+      "Ensure the Home page loads successfully in guest state.",
+      "Open the Login page by clicking the person/profile button.",
+      "The following valid credentials should be used for successful authentication scenarios",
+      "Valid Username : krisadmin Valid Password : Carwash#1 These valid credentials should be treated as approved test data for positive login scenarios in this workflow.",
+      "The Login page contains",
+      "Username field Password field Login button Password masking behavior Back button Home button These controls should be modeled as in the Login page POM/resource where appropriate, while allowing shared shell navigation controls to be reused from the upstream Home page resource when they are already owned there.",
+      "The Login page should open only through the Home page person/profile button in this workflow.",
+      "Username and Password are required fields unless business behavior states otherwise.",
+      "Password input should be masked by default.",
+      "Valid credentials should authenticate the user successfully.",
+      "For positive authentication scenarios, the workflow should use the approved valid credentials"
+    ],
+    "transitionExpectations": [],
+    "approvedTestDataGuidance": [],
+    "reuseGuidance": []
+  },
+  "navigationModel": {
+    "entryPoint": {
+      "name": "login_page",
+      "url": ""
+    },
+    "target": {
+      "name": "login_page",
+      "url": ""
+    },
+    "journey": [
+      {
+        "page": "",
+        "action": "As a customer, I want to open the Login page from the Home page and sign in with my credentials so that I can access my authenticated account experience and the additional features available after login.",
+        "element": ""
+      },
+      {
+        "page": "",
+        "action": "The Login page is not directly accessed by URL.",
+        "element": ""
+      },
+      {
+        "page": "",
+        "action": "The user begins on the Home page at",
+        "element": ""
+      },
+      {
+        "page": "",
+        "action": "The Login page/view is opened by clicking the person/profile button on the Home page.",
+        "element": ""
+      },
+      {
+        "page": "",
+        "action": "After successful authentication, the application returns to the Home page in an authenticated state.",
+        "element": ""
+      },
+      {
+        "page": "",
+        "action": "Navigate to http://localhost/washtabui/home .",
+        "element": ""
+      },
+      {
+        "page": "",
+        "action": "Ensure the Home page loads successfully in guest state.",
+        "element": ""
+      },
+      {
+        "page": "",
+        "action": "Open the Login page by clicking the person/profile button.",
+        "element": ""
+      }
+    ],
+    "targetSignals": []
+  },
+  "resourceKnowledge": {
+    "authoritativeResources": [
+      "login_page/login_page.resource"
+    ],
+    "sharedResources": [
+      "resources/common_keywords.resource"
+    ],
+    "resourceSummaries": [
+      {
+        "resourceFile": "resources/common_keywords.resource",
+        "type": "common",
+        "variableNames": [
+          "BROWSER",
+          "DEFAULT_TIMEOUT"
+        ],
+        "keywordNames": [
+          "Open Browser Session",
+          "Close Browser Session",
+          "Open Browser To Url",
+          "Go To Url",
+          "Wait For Element To Be Ready",
+          "Click When Ready",
+          "Input Text When Ready",
+          "Input Password When Ready",
+          "Open Home Page And Click User Button"
+        ]
+      }
+    ],
+    "resourceOwnership": []
+  },
+  "elementKnowledge": {
+    "approvedElements": []
+  },
+  "manualCoverage": {
+    "approvedScenarios": [
+      {
+        "id": "TC_LOGIN_001",
+        "title": "Verify Login page opens from Home page using the person/profile button",
+        "type": "positive",
+        "expectedResult": "The Login page/view opens from the Home page and displays Username field, Password field, Login button, Back button, and Home button in an interactive state."
+      },
+      {
+        "id": "TC_LOGIN_002",
+        "title": "Verify Login page controls are visible and enabled after navigation from Home page",
+        "type": "positive",
+        "expectedResult": "Username field, Password field, Login button, Back button, and Home button are visible, enabled, and available for interaction on the Login page."
+      },
+      {
+        "id": "TC_LOGIN_003",
+        "title": "Verify password field masks entered characters by default",
+        "type": "positive",
+        "expectedResult": "The Password field masks all entered characters and does not display the raw password text on screen."
+      },
+      {
+        "id": "TC_LOGIN_004",
+        "title": "Verify successful login using approved valid credentials returns user to authenticated Home state",
+        "type": "positive",
+        "expectedResult": "The application authenticates the user successfully, returns to the Home page in authenticated state, replaces the person/profile button with the logged-in user name, and displays authenticated-only features."
+      },
+      {
+        "id": "TC_LOGIN_005",
+        "title": "Verify invalid username prevents authentication and displays login error",
+        "type": "negative",
+        "expectedResult": "Authentication fails, an observable login error message is displayed, the application remains unauthenticated, and the user stays on the Login page or in guest state."
+      },
+      {
+        "id": "TC_LOGIN_006",
+        "title": "Verify invalid password prevents authentication and displays login error",
+        "type": "negative",
+        "expectedResult": "Authentication fails, an observable login error message is displayed, the application remains unauthenticated, and the Login page remains active."
+      },
+      {
+        "id": "TC_LOGIN_007",
+        "title": "Verify login attempt with both invalid username and invalid password is rejected",
+        "type": "negative",
+        "expectedResult": "Authentication is rejected, visible error feedback is displayed, and the user is not redirected to authenticated Home state."
+      },
+      {
+        "id": "TC_LOGIN_008",
+        "title": "Verify required field validation when Login button is clicked with both fields empty",
+        "type": "negative",
+        "expectedResult": "Required field validation is displayed for Username and Password fields and authentication does not proceed."
+      },
+      {
+        "id": "TC_LOGIN_009",
+        "title": "Verify Username required validation when Password is entered and Username is blank",
+        "type": "negative",
+        "expectedResult": "A visible Username required validation message is displayed and login does not proceed."
+      },
+      {
+        "id": "TC_LOGIN_010",
+        "title": "Verify Password required validation when Username is entered and Password is blank",
+        "type": "negative",
+        "expectedResult": "A visible Password required validation message is displayed and login does not proceed."
+      },
+      {
+        "id": "TC_LOGIN_011",
+        "title": "Verify Back button on Login page returns user to Home page guest state",
+        "type": "positive",
+        "expectedResult": "The application returns to the Home page in guest state and the Login page is no longer displayed."
+      },
+      {
+        "id": "TC_LOGIN_012",
+        "title": "Verify Home button on Login page returns user to Home page guest state",
+        "type": "positive",
+        "expectedResult": "The application returns to the Home page in guest state and the Login page is closed."
+      },
+      {
+        "id": "TC_LOGIN_013",
+        "title": "Verify leading and trailing spaces in valid username and password are handled during login",
+        "type": "edge",
+        "expectedResult": "The application handles leading and trailing spaces according to business behavior, with either successful authentication after trimming valid values or visible rejection feedback while remaining unauthenticated."
+      },
+      {
+        "id": "TC_LOGIN_014",
+        "title": "Verify whitespace-only Username and Password values are not accepted",
+        "type": "negative",
+        "expectedResult": "Whitespace-only values are rejected, required or invalid input validation is displayed, and the application does not authenticate the user."
+      },
+      {
+        "id": "TC_LOGIN_019",
+        "title": "Verify special characters in invalid credentials do not bypass authentication",
+        "type": "negative",
+        "expectedResult": "The invalid credential values are rejected, authentication does not occur, and an observable login failure message is displayed."
+      },
+      {
+        "id": "TC_LOGIN_020",
+        "title": "Verify long Username and Password input values are handled without application crash",
+        "type": "edge",
+        "expectedResult": "The Login page remains stable, authentication is rejected for invalid long credentials, and visible feedback or validation is displayed without UI corruption."
+      },
+      {
+        "id": "TC_LOGIN_021",
+        "title": "Verify user remains in guest state after failed authentication attempt",
+        "type": "negative",
+        "expectedResult": "The application remains in guest state, authenticated-user UI is not displayed, and the person/profile button remains visible instead of a logged-in user name."
+      },
+      {
+        "id": "TC_LOGIN_022",
+        "title": "Verify authenticated Home page displays logged-in user identity after successful login",
+        "type": "positive",
+        "expectedResult": "The authenticated Home page displays the logged-in user name in place of the person/profile button and exposes authenticated-only functionality."
+      }
+    ],
+    "validations": [
+      "Username field, Password field, Login button, Back button, and Home button are visible, enabled, and available for interaction on the Login page.",
+      "Authentication fails, an observable login error message is displayed, the application remains unauthenticated, and the user stays on the Login page or in guest state.",
+      "Authentication fails, an observable login error message is displayed, the application remains unauthenticated, and the Login page remains active.",
+      "Authentication is rejected, visible error feedback is displayed, and the user is not redirected to authenticated Home state.",
+      "Required field validation is displayed for Username and Password fields and authentication does not proceed.",
+      "A visible Username required validation message is displayed and login does not proceed.",
+      "A visible Password required validation message is displayed and login does not proceed.",
+      "The application handles leading and trailing spaces according to business behavior, with either successful authentication after trimming valid values or visible rejection feedback while remaining unauthenticated.",
+      "Whitespace-only values are rejected, required or invalid input validation is displayed, and the application does not authenticate the user.",
+      "The Login page remains stable, authentication is rejected for invalid long credentials, and visible feedback or validation is displayed without UI corruption.",
+      "The application remains in guest state, authenticated-user UI is not displayed, and the person/profile button remains visible instead of a logged-in user name."
+    ],
+    "transitions": [
+      "The Login page/view opens from the Home page and displays Username field, Password field, Login button, Back button, and Home button in an interactive state.",
+      "The application authenticates the user successfully, returns to the Home page in authenticated state, replaces the person/profile button with the logged-in user name, and displays authenticated-only features.",
+      "Authentication fails, an observable login error message is displayed, the application remains unauthenticated, and the user stays on the Login page or in guest state.",
+      "Authentication fails, an observable login error message is displayed, the application remains unauthenticated, and the Login page remains active.",
+      "Authentication is rejected, visible error feedback is displayed, and the user is not redirected to authenticated Home state.",
+      "The application returns to the Home page in guest state and the Login page is no longer displayed.",
+      "The application returns to the Home page in guest state and the Login page is closed.",
+      "The application handles leading and trailing spaces according to business behavior, with either successful authentication after trimming valid values or visible rejection feedback while remaining unauthenticated.",
+      "The application remains in guest state, authenticated-user UI is not displayed, and the person/profile button remains visible instead of a logged-in user name.",
+      "The authenticated Home page displays the logged-in user name in place of the person/profile button and exposes authenticated-only functionality."
+    ]
+  },
+  "automationKnowledge": {
+    "approvedKeywords": [],
+    "approvedTests": [
+      {
+        "name": "AUT-WT-LOGIN01: Verify Login page opens from Home page using the person/profile button"
+      },
+      {
+        "name": "AUT-WT-LOGIN02: Verify Login page controls are visible and enabled after navigation from Home page"
+      },
+      {
+        "name": "AUT-WT-LOGIN03: Verify password field masks entered characters by default"
+      },
+      {
+        "name": "AUT-WT-LOGIN04: Verify successful login using approved valid credentials returns user to authenticated Home state"
+      },
+      {
+        "name": "AUT-WT-LOGIN05: Verify invalid username prevents authentication and displays login error"
+      },
+      {
+        "name": "AUT-WT-LOGIN06: Verify invalid password prevents authentication and displays login error"
+      },
+      {
+        "name": "AUT-WT-LOGIN07: Verify login attempt with both invalid username and invalid password is rejected"
+      },
+      {
+        "name": "AUT-WT-LOGIN08: Verify required field validation when Login button is clicked with both fields empty"
+      },
+      {
+        "name": "AUT-WT-LOGIN09: Verify Username required validation when Password is entered and Username is blank"
+      },
+      {
+        "name": "AUT-WT-LOGIN10: Verify Password required validation when Username is entered and Password is blank"
+      },
+      {
+        "name": "AUT-WT-LOGIN11: Verify Back button on Login page returns user to Home page guest state"
+      },
+      {
+        "name": "AUT-WT-LOGIN12: Verify Home button on Login page returns user to Home page guest state"
+      },
+      {
+        "name": "AUT-WT-LOGIN13: Verify leading and trailing spaces in valid username and password are handled during login"
+      },
+      {
+        "name": "AUT-WT-LOGIN14: Verify whitespace-only Username and Password values are not accepted"
+      },
+      {
+        "name": "AUT-WT-LOGIN19: Verify special characters in invalid credentials do not bypass authentication"
+      },
+      {
+        "name": "AUT-WT-LOGIN20: Verify long Username and Password input values are handled without application crash"
+      },
+      {
+        "name": "AUT-WT-LOGIN21: Verify user remains in guest state after failed authentication attempt"
+      },
+      {
+        "name": "AUT-WT-LOGIN22: Verify authenticated Home page displays logged-in user identity after successful login"
+      }
+    ],
+    "wrapperExpectations": [
+      "Reuse approved shared/common wrapper keywords before low-level SeleniumLibrary actions.",
+      "Do not invent suite-level custom keywords; compose from approved upstream resource knowledge."
+    ]
+  },
+  "downstreamGuidance": {
+    "mustReuseResources": [
+      "login_page/login_page.resource"
+    ],
+    "upstreamWorkflowKnowledge": [
+      "home"
+    ],
+    "mustNotInvent": [
+      "suite-level custom keywords",
+      "duplicate ownership for controls already owned in approved upstream resources",
+      "hardcoded workflow routing or mapped page logic in Python"
+    ],
+    "generationRule": "Downstream generation must consume approved workflow knowledge plus approved resource context before creating new artifacts."
+  },
+  "provenance": {
+    "workflowInput": "workflow_inputs/login.json",
+    "approvedManualTests": "manual_tests/login/login.json",
+    "approvedResourceFiles": [
+      "login_page/login_page.resource"
+    ]
+  }
+}

@@ -14,6 +14,41 @@ Instead, each stage must derive and persist reusable knowledge artifacts from:
 
 The AI layer must stay grounded in that approved business context and approved artifact lineage. If a downstream workflow such as login depends on an upstream workflow such as home, generation must first infer and retrieve the relevant approved upstream resources, then reuse those approved resources during downstream generation instead of inventing new abstractions.
 
+## Workflow Knowledge Architecture
+
+The framework now treats workflow knowledge as approved cumulative memory.
+
+A workflow knowledge artifact is created at:
+- `artifacts/workflow_knowledge/<workflow>.json`
+
+That artifact must accumulate only approved knowledge gained from:
+- workflow input / user story
+- approved element extraction
+- approved manual tests
+- approved resource keywords and variables
+- approved automation tests
+
+This artifact is intentionally concise, structured, and downstream-consumable. It is not a raw dump of all source files.
+It should be refreshed as approvals accumulate so that each workflow leaves behind approved reusable application intelligence for downstream workflows.
+
+### Why it exists
+Downstream generation must stay inside approved business and application context. Before generating new manual tests, resources, or Robot suites for another workflow, the framework must consult relevant approved workflow knowledge artifacts so AI can:
+- maintain application context
+- maintain workflow/navigation context
+- reuse approved upstream resources and ownership boundaries
+- avoid inventing garbage abstractions
+- keep business intent aligned across workflows
+
+### Core rule
+Any downstream navigation journey should leverage existing approved workflow/resource knowledge before generating new code.
+
+That means the generator should first infer:
+- which prior workflows are relevant
+- which upstream resources are authoritative
+- which controls, keywords, variables, validations, and transitions are already approved
+
+Only then should it generate new downstream artifacts.
+
 ## Executive Summary
 
 This repository contains a FastAPI-based MVP that helps users turn workflow input and live page understanding into reviewable automation artifacts and Robot Framework tests.

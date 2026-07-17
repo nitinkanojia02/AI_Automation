@@ -1,0 +1,587 @@
+{
+  "workflowName": "home",
+  "workflowSlug": "home",
+  "module": "Imported",
+  "feature": "Home page should support guest state controls, guest navigation, and login entry from the Person button",
+  "applicationCode": "WT",
+  "testIdentifierPrefix": "HOME",
+  "status": "approved_artifact_memory",
+  "generatedAt": "2026-07-17T06:55:17.539959+00:00",
+  "businessContext": {
+    "userStory": [
+      "Home page should support guest state controls, guest navigation, and login entry from the Person button",
+      "As a guest user, I want the Home page to display the guest-state controls and guest-accessible feature buttons, so that I can use the application before login and open the Login page from the Person/Profile button.",
+      "This application is a single page application (SPA).",
+      "The workflow begins at: http://localhost/washtabui/home The Home page is the primary landing page for both unauthenticated users and authenticated users.",
+      "This workflow covers only the guest-state behavior of the Home page before login.",
+      "The Home page in this workflow should be treated as the guest state of the existing Home page, not as a separate page from the authenticated Home state.",
+      "GUEST HOME STATE When the application is launched and the user has not signed in, the Home page should load in guest state.",
+      "In guest state, the Home page displays the approved guest and shared controls, including: Person/Profile button Back button Notification button Home button Guest-accessible feature buttons Known guest-accessible feature buttons include: Customer signup button Clean survey button Site survey button GUEST-STATE EXPECTATIONS In guest state: The Person/Profile button should be visible and enabled.",
+      "Clicking the Person/Profile button should open the Login page or Login view.",
+      "Guest-accessible feature buttons should be visible and enabled.",
+      "Guest-accessible feature buttons should navigate to their supported destinations.",
+      "Authenticated-only controls and authenticated-only feature buttons should not be visible or should not be actionable."
+    ],
+    "applicationContext": [
+      "Home page should support guest state controls, guest navigation, and login entry from the Person button",
+      "As a guest user, I want the Home page to display the guest-state controls and guest-accessible feature buttons, so that I can use the application before login and open the Login page from the Person/Profile button.",
+      "This application is a single page application (SPA).",
+      "The workflow begins at: http://localhost/washtabui/home The Home page is the primary landing page for both unauthenticated users and authenticated users.",
+      "This workflow covers only the guest-state behavior of the Home page before login.",
+      "The Home page in this workflow should be treated as the guest state of the existing Home page, not as a separate page from the authenticated Home state.",
+      "GUEST HOME STATE When the application is launched and the user has not signed in, the Home page should load in guest state.",
+      "In guest state, the Home page displays the approved guest and shared controls, including: Person/Profile button Back button Notification button Home button Guest-accessible feature buttons Known guest-accessible feature buttons include: Customer signup button Clean survey button Site survey button GUEST-STATE EXPECTATIONS In guest state: The Person/Profile button should be visible and enabled.",
+      "Clicking the Person/Profile button should open the Login page or Login view.",
+      "The logged-in user name button should not be visible in guest state."
+    ],
+    "entryConditions": [],
+    "acceptanceCriteria": [
+      "As a guest user, I want the Home page to display the guest-state controls and guest-accessible feature buttons, so that I can use the application before login and open the Login page from the Person/Profile button.",
+      "This application is a single page application (SPA).",
+      "The workflow begins at: http://localhost/washtabui/home",
+      "The Home page is the primary landing page for both unauthenticated users and authenticated users.",
+      "This workflow covers only the guest-state behavior of the Home page before login.",
+      "The Home page in this workflow should be treated as the guest state of the existing Home page, not as a separate page from the authenticated Home state.",
+      "GUEST HOME STATE",
+      "When the application is launched and the user has not signed in, the Home page should load in guest state.",
+      "In guest state, the Home page displays the approved guest and shared controls, including",
+      "Person/Profile button Back button Notification button Home button Guest-accessible feature buttons Known guest-accessible feature buttons include",
+      "Customer signup button Clean survey button Site survey button GUEST-STATE EXPECTATIONS",
+      "In guest state",
+      "The Person/Profile button should be visible and enabled.",
+      "Clicking the Person/Profile button should open the Login page or Login view.",
+      "Guest-accessible feature buttons should be visible and enabled.",
+      "Guest-accessible feature buttons should navigate to their supported destinations.",
+      "Authenticated-only controls and authenticated-only feature buttons should not be visible or should not be actionable.",
+      "The logged-in user name button should not be visible in guest state.",
+      "NAVIGATION EXPECTATIONS",
+      "From guest Home state"
+    ],
+    "behaviorRules": [
+      "Home page should support guest state controls, guest navigation, and login entry from the Person button",
+      "The workflow begins at: http://localhost/washtabui/home The Home page is the primary landing page for both unauthenticated users and authenticated users.",
+      "This workflow covers only the guest-state behavior of the Home page before login.",
+      "The Home page in this workflow should be treated as the guest state of the existing Home page, not as a separate page from the authenticated Home state.",
+      "GUEST HOME STATE When the application is launched and the user has not signed in, the Home page should load in guest state.",
+      "In guest state, the Home page displays the approved guest and shared controls, including: Person/Profile button Back button Notification button Home button Guest-accessible feature buttons Known guest-accessible feature buttons include: Customer signup button Clean survey button Site survey button GUEST-STATE EXPECTATIONS In guest state: The Person/Profile button should be visible and enabled.",
+      "Clicking the Person/Profile button should open the Login page or Login view.",
+      "Guest-accessible feature buttons should be visible and enabled.",
+      "Guest-accessible feature buttons should navigate to their supported destinations.",
+      "Authenticated-only controls and authenticated-only feature buttons should not be visible or should not be actionable.",
+      "The logged-in user name button should not be visible in guest state.",
+      "NAVIGATION EXPECTATIONS From guest Home state: Clicking the Person/Profile button should open the Login page."
+    ],
+    "validationExpectations": [
+      "As a guest user, I want the Home page to display the guest-state controls and guest-accessible feature buttons, so that I can use the application before login and open the Login page from the Person/Profile button.",
+      "This application is a single page application (SPA).",
+      "The workflow begins at: http://localhost/washtabui/home",
+      "The Home page is the primary landing page for both unauthenticated users and authenticated users.",
+      "This workflow covers only the guest-state behavior of the Home page before login.",
+      "The Home page in this workflow should be treated as the guest state of the existing Home page, not as a separate page from the authenticated Home state.",
+      "GUEST HOME STATE",
+      "When the application is launched and the user has not signed in, the Home page should load in guest state.",
+      "In guest state, the Home page displays the approved guest and shared controls, including",
+      "Person/Profile button Back button Notification button Home button Guest-accessible feature buttons Known guest-accessible feature buttons include",
+      "Customer signup button Clean survey button Site survey button GUEST-STATE EXPECTATIONS",
+      "In guest state",
+      "The Person/Profile button should be visible and enabled.",
+      "Clicking the Person/Profile button should open the Login page or Login view.",
+      "Guest-accessible feature buttons should be visible and enabled.",
+      "Guest-accessible feature buttons should navigate to their supported destinations.",
+      "Authenticated-only controls and authenticated-only feature buttons should not be visible or should not be actionable.",
+      "The logged-in user name button should not be visible in guest state.",
+      "NAVIGATION EXPECTATIONS",
+      "From guest Home state"
+    ],
+    "transitionExpectations": [],
+    "approvedTestDataGuidance": [],
+    "reuseGuidance": []
+  },
+  "navigationModel": {
+    "entryPoint": {
+      "name": "home_page",
+      "url": "http://localhost/washtabui/home"
+    },
+    "target": {
+      "name": "home_page",
+      "url": "http://localhost/washtabui/home"
+    },
+    "journey": [
+      {
+        "page": "",
+        "action": "As a guest user, I want the Home page to display the guest-state controls and guest-accessible feature buttons, so that I can use the application before login and open the Login page from the Person/Profile button.",
+        "element": ""
+      },
+      {
+        "page": "",
+        "action": "The Home page is the primary landing page for both unauthenticated users and authenticated users.",
+        "element": ""
+      },
+      {
+        "page": "",
+        "action": "This workflow covers only the guest-state behavior of the Home page before login.",
+        "element": ""
+      },
+      {
+        "page": "",
+        "action": "The Home page in this workflow should be treated as the guest state of the existing Home page, not as a separate page from the authenticated Home state.",
+        "element": ""
+      },
+      {
+        "page": "",
+        "action": "When the application is launched and the user has not signed in, the Home page should load in guest state.",
+        "element": ""
+      },
+      {
+        "page": "",
+        "action": "In guest state, the Home page displays the approved guest and shared controls, including",
+        "element": ""
+      },
+      {
+        "page": "",
+        "action": "Clicking the Person/Profile button should open the Login page or Login view.",
+        "element": ""
+      },
+      {
+        "page": "",
+        "action": "Guest-accessible feature buttons should navigate to their supported destinations.",
+        "element": ""
+      }
+    ],
+    "targetSignals": []
+  },
+  "resourceKnowledge": {
+    "authoritativeResources": [
+      "home_page/home_page.resource"
+    ],
+    "sharedResources": [
+      "resources/common_keywords.resource"
+    ],
+    "resourceSummaries": [
+      {
+        "resourceFile": "pom_pages/home_page/home_page.resource",
+        "type": "page",
+        "variableNames": [
+          "HOME_PAGE_URL",
+          "HOME_PAGE_PATH",
+          "LOGIN_PAGE_IDENTIFIER",
+          "CUSTOMER_SEARCH_PAGE_IDENTIFIER",
+          "VEHICLE_SURVEY_PAGE_IDENTIFIER",
+          "SURVEY_PAGE_IDENTIFIER",
+          "PERSON_PROFILE_BUTTON",
+          "BACK_BUTTON",
+          "NOTIFICATION_BUTTON",
+          "HOME_BUTTON",
+          "CUSTOMER_SIGNUP_BUTTON",
+          "CLEAN_SURVEY_BUTTON",
+          "SITE_SURVEY_BUTTON"
+        ],
+        "keywordNames": [
+          "Open Home Page",
+          "Verify Guest Home Page Loaded",
+          "Verify Home Guest State Controls Are Visible",
+          "Verify Home Guest State Controls Are Enabled",
+          "Verify Person Profile Button",
+          "Verify Back Button",
+          "Verify Notification Button",
+          "Verify Home Button",
+          "Verify Customer Signup Button",
+          "Verify Clean Survey Button",
+          "Verify Site Survey Button",
+          "Verify Login Page Opened",
+          "Verify Customer Search Page Opened",
+          "Verify Vehicle Survey Page Opened",
+          "Verify Survey Page Opened",
+          "Verify Home Page Remains In Guest State",
+          "Click Person Profile Button",
+          "Click Back Button",
+          "Click Notification Button",
+          "Click Home Button",
+          "Click Customer Signup Button",
+          "Click Clean Survey Button",
+          "Click Site Survey Button"
+        ]
+      },
+      {
+        "resourceFile": "resources/common_keywords.resource",
+        "type": "common",
+        "variableNames": [
+          "BROWSER",
+          "DEFAULT_TIMEOUT"
+        ],
+        "keywordNames": [
+          "Open Browser Session",
+          "Close Browser Session",
+          "Open Browser To Url",
+          "Go To Url",
+          "Wait For Element To Be Ready",
+          "Click When Ready",
+          "Input Text When Ready",
+          "Input Password When Ready",
+          "Open Home Page And Click User Button"
+        ]
+      }
+    ],
+    "resourceOwnership": [
+      {
+        "resource": "pom_pages/home_page/home_page.resource",
+        "variables": [
+          "HOME_PAGE_URL",
+          "HOME_PAGE_PATH",
+          "LOGIN_PAGE_IDENTIFIER",
+          "CUSTOMER_SEARCH_PAGE_IDENTIFIER",
+          "VEHICLE_SURVEY_PAGE_IDENTIFIER",
+          "SURVEY_PAGE_IDENTIFIER",
+          "PERSON_PROFILE_BUTTON",
+          "BACK_BUTTON",
+          "NOTIFICATION_BUTTON",
+          "HOME_BUTTON",
+          "CUSTOMER_SIGNUP_BUTTON",
+          "CLEAN_SURVEY_BUTTON",
+          "SITE_SURVEY_BUTTON"
+        ],
+        "keywords": [
+          "Open Home Page",
+          "Verify Guest Home Page Loaded",
+          "Verify Home Guest State Controls Are Visible",
+          "Verify Home Guest State Controls Are Enabled",
+          "Verify Person Profile Button",
+          "Verify Back Button",
+          "Verify Notification Button",
+          "Verify Home Button",
+          "Verify Customer Signup Button",
+          "Verify Clean Survey Button",
+          "Verify Site Survey Button",
+          "Verify Login Page Opened",
+          "Verify Customer Search Page Opened",
+          "Verify Vehicle Survey Page Opened",
+          "Verify Survey Page Opened",
+          "Verify Home Page Remains In Guest State",
+          "Click Person Profile Button",
+          "Click Back Button",
+          "Click Notification Button",
+          "Click Home Button",
+          "Click Customer Signup Button",
+          "Click Clean Survey Button",
+          "Click Site Survey Button"
+        ]
+      }
+    ]
+  },
+  "elementKnowledge": {
+    "approvedElements": [
+      {
+        "page": "home_page",
+        "name": "person_profile_button",
+        "type": "button",
+        "locator": "id=auto_person_btn"
+      },
+      {
+        "page": "home_page",
+        "name": "back_button",
+        "type": "button",
+        "locator": "id=auto_back_btn"
+      },
+      {
+        "page": "home_page",
+        "name": "notification_button",
+        "type": "button",
+        "locator": "id=auto_notification_btn"
+      },
+      {
+        "page": "home_page",
+        "name": "home_button",
+        "type": "button",
+        "locator": "id=auto_home_btn"
+      },
+      {
+        "page": "home_page",
+        "name": "customer_signup_button",
+        "type": "button",
+        "locator": "id=auto_btn_CustomerSignup"
+      },
+      {
+        "page": "home_page",
+        "name": "clean_survey_button",
+        "type": "button",
+        "locator": "id=auto_btn_CleanSurvey"
+      },
+      {
+        "page": "home_page",
+        "name": "site_survey_button",
+        "type": "button",
+        "locator": "id=auto_btn_SiteSurvey"
+      }
+    ]
+  },
+  "manualCoverage": {
+    "approvedScenarios": [
+      {
+        "id": "TC_HOME_001",
+        "title": "Verify Home page loads successfully in guest state when application is launched",
+        "type": "positive",
+        "expectedResult": "The Home page loads successfully in guest state and displays the approved guest-state Home controls without showing authenticated user information."
+      },
+      {
+        "id": "TC_HOME_002",
+        "title": "Verify Person/Profile button is visible and enabled in guest state",
+        "type": "positive",
+        "expectedResult": "The Person/Profile button is visible, enabled, and available for interaction on the Home page in guest state."
+      },
+      {
+        "id": "TC_HOME_003",
+        "title": "Verify Back button is visible and enabled in guest state",
+        "type": "positive",
+        "expectedResult": "The Back button is visible and enabled as part of the shared Home page shell controls."
+      },
+      {
+        "id": "TC_HOME_004",
+        "title": "Verify Notification button is visible and enabled in guest state",
+        "type": "positive",
+        "expectedResult": "The Notification button is visible and enabled as part of the shared Home page shell controls."
+      },
+      {
+        "id": "TC_HOME_005",
+        "title": "Verify Home button is visible and enabled in guest state",
+        "type": "positive",
+        "expectedResult": "The Home button is visible and enabled as part of the shared Home page shell controls."
+      },
+      {
+        "id": "TC_HOME_006",
+        "title": "Verify Customer signup button is visible and enabled in guest state",
+        "type": "positive",
+        "expectedResult": "The Customer signup button is visible and enabled for guest users."
+      },
+      {
+        "id": "TC_HOME_007",
+        "title": "Verify Clean survey button is visible and enabled in guest state",
+        "type": "positive",
+        "expectedResult": "The Clean survey button is visible and enabled for guest users."
+      },
+      {
+        "id": "TC_HOME_008",
+        "title": "Verify Site survey button is visible and enabled in guest state",
+        "type": "positive",
+        "expectedResult": "The Site survey button is visible and enabled for guest users."
+      },
+      {
+        "id": "TC_HOME_009",
+        "title": "Verify clicking the Person/Profile button opens the Login page from guest Home state",
+        "type": "positive",
+        "expectedResult": "The Login page or Login view opens from the guest-state Home page and the transition occurs without requiring authentication first."
+      },
+      {
+        "id": "TC_HOME_010",
+        "title": "Verify clicking Customer signup navigates to the customer-search page",
+        "type": "positive",
+        "expectedResult": "The application navigates to the customer-search page from the guest Home page."
+      },
+      {
+        "id": "TC_HOME_011",
+        "title": "Verify clicking Clean survey navigates to the vehicle-survey page",
+        "type": "positive",
+        "expectedResult": "The application navigates to the vehicle-survey page from the guest Home page."
+      },
+      {
+        "id": "TC_HOME_012",
+        "title": "Verify clicking Site survey navigates to the survey page",
+        "type": "positive",
+        "expectedResult": "The application navigates to the survey page from the guest Home page."
+      },
+      {
+        "id": "TC_HOME_020",
+        "title": "Verify Home button remains visible and enabled after navigating back from a guest-accessible feature page",
+        "type": "positive",
+        "expectedResult": "The user returns to the Home page in guest state and the Home button remains visible and enabled."
+      }
+    ],
+    "validations": [
+      "The Person/Profile button is visible, enabled, and available for interaction on the Home page in guest state.",
+      "The Back button is visible and enabled as part of the shared Home page shell controls.",
+      "The Notification button is visible and enabled as part of the shared Home page shell controls.",
+      "The Home button is visible and enabled as part of the shared Home page shell controls.",
+      "The Customer signup button is visible and enabled for guest users.",
+      "The Clean survey button is visible and enabled for guest users.",
+      "The Site survey button is visible and enabled for guest users.",
+      "The user returns to the Home page in guest state and the Home button remains visible and enabled."
+    ],
+    "transitions": [
+      "The Home page loads successfully in guest state and displays the approved guest-state Home controls without showing authenticated user information.",
+      "The Person/Profile button is visible, enabled, and available for interaction on the Home page in guest state.",
+      "The Back button is visible and enabled as part of the shared Home page shell controls.",
+      "The Notification button is visible and enabled as part of the shared Home page shell controls.",
+      "The Home button is visible and enabled as part of the shared Home page shell controls.",
+      "The Login page or Login view opens from the guest-state Home page and the transition occurs without requiring authentication first.",
+      "The application navigates to the customer-search page from the guest Home page.",
+      "The application navigates to the vehicle-survey page from the guest Home page.",
+      "The application navigates to the survey page from the guest Home page.",
+      "The user returns to the Home page in guest state and the Home button remains visible and enabled."
+    ]
+  },
+  "automationKnowledge": {
+    "approvedKeywords": [
+      {
+        "page": "home_page",
+        "name": "Open Home Page",
+        "targetElement": "",
+        "action": "generic"
+      },
+      {
+        "page": "home_page",
+        "name": "Click Person Profile Button",
+        "targetElement": "person_profile_button",
+        "action": "click"
+      },
+      {
+        "page": "home_page",
+        "name": "Click Back Button",
+        "targetElement": "back_button",
+        "action": "click"
+      },
+      {
+        "page": "home_page",
+        "name": "Click Notification Button",
+        "targetElement": "notification_button",
+        "action": "click"
+      },
+      {
+        "page": "home_page",
+        "name": "Click Home Button",
+        "targetElement": "home_button",
+        "action": "click"
+      },
+      {
+        "page": "home_page",
+        "name": "Click Customer Signup Button",
+        "targetElement": "customer_signup_button",
+        "action": "click"
+      },
+      {
+        "page": "home_page",
+        "name": "Click Clean Survey Button",
+        "targetElement": "clean_survey_button",
+        "action": "click"
+      },
+      {
+        "page": "home_page",
+        "name": "Click Site Survey Button",
+        "targetElement": "site_survey_button",
+        "action": "click"
+      },
+      {
+        "page": "home_page",
+        "name": "Verify Guest Home Page Loaded",
+        "targetElement": "",
+        "action": "verify"
+      },
+      {
+        "page": "home_page",
+        "name": "Verify Person Profile Button",
+        "targetElement": "person_profile_button",
+        "action": "verify"
+      },
+      {
+        "page": "home_page",
+        "name": "Verify Back Button",
+        "targetElement": "back_button",
+        "action": "verify"
+      },
+      {
+        "page": "home_page",
+        "name": "Verify Notification Button",
+        "targetElement": "notification_button",
+        "action": "verify"
+      },
+      {
+        "page": "home_page",
+        "name": "Verify Home Button",
+        "targetElement": "home_button",
+        "action": "verify"
+      },
+      {
+        "page": "home_page",
+        "name": "Verify Customer Signup Button",
+        "targetElement": "customer_signup_button",
+        "action": "verify"
+      },
+      {
+        "page": "home_page",
+        "name": "Verify Clean Survey Button",
+        "targetElement": "clean_survey_button",
+        "action": "verify"
+      },
+      {
+        "page": "home_page",
+        "name": "Verify Site Survey Button",
+        "targetElement": "site_survey_button",
+        "action": "verify"
+      }
+    ],
+    "approvedTests": [
+      {
+        "name": "AUT-WT-HOME01: Verify Home page loads successfully in guest state when application is launched"
+      },
+      {
+        "name": "AUT-WT-HOME02: Verify Person Profile button is visible and enabled in guest state"
+      },
+      {
+        "name": "AUT-WT-HOME03: Verify Back button is visible and enabled in guest state"
+      },
+      {
+        "name": "AUT-WT-HOME04: Verify Notification button is visible and enabled in guest state"
+      },
+      {
+        "name": "AUT-WT-HOME05: Verify Home button is visible and enabled in guest state"
+      },
+      {
+        "name": "AUT-WT-HOME06: Verify Customer signup button is visible and enabled in guest state"
+      },
+      {
+        "name": "AUT-WT-HOME07: Verify Clean survey button is visible and enabled in guest state"
+      },
+      {
+        "name": "AUT-WT-HOME08: Verify Site survey button is visible and enabled in guest state"
+      },
+      {
+        "name": "AUT-WT-HOME09: Verify clicking the Person Profile button opens the Login page from guest Home state"
+      },
+      {
+        "name": "AUT-WT-HOME10: Verify clicking Customer signup navigates to the customer-search page"
+      },
+      {
+        "name": "AUT-WT-HOME11: Verify clicking Clean survey navigates to the vehicle-survey page"
+      },
+      {
+        "name": "AUT-WT-HOME12: Verify clicking Site survey navigates to the survey page"
+      },
+      {
+        "name": "AUT-WT-HOME20: Verify Home button remains visible and enabled after navigating back from a guest-accessible feature page"
+      }
+    ],
+    "wrapperExpectations": [
+      "Reuse approved shared/common wrapper keywords before low-level SeleniumLibrary actions.",
+      "Do not invent suite-level custom keywords; compose from approved upstream resource knowledge."
+    ]
+  },
+  "downstreamGuidance": {
+    "mustReuseResources": [
+      "home_page/home_page.resource"
+    ],
+    "upstreamWorkflowKnowledge": [
+      "login"
+    ],
+    "mustNotInvent": [
+      "suite-level custom keywords",
+      "duplicate ownership for controls already owned in approved upstream resources",
+      "hardcoded workflow routing or mapped page logic in Python"
+    ],
+    "generationRule": "Downstream generation must consume approved workflow knowledge plus approved resource context before creating new artifacts."
+  },
+  "provenance": {
+    "workflowInput": "workflow_inputs/home.json",
+    "approvedManualTests": "manual_tests/home/home.json",
+    "approvedResourceFiles": [
+      "home_page/home_page.resource"
+    ]
+  }
+}

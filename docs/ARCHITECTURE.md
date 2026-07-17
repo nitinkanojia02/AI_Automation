@@ -29,6 +29,44 @@ Instead, the framework must:
 
 This means navigation journeys, page transitions, setup paths, and downstream assertions must be generated from approved workflow context plus retrieved approved resource knowledge, not from hardcoded workflow handlers.
 
+### Workflow knowledge as cumulative approved memory
+
+A workflow knowledge artifact must be created and maintained for each workflow at:
+- `artifacts/workflow_knowledge/<workflow>.json`
+
+This artifact is the approved cumulative memory of a workflow. It must accumulate concise, downstream-usable knowledge from:
+- approved workflow input / user story
+- approved element extraction
+- approved manual tests
+- approved resource keywords and variables
+- approved automation suites
+
+The artifact must be concise and normalized rather than a raw dump. It should capture the highest-value reusable facts for downstream generation:
+- business goal and application context
+- approved navigation journey and state transitions
+- approved resource ownership, variables, and keywords
+- approved elements and control expectations
+- approved scenario coverage and validation expectations
+- upstream workflow knowledge references needed by downstream workflows
+
+Each time a stage is approved, the workflow knowledge artifact should be refreshed so future workflows can consume the latest approved application intelligence before generating new code.
+
+The purpose of workflow knowledge is not archival storage. Its purpose is to provide compact, authoritative application and workflow intelligence for downstream generation.
+
+A downstream workflow such as `login` must consult relevant upstream workflow knowledge such as `home` before generating new manual tests, resources, or Robot suites. This keeps AI grounded in:
+- application context
+- approved navigation journeys
+- approved ownership boundaries
+- approved reusable keywords and variables
+- approved state transitions and validations
+
+The framework should therefore prefer this order for generation context:
+1. current approved workflow input
+2. relevant approved workflow knowledge artifacts
+3. approved resource context retrieved from those artifacts
+4. current-stage approved artifacts
+5. AI inference inside that approved boundary
+
 ---
 
 ## 3. Architectural Style
