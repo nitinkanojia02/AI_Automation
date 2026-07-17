@@ -6,7 +6,7 @@
   "applicationCode": "WT",
   "testIdentifierPrefix": "LOGIN",
   "status": "approved_artifact_memory",
-  "generatedAt": "2026-07-17T12:15:47.905581+00:00",
+  "generatedAt": "2026-07-17T12:24:30.469951+00:00",
   "businessContext": {
     "userStory": [
       "Login Feature",
@@ -216,10 +216,9 @@
           "VALID_PASSWORD",
           "INVALID_USERNAME",
           "INVALID_PASSWORD",
-          "INVALID_PASSWORD_FOR_VALID_USER",
-          "CASE_SENSITIVE_USERNAME",
-          "CASE_SENSITIVE_PASSWORD",
-          "GENERIC_AUTH_FAILED_MESSAGE_TEXT"
+          "UPPERCASE_USERNAME",
+          "SPECIAL_CHARACTER_USERNAME",
+          "SPECIAL_CHARACTER_PASSWORD"
         ],
         "keywordNames": [
           "Enter Username Textbox",
@@ -232,7 +231,9 @@
           "Verify Password Field Is Masked",
           "Verify Authentication Failed Message Displayed",
           "Verify Login Page Still Visible",
-          "Login With Credentials"
+          "Login With Credentials",
+          "Login With Valid Credentials",
+          "Login With Invalid Credentials"
         ]
       },
       {
@@ -305,10 +306,9 @@
           "VALID_PASSWORD",
           "INVALID_USERNAME",
           "INVALID_PASSWORD",
-          "INVALID_PASSWORD_FOR_VALID_USER",
-          "CASE_SENSITIVE_USERNAME",
-          "CASE_SENSITIVE_PASSWORD",
-          "GENERIC_AUTH_FAILED_MESSAGE_TEXT"
+          "UPPERCASE_USERNAME",
+          "SPECIAL_CHARACTER_USERNAME",
+          "SPECIAL_CHARACTER_PASSWORD"
         ],
         "keywords": [
           "Enter Username Textbox",
@@ -321,7 +321,9 @@
           "Verify Password Field Is Masked",
           "Verify Authentication Failed Message Displayed",
           "Verify Login Page Still Visible",
-          "Login With Credentials"
+          "Login With Credentials",
+          "Login With Valid Credentials",
+          "Login With Invalid Credentials"
         ]
       },
       {
@@ -366,13 +368,13 @@
     "approvedElements": [
       {
         "page": "login_page",
-        "name": "username_textbox",
+        "name": "username_field",
         "type": "textbox",
         "locator": "xpath=//input[@placeholder='User Name']"
       },
       {
         "page": "login_page",
-        "name": "password_textbox",
+        "name": "password_field",
         "type": "password",
         "locator": "id=password"
       },
@@ -396,7 +398,7 @@
       },
       {
         "page": "login_page",
-        "name": "authentication_failed_message",
+        "name": "generic_authentication_failed_message",
         "type": "message",
         "locator": "xpath=//*[contains(normalize-space(.),'Failed')]"
       }
@@ -406,138 +408,138 @@
     "approvedScenarios": [
       {
         "id": "LOGIN_TC_001",
-        "title": "Verify unauthenticated guest user can open the Login page from the Home page person/profile button",
+        "title": "Verify guest user can open the Login page from the Home page using the person/profile button",
         "type": "positive",
-        "expectedResult": "The application transitions from the Home page guest state to the Login page and the Username field, Password field, Login button, Back button, and Home button are visible and interactive."
+        "expectedResult": "The application transitions from the guest Home page to the Login page and the Username field, Password field, Login button, Back button, and Home button are visible and enabled."
       },
       {
         "id": "LOGIN_TC_002",
-        "title": "Verify Login page controls are visible and interactive after opening Login page from Home page",
+        "title": "Verify Login page controls are visible and interactive after opening from Home page",
         "type": "positive",
-        "expectedResult": "All approved Login page controls are visible, enabled, focusable where applicable, and interactive without UI errors or broken SPA state."
+        "expectedResult": "The Login page opens successfully from the Home page and all approved controls are visible, focusable, and interactive without rendering or navigation issues."
       },
       {
         "id": "LOGIN_TC_003",
-        "title": "Verify password input is masked while typing valid credentials",
+        "title": "Verify password entry is masked during typing on the Login page",
         "type": "positive",
-        "expectedResult": "The Password field masks the entered password characters during input and the actual password text is not visibly displayed on screen."
+        "expectedResult": "The Password field masks the entered password characters during input while retaining the entered value for authentication."
       },
       {
         "id": "LOGIN_TC_004",
-        "title": "Verify successful authentication using approved credentials returns user to authenticated Home state",
+        "title": "Verify successful login with approved credentials returns user to authenticated Home state",
         "type": "positive",
-        "expectedResult": "The application authenticates the user successfully, returns to the Home page in authenticated state, displays authenticated user identity information, and shows authenticated-only feature areas."
+        "expectedResult": "The application authenticates the user successfully, returns to the Home page in authenticated state, displays authenticated user identity information, and displays authenticated-only feature areas."
       },
       {
         "id": "LOGIN_TC_005",
-        "title": "Verify authenticated Home page state persists immediately after successful login transition",
-        "type": "positive",
-        "expectedResult": "The Home page reloads in authenticated state with authenticated user identity visible and authenticated-only features available without showing guest-only unauthenticated state indicators."
+        "title": "Verify invalid username and password combination displays generic Failed message and keeps user unauthenticated",
+        "type": "negative",
+        "expectedResult": "Authentication fails, the generic Failed message is displayed, the user remains on the Login page or otherwise unauthenticated, and no authenticated-only Home page features are visible."
       },
       {
         "id": "LOGIN_TC_006",
-        "title": "Verify invalid username and password combination displays generic Failed message and keeps user unauthenticated",
+        "title": "Verify blank Username and blank Password submission displays only the generic Failed message",
         "type": "negative",
-        "expectedResult": "Authentication fails, the generic Failed message is displayed, the application does not transition to authenticated Home state, and the user remains unauthenticated on the Login page or equivalent unauthenticated state."
+        "expectedResult": "Authentication fails and only the generic Failed message is displayed without any separate required-field validation message, and the user remains unauthenticated."
       },
       {
         "id": "LOGIN_TC_007",
-        "title": "Verify blank Username and blank Password submission displays only generic Failed message",
+        "title": "Verify login with Username populated and Password empty fails authentication",
         "type": "negative",
-        "expectedResult": "Authentication fails, only the generic Failed message is displayed, no dedicated required-field validation message is shown, and the user remains unauthenticated."
+        "expectedResult": "Authentication fails, the generic Failed message is displayed, no separate required-field validation message is shown, and the user remains unauthenticated."
       },
       {
         "id": "LOGIN_TC_008",
-        "title": "Verify submission with Username populated and Password blank displays generic Failed message",
+        "title": "Verify login with Password populated and Username empty fails authentication",
         "type": "negative",
-        "expectedResult": "Authentication fails, the generic Failed message is displayed without separate required-field validation messaging, and the user remains unauthenticated."
+        "expectedResult": "Authentication fails, the generic Failed message is displayed, no separate required-field validation message is shown, and the user remains unauthenticated."
       },
       {
         "id": "LOGIN_TC_009",
-        "title": "Verify submission with Password populated and Username blank displays generic Failed message",
-        "type": "negative",
-        "expectedResult": "Authentication fails, the generic Failed message is displayed without separate required-field validation messaging, and the user remains unauthenticated."
+        "title": "Verify leading and trailing whitespace handling for valid credentials",
+        "type": "edge",
+        "expectedResult": "The application handles leading and trailing whitespace according to implemented business behavior and the observed authentication result is consistent and stable without application errors."
       },
       {
         "id": "LOGIN_TC_010",
-        "title": "Verify leading and trailing whitespace handling for approved credentials",
-        "type": "edge",
-        "expectedResult": "The application handles credential values containing leading or trailing whitespace according to implemented business behavior and the observed result is consistently reflected through either authenticated Home state or the generic Failed message while maintaining correct authentication state."
+        "title": "Verify whitespace-only values in Username and Password fields fail authentication",
+        "type": "negative",
+        "expectedResult": "Authentication fails, the generic Failed message is displayed, the user remains unauthenticated, and no dedicated required-field validation message is displayed."
       },
       {
         "id": "LOGIN_TC_011",
-        "title": "Verify whitespace-only Username and Password values are rejected with generic Failed message",
-        "type": "negative",
-        "expectedResult": "Authentication fails, the generic Failed message is displayed, no dedicated required-field validation message appears, and the user remains unauthenticated."
+        "title": "Verify Back button returns the user to the Home page without authentication",
+        "type": "positive",
+        "expectedResult": "The application returns the user to the Home page in guest state without authenticating the user and authenticated-only features remain unavailable."
       },
       {
         "id": "LOGIN_TC_012",
-        "title": "Verify Back button returns the user to the Home page without authentication",
+        "title": "Verify Home button returns the user to the Home page without authentication",
         "type": "positive",
-        "expectedResult": "The application returns to the Home page in unauthenticated guest state without displaying authenticated user identity or authenticated-only feature areas."
+        "expectedResult": "The application returns the user to the Home page in guest state without authenticating the user and authenticated-only features remain unavailable."
       },
       {
         "id": "LOGIN_TC_013",
-        "title": "Verify Home button returns the user to the Home page without authentication",
-        "type": "positive",
-        "expectedResult": "The application returns to the Home page in unauthenticated guest state and the user is not authenticated."
-      },
-      {
-        "id": "LOGIN_TC_014",
-        "title": "Verify invalid password for approved username does not authenticate the user",
+        "title": "Verify Login page cannot be considered authenticated after failed login attempt",
         "type": "negative",
-        "expectedResult": "Authentication fails, the generic Failed message is displayed, the application remains unauthenticated, and authenticated-only Home page features are not displayed."
-      },
-      {
-        "id": "LOGIN_TC_017",
-        "title": "Verify repeated invalid login submissions consistently display the same generic Failed message",
-        "type": "edge",
-        "expectedResult": "Each failed authentication attempt displays the same generic Failed message, the user remains unauthenticated, and no additional or inconsistent validation messages are displayed."
+        "expectedResult": "The generic Failed message is displayed after login submission and the Home page remains in guest state without authenticated user identity or authenticated-only feature visibility."
       },
       {
         "id": "LOGIN_TC_019",
-        "title": "Verify user remains unauthenticated after failed login followed by Home page navigation",
+        "title": "Verify very long Username and Password values do not authenticate and do not break the Login page",
+        "type": "edge",
+        "expectedResult": "Authentication fails safely with the generic Failed message displayed or the values are safely handled without UI corruption, crashes, or unintended authentication."
+      },
+      {
+        "id": "LOGIN_TC_021",
+        "title": "Verify successful authentication updates Home page from guest state to authenticated state",
+        "type": "positive",
+        "expectedResult": "The Home page reloads in authenticated state with authenticated user identity visible and authenticated-only feature areas available, replacing the previous guest-only state."
+      },
+      {
+        "id": "LOGIN_TC_022",
+        "title": "Verify failed authentication does not expose authenticated-only UI elements",
         "type": "negative",
-        "expectedResult": "The application returns to the Home page in guest state after the failed login attempt and authenticated user identity information is not displayed."
+        "expectedResult": "The user remains unauthenticated after the failed login attempt and authenticated-only Home page features and authenticated identity indicators are not visible."
       }
     ],
     "validations": [
-      "The application transitions from the Home page guest state to the Login page and the Username field, Password field, Login button, Back button, and Home button are visible and interactive.",
-      "All approved Login page controls are visible, enabled, focusable where applicable, and interactive without UI errors or broken SPA state.",
-      "The Home page reloads in authenticated state with authenticated user identity visible and authenticated-only features available without showing guest-only unauthenticated state indicators.",
-      "Authentication fails, only the generic Failed message is displayed, no dedicated required-field validation message is shown, and the user remains unauthenticated.",
-      "Authentication fails, the generic Failed message is displayed without separate required-field validation messaging, and the user remains unauthenticated.",
-      "Authentication fails, the generic Failed message is displayed, no dedicated required-field validation message appears, and the user remains unauthenticated.",
-      "Each failed authentication attempt displays the same generic Failed message, the user remains unauthenticated, and no additional or inconsistent validation messages are displayed."
+      "The application transitions from the guest Home page to the Login page and the Username field, Password field, Login button, Back button, and Home button are visible and enabled.",
+      "The Login page opens successfully from the Home page and all approved controls are visible, focusable, and interactive without rendering or navigation issues.",
+      "Authentication fails, the generic Failed message is displayed, the user remains on the Login page or otherwise unauthenticated, and no authenticated-only Home page features are visible.",
+      "Authentication fails and only the generic Failed message is displayed without any separate required-field validation message, and the user remains unauthenticated.",
+      "Authentication fails, the generic Failed message is displayed, no separate required-field validation message is shown, and the user remains unauthenticated.",
+      "The application handles leading and trailing whitespace according to implemented business behavior and the observed authentication result is consistent and stable without application errors.",
+      "Authentication fails, the generic Failed message is displayed, the user remains unauthenticated, and no dedicated required-field validation message is displayed.",
+      "The Home page reloads in authenticated state with authenticated user identity visible and authenticated-only feature areas available, replacing the previous guest-only state.",
+      "The user remains unauthenticated after the failed login attempt and authenticated-only Home page features and authenticated identity indicators are not visible."
     ],
     "transitions": [
-      "The application transitions from the Home page guest state to the Login page and the Username field, Password field, Login button, Back button, and Home button are visible and interactive.",
-      "The application authenticates the user successfully, returns to the Home page in authenticated state, displays authenticated user identity information, and shows authenticated-only feature areas.",
-      "The Home page reloads in authenticated state with authenticated user identity visible and authenticated-only features available without showing guest-only unauthenticated state indicators.",
-      "Authentication fails, the generic Failed message is displayed, the application does not transition to authenticated Home state, and the user remains unauthenticated on the Login page or equivalent unauthenticated state.",
-      "Authentication fails, only the generic Failed message is displayed, no dedicated required-field validation message is shown, and the user remains unauthenticated.",
-      "Authentication fails, the generic Failed message is displayed without separate required-field validation messaging, and the user remains unauthenticated.",
-      "The application handles credential values containing leading or trailing whitespace according to implemented business behavior and the observed result is consistently reflected through either authenticated Home state or the generic Failed message while maintaining correct authentication state.",
-      "Authentication fails, the generic Failed message is displayed, no dedicated required-field validation message appears, and the user remains unauthenticated.",
-      "The application returns to the Home page in unauthenticated guest state without displaying authenticated user identity or authenticated-only feature areas.",
-      "The application returns to the Home page in unauthenticated guest state and the user is not authenticated.",
-      "Authentication fails, the generic Failed message is displayed, the application remains unauthenticated, and authenticated-only Home page features are not displayed.",
-      "Each failed authentication attempt displays the same generic Failed message, the user remains unauthenticated, and no additional or inconsistent validation messages are displayed.",
-      "The application returns to the Home page in guest state after the failed login attempt and authenticated user identity information is not displayed."
+      "The application transitions from the guest Home page to the Login page and the Username field, Password field, Login button, Back button, and Home button are visible and enabled.",
+      "The Login page opens successfully from the Home page and all approved controls are visible, focusable, and interactive without rendering or navigation issues.",
+      "The application authenticates the user successfully, returns to the Home page in authenticated state, displays authenticated user identity information, and displays authenticated-only feature areas.",
+      "Authentication fails, the generic Failed message is displayed, the user remains on the Login page or otherwise unauthenticated, and no authenticated-only Home page features are visible.",
+      "Authentication fails and only the generic Failed message is displayed without any separate required-field validation message, and the user remains unauthenticated.",
+      "Authentication fails, the generic Failed message is displayed, no separate required-field validation message is shown, and the user remains unauthenticated.",
+      "Authentication fails, the generic Failed message is displayed, the user remains unauthenticated, and no dedicated required-field validation message is displayed.",
+      "The application returns the user to the Home page in guest state without authenticating the user and authenticated-only features remain unavailable.",
+      "The generic Failed message is displayed after login submission and the Home page remains in guest state without authenticated user identity or authenticated-only feature visibility.",
+      "The Home page reloads in authenticated state with authenticated user identity visible and authenticated-only feature areas available, replacing the previous guest-only state.",
+      "The user remains unauthenticated after the failed login attempt and authenticated-only Home page features and authenticated identity indicators are not visible."
     ]
   },
   "automationKnowledge": {
     "approvedKeywords": [
       {
         "page": "login_page",
-        "name": "Enter Username Textbox",
-        "targetElement": "username_textbox",
+        "name": "Enter Username Field",
+        "targetElement": "username_field",
         "action": "input"
       },
       {
         "page": "login_page",
-        "name": "Enter Password Textbox",
-        "targetElement": "password_textbox",
+        "name": "Enter Password Field",
+        "targetElement": "password_field",
         "action": "input"
       },
       {
@@ -548,20 +550,26 @@
       },
       {
         "page": "login_page",
-        "name": "Verify Username Textbox",
-        "targetElement": "username_textbox",
+        "name": "Verify Username Field",
+        "targetElement": "username_field",
         "action": "verify"
       },
       {
         "page": "login_page",
-        "name": "Verify Password Textbox",
-        "targetElement": "password_textbox",
+        "name": "Verify Back Button",
+        "targetElement": "back_button",
         "action": "verify"
       },
       {
         "page": "login_page",
-        "name": "Verify Authentication Failed Message",
-        "targetElement": "authentication_failed_message",
+        "name": "Verify Password Field",
+        "targetElement": "password_field",
+        "action": "verify"
+      },
+      {
+        "page": "login_page",
+        "name": "Verify Generic Authentication Failed Message",
+        "targetElement": "generic_authentication_failed_message",
         "action": "verify"
       },
       {
@@ -569,58 +577,21 @@
         "name": "Login With Credentials",
         "targetElement": "sign_in_button",
         "action": "generic"
+      },
+      {
+        "page": "login_page",
+        "name": "Login With Valid Credentials",
+        "targetElement": "sign_in_button",
+        "action": "generic"
+      },
+      {
+        "page": "login_page",
+        "name": "Login With Invalid Credentials",
+        "targetElement": "sign_in_button",
+        "action": "generic"
       }
     ],
-    "approvedTests": [
-      {
-        "name": "AUT-WT-LOGIN01: Verify unauthenticated guest user can open the Login page from the Home page person profile button"
-      },
-      {
-        "name": "AUT-WT-LOGIN02: Verify Login page controls are visible and interactive after opening Login page from Home page"
-      },
-      {
-        "name": "AUT-WT-LOGIN03: Verify password input is masked while typing valid credentials"
-      },
-      {
-        "name": "AUT-WT-LOGIN04: Verify successful authentication using approved credentials returns user to authenticated Home state"
-      },
-      {
-        "name": "AUT-WT-LOGIN05: Verify authenticated Home page state persists immediately after successful login transition"
-      },
-      {
-        "name": "AUT-WT-LOGIN06: Verify invalid username and password combination displays generic Failed message and keeps user unauthenticated"
-      },
-      {
-        "name": "AUT-WT-LOGIN07: Verify blank Username and blank Password submission displays only generic Failed message"
-      },
-      {
-        "name": "AUT-WT-LOGIN08: Verify submission with Username populated and Password blank displays generic Failed message"
-      },
-      {
-        "name": "AUT-WT-LOGIN09: Verify submission with Password populated and Username blank displays generic Failed message"
-      },
-      {
-        "name": "AUT-WT-LOGIN10: Verify leading and trailing whitespace handling for approved credentials"
-      },
-      {
-        "name": "AUT-WT-LOGIN11: Verify whitespace only Username and Password values are rejected with generic Failed message"
-      },
-      {
-        "name": "AUT-WT-LOGIN12: Verify Back button returns the user to the Home page without authentication"
-      },
-      {
-        "name": "AUT-WT-LOGIN13: Verify Home button returns the user to the Home page without authentication"
-      },
-      {
-        "name": "AUT-WT-LOGIN14: Verify invalid password for approved username does not authenticate the user"
-      },
-      {
-        "name": "AUT-WT-LOGIN17: Verify repeated invalid login submissions consistently display the same generic Failed message"
-      },
-      {
-        "name": "AUT-WT-LOGIN19: Verify user remains unauthenticated after failed login followed by Home page navigation"
-      }
-    ],
+    "approvedTests": [],
     "wrapperExpectations": [
       "Reuse approved shared/common wrapper keywords before low-level SeleniumLibrary actions.",
       "Do not invent suite-level custom keywords; compose from approved upstream resource knowledge."

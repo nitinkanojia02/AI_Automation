@@ -15,224 +15,231 @@
   "testCases": [
     {
       "id": "LOGIN_TC_001",
-      "title": "Verify unauthenticated guest user can open the Login page from the Home page person/profile button",
+      "title": "Verify guest user can open the Login page from the Home page using the person/profile button",
       "type": "Positive",
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Launch the WashTab application and navigate to http://localhost/washtabui/home.",
+        "Open http://localhost/washtabui/home.",
         "Verify the Home page is displayed in guest state without authenticated user identity visible.",
         "Click the person/profile button on the Home page."
       ],
-      "expectedResult": "The application transitions from the Home page guest state to the Login page and the Username field, Password field, Login button, Back button, and Home button are visible and interactive."
+      "expectedResult": "The application transitions from the guest Home page to the Login page and the Username field, Password field, Login button, Back button, and Home button are visible and enabled."
     },
     {
       "id": "LOGIN_TC_002",
-      "title": "Verify Login page controls are visible and interactive after opening Login page from Home page",
-      "type": "Positive",
-      "priority": "Medium",
-      "preconditions": [],
-      "steps": [
-        "Navigate to http://localhost/washtabui/home in guest state.",
-        "Click the person/profile button to open the Login page.",
-        "Verify the Username field accepts keyboard focus.",
-        "Verify the Password field accepts keyboard focus.",
-        "Verify the Login button is clickable.",
-        "Verify the Back button is clickable.",
-        "Verify the Home button is clickable."
-      ],
-      "expectedResult": "All approved Login page controls are visible, enabled, focusable where applicable, and interactive without UI errors or broken SPA state."
-    },
-    {
-      "id": "LOGIN_TC_003",
-      "title": "Verify password input is masked while typing valid credentials",
-      "type": "Positive",
-      "priority": "Medium",
-      "preconditions": [],
-      "steps": [
-        "Open the Login page from the Home page person/profile button.",
-        "Enter krisadmin in the Username field.",
-        "Type Carwash#1 in the Password field."
-      ],
-      "expectedResult": "The Password field masks the entered password characters during input and the actual password text is not visibly displayed on screen."
-    },
-    {
-      "id": "LOGIN_TC_004",
-      "title": "Verify successful authentication using approved credentials returns user to authenticated Home state",
+      "title": "Verify Login page controls are visible and interactive after opening from Home page",
       "type": "Positive",
       "priority": "Medium",
       "preconditions": [],
       "steps": [
         "Navigate to the Home page in guest state.",
         "Click the person/profile button to open the Login page.",
-        "Enter krisadmin in the Username field.",
-        "Enter Carwash#1 in the Password field.",
-        "Click the Login button."
+        "Click inside the Username field.",
+        "Click inside the Password field.",
+        "Verify the Login button can be clicked.",
+        "Verify the Back button can be clicked.",
+        "Verify the Home button can be clicked."
       ],
-      "expectedResult": "The application authenticates the user successfully, returns to the Home page in authenticated state, displays authenticated user identity information, and shows authenticated-only feature areas."
+      "expectedResult": "The Login page opens successfully from the Home page and all approved controls are visible, focusable, and interactive without rendering or navigation issues."
     },
     {
-      "id": "LOGIN_TC_005",
-      "title": "Verify authenticated Home page state persists immediately after successful login transition",
+      "id": "LOGIN_TC_003",
+      "title": "Verify password entry is masked during typing on the Login page",
       "type": "Positive",
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Open the Login page from the Home page.",
-        "Enter approved credentials with Username krisadmin and Password Carwash#1.",
-        "Click the Login button.",
-        "Observe the Home page after authentication completes."
+        "Navigate from the Home page to the Login page using the person/profile button.",
+        "Enter krisadmin in the Username field.",
+        "Type Carwash#1 into the Password field."
       ],
-      "expectedResult": "The Home page reloads in authenticated state with authenticated user identity visible and authenticated-only features available without showing guest-only unauthenticated state indicators."
+      "expectedResult": "The Password field masks the entered password characters during input while retaining the entered value for authentication."
     },
     {
-      "id": "LOGIN_TC_006",
+      "id": "LOGIN_TC_004",
+      "title": "Verify successful login with approved credentials returns user to authenticated Home state",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the Home page in guest state.",
+        "Click the person/profile button.",
+        "Enter krisadmin in the Username field.",
+        "Enter Carwash#1 in the Password field.",
+        "Click the Login button."
+      ],
+      "expectedResult": "The application authenticates the user successfully, returns to the Home page in authenticated state, displays authenticated user identity information, and displays authenticated-only feature areas."
+    },
+    {
+      "id": "LOGIN_TC_005",
       "title": "Verify invalid username and password combination displays generic Failed message and keeps user unauthenticated",
       "type": "Negative",
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Open the Login page from the Home page person/profile button.",
+        "Open the Home page in guest state.",
+        "Click the person/profile button.",
         "Enter invaliduser in the Username field.",
-        "Enter InvalidPass#1 in the Password field.",
+        "Enter InvalidPassword1! in the Password field.",
         "Click the Login button."
       ],
-      "expectedResult": "Authentication fails, the generic Failed message is displayed, the application does not transition to authenticated Home state, and the user remains unauthenticated on the Login page or equivalent unauthenticated state."
+      "expectedResult": "Authentication fails, the generic Failed message is displayed, the user remains on the Login page or otherwise unauthenticated, and no authenticated-only Home page features are visible."
     },
     {
-      "id": "LOGIN_TC_007",
-      "title": "Verify blank Username and blank Password submission displays only generic Failed message",
+      "id": "LOGIN_TC_006",
+      "title": "Verify blank Username and blank Password submission displays only the generic Failed message",
       "type": "Negative",
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Open the Login page from the Home page.",
+        "Navigate to the Login page from the Home page.",
         "Leave the Username field empty.",
         "Leave the Password field empty.",
         "Click the Login button."
       ],
-      "expectedResult": "Authentication fails, only the generic Failed message is displayed, no dedicated required-field validation message is shown, and the user remains unauthenticated."
+      "expectedResult": "Authentication fails and only the generic Failed message is displayed without any separate required-field validation message, and the user remains unauthenticated."
     },
     {
-      "id": "LOGIN_TC_008",
-      "title": "Verify submission with Username populated and Password blank displays generic Failed message",
+      "id": "LOGIN_TC_007",
+      "title": "Verify login with Username populated and Password empty fails authentication",
       "type": "Negative",
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Open the Login page from the Home page.",
+        "Navigate to the Login page from the Home page.",
         "Enter krisadmin in the Username field.",
         "Leave the Password field empty.",
         "Click the Login button."
       ],
-      "expectedResult": "Authentication fails, the generic Failed message is displayed without separate required-field validation messaging, and the user remains unauthenticated."
+      "expectedResult": "Authentication fails, the generic Failed message is displayed, no separate required-field validation message is shown, and the user remains unauthenticated."
     },
     {
-      "id": "LOGIN_TC_009",
-      "title": "Verify submission with Password populated and Username blank displays generic Failed message",
+      "id": "LOGIN_TC_008",
+      "title": "Verify login with Password populated and Username empty fails authentication",
       "type": "Negative",
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Open the Login page from the Home page.",
+        "Navigate to the Login page from the Home page.",
         "Leave the Username field empty.",
         "Enter Carwash#1 in the Password field.",
         "Click the Login button."
       ],
-      "expectedResult": "Authentication fails, the generic Failed message is displayed without separate required-field validation messaging, and the user remains unauthenticated."
+      "expectedResult": "Authentication fails, the generic Failed message is displayed, no separate required-field validation message is shown, and the user remains unauthenticated."
     },
     {
-      "id": "LOGIN_TC_010",
-      "title": "Verify leading and trailing whitespace handling for approved credentials",
+      "id": "LOGIN_TC_009",
+      "title": "Verify leading and trailing whitespace handling for valid credentials",
       "type": "Edge",
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Open the Login page from the Home page.",
-        "Enter space followed by krisadmin followed by trailing spaces in the Username field.",
-        "Enter leading and trailing spaces around Carwash#1 in the Password field.",
+        "Navigate to the Login page from the Home page.",
+        "Enter two leading and trailing spaces around krisadmin in the Username field.",
+        "Enter two leading and trailing spaces around Carwash#1 in the Password field.",
         "Click the Login button.",
         "Observe the resulting authentication behavior."
       ],
-      "expectedResult": "The application handles credential values containing leading or trailing whitespace according to implemented business behavior and the observed result is consistently reflected through either authenticated Home state or the generic Failed message while maintaining correct authentication state."
+      "expectedResult": "The application handles leading and trailing whitespace according to implemented business behavior and the observed authentication result is consistent and stable without application errors."
     },
     {
-      "id": "LOGIN_TC_011",
-      "title": "Verify whitespace-only Username and Password values are rejected with generic Failed message",
+      "id": "LOGIN_TC_010",
+      "title": "Verify whitespace-only values in Username and Password fields fail authentication",
       "type": "Negative",
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Open the Login page from the Home page.",
-        "Enter only space characters in the Username field.",
-        "Enter only space characters in the Password field.",
+        "Navigate to the Login page from the Home page.",
+        "Enter only spaces into the Username field.",
+        "Enter only spaces into the Password field.",
         "Click the Login button."
       ],
-      "expectedResult": "Authentication fails, the generic Failed message is displayed, no dedicated required-field validation message appears, and the user remains unauthenticated."
+      "expectedResult": "Authentication fails, the generic Failed message is displayed, the user remains unauthenticated, and no dedicated required-field validation message is displayed."
     },
     {
-      "id": "LOGIN_TC_012",
+      "id": "LOGIN_TC_011",
       "title": "Verify Back button returns the user to the Home page without authentication",
       "type": "Positive",
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Navigate to the Login page from the Home page person/profile button.",
-        "Click the Back button on the Login page."
+        "Open the Home page in guest state.",
+        "Click the person/profile button to open the Login page.",
+        "Click the Back button."
       ],
-      "expectedResult": "The application returns to the Home page in unauthenticated guest state without displaying authenticated user identity or authenticated-only feature areas."
+      "expectedResult": "The application returns the user to the Home page in guest state without authenticating the user and authenticated-only features remain unavailable."
     },
     {
-      "id": "LOGIN_TC_013",
+      "id": "LOGIN_TC_012",
       "title": "Verify Home button returns the user to the Home page without authentication",
       "type": "Positive",
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Navigate to the Login page from the Home page person/profile button.",
-        "Click the Home button on the Login page."
+        "Open the Home page in guest state.",
+        "Click the person/profile button to open the Login page.",
+        "Click the Home button."
       ],
-      "expectedResult": "The application returns to the Home page in unauthenticated guest state and the user is not authenticated."
+      "expectedResult": "The application returns the user to the Home page in guest state without authenticating the user and authenticated-only features remain unavailable."
     },
     {
-      "id": "LOGIN_TC_014",
-      "title": "Verify invalid password for approved username does not authenticate the user",
+      "id": "LOGIN_TC_013",
+      "title": "Verify Login page cannot be considered authenticated after failed login attempt",
       "type": "Negative",
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Open the Login page from the Home page.",
-        "Enter krisadmin in the Username field.",
-        "Enter WrongPassword#1 in the Password field.",
-        "Click the Login button."
+        "Navigate to the Login page from the Home page.",
+        "Enter invalid credentials into the Username and Password fields.",
+        "Click the Login button.",
+        "Return to the Home page using the Home button."
       ],
-      "expectedResult": "Authentication fails, the generic Failed message is displayed, the application remains unauthenticated, and authenticated-only Home page features are not displayed."
+      "expectedResult": "The generic Failed message is displayed after login submission and the Home page remains in guest state without authenticated user identity or authenticated-only feature visibility."
     },
     {
-      "id": "LOGIN_TC_017",
-      "title": "Verify repeated invalid login submissions consistently display the same generic Failed message",
+      "id": "LOGIN_TC_019",
+      "title": "Verify very long Username and Password values do not authenticate and do not break the Login page",
       "type": "Edge",
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Open the Login page from the Home page.",
-        "Enter invalid credentials in the Username and Password fields.",
-        "Click the Login button three consecutive times after each failure."
+        "Navigate to the Login page from the Home page.",
+        "Enter a very long alphanumeric string exceeding typical username length into the Username field.",
+        "Enter a very long alphanumeric and special character string into the Password field.",
+        "Click the Login button."
       ],
-      "expectedResult": "Each failed authentication attempt displays the same generic Failed message, the user remains unauthenticated, and no additional or inconsistent validation messages are displayed."
+      "expectedResult": "Authentication fails safely with the generic Failed message displayed or the values are safely handled without UI corruption, crashes, or unintended authentication."
     },
     {
-      "id": "LOGIN_TC_019",
-      "title": "Verify user remains unauthenticated after failed login followed by Home page navigation",
+      "id": "LOGIN_TC_021",
+      "title": "Verify successful authentication updates Home page from guest state to authenticated state",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open the Home page and confirm guest state is visible.",
+        "Click the person/profile button.",
+        "Enter krisadmin in the Username field.",
+        "Enter Carwash#1 in the Password field.",
+        "Click the Login button.",
+        "Observe the Home page after redirection."
+      ],
+      "expectedResult": "The Home page reloads in authenticated state with authenticated user identity visible and authenticated-only feature areas available, replacing the previous guest-only state."
+    },
+    {
+      "id": "LOGIN_TC_022",
+      "title": "Verify failed authentication does not expose authenticated-only UI elements",
       "type": "Negative",
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Open the Login page from the Home page.",
-        "Enter invalid credentials and click the Login button.",
-        "After the Failed message appears, click the Home button."
+        "Navigate to the Login page from the Home page.",
+        "Enter invalid credentials.",
+        "Click the Login button.",
+        "Return to the Home page if still on the Login page."
       ],
-      "expectedResult": "The application returns to the Home page in guest state after the failed login attempt and authenticated user identity information is not displayed."
+      "expectedResult": "The user remains unauthenticated after the failed login attempt and authenticated-only Home page features and authenticated identity indicators are not visible."
     }
   ]
 }

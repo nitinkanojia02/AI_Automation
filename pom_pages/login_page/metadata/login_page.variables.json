@@ -9,19 +9,19 @@
       "kind": "page_url"
     },
     {
-      "variableName": "USERNAME_TEXTBOX",
+      "variableName": "USERNAME_FIELD",
       "value": "xpath=//input[@placeholder='User Name']",
       "source": "approved_element",
       "kind": "locator",
-      "approvedName": "username_textbox",
+      "approvedName": "username_field",
       "type": "textbox"
     },
     {
-      "variableName": "PASSWORD_TEXTBOX",
+      "variableName": "PASSWORD_FIELD",
       "value": "id=password",
       "source": "approved_element",
       "kind": "locator",
-      "approvedName": "password_textbox",
+      "approvedName": "password_field",
       "type": "password"
     },
     {
@@ -49,11 +49,11 @@
       "type": "button"
     },
     {
-      "variableName": "AUTHENTICATION_FAILED_MESSAGE",
+      "variableName": "GENERIC_AUTHENTICATION_FAILED_MESSAGE",
       "value": "xpath=//*[contains(normalize-space(.),'Failed')]",
       "source": "approved_element",
       "kind": "locator",
-      "approvedName": "authentication_failed_message",
+      "approvedName": "generic_authentication_failed_message",
       "type": "message"
     }
   ]
