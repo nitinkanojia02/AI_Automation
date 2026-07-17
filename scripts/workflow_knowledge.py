@@ -146,13 +146,39 @@ def normalize_text_blocks(value: Any) -> List[str]:
 
 
 def split_story_sentences(value: Any) -> List[str]:
-    text = clean_text(value)
-    if not text:
+    text = str(value or "").replace("\r\n", "\n").replace("\r", "\n")
+    if not clean_text(text):
         return []
-    text = re.sub(r"\b(USER STORY|APPLICATION CONTEXT|ENTRY CONDITIONS|TEST CREDENTIALS|LOGIN PAGE ELEMENTS|BEHAVIOR RULES|VALIDATION EXPECTATIONS|TRANSITION EXPECTATIONS|POM REUSE GUIDANCE|APPROVED TEST DATA GUIDANCE|ACCEPTANCE CRITERIA)\s*:?", "", text, flags=re.IGNORECASE)
-    parts = re.split(r"(?<=[.!?])\s+(?=[A-Z])|\s{2,}", text)
-    normalized = [clean_text(part.strip(' :-')) for part in parts if clean_text(part.strip(' :-'))]
-    filtered = [part for part in normalized if part.lower() not in {"user story", "application context", "entry conditions", "acceptance criteria", "validation expectations"}]
+    heading_pattern = r"\b(USER STORY|APPLICATION CONTEXT|ENTRY CONDITIONS|WORKFLOW SCOPE|PRIMARY NAVIGATION JOURNEY|APPROVED TEST DATA|PAGE / COMPONENT ELEMENTS|PAGE COMPONENT ELEMENTS|BUSINESS RULES|VALIDATION EXPECTATIONS|TRANSITION EXPECTATIONS|RESOURCE REUSE GUIDANCE|DOWNSTREAM AUTOMATION GUIDANCE|TEST CREDENTIALS|LOGIN PAGE ELEMENTS|BEHAVIOR RULES|POM REUSE GUIDANCE|APPROVED TEST DATA GUIDANCE|ACCEPTANCE CRITERIA)\s*:?[ \t]*"
+    text = re.sub(heading_pattern, "\n", text, flags=re.IGNORECASE)
+    text = re.sub(r"(?m)^\s*\d+\.\s+", "", text)
+    text = re.sub(r"(?m)^\s*[-*]\s+", "", text)
+    text = re.sub(r"\n{2,}", "\n", text)
+
+    parts: List[str] = []
+    for raw_line in text.split("\n"):
+        line = clean_text(raw_line.strip(" :-\t"))
+        if not line:
+            continue
+        line = re.sub(r"^\d+\.\s*", "", line)
+        line = re.sub(r"\s+\d+\.$", "", line)
+        line = clean_text(line)
+        if not line or re.fullmatch(r"\d+", line):
+            continue
+        subparts = re.split(r"(?<=[.!?])\s+(?=[A-Z])", line)
+        for part in subparts:
+            cleaned = clean_text(part.strip(" :-\t"))
+            if cleaned and not re.fullmatch(r"\d+", cleaned):
+                parts.append(cleaned)
+
+    filtered = [
+        part for part in parts
+        if part.lower() not in {
+            "user story", "application context", "entry conditions", "workflow scope", "primary navigation journey",
+            "approved test data", "page / component elements", "business rules", "validation expectations",
+            "transition expectations", "resource reuse guidance", "downstream automation guidance", "acceptance criteria"
+        }
+    ]
     return unique_strings(filtered)
 
 

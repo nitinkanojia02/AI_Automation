@@ -37,8 +37,10 @@ Review rules:
 - Reject any suite that relies on AI-created shared/common helper keywords or convenience abstractions instead of reusing approved upstream/page resource keywords already present in retrieved resource context or workflow knowledge
 - If the suite uses a synthetic combined action name where existing upstream resource keywords could be composed directly, refactor it to reuse the approved upstream keywords instead of preserving the invented abstraction
 - If workflow knowledge identifies authoritative upstream page resources needed for entry flow, navigation, state validation, or return-path validation, ensure those upstream resources are actually imported in the suite and reused directly
+- If workflow knowledge defines an approved upstream entry journey, reject suites that assume the target page is already open unless setup or test flow explicitly establishes that approved journey through authoritative resource keywords
 - Reject direct page-bypass behavior when workflow knowledge says the target page is not directly accessed by URL; remove placeholder URLs, synthetic direct opens, and direct-landing assumptions in favor of the approved upstream journey
 - If workflow knowledge defines a successful transition to another page or state, reject suites that still verify the origin page after success instead of verifying the approved destination state
+- Reject suites that use only origin-page disappearance or local-page checks as success evidence when workflow knowledge and authoritative resources support destination-state validation
 - Replace hardcoded reusable data with semantic resource variables when supported
 - Reject literal URL, locator, credential, expected-text, or other reusable business-value leakage when an approved semantic resource variable already exists in retrieved resource context
 - Prefer the reuse hierarchy: approved page keyword first, then approved page variable, and only then a lower-level generic interaction if no approved reusable artifact exists

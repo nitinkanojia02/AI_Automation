@@ -352,7 +352,10 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
         "- relevant_workflow_knowledge is approved cumulative workflow memory created from approved user story context, approved element extraction, approved manual tests, approved resource keywords, and approved automation from prior workflows. Consult it before creating navigation/setup assumptions for the current suite.\n"
         "- If relevant_workflow_knowledge shows that an upstream workflow already owns navigation, page opening, state validation, or reusable controls needed by this workflow, reuse that approved upstream knowledge and imported upstream resources instead of inventing new suite abstractions.\n"
         "- If workflow knowledge says the target page is not directly accessed by URL and must be reached through an upstream page journey, do not bypass that journey with placeholder URLs, synthetic direct opens, or direct page landing assumptions. Reuse the upstream page-resource actions and validations that express the approved entry path.\n"
+        "- If workflow knowledge defines an approved entry journey through upstream resources, model that journey explicitly in Test Setup, Suite Setup, or the test flow itself using approved upstream resource keywords. Do not assume the target page is already open at the start of the test unless the setup clearly establishes that approved journey.\n"
+        "- If authoritative upstream resources are required for entry flow, return-path validation, or destination-state validation, the suite must actually import those resources and use their approved keywords rather than relying only on local-page checks.\n"
         "- If workflow knowledge defines a success transition or return-state destination, the suite must validate that destination state using approved upstream/page resource keywords instead of re-validating the origin page after a successful transition.\n"
+        "- Do not treat disappearance of origin-page controls as sufficient success evidence when workflow knowledge provides a destination page/state and authoritative resource support for validating that destination.\n"
         "- Never invent or define new keywords in shared/common resource space. Common/shared resource files are framework/user-owned reference layers and may be reused, but AI must not extend them with new convenience abstractions.\n"
         "- If workflow knowledge or retrieved resource context already provides upstream page/resource actions needed for navigation or state transition, reuse those existing approved keywords directly instead of coining a new combined action name.\n"
         "- Do not synthesize convenience keywords such as multi-action navigation helpers when the same flow can be expressed by existing approved upstream resource keywords in setup or test bodies.\n"
@@ -1373,6 +1376,38 @@ def validate_robot_alignment_with_resource_context(content: str, resource_contex
         warnings.append(
             "Workflow knowledge indicates the target page is not directly accessed by URL, but the suite still performs direct URL navigation in test bodies. Reuse the approved upstream entry flow instead of bypassing the journey."
         )
+
+    target_page_keywords = set()
+    for summary in (current_workflow_knowledge.get("resourceKnowledge") or {}).get("resourceOwnership", []) if isinstance(current_workflow_knowledge, dict) else []:
+        if not isinstance(summary, dict):
+            continue
+        for keyword_name in ensure_list(summary.get("keywords")):
+            normalized_keyword = clean_text(keyword_name).lower()
+            if normalized_keyword:
+                target_page_keywords.add(normalized_keyword)
+
+    journey_requires_upstream_entry = "not directly accessed by url" in json.dumps(current_workflow_knowledge, ensure_ascii=False).lower() if isinstance(current_workflow_knowledge, dict) else False
+    if journey_requires_upstream_entry:
+        setup_and_test_lines = []
+        for raw_line in content.splitlines():
+            if not raw_line.startswith((" ", "\t")):
+                continue
+            stripped = raw_line.strip()
+            if not stripped or stripped.startswith("["):
+                continue
+            setup_and_test_lines.append(stripped)
+        target_page_only_start = False
+        for sequence in test_step_sequences:
+            if not sequence:
+                continue
+            first_step = clean_text(sequence[0]).lower()
+            if first_step in target_page_keywords and "login form loaded" in first_step:
+                target_page_only_start = True
+                break
+        if target_page_only_start and not re.search(r"(?im)^\s*(?:Suite Setup|Test Setup)\s{2,}.+$", content):
+            warnings.append(
+                "Workflow knowledge requires an upstream entry journey before the target page becomes available, but the suite starts from target-page verification without establishing that journey in setup or test flow. Model the approved upstream journey using authoritative resource keywords."
+            )
 
     if generic_wrapper_literals:
         samples: list[str] = []

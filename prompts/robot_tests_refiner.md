@@ -38,8 +38,10 @@ Refinement rules:
 - Eliminate AI-created shared/common helper abstractions and replace them with direct reuse of approved upstream/page resource keywords already available in workflow knowledge or retrieved resource context
 - Do not preserve synthetic combined navigation helpers if the same flow can be represented by existing approved resource keywords composed through setup or normal test steps
 - If workflow knowledge identifies authoritative upstream page resources needed for entry flow, navigation, state validation, or return-path validation, ensure those upstream resources are actually imported in the suite and reused directly
+- If workflow knowledge defines an approved upstream entry journey, refine the suite so setup or test flow explicitly establishes that journey through authoritative resource keywords instead of assuming the target page is already open
 - Remove direct page-bypass behavior when workflow knowledge says the target page is not directly accessed by URL; replace placeholder URLs, synthetic direct opens, and direct-landing assumptions with the approved upstream journey expressed through existing resource keywords
 - If workflow knowledge defines a successful transition to another page or state, refine the suite so success is verified on the approved destination state rather than by re-checking the origin page after transition
+- Replace origin-page disappearance or local-page-only success checks with approved destination-state validation when workflow knowledge and authoritative resources support it
 - Prefer semantic resource variables over inline reusable literals
 - Reject literal URL, locator, credential, expected-text, or other reusable business-value leakage when an approved semantic resource variable already exists in retrieved resource context
 - Follow the reuse hierarchy strictly: approved page keyword first, then approved page variable, and only then a lower-level generic interaction when no approved reusable artifact exists
