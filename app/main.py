@@ -1732,7 +1732,7 @@ def validate_reviewed_keywords_against_existing_resources(keywords: list[dict], 
     if conflict_analysis.get("summary", {}).get("duplicateKeywordCount", 0) > 0:
         conflict_names = sorted({item.get("candidateName", "") for item in conflict_analysis.get("duplicateKeywords", []) if item.get("candidateName")})
         if conflict_names:
-            errors.append("Reviewed keywords duplicate approved existing keyword capability: " + ", ".join(conflict_names))
+            warnings.append("Reviewed keywords duplicate approved existing keyword capability: " + ", ".join(conflict_names))
     if keyword_reuse_analysis.get("summary", {}).get("ownershipConflictCount", 0) > 0:
         warnings.append("Reviewed keywords indicate overlapping ownership with approved existing resource capability and should be refined toward reuse.")
     if keyword_reuse_analysis.get("summary", {}).get("commonReuseOpportunityCount", 0) > 0:
@@ -4474,14 +4474,23 @@ async def save_keyword_review(request: Request, workflow_name: str):
     combined_warnings = list(keyword_warnings)
     if keyword_reuse_validation_message:
         combined_warnings.extend([line.lstrip("- ").strip() for line in keyword_reuse_validation_message.splitlines() if clean_text(line)])
-    if not keywords_valid or not keyword_reuse_validation_ok:
+    blocking_keyword_warnings = [
+        warning for warning in combined_warnings
+        if any(token in warning.lower() for token in (
+            "duplicate reviewed keyword name",
+            "duplicate reviewed keyword implementation signature",
+            "references unknown variable",
+            "non-approved target element",
+        ))
+    ]
+    if not keywords_valid or blocking_keyword_warnings:
         return render_template(request, "keyword_review.html", {
             "workflow_name": workflow_name,
             "page_name": keyword_data["page_name"],
             "keywords": normalized_keywords or keyword_data["keywords"],
             "review_summary": keyword_data.get("review_summary"),
             "source_artifact": keyword_data.get("source_artifact", "raw"),
-            "error_message": "Keyword review contains grounding conflicts that must be resolved before continuing.",
+            "error_message": "Keyword review contains blocking validation issues that must be resolved before continuing.",
             "grounding_warnings": combined_warnings,
         }, status_code=400)
 
