@@ -2955,7 +2955,8 @@ def generate_resource_for_workflow(workflow: dict, approved_keywords: list[dict]
     if artifact_message:
         append_session_message(page_name, "assistant", "resource_artifact_validation", artifact_message)
 
-    if (not is_valid or not artifact_valid) and artifact_message:
+    blocking_generation_failure = (not is_valid) or (not artifact_valid and artifact_message and "Warnings:" not in artifact_message)
+    if blocking_generation_failure:
         refinement_prompt = (
             build_resource_review_prompt(
                 workflow,
@@ -2965,9 +2966,9 @@ def generate_resource_for_workflow(workflow: dict, approved_keywords: list[dict]
                 common_resource_context,
                 resource_content,
             )
-            + "\n\nAdditional validation failures that must be resolved before finalizing:\n"
-            + artifact_message
-            + "\n\nReturn only corrected Robot Framework resource content. Reuse approved existing variables/keywords/resources where conflicts were identified."
+            + "\n\nAdditional validation findings that should be repaired before finalizing when possible:\n"
+            + (artifact_message or validation_message or "")
+            + "\n\nReturn only corrected Robot Framework resource content. Reuse approved existing variables/keywords/resources where conflicts were identified. If some findings remain warning-level only, still return the best corrected non-empty resource content instead of failing."
         )
         try:
             refined_resource_content = call_ai_with_workflow_session(
@@ -2996,12 +2997,19 @@ def generate_resource_for_workflow(workflow: dict, approved_keywords: list[dict]
             append_session_message(page_name, "assistant", "resource_conflict_refinement_validation", refined_validation_message)
         if refined_artifact_message:
             append_session_message(page_name, "assistant", "resource_conflict_refinement_artifact_validation", refined_artifact_message)
-        if refined_valid and refined_artifact_valid:
+        if refined_resource_content.strip():
             resource_content = refined_resource_content
             is_valid = refined_valid
             artifact_valid = refined_artifact_valid
-        else:
+            validation_message = refined_validation_message
+            artifact_message = refined_artifact_message
+        elif not refined_valid and not refined_artifact_valid:
             raise HTTPException(status_code=400, detail=refined_artifact_message or refined_validation_message or artifact_message or validation_message)
+
+    if validation_message:
+        append_session_message(page_name, "assistant", "resource_final_validation", validation_message)
+    if artifact_message:
+        append_session_message(page_name, "assistant", "resource_final_artifact_validation", artifact_message)
 
     resource_path.write_text(resource_content, encoding="utf-8")
     enrich_resource_with_manual_test_variables(workflow, approved_keywords)
