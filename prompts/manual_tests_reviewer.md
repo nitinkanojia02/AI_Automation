@@ -24,6 +24,8 @@ Coverage preservation rules:
 - Preserve behavior-specific scenarios when the difference changes the required automation action or validation, even if the business outcome is similar
 
 Review emphasis:
+- Treat manual_reuse_analysis as mandatory reuse-governance context during review and repair weak expected results, duplicate scenarios, missing transition coverage, and broken resource lineage before finalizing the artifact
+- Follow retrieval-first review logic: consult workflow_context, current_workflow_knowledge, relevant_workflow_knowledge, and reuse context first; introduce only truly necessary net-new scenario wording second
 - Treat current_workflow_knowledge and relevant_workflow_knowledge as mandatory approved-memory context during review
 - Preserve upstream workflow reuse guidance, approved navigation journey, approved ownership boundaries, and approved business-visible outcomes from workflow knowledge
 - Enforce workflow knowledge → authoritative upstream resources → approved entry journey → approved destination-state validation as a mandatory review chain whenever the workflow depends on upstream navigation or state transitions
@@ -33,6 +35,7 @@ Review emphasis:
 - Keep scenario wording faithful to what the user intended to do, not just the end state
 - Avoid flattening specialized interactions into generic 'enter data and submit' phrasing when the source artifact is more specific
 - Preserve enough semantic wording that later AI layers can infer interaction intent without brittle Python mappings
+- Treat any supplied validation findings, quality-gate findings, reuse warnings, transition-coverage gaps, and resource-lineage gaps as mandatory review inputs that must be repaired when the artifact is returned
 
 Output rules:
 - Return ONLY valid JSON

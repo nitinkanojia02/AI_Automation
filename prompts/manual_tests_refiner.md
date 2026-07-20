@@ -16,6 +16,8 @@ Goals:
 8. Strengthen expectedResult wording into observable evidence that later layers can assert
 
 Refinement rules:
+- Treat manual_reuse_analysis as mandatory reuse-governance context during refinement and resolve weak expected results, duplicate scenarios, missing transition coverage, and resource-lineage gaps before finalizing the artifact
+- Follow retrieval-first refinement logic: consult workflow_context, current_workflow_knowledge, relevant_workflow_knowledge, and reuse context first; introduce only truly necessary net-new scenario wording second
 - Treat current_workflow_knowledge and relevant_workflow_knowledge as mandatory approved-memory context during refinement
 - Preserve upstream workflow reuse guidance, approved navigation journey, approved ownership boundaries, and approved business-visible outcomes from workflow knowledge
 - Enforce workflow knowledge → authoritative upstream resources → approved entry journey → approved destination-state validation as a mandatory refinement chain whenever the workflow depends on upstream navigation or state transitions
@@ -29,6 +31,8 @@ Refinement rules:
 - Expected results should describe what a reviewer or automation can actually observe on the page, in navigation state, in field behavior, or in visible validation feedback
 - Keep only the allowed top-level keys and test-case keys
 - Preserve wording that makes interaction intent inferable later without introducing hardcoded logic in the framework
+- Treat any supplied validation findings, quality-gate findings, reuse warnings, transition-coverage gaps, and resource-lineage gaps as mandatory issues to resolve before finalizing the artifact
+- If refinement input includes approval-blocking findings, do not preserve the offending scenario wording unchanged; repair it so the final artifact can pass the framework quality gate
 - Do not invent unsupported business rules or hidden system behavior
 - Use only information grounded in the provided inputs
 - When refining titles and steps, improve clarity without flattening specialized scenario intent into generic wording

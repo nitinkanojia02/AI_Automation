@@ -11,13 +11,13 @@ import requests
 import urllib3
 
 try:
-    from scripts.artifact_reuse import analyze_reuse_conflicts, analyze_robot_suite_reuse
+    from scripts.artifact_reuse import analyze_manual_test_reuse, analyze_reuse_conflicts, analyze_robot_suite_reuse
     from scripts.workflow_context import infer_workflow_reuse_context
     from scripts.workflow_knowledge import build_workflow_knowledge_context, discover_relevant_workflow_knowledge
 except ModuleNotFoundError:
     import sys
     sys.path.append(str(Path(__file__).resolve().parent.parent))
-    from scripts.artifact_reuse import analyze_reuse_conflicts, analyze_robot_suite_reuse
+    from scripts.artifact_reuse import analyze_manual_test_reuse, analyze_reuse_conflicts, analyze_robot_suite_reuse
     from scripts.workflow_context import infer_workflow_reuse_context
     from scripts.workflow_knowledge import build_workflow_knowledge_context, discover_relevant_workflow_knowledge
 
@@ -454,10 +454,17 @@ def extract_response_text(resp: requests.Response) -> str:
     return resp.text.strip()
 
 
-def build_manual_review_prompt(manual_data: dict) -> str:
+def build_manual_review_prompt(manual_data: dict, workflow_context: dict | None = None) -> str:
     reviewer_md = load_prompt_markdown("manual_tests_reviewer.md")
+    workflow_context = workflow_context or {}
+    manual_reuse_analysis = analyze_manual_test_reuse(manual_data, workflow_context)
+    payload = {
+        "manual_test": manual_data,
+        "workflow_context": workflow_context,
+        "manual_reuse_analysis": manual_reuse_analysis,
+    }
     if reviewer_md:
-        return f"{reviewer_md}\n\nInput JSON:\n{json.dumps(manual_data, indent=2)}"
+        return f"{reviewer_md}\n\nInput JSON:\n{json.dumps(payload, indent=2)}"
     return (
         "You are AI Layer 2: a senior QA review architect performing a strict review of a generated manual-test JSON artifact.\n"
         "Return only valid JSON with the same top-level structure.\n\n"
@@ -489,19 +496,23 @@ def build_manual_review_prompt(manual_data: dict) -> str:
         "- remove shallow duplicates that differ only in wording but not observable intent\n"
         "- repair vague expected results into observable outcomes\n"
         "- preserve or improve overall coverage breadth\n\n"
-        f"Input JSON:\n{json.dumps(manual_data, indent=2)}"
+        f"Input JSON:\n{json.dumps(payload, indent=2)}"
     )
 
 
-def build_manual_refiner_prompt(original_manual_data: dict, reviewed_manual_data: dict) -> str:
+def build_manual_refiner_prompt(original_manual_data: dict, reviewed_manual_data: dict, workflow_context: dict | None = None) -> str:
     refiner_md = load_prompt_markdown("manual_tests_refiner.md")
+    workflow_context = workflow_context or {}
     payload = {
         "original_manual": original_manual_data,
         "reviewed_manual": reviewed_manual_data,
+        "workflow_context": workflow_context,
+        "manual_reuse_analysis": analyze_manual_test_reuse(reviewed_manual_data or original_manual_data, workflow_context),
         "refinement_focus": [
             "Preserve action intent and behavioral nuance from the source artifact.",
             "Strengthen expectedResult into observable evidence without inventing unsupported behavior.",
-            "Keep scenario breadth high and avoid collapsing distinct interaction patterns into generic flows."
+            "Keep scenario breadth high and avoid collapsing distinct interaction patterns into generic flows.",
+            "Preserve authoritative workflow/resource lineage and explicit destination-state coverage when available."
         ],
     }
     if refiner_md:
@@ -1964,9 +1975,25 @@ def validate_robot_content(content: str, allowed_resources: list[str]) -> tuple[
     return is_valid, "\n\n".join(part for part in message_parts if part)
 
 
-def validate_manual_content(manual_data: dict) -> tuple[bool, str]:
+def validate_manual_content(manual_data: dict, workflow_context: dict | None = None) -> tuple[bool, str]:
     errors: list[str] = []
     warnings: list[str] = []
+    workflow_context = workflow_context or {}
+
+    def _warning_severity(message: str) -> int:
+        text = clean_text(message).lower()
+        if any(token in text for token in [
+            "destination/transition coverage gaps",
+            "resource lineage",
+            "weak expected-result",
+            "likely duplicate scenario",
+            "no positive manual test explicitly asserts observable success state",
+            "no negative manual test explicitly asserts observable failure or rejection state",
+        ]):
+            return 2
+        if "missing scenario category" in text or "coverage appears thin" in text:
+            return 1
+        return 0
 
     if not isinstance(manual_data, dict):
         return False, "Manual artifact must be a JSON object"
@@ -2052,16 +2079,39 @@ def validate_manual_content(manual_data: dict) -> tuple[bool, str]:
 
     if len(test_cases) < 6:
         warnings.append("Manual test coverage appears thin: fewer than 6 test cases were generated")
+    manual_reuse_analysis = analyze_manual_test_reuse(manual_data, workflow_context)
+    if manual_reuse_analysis.get("summary", {}).get("weakExpectedResultCount", 0) > 0:
+        warnings.append(
+            f"Manual reuse analysis found {manual_reuse_analysis['summary']['weakExpectedResultCount']} weak expected-result scenario(s) that should be made more observable"
+        )
+    if manual_reuse_analysis.get("summary", {}).get("duplicateScenarioCount", 0) > 0:
+        warnings.append(
+            f"Manual reuse analysis found {manual_reuse_analysis['summary']['duplicateScenarioCount']} likely duplicate scenario group(s)"
+        )
+    if manual_reuse_analysis.get("transitionCoverageGaps"):
+        warnings.append(
+            "Workflow knowledge suggests explicit destination/transition coverage gaps: "
+            + "; ".join(manual_reuse_analysis.get("transitionCoverageGaps", [])[:5])
+        )
+    if manual_reuse_analysis.get("resourceLineageGaps"):
+        warnings.extend(manual_reuse_analysis.get("resourceLineageGaps", []))
+
     for category_name, present in category_flags.items():
         if not present:
             warnings.append(f"Manual test coverage may be missing scenario category: {category_name}")
 
-    is_valid = len(errors) == 0
+    strong_warning_count = sum(1 for item in warnings if _warning_severity(item) >= 2)
+    quality_gate_failed = strong_warning_count > 0
+    is_valid = len(errors) == 0 and not quality_gate_failed
     message_parts = []
     if errors:
         message_parts.append("\n".join(errors))
     if warnings:
         message_parts.append("Warnings:\n" + "\n".join(warnings))
+    if quality_gate_failed:
+        message_parts.append(
+            f"Quality gate failed: {strong_warning_count} high-severity manual reuse/observability warning(s) must be resolved before approval"
+        )
     return is_valid, "\n\n".join(part for part in message_parts if part)
 
 def derive_module_name(manual_data: dict, manual_json_path: Path) -> str:

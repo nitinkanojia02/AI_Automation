@@ -1,7 +1,7 @@
 import re
 from collections import Counter
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 POM_DIR = BASE_DIR / "pom_pages"
@@ -240,6 +240,124 @@ def analyze_reuse_conflicts(candidate_content: str, candidate_file: str = "") ->
             "duplicateVariableCount": len(duplicate_variables),
             "duplicateKeywordCount": len(duplicate_keywords),
             "ownershipConflictCount": len(ownership_conflicts),
+        },
+    }
+
+
+def normalize_text_signature(value: str) -> str:
+    text = clean_text(value).lower()
+    text = re.sub(r"[^a-z0-9]+", " ", text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def analyze_manual_test_reuse(manual_data: Dict[str, Any], workflow_context: Dict[str, Any] | None = None) -> Dict[str, Any]:
+    workflow_context = workflow_context or {}
+    current_knowledge = workflow_context.get("current_workflow_knowledge") or {}
+    relevant_knowledge = workflow_context.get("relevant_workflow_knowledge") or []
+    reuse_context = workflow_context.get("reuse_context") or workflow_context.get("inferred_reuse_context") or {}
+
+    approved_resource_files = {
+        clean_text(item).lower()
+        for item in (manual_data.get("resourceFiles") or [])
+        if clean_text(item)
+    }
+    approved_resource_files.update(
+        clean_text(item).lower()
+        for item in (reuse_context.get("resourceFiles") or [])
+        if clean_text(item)
+    )
+
+    authoritative_resources = {
+        clean_text(item).lower()
+        for item in (current_knowledge.get("authoritativeResources") or [])
+        if clean_text(item)
+    }
+    for item in relevant_knowledge:
+        if not isinstance(item, dict):
+            continue
+        for resource in (item.get("authoritativeResources") or []):
+            cleaned = clean_text(resource).lower()
+            if cleaned:
+                authoritative_resources.add(cleaned)
+
+    scenarios = manual_data.get("testCases") or []
+    seen_signatures: Dict[Tuple[str, str], List[str]] = {}
+    weak_expected_results: List[Dict[str, str]] = []
+    duplicate_scenarios: List[Dict[str, Any]] = []
+    transition_coverage_gaps: List[str] = []
+    resource_lineage_gaps: List[str] = []
+    reused_intent_markers: List[str] = []
+
+    for case in scenarios:
+        if not isinstance(case, dict):
+            continue
+        title = clean_text(case.get("title", ""))
+        expected = clean_text(case.get("expectedResult", ""))
+        case_id = clean_text(case.get("id", "")) or title
+        steps = [clean_text(step) for step in (case.get("steps") or []) if clean_text(step)]
+        combined = " ".join([title, expected, *steps])
+        signature = (
+            normalize_text_signature(title),
+            normalize_text_signature(expected),
+        )
+        seen_signatures.setdefault(signature, []).append(case_id)
+
+        if expected.lower() in {
+            "system behaves as expected",
+            "workflow completes successfully",
+            "system works correctly",
+            "validation should appear",
+            "login should happen",
+        }:
+            weak_expected_results.append({"id": case_id, "title": title, "expectedResult": expected})
+
+        if any(token in combined.lower() for token in ["home", "dashboard", "redirect", "navigate", "landing", "return to", "back"]):
+            reused_intent_markers.append(case_id)
+
+    for signature, case_ids in seen_signatures.items():
+        if len(case_ids) > 1:
+            duplicate_scenarios.append({
+                "signature": " | ".join(part for part in signature if part),
+                "caseIds": case_ids,
+            })
+
+    success_destinations = [
+        clean_text(item)
+        for item in (current_knowledge.get("successDestination") or [])
+        if clean_text(item)
+    ]
+    if success_destinations:
+        for destination in success_destinations:
+            normalized_destination = normalize_text_signature(destination)
+            if normalized_destination and not any(
+                normalized_destination in normalize_text_signature(
+                    " ".join([
+                        clean_text(case.get("title", "")),
+                        clean_text(case.get("expectedResult", "")),
+                        " ".join(clean_text(step) for step in (case.get("steps") or []) if clean_text(step)),
+                    ])
+                )
+                for case in scenarios if isinstance(case, dict)
+            ):
+                transition_coverage_gaps.append(destination)
+
+    if authoritative_resources and approved_resource_files:
+        if not (approved_resource_files & authoritative_resources):
+            resource_lineage_gaps.append(
+                "Manual artifact resourceFiles do not reflect authoritative upstream/current resources from workflow knowledge."
+            )
+
+    return {
+        "weakExpectedResults": weak_expected_results,
+        "duplicateScenarios": duplicate_scenarios,
+        "transitionCoverageGaps": transition_coverage_gaps,
+        "resourceLineageGaps": resource_lineage_gaps,
+        "reusedIntentMarkers": sorted(set(reused_intent_markers)),
+        "summary": {
+            "weakExpectedResultCount": len(weak_expected_results),
+            "duplicateScenarioCount": len(duplicate_scenarios),
+            "transitionCoverageGapCount": len(transition_coverage_gaps),
+            "resourceLineageGapCount": len(resource_lineage_gaps),
         },
     }
 

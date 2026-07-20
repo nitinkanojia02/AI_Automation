@@ -7,13 +7,13 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 try:
-    from scripts.generate_robot_from_manual import build_manual_review_prompt, validate_manual_content
+    from scripts.generate_robot_from_manual import build_manual_refiner_prompt, build_manual_review_prompt, validate_manual_content
     from scripts.workflow_context import infer_workflow_reuse_context
     from scripts.workflow_knowledge import build_workflow_knowledge_context, discover_relevant_workflow_knowledge
 except ModuleNotFoundError:
     import sys
     sys.path.append(str(Path(__file__).resolve().parent.parent))
-    from scripts.generate_robot_from_manual import build_manual_review_prompt, validate_manual_content
+    from scripts.generate_robot_from_manual import build_manual_refiner_prompt, build_manual_review_prompt, validate_manual_content
     from scripts.workflow_context import infer_workflow_reuse_context
     from scripts.workflow_knowledge import build_workflow_knowledge_context, discover_relevant_workflow_knowledge
 
@@ -987,6 +987,12 @@ def process_workflow_file(config: Dict[str, Any], input_path: Path) -> None:
     if not endpoint or not token:
         raise RuntimeError("Missing ai.endpoint or AI token.")
 
+    workflow_context = {
+        "reuse_context": workflow_input.get("inferredReuseContext") or infer_workflow_reuse_context(workflow_input),
+        "current_workflow_knowledge": build_workflow_knowledge_context(workflow_input),
+        "relevant_workflow_knowledge": discover_relevant_workflow_knowledge(workflow_input),
+    }
+
     prompt = build_prompt(workflow_input)
     generated = call_devex_ai(
         endpoint=endpoint,
@@ -996,10 +1002,19 @@ def process_workflow_file(config: Dict[str, Any], input_path: Path) -> None:
     reviewed = call_devex_ai(
         endpoint=endpoint,
         token=token,
-        prompt=build_manual_review_prompt(generated),
+        prompt=build_manual_review_prompt(generated, workflow_context),
     )
     final_json = normalize_manual_test(reviewed or generated, workflow_input)
-    is_valid, validation_message = validate_manual_content(final_json)
+    is_valid, validation_message = validate_manual_content(final_json, workflow_context)
+    if not is_valid or validation_message:
+        refinement_prompt = build_manual_refiner_prompt(generated, final_json, workflow_context)
+        refined = call_devex_ai(
+            endpoint=endpoint,
+            token=token,
+            prompt=refinement_prompt,
+        )
+        final_json = normalize_manual_test(refined or final_json, workflow_input)
+        is_valid, validation_message = validate_manual_content(final_json, workflow_context)
     if not is_valid:
         raise ValueError(f"Generated invalid manual content for {input_path.name}: {validation_message}")
     if validation_message:
