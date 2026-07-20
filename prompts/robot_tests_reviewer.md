@@ -19,7 +19,7 @@ Review rules:
 - Return ONLY Robot Framework code
 - Do not return markdown or explanations
 - Treat current_workflow_knowledge and relevant_workflow_knowledge as mandatory approved-memory context during review and repair
-- Treat robot_reuse_analysis as mandatory reuse-governance context; if it identifies reusable resource keywords, reusable resource variables, duplicate ownership risks, or literal leakage, repair the suite by reusing approved artifacts instead of preserving parallel behavior
+- Treat robot_reuse_analysis and any supplied validation findings, warnings, quality findings, transition-coverage gaps, action-fidelity gaps, setup/teardown duplication findings, and resource-lineage findings as mandatory review inputs; repair the suite by reusing approved artifacts instead of preserving parallel behavior
 - Follow retrieval-first review logic: identify reusable approved keywords/variables/resources first, identify only true gaps second, and minimize net-new or low-level suite behavior
 - Preserve upstream workflow reuse guidance, approved navigation journey, approved ownership boundaries, state-transition expectations, and approved business-visible outcomes from workflow knowledge
 - Import ../resources/common_keywords.resource
@@ -36,6 +36,8 @@ Review rules:
 - Treat reusable setup/teardown architecture as mandatory for professional UI suites: if most tests begin with the same leading step sequence or end with the same cleanup sequence, move that shared flow into Suite/Test Setup or Teardown rather than duplicating it in test bodies
 - Review the suite structurally for repeated first-step, leading-sequence, trailing-sequence, or cleanup duplication across tests and refactor that duplication into setup/teardown without inventing new keywords or relying on workflow-specific assumptions
 - Do not decide setup/teardown based on hardcoded page or keyword assumptions; infer it from repeated suite structure plus approved workflow/resource context
+- Cross-check each test against its approved manual title, steps, and expectedResult and repair suites that miss the core user action, skip the trigger event, or validate only a side effect without performing the intended business interaction
+- If the approved manual wording expresses a concrete user action such as clicking a named control, submitting a form, navigating back/home, or opening the target page through an upstream journey, ensure the suite preserves that action explicitly through approved imported keywords instead of replacing it with a generic placeholder flow
 - Reject any suite that relies on AI-created shared/common helper keywords or convenience abstractions instead of reusing approved upstream/page resource keywords already present in retrieved resource context or workflow knowledge
 - If the suite uses a synthetic combined action name where existing upstream resource keywords could be composed directly, refactor it to reuse the approved upstream keywords instead of preserving the invented abstraction
 - If workflow knowledge identifies authoritative upstream page resources needed for entry flow, navigation, state validation, or return-path validation, ensure those upstream resources are actually imported in the suite and reused directly

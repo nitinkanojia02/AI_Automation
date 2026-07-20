@@ -19,7 +19,7 @@ Refinement rules:
 - Return ONLY Robot Framework code
 - Do not return markdown or explanation
 - Treat current_workflow_knowledge and relevant_workflow_knowledge as mandatory approved-memory context during final refinement
-- Treat robot_reuse_analysis as mandatory reuse-governance context; if it identifies reusable resource keywords, reusable resource variables, duplicate ownership risks, or literal leakage, refine the suite by reusing approved artifacts instead of preserving parallel or literal-driven behavior
+- Treat robot_reuse_analysis and any supplied validation findings, warnings, quality findings, transition-coverage gaps, action-fidelity gaps, setup/teardown duplication findings, and resource-lineage findings as mandatory refinement inputs; if they identify reusable resource keywords, reusable resource variables, duplicate ownership risks, literal leakage, or weak behavior fidelity, refine the suite by reusing approved artifacts instead of preserving parallel or literal-driven behavior
 - Follow retrieval-first refinement logic: identify reusable approved keywords/variables/resources first, identify only true gaps second, and minimize low-level suite behavior
 - Preserve upstream workflow reuse guidance, approved navigation journey, approved ownership boundaries, state-transition expectations, and approved business-visible outcomes from workflow knowledge
 - Do not modify page-resource content
@@ -37,6 +37,8 @@ Refinement rules:
 - Treat missing reusable setup/teardown for dominant repeated leading or trailing step sequences as a quality defect; professional suites should move repeated mechanics out of test bodies unless a test intentionally needs a unique setup or cleanup path
 - Refine the suite structurally: if the same first steps, leading sequences, trailing sequences, or cleanup sequences appear across many tests, extract that repeated flow into setup/teardown rather than leaving duplication in the test bodies
 - Do not infer setup/teardown from hardcoded page names or keyword mappings; infer it from repeated suite structure plus approved workflow/resource context
+- Cross-check each test against its approved manual title, steps, and expectedResult and repair suites that miss the core user action, skip the trigger event, or validate only a side effect without performing the intended business interaction
+- If the approved manual wording expresses a concrete user action such as clicking a named control, submitting a form, navigating back/home, or opening the target page through an upstream journey, preserve that action explicitly through approved imported keywords rather than collapsing it into a generic flow
 - Eliminate AI-created shared/common helper abstractions and replace them with direct reuse of approved upstream/page resource keywords already available in workflow knowledge or retrieved resource context
 - Do not preserve synthetic combined navigation helpers if the same flow can be represented by existing approved resource keywords composed through setup or normal test steps
 - If workflow knowledge identifies authoritative upstream page resources needed for entry flow, navigation, state validation, or return-path validation, ensure those upstream resources are actually imported in the suite and reused directly
