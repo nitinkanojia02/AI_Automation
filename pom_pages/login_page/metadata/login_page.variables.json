@@ -49,11 +49,11 @@
       "type": "button"
     },
     {
-      "variableName": "GENERIC_FAILED_MESSAGE",
+      "variableName": "GENERIC_FAILED_AUTHENTICATION_MESSAGE",
       "value": "xpath=//*[contains(normalize-space(.),'Failed')]",
       "source": "approved_element",
       "kind": "locator",
-      "approvedName": "generic_failed_message",
+      "approvedName": "generic_failed_authentication_message",
       "type": "message"
     }
   ]

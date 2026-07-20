@@ -170,7 +170,7 @@
       "approved": true
     },
     {
-      "approvedName": "generic_failed_message",
+      "approvedName": "generic_failed_authentication_message",
       "type": "message",
       "locator": "xpath=//*[contains(normalize-space(.),'Failed')]",
       "approved": true
@@ -178,63 +178,70 @@
   ],
   "reviewSummary": {
     "overall_quality": "medium",
-    "summary": "The draft captures the core login controls but contains duplicate password elements, weak semantic naming, missing navigation and validation elements required by the workflow, and decorative noise that should be removed before downstream automation generation.",
+    "summary": "The draft captures the primary login controls but contains duplicate password elements, noisy non-business elements, inconsistent semantic naming, and missing navigation and validation elements required for downstream automation quality.",
     "issues": [
       {
         "severity": "high",
         "type": "duplicate",
         "element_name": "password",
-        "message": "Two separate elements represent the same password input control using different DOM layers and duplicate names.",
-        "suggested_fix": "Keep only the native actionable password input with locator id=ion-input-1 and remove the wrapper ion-input element with id=password."
+        "message": "Two separate elements represent the same Password control. The ion-input wrapper duplicates the native input field and creates ambiguous ownership for downstream resources.",
+        "suggested_fix": "Keep only the native password input using locator id=ion-input-1 and remove the ion-input wrapper element."
       },
       {
         "severity": "high",
         "type": "naming",
         "element_name": "password",
-        "message": "The element name 'password' is too generic and inconsistent with the approved semantic naming style.",
-        "suggested_fix": "Rename the retained password element to 'password_textbox'."
-      },
-      {
-        "severity": "medium",
-        "type": "classification",
-        "element_name": "password",
-        "message": "The password control is classified as a generic textbox even though the field type is password and masking behavior is business-significant.",
-        "suggested_fix": "Classify the retained password element as type 'password'."
+        "message": "The element name 'password' is too generic and inconsistent with the approved naming convention already used for user_name_textbox.",
+        "suggested_fix": "Rename the element to password_textbox for semantic consistency and downstream keyword clarity."
       },
       {
         "severity": "medium",
         "type": "noise",
         "element_name": "background_content",
-        "message": "The background container is decorative layout content and does not provide reusable automation value.",
-        "suggested_fix": "Remove the background_content element from the approved page model."
+        "message": "The background content div is a layout/decorative container and is not a business-significant workflow element.",
+        "suggested_fix": "Remove the background_content element from the approved page model unless specifically needed for overlay-dismiss interaction behavior."
       },
       {
         "severity": "high",
         "type": "missing_element",
         "element_name": "",
-        "message": "Back button required by workflow navigation expectations and approved manual tests is missing from the draft artifact.",
-        "suggested_fix": "Add a semantically named back_button element using a stable locator."
+        "message": "The Login page Back button required by workflow navigation and return-path validation is missing from the approved elements.",
+        "suggested_fix": "Add a back_button element using locator id=auto_back_btn."
       },
       {
         "severity": "high",
         "type": "missing_element",
         "element_name": "",
-        "message": "Home button required by workflow navigation expectations and approved manual tests is missing from the draft artifact.",
-        "suggested_fix": "Add a semantically named home_button element using a stable locator."
+        "message": "The Login page Home button required by workflow navigation and unauthenticated return-state validation is missing from the approved elements.",
+        "suggested_fix": "Add a home_button element using locator id=auto_home_btn."
       },
       {
-        "severity": "high",
+        "severity": "critical",
         "type": "validation_gap",
         "element_name": "",
-        "message": "The workflow explicitly validates generic failed authentication behavior, but no authentication error or failed message element is present in the reviewed page model.",
-        "suggested_fix": "Add a reusable generic_failed_message validation element with a stable text-based locator."
+        "message": "The generic Failed authentication message required for all negative authentication scenarios is missing from the approved page model.",
+        "suggested_fix": "Add a generic_failed_authentication_message element using locator xpath=//*[contains(normalize-space(.),'Failed')]."
       },
       {
         "severity": "medium",
         "type": "locator",
         "element_name": "sign_in_button",
-        "message": "The sign in button locator depends entirely on visible text and may become brittle if button text changes.",
-        "suggested_fix": "Prefer a stable id, aria-label, data-testid, or automation attribute if available; otherwise retain current locator as fallback."
+        "message": "The locator depends entirely on visible button text and may become brittle if button wording changes.",
+        "suggested_fix": "Prefer a stable semantic id, automation attribute, or aria-based locator if available in the DOM."
+      },
+      {
+        "severity": "medium",
+        "type": "classification",
+        "element_name": "password",
+        "message": "The ion-input wrapper element is classified as a textbox even though it primarily behaves as a component container around the actual input.",
+        "suggested_fix": "Remove the wrapper element and keep only the native input textbox element."
+      },
+      {
+        "severity": "medium",
+        "type": "missing_element",
+        "element_name": "",
+        "message": "Authenticated Home state validation depends on authenticated user identity and authenticated-only feature visibility, but no corresponding downstream validation elements are identified in the workflow lineage.",
+        "suggested_fix": "Capture authenticated user identity display and authenticated-only feature area elements in the Home page model for stronger post-login validation."
       }
     ],
     "approved_elements": [
@@ -242,37 +249,37 @@
         "name": "user_name_textbox",
         "type": "textbox",
         "locator": "id=ion-input-0",
-        "description": "Username input field used for authentication."
+        "description": "Username entry field for authentication."
       },
       {
         "name": "password_textbox",
-        "type": "password",
+        "type": "textbox",
         "locator": "id=ion-input-1",
-        "description": "Password input field with masked entry behavior."
+        "description": "Masked password entry field for authentication."
       },
       {
         "name": "sign_in_button",
         "type": "button",
         "locator": "xpath=//ion-button[normalize-space(.)='SIGN IN']",
-        "description": "Primary authentication submission button."
+        "description": "Submits login credentials for authentication."
       },
       {
         "name": "back_button",
         "type": "button",
         "locator": "id=auto_back_btn",
-        "description": "Navigation control that returns the user to the Home page."
+        "description": "Returns the user to the Home page without authentication."
       },
       {
         "name": "home_button",
         "type": "button",
         "locator": "id=auto_home_btn",
-        "description": "Navigation control that returns the user to the Home page."
+        "description": "Navigates the user back to the Home page without authentication."
       },
       {
-        "name": "generic_failed_message",
+        "name": "generic_failed_authentication_message",
         "type": "message",
         "locator": "xpath=//*[contains(normalize-space(.),'Failed')]",
-        "description": "Generic authentication failure message displayed for rejected login attempts."
+        "description": "Generic authentication failure message displayed for invalid or rejected login attempts."
       }
     ]
   }

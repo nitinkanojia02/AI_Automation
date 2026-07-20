@@ -39,7 +39,7 @@
       "approved": true
     },
     {
-      "keywordId": "KW_004",
+      "keywordId": "KW_005",
       "keywordName": "Verify User Name Textbox",
       "targetElement": "user_name_textbox",
       "action": "verify",
@@ -52,30 +52,30 @@
       "approved": true
     },
     {
-      "keywordId": "KW_005",
+      "keywordId": "KW_006",
       "keywordName": "Verify Back Button",
       "targetElement": "back_button",
       "action": "verify",
       "arguments": [],
       "implementation": [
-        "Wait For Element To Be Ready    ${BACK_BUTTON}",
-        "Wait For Element To Be Ready    ${HOME_BUTTON}"
-      ],
-      "approved": true
-    },
-    {
-      "keywordId": "KW_006",
-      "keywordName": "Verify Generic Failed Message",
-      "targetElement": "generic_failed_message",
-      "action": "verify",
-      "arguments": [],
-      "implementation": [
-        "Wait For Element To Be Ready    ${GENERIC_FAILED_MESSAGE}"
+        "Wait For Element To Be Ready    id=auto_back_btn",
+        "Wait For Element To Be Ready    id=auto_home_btn"
       ],
       "approved": true
     },
     {
       "keywordId": "KW_007",
+      "keywordName": "Verify Generic Failed Authentication Message",
+      "targetElement": "generic_failed_authentication_message",
+      "action": "verify",
+      "arguments": [],
+      "implementation": [
+        "Wait For Element To Be Ready    xpath=//*[contains(normalize-space(.),'Failed')]"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_008",
       "keywordName": "Verify Password Textbox",
       "targetElement": "password_textbox",
       "action": "verify",
