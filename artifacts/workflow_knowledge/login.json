@@ -6,7 +6,7 @@
   "applicationCode": "WT",
   "testIdentifierPrefix": "LOGIN",
   "status": "approved_artifact_memory",
-  "generatedAt": "2026-07-20T09:00:30.709328+00:00",
+  "generatedAt": "2026-07-20T10:26:07.648371+00:00",
   "businessContext": {
     "userStory": [
       "Login Feature",
@@ -217,15 +217,15 @@
           "VALID_PASSWORD",
           "INVALID_USERNAME",
           "INVALID_PASSWORD",
-          "UPPERCASE_VALID_USERNAME",
-          "UPPERCASE_VALID_PASSWORD",
-          "SPECIAL_CHARACTER_USERNAME",
-          "SPECIAL_CHARACTER_PASSWORD"
+          "WRONG_PASSWORD",
+          "LOWERCASE_PASSWORD_VARIANT",
+          "GENERIC_FAILED_MESSAGE_TEXT"
         ],
         "keywordNames": [
           "Enter User Name Textbox",
           "Enter Password Textbox",
           "Click Sign In Button",
+          "Background Content",
           "Verify Login Form Loaded",
           "Verify User Name Textbox",
           "Verify Password Textbox",
@@ -310,15 +310,15 @@
           "VALID_PASSWORD",
           "INVALID_USERNAME",
           "INVALID_PASSWORD",
-          "UPPERCASE_VALID_USERNAME",
-          "UPPERCASE_VALID_PASSWORD",
-          "SPECIAL_CHARACTER_USERNAME",
-          "SPECIAL_CHARACTER_PASSWORD"
+          "WRONG_PASSWORD",
+          "LOWERCASE_PASSWORD_VARIANT",
+          "GENERIC_FAILED_MESSAGE_TEXT"
         ],
         "keywords": [
           "Enter User Name Textbox",
           "Enter Password Textbox",
           "Click Sign In Button",
+          "Background Content",
           "Verify Login Form Loaded",
           "Verify User Name Textbox",
           "Verify Password Textbox",
@@ -460,10 +460,6 @@
             {
               "resource": "pom_pages/login_page/login_page.resource",
               "name": "VALID_USERNAME"
-            },
-            {
-              "resource": "pom_pages/login_page/login_page.resource",
-              "name": "UPPERCASE_VALID_USERNAME"
             }
           ]
         },
@@ -477,7 +473,7 @@
             },
             {
               "resource": "pom_pages/login_page/login_page.resource",
-              "name": "UPPERCASE_VALID_PASSWORD"
+              "name": "LOWERCASE_PASSWORD_VARIANT"
             }
           ]
         },
@@ -502,21 +498,17 @@
           ]
         },
         {
-          "candidateName": "UPPERCASE_VALID_USERNAME",
-          "locator": "krisadmin",
+          "candidateName": "WRONG_PASSWORD",
+          "locator": "wrongpassword#1",
           "existingOwners": [
             {
               "resource": "pom_pages/login_page/login_page.resource",
-              "name": "VALID_USERNAME"
-            },
-            {
-              "resource": "pom_pages/login_page/login_page.resource",
-              "name": "UPPERCASE_VALID_USERNAME"
+              "name": "WRONG_PASSWORD"
             }
           ]
         },
         {
-          "candidateName": "UPPERCASE_VALID_PASSWORD",
+          "candidateName": "LOWERCASE_PASSWORD_VARIANT",
           "locator": "carwash#1",
           "existingOwners": [
             {
@@ -525,27 +517,17 @@
             },
             {
               "resource": "pom_pages/login_page/login_page.resource",
-              "name": "UPPERCASE_VALID_PASSWORD"
+              "name": "LOWERCASE_PASSWORD_VARIANT"
             }
           ]
         },
         {
-          "candidateName": "SPECIAL_CHARACTER_USERNAME",
-          "locator": "!@#$%^&*",
+          "candidateName": "GENERIC_FAILED_MESSAGE_TEXT",
+          "locator": "failed",
           "existingOwners": [
             {
               "resource": "pom_pages/login_page/login_page.resource",
-              "name": "SPECIAL_CHARACTER_USERNAME"
-            }
-          ]
-        },
-        {
-          "candidateName": "SPECIAL_CHARACTER_PASSWORD",
-          "locator": "<>?:{}",
-          "existingOwners": [
-            {
-              "resource": "pom_pages/login_page/login_page.resource",
-              "name": "SPECIAL_CHARACTER_PASSWORD"
+              "name": "GENERIC_FAILED_MESSAGE_TEXT"
             }
           ]
         },
@@ -807,6 +789,27 @@
           ]
         },
         {
+          "candidateName": "Background Content",
+          "sameNameOwners": [
+            {
+              "resource": "pom_pages/login_page/login_page.resource",
+              "name": "Background Content"
+            }
+          ],
+          "sameBodyOwners": [
+            {
+              "resource": "pom_pages/login_page/login_page.resource",
+              "name": "Background Content"
+            }
+          ],
+          "sameSignatureOwners": [
+            {
+              "resource": "pom_pages/login_page/login_page.resource",
+              "name": "Background Content"
+            }
+          ]
+        },
+        {
           "candidateName": "Verify Login Form Loaded",
           "sameNameOwners": [
             {
@@ -818,10 +821,6 @@
             {
               "resource": "pom_pages/login_page/login_page.resource",
               "name": "Verify Login Form Loaded"
-            },
-            {
-              "resource": "pom_pages/login_page/login_page.resource",
-              "name": "Verify User Name Textbox"
             }
           ],
           "sameSignatureOwners": [
@@ -840,10 +839,6 @@
             }
           ],
           "sameBodyOwners": [
-            {
-              "resource": "pom_pages/login_page/login_page.resource",
-              "name": "Verify Login Form Loaded"
-            },
             {
               "resource": "pom_pages/login_page/login_page.resource",
               "name": "Verify User Name Textbox"
@@ -868,10 +863,6 @@
             {
               "resource": "pom_pages/login_page/login_page.resource",
               "name": "Verify Password Textbox"
-            },
-            {
-              "resource": "pom_pages/login_page/login_page.resource",
-              "name": "Verify Generic Failed Message"
             }
           ],
           "sameSignatureOwners": [
@@ -911,10 +902,6 @@
             }
           ],
           "sameBodyOwners": [
-            {
-              "resource": "pom_pages/login_page/login_page.resource",
-              "name": "Verify Password Textbox"
-            },
             {
               "resource": "pom_pages/login_page/login_page.resource",
               "name": "Verify Generic Failed Message"
@@ -1375,15 +1362,15 @@
           "reason": "Same locator already exists in approved resource context."
         },
         {
-          "candidateName": "UPPERCASE_VALID_USERNAME",
+          "candidateName": "WRONG_PASSWORD",
           "reuseFrom": {
             "resource": "pom_pages/login_page/login_page.resource",
-            "name": "VALID_USERNAME"
+            "name": "WRONG_PASSWORD"
           },
           "reason": "Same locator already exists in approved resource context."
         },
         {
-          "candidateName": "UPPERCASE_VALID_PASSWORD",
+          "candidateName": "LOWERCASE_PASSWORD_VARIANT",
           "reuseFrom": {
             "resource": "pom_pages/login_page/login_page.resource",
             "name": "VALID_PASSWORD"
@@ -1391,18 +1378,10 @@
           "reason": "Same locator already exists in approved resource context."
         },
         {
-          "candidateName": "SPECIAL_CHARACTER_USERNAME",
+          "candidateName": "GENERIC_FAILED_MESSAGE_TEXT",
           "reuseFrom": {
             "resource": "pom_pages/login_page/login_page.resource",
-            "name": "SPECIAL_CHARACTER_USERNAME"
-          },
-          "reason": "Same locator already exists in approved resource context."
-        },
-        {
-          "candidateName": "SPECIAL_CHARACTER_PASSWORD",
-          "reuseFrom": {
-            "resource": "pom_pages/login_page/login_page.resource",
-            "name": "SPECIAL_CHARACTER_PASSWORD"
+            "name": "GENERIC_FAILED_MESSAGE_TEXT"
           },
           "reason": "Same locator already exists in approved resource context."
         },
@@ -1573,6 +1552,14 @@
           "reuseFrom": {
             "resource": "pom_pages/login_page/login_page.resource",
             "name": "Click Sign In Button"
+          },
+          "reason": "Same keyword name, normalized implementation, or semantic signature already exists in approved resource context."
+        },
+        {
+          "candidateName": "Background Content",
+          "reuseFrom": {
+            "resource": "pom_pages/login_page/login_page.resource",
+            "name": "Background Content"
           },
           "reason": "Same keyword name, normalized implementation, or semantic signature already exists in approved resource context."
         },
@@ -1873,39 +1860,30 @@
         },
         {
           "type": "shared_locator_semantic_overlap",
-          "candidateName": "UPPERCASE_VALID_USERNAME",
+          "candidateName": "WRONG_PASSWORD",
           "existingOwner": {
             "resource": "pom_pages/login_page/login_page.resource",
-            "name": "UPPERCASE_VALID_USERNAME"
+            "name": "WRONG_PASSWORD"
           },
-          "locator": "krisadmin"
+          "locator": "wrongpassword#1"
         },
         {
           "type": "shared_locator_semantic_overlap",
-          "candidateName": "UPPERCASE_VALID_PASSWORD",
+          "candidateName": "LOWERCASE_PASSWORD_VARIANT",
           "existingOwner": {
             "resource": "pom_pages/login_page/login_page.resource",
-            "name": "UPPERCASE_VALID_PASSWORD"
+            "name": "LOWERCASE_PASSWORD_VARIANT"
           },
           "locator": "carwash#1"
         },
         {
           "type": "shared_locator_semantic_overlap",
-          "candidateName": "SPECIAL_CHARACTER_USERNAME",
+          "candidateName": "GENERIC_FAILED_MESSAGE_TEXT",
           "existingOwner": {
             "resource": "pom_pages/login_page/login_page.resource",
-            "name": "SPECIAL_CHARACTER_USERNAME"
+            "name": "GENERIC_FAILED_MESSAGE_TEXT"
           },
-          "locator": "!@#$%^&*"
-        },
-        {
-          "type": "shared_locator_semantic_overlap",
-          "candidateName": "SPECIAL_CHARACTER_PASSWORD",
-          "existingOwner": {
-            "resource": "pom_pages/login_page/login_page.resource",
-            "name": "SPECIAL_CHARACTER_PASSWORD"
-          },
-          "locator": "<>?:{}"
+          "locator": "failed"
         },
         {
           "type": "shared_locator_semantic_overlap",
@@ -2090,18 +2068,18 @@
       ],
       "canonicalResourceCandidates": [
         {
-          "resource": "pom_pages/login_page/login_page.resource",
-          "support": 22
-        },
-        {
           "resource": "pom_pages/home_page/home_page.resource",
           "support": 21
+        },
+        {
+          "resource": "pom_pages/login_page/login_page.resource",
+          "support": 19
         }
       ],
       "summary": {
-        "duplicateVariableCount": 33,
-        "duplicateKeywordCount": 25,
-        "ownershipConflictCount": 37
+        "duplicateVariableCount": 32,
+        "duplicateKeywordCount": 26,
+        "ownershipConflictCount": 36
       }
     }
   },
@@ -2151,107 +2129,118 @@
         "id": "LOGIN_TC_001",
         "title": "Verify Login page opens from Home page guest state using the person/profile button",
         "type": "positive",
-        "expectedResult": "The application transitions from the Home page guest state to the Login page while remaining unauthenticated and the Login view is displayed successfully."
+        "expectedResult": "The application transitions from the Home page guest state to the Login page with Username, Password, Login, Back, and Home controls visible while the user remains unauthenticated."
       },
       {
         "id": "LOGIN_TC_002",
         "title": "Verify Login page controls are visible, enabled, and interactive after opening from Home page",
         "type": "positive",
-        "expectedResult": "Username, Password, Login, Back, and Home controls are visible, enabled, and interactive on the Login page."
+        "expectedResult": "All approved Login page controls are visible, enabled, interactive, and ready for user interaction on the Login page."
       },
       {
         "id": "LOGIN_TC_003",
-        "title": "Verify password field masks entered characters during credential entry",
+        "title": "Verify Password field masks entered characters during credential entry",
         "type": "positive",
-        "expectedResult": "The Password field masks the entered password characters instead of displaying the plain text value."
+        "expectedResult": "The Password field displays masked characters instead of the actual password value while retaining the entered password for submission."
       },
       {
         "id": "LOGIN_TC_004",
-        "title": "Verify successful authentication with approved credentials returns the user to authenticated Home state",
+        "title": "Verify successful authentication using approved credentials returns the user to authenticated Home state",
         "type": "positive",
-        "expectedResult": "The application authenticates the user successfully, returns to the Home page in authenticated state, and authenticated user identity and authenticated-only feature areas are visible."
+        "expectedResult": "The application authenticates the user and returns to the Home page in authenticated state with authenticated user identity information and authenticated-only feature area visible."
       },
       {
         "id": "LOGIN_TC_005",
-        "title": "Verify authenticated Home state is visible after successful login",
-        "type": "positive",
-        "expectedResult": "The Home page reloads in authenticated state with authenticated user identity displayed and authenticated-only features visible."
+        "title": "Verify invalid username and password combination displays the generic Failed message and keeps the user unauthenticated",
+        "type": "negative",
+        "expectedResult": "The generic Failed authentication message is displayed, the user remains unauthenticated, and the application stays on the Login page or otherwise does not enter authenticated Home state."
       },
       {
         "id": "LOGIN_TC_006",
-        "title": "Verify invalid username and password combination displays generic Failed message and keeps user unauthenticated",
+        "title": "Verify submitting the Login form with both Username and Password empty displays only the generic Failed message",
         "type": "negative",
-        "expectedResult": "Authentication fails, the generic Failed message is displayed, the user remains unauthenticated, and the application stays on the Login page or otherwise does not enter authenticated Home state."
+        "expectedResult": "The application displays only the generic Failed authentication message, no dedicated required-field validation message is shown, and the user remains unauthenticated."
       },
       {
         "id": "LOGIN_TC_007",
-        "title": "Verify blank Username and blank Password submission displays only generic Failed message",
+        "title": "Verify submitting only Username without Password fails authentication and preserves unauthenticated state",
         "type": "negative",
-        "expectedResult": "Authentication fails and only the generic Failed message is displayed without separate required-field validation messaging, and the user remains unauthenticated."
+        "expectedResult": "The generic Failed authentication message is displayed without separate required-field validation messaging and the user remains unauthenticated."
       },
       {
         "id": "LOGIN_TC_008",
-        "title": "Verify login attempt with only Username populated fails and keeps user unauthenticated",
+        "title": "Verify submitting only Password without Username fails authentication and preserves unauthenticated state",
         "type": "negative",
-        "expectedResult": "Authentication fails, the generic Failed message is displayed, no dedicated required-field validation message appears, and the user remains unauthenticated."
+        "expectedResult": "The generic Failed authentication message is displayed without separate required-field validation messaging and the user remains unauthenticated."
       },
       {
         "id": "LOGIN_TC_009",
-        "title": "Verify login attempt with only Password populated fails and keeps user unauthenticated",
-        "type": "negative",
-        "expectedResult": "Authentication fails, the generic Failed message is displayed, no dedicated required-field validation message appears, and the user remains unauthenticated."
+        "title": "Verify leading and trailing whitespace handling for Username and Password values",
+        "type": "edge",
+        "expectedResult": "The application handles credential values containing leading and trailing whitespace according to implemented business behavior and the resulting authenticated or failed state is displayed consistently with observable UI feedback."
       },
       {
         "id": "LOGIN_TC_010",
-        "title": "Verify leading and trailing whitespace handling for valid credentials",
-        "type": "edge",
-        "expectedResult": "The application handles leading and trailing whitespace according to implemented business behavior and the observed authentication outcome is consistent, with either successful authenticated Home navigation or the generic Failed message while remaining unauthenticated."
+        "title": "Verify whitespace-only Username and Password submission displays the generic Failed message",
+        "type": "negative",
+        "expectedResult": "The generic Failed authentication message is displayed, no dedicated required-field validation message appears, and the user remains unauthenticated."
       },
       {
         "id": "LOGIN_TC_011",
-        "title": "Verify whitespace-only values in Username and Password fields fail authentication",
-        "type": "negative",
-        "expectedResult": "Authentication fails, the generic Failed message is displayed, no separate required-field validation message appears, and the user remains unauthenticated."
+        "title": "Verify the Back button returns the user to the Home page without authentication",
+        "type": "positive",
+        "expectedResult": "The application returns to the Home page in guest state without displaying authenticated user identity information or authenticated-only functionality."
       },
       {
         "id": "LOGIN_TC_012",
-        "title": "Verify Back button returns the user to Home page without authentication",
+        "title": "Verify the Home button returns the user to the Home page without authentication",
         "type": "positive",
-        "expectedResult": "The application returns to the Home page in guest state without authenticating the user and authenticated-only UI is not visible."
+        "expectedResult": "The application returns to the Home page in guest state without authenticating the user and guest-state behavior remains visible."
       },
       {
-        "id": "LOGIN_TC_013",
-        "title": "Verify Home button returns the user to Home page without authentication",
-        "type": "positive",
-        "expectedResult": "The application returns to the Home page in guest state without authenticating the user and authenticated-only UI is not visible."
+        "id": "LOGIN_TC_017",
+        "title": "Verify very long Username and Password values are rejected without authenticating the user",
+        "type": "edge",
+        "expectedResult": "The application rejects the authentication attempt, displays the generic Failed message, remains stable, and keeps the user unauthenticated."
+      },
+      {
+        "id": "LOGIN_TC_019",
+        "title": "Verify user remains unauthenticated after failed login followed by Home page return navigation",
+        "type": "negative",
+        "expectedResult": "The user returns to the Home page in guest state after the failed login attempt and authenticated user identity or authenticated-only feature areas are not visible."
       },
       {
         "id": "LOGIN_TC_020",
-        "title": "Verify failed authentication keeps Login page controls accessible for another attempt",
-        "type": "negative",
-        "expectedResult": "After failed authentication, the Login page remains accessible, the Username and Password fields remain interactive, the Login button remains usable, and the user stays unauthenticated."
+        "title": "Verify navigation sequence preserves Home-to-Login-to-Home authenticated transition behavior",
+        "type": "positive",
+        "expectedResult": "The workflow follows the approved Home-to-Login-to-Home navigation sequence and finishes on the authenticated Home page with authenticated identity and authenticated-only features visible."
       }
     ],
     "validations": [
-      "Username, Password, Login, Back, and Home controls are visible, enabled, and interactive on the Login page.",
-      "The application authenticates the user successfully, returns to the Home page in authenticated state, and authenticated user identity and authenticated-only feature areas are visible.",
-      "The Home page reloads in authenticated state with authenticated user identity displayed and authenticated-only features visible.",
-      "Authentication fails and only the generic Failed message is displayed without separate required-field validation messaging, and the user remains unauthenticated.",
-      "Authentication fails, the generic Failed message is displayed, no dedicated required-field validation message appears, and the user remains unauthenticated.",
-      "Authentication fails, the generic Failed message is displayed, no separate required-field validation message appears, and the user remains unauthenticated.",
-      "The application returns to the Home page in guest state without authenticating the user and authenticated-only UI is not visible."
+      "The application transitions from the Home page guest state to the Login page with Username, Password, Login, Back, and Home controls visible while the user remains unauthenticated.",
+      "All approved Login page controls are visible, enabled, interactive, and ready for user interaction on the Login page.",
+      "The Password field displays masked characters instead of the actual password value while retaining the entered password for submission.",
+      "The application authenticates the user and returns to the Home page in authenticated state with authenticated user identity information and authenticated-only feature area visible.",
+      "The application displays only the generic Failed authentication message, no dedicated required-field validation message is shown, and the user remains unauthenticated.",
+      "The generic Failed authentication message is displayed without separate required-field validation messaging and the user remains unauthenticated.",
+      "The generic Failed authentication message is displayed, no dedicated required-field validation message appears, and the user remains unauthenticated.",
+      "The application returns to the Home page in guest state without authenticating the user and guest-state behavior remains visible.",
+      "The user returns to the Home page in guest state after the failed login attempt and authenticated user identity or authenticated-only feature areas are not visible.",
+      "The workflow follows the approved Home-to-Login-to-Home navigation sequence and finishes on the authenticated Home page with authenticated identity and authenticated-only features visible."
     ],
     "transitions": [
-      "The application transitions from the Home page guest state to the Login page while remaining unauthenticated and the Login view is displayed successfully.",
-      "The application authenticates the user successfully, returns to the Home page in authenticated state, and authenticated user identity and authenticated-only feature areas are visible.",
-      "The Home page reloads in authenticated state with authenticated user identity displayed and authenticated-only features visible.",
-      "Authentication fails, the generic Failed message is displayed, the user remains unauthenticated, and the application stays on the Login page or otherwise does not enter authenticated Home state.",
-      "Authentication fails and only the generic Failed message is displayed without separate required-field validation messaging, and the user remains unauthenticated.",
-      "Authentication fails, the generic Failed message is displayed, no dedicated required-field validation message appears, and the user remains unauthenticated.",
-      "The application handles leading and trailing whitespace according to implemented business behavior and the observed authentication outcome is consistent, with either successful authenticated Home navigation or the generic Failed message while remaining unauthenticated.",
-      "Authentication fails, the generic Failed message is displayed, no separate required-field validation message appears, and the user remains unauthenticated.",
-      "The application returns to the Home page in guest state without authenticating the user and authenticated-only UI is not visible.",
-      "After failed authentication, the Login page remains accessible, the Username and Password fields remain interactive, the Login button remains usable, and the user stays unauthenticated."
+      "The application transitions from the Home page guest state to the Login page with Username, Password, Login, Back, and Home controls visible while the user remains unauthenticated.",
+      "The application authenticates the user and returns to the Home page in authenticated state with authenticated user identity information and authenticated-only feature area visible.",
+      "The generic Failed authentication message is displayed, the user remains unauthenticated, and the application stays on the Login page or otherwise does not enter authenticated Home state.",
+      "The application displays only the generic Failed authentication message, no dedicated required-field validation message is shown, and the user remains unauthenticated.",
+      "The generic Failed authentication message is displayed without separate required-field validation messaging and the user remains unauthenticated.",
+      "The application handles credential values containing leading and trailing whitespace according to implemented business behavior and the resulting authenticated or failed state is displayed consistently with observable UI feedback.",
+      "The generic Failed authentication message is displayed, no dedicated required-field validation message appears, and the user remains unauthenticated.",
+      "The application returns to the Home page in guest state without displaying authenticated user identity information or authenticated-only functionality.",
+      "The application returns to the Home page in guest state without authenticating the user and guest-state behavior remains visible.",
+      "The application rejects the authentication attempt, displays the generic Failed message, remains stable, and keeps the user unauthenticated.",
+      "The user returns to the Home page in guest state after the failed login attempt and authenticated user identity or authenticated-only feature areas are not visible.",
+      "The workflow follows the approved Home-to-Login-to-Home navigation sequence and finishes on the authenticated Home page with authenticated identity and authenticated-only features visible."
     ]
   },
   "automationKnowledge": {
@@ -2301,46 +2290,49 @@
     ],
     "approvedTests": [
       {
-        "name": "AUT-WT-LOGIN01: Verify Login page opens from Home page guest state using the person/profile button"
+        "name": "AUT-WT-LOGIN01: Verify Login page opens from Home page guest state using the person-profile button"
       },
       {
         "name": "AUT-WT-LOGIN02: Verify Login page controls are visible enabled and interactive after opening from Home page"
       },
       {
-        "name": "AUT-WT-LOGIN03: Verify password field masks entered characters during credential entry"
+        "name": "AUT-WT-LOGIN03: Verify Password field masks entered characters during credential entry"
       },
       {
-        "name": "AUT-WT-LOGIN04: Verify successful authentication with approved credentials returns the user to authenticated Home state"
+        "name": "AUT-WT-LOGIN04: Verify successful authentication using approved credentials returns the user to authenticated Home state"
       },
       {
-        "name": "AUT-WT-LOGIN05: Verify authenticated Home state is visible after successful login"
+        "name": "AUT-WT-LOGIN05: Verify invalid username and password combination displays the generic Failed message and keeps the user unauthenticated"
       },
       {
-        "name": "AUT-WT-LOGIN06: Verify invalid username and password combination displays generic Failed message and keeps user unauthenticated"
+        "name": "AUT-WT-LOGIN06: Verify submitting the Login form with both Username and Password empty displays only the generic Failed message"
       },
       {
-        "name": "AUT-WT-LOGIN07: Verify blank Username and blank Password submission displays only generic Failed message"
+        "name": "AUT-WT-LOGIN07: Verify submitting only Username without Password fails authentication and preserves unauthenticated state"
       },
       {
-        "name": "AUT-WT-LOGIN08: Verify login attempt with only Username populated fails and keeps user unauthenticated"
+        "name": "AUT-WT-LOGIN08: Verify submitting only Password without Username fails authentication and preserves unauthenticated state"
       },
       {
-        "name": "AUT-WT-LOGIN09: Verify login attempt with only Password populated fails and keeps user unauthenticated"
+        "name": "AUT-WT-LOGIN09: Verify leading and trailing whitespace handling for Username and Password values"
       },
       {
-        "name": "AUT-WT-LOGIN10: Verify leading and trailing whitespace handling for valid credentials"
+        "name": "AUT-WT-LOGIN10: Verify whitespace only Username and Password submission displays the generic Failed message"
       },
       {
-        "name": "AUT-WT-LOGIN11: Verify whitespace-only values in Username and Password fields fail authentication"
+        "name": "AUT-WT-LOGIN11: Verify the Back button returns the user to the Home page without authentication"
       },
       {
-        "name": "AUT-WT-LOGIN12: Verify Back button returns the user to Home page without authentication"
+        "name": "AUT-WT-LOGIN12: Verify the Home button returns the user to the Home page without authentication"
       },
       {
-        "name": "AUT-WT-LOGIN13: Verify Home button returns the user to Home page without authentication"
+        "name": "AUT-WT-LOGIN13: Verify very long Username and Password values are rejected without authenticating the user"
       },
       {
-        "name": "AUT-WT-LOGIN20: Verify failed authentication keeps Login page controls accessible for another attempt"
+        "name": "AUT-WT-LOGIN14: Verify user remains unauthenticated after failed login followed by Home page return navigation"
+      },
+      {
+        "name": "AUT-WT-LOGIN15: Verify navigation sequence preserves Home to Login to Home authenticated transition behavior"
       }
     ],
     "wrapperExpectations": [

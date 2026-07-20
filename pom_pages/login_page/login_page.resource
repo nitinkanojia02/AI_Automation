@@ -11,12 +11,11 @@ ${HOME_BUTTON}    id=auto_home_btn
 ${GENERIC_FAILED_MESSAGE}    xpath=//*[contains(normalize-space(.),'Failed')]
 ${VALID_USERNAME}    krisadmin
 ${VALID_PASSWORD}    Carwash#1
-${INVALID_USERNAME}    invalidUser
+${INVALID_USERNAME}    invaliduser
 ${INVALID_PASSWORD}    InvalidPassword#1
-${UPPERCASE_VALID_USERNAME}    KRISADMIN
-${UPPERCASE_VALID_PASSWORD}    CARWASH#1
-${SPECIAL_CHARACTER_USERNAME}    !@#$%^&*
-${SPECIAL_CHARACTER_PASSWORD}    <>?:{}
+${WRONG_PASSWORD}    WrongPassword#1
+${LOWERCASE_PASSWORD_VARIANT}    carwash#1
+${GENERIC_FAILED_MESSAGE_TEXT}    Failed
 
 *** Keywords ***
 Enter User Name Textbox
@@ -30,10 +29,13 @@ Enter Password Textbox
 Click Sign In Button
     Click When Ready    ${SIGN_IN_BUTTON}
 
+Background Content
+    Click When Ready    body
+
 Verify Login Form Loaded
-    Wait For Element To Be Ready    ${USER_NAME_TEXTBOX}
-    Wait For Element To Be Ready    ${PASSWORD_TEXTBOX}
-    Wait For Element To Be Ready    ${SIGN_IN_BUTTON}
+    Verify User Name Textbox
+    Verify Password Textbox
+    Verify Back Button
 
 Verify User Name Textbox
     Wait For Element To Be Ready    ${USER_NAME_TEXTBOX}
@@ -42,6 +44,7 @@ Verify User Name Textbox
 
 Verify Password Textbox
     Wait For Element To Be Ready    ${PASSWORD_TEXTBOX}
+    Element Attribute Value Should Be    ${PASSWORD_TEXTBOX}    type    password
 
 Verify Back Button
     Wait For Element To Be Ready    ${BACK_BUTTON}
