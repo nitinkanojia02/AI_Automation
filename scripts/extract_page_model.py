@@ -931,7 +931,66 @@ def generate_keyword(var_name: str, label: str, role: str) -> str:
     [Documentation]    {keyword_doc("Click", label_title, role)}
     Wait Until Element Is Visible    ${{{var_name}}}
     Click Element    ${{{var_name}}}"""
-def generate_resource(url: str, elements: List[dict]) -> str:
+
+
+def load_reviewed_keyword_artifact(page_name: str, metadata_dir: Path) -> dict:
+    candidates = [
+        metadata_dir / f"{slugify(page_name)}.keywords.reviewed.json",
+        metadata_dir / f"{slugify(page_name)}.keywords.json",
+    ]
+    for candidate in candidates:
+        if not candidate.exists():
+            continue
+        try:
+            data = json.loads(candidate.read_text(encoding="utf-8"))
+            if isinstance(data, dict):
+                return data
+        except Exception:
+            continue
+    return {}
+
+
+def _normalize_keyword_implementation_lines(lines: object) -> List[str]:
+    if isinstance(lines, str):
+        raw_lines = lines.splitlines()
+    elif isinstance(lines, list):
+        raw_lines = [str(item) for item in lines]
+    else:
+        raw_lines = []
+    normalized: List[str] = []
+    for idx, line in enumerate(raw_lines):
+        text = str(line).rstrip()
+        if not clean_text(text):
+            continue
+        if idx == 0 and text.lstrip().startswith("["):
+            normalized.append("    " + text.lstrip())
+        elif text.startswith((" ", "\t")):
+            normalized.append(text)
+        else:
+            normalized.append("    " + text.lstrip())
+    return normalized
+
+
+def normalize_reviewed_keyword_block(keyword: dict) -> str:
+    keyword_name = clean_text(str(keyword.get("keywordName", "")))
+    if not keyword_name:
+        return ""
+    block_lines = [keyword_name]
+    arguments = keyword.get("arguments", []) or []
+    if isinstance(arguments, str):
+        arguments = [part.strip() for part in arguments.split(",") if clean_text(part)]
+    normalized_args = []
+    for arg in arguments:
+        cleaned_arg = clean_text(str(arg)).replace("${", "").replace("}", "")
+        if cleaned_arg:
+            normalized_args.append(f"${{{cleaned_arg}}}")
+    if normalized_args:
+        block_lines.append("    [Arguments]    " + "    ".join(normalized_args))
+    block_lines.extend(_normalize_keyword_implementation_lines(keyword.get("implementation", [])))
+    return "\n".join(block_lines)
+
+
+def generate_resource(url: str, elements: List[dict], page_name: str = "", metadata_dir: Path | None = None) -> str:
     used_names, variables, keywords = set(), [], []
 
     for item in elements:
@@ -948,6 +1007,20 @@ def generate_resource(url: str, elements: List[dict]) -> str:
         variables.append(f"${{{var_name}}}    {locator}")
         keywords.append(generate_keyword(var_name, label, role))
 
+    reviewed_keywords: List[str] = []
+    if page_name and metadata_dir is not None:
+        reviewed_artifact = load_reviewed_keyword_artifact(page_name, metadata_dir)
+        raw_keywords = reviewed_artifact.get("keywords", []) if isinstance(reviewed_artifact, dict) else []
+        if isinstance(raw_keywords, list):
+            for item in raw_keywords:
+                if not isinstance(item, dict):
+                    continue
+                if item.get("approved") is False:
+                    continue
+                block = normalize_reviewed_keyword_block(item)
+                if block:
+                    reviewed_keywords.append(block)
+
     settings_block = """*** Settings ***
 Resource    ../../resources/common_keywords.resource"""
 
@@ -956,9 +1029,9 @@ Resource    ../../resources/common_keywords.resource"""
         variables_block += "\n" + "\n".join(variables)
 
     keywords_block = "*** Keywords ***"
-
-    if keywords:
-        keywords_block += "\n" + "\n\n".join(keywords)
+    final_keywords = reviewed_keywords or keywords
+    if final_keywords:
+        keywords_block += "\n" + "\n\n".join(final_keywords)
 
     return f"{settings_block}\n\n{variables_block}\n\n{keywords_block}\n"
 
@@ -1481,7 +1554,25 @@ def process_page(playwright, config: dict, page_entry: Dict[str, str]):
             approved_path.write_text(json.dumps(approved_page_model, indent=2, ensure_ascii=False), encoding="utf-8")
         resource_elements = approved_page_model.get("elements", []) if isinstance(approved_page_model, dict) else elements
 
-        resource_content = generate_resource(url, resource_elements)
+        resource_content = generate_resource(url, resource_elements, page_name=page_name, metadata_dir=metadata_dir)
+        reviewed_keyword_artifact = load_reviewed_keyword_artifact(page_name, metadata_dir)
+        reviewed_keyword_names = {
+            clean_text(str(item.get("keywordName", "")))
+            for item in (reviewed_keyword_artifact.get("keywords", []) if isinstance(reviewed_keyword_artifact, dict) else [])
+            if isinstance(item, dict) and clean_text(str(item.get("keywordName", ""))) and item.get("approved") is not False
+        }
+        generated_keyword_names = {
+            clean_text(match.group(1))
+            for match in re.finditer(r"(?m)^([^\s].+?)\n(?:\s+\[Documentation\]|\s+\[Arguments\]|\s+\S)", resource_content.split("*** Keywords ***", 1)[1] if "*** Keywords ***" in resource_content else "")
+            if clean_text(match.group(1))
+        }
+        missing_reviewed_names = sorted(name for name in reviewed_keyword_names if name not in generated_keyword_names)
+        if missing_reviewed_names:
+            logger.warning(
+                "Reviewed approved keyword names were not fully reflected in generated resource for %s: %s",
+                page_name,
+                ", ".join(missing_reviewed_names[:10]),
+            )
         resource_path.write_text(resource_content, encoding="utf-8")
         logger.info("Generated deterministic resource: %s", resource_path)
 
