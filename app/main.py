@@ -2725,10 +2725,16 @@ def validate_generated_resource_against_approved_artifacts(
             "Generated page resource still contains technical locator-driven variable names. Prefer approved semantic names instead: "
             + ", ".join(noisy_resource_variables)
         )
-    if non_resource_keyword_names:
+    non_resource_keywords_present_in_resource = sorted(
+        name for name in non_resource_keyword_names if name.lower() in resource_keyword_names
+    )
+    non_resource_keywords_missing_from_resource = sorted(
+        name for name in non_resource_keyword_names if name.lower() not in resource_keyword_names
+    )
+    if non_resource_keywords_missing_from_resource:
         warnings.append(
             "Approved composite/scenario keywords were not enforced as page-resource keywords: "
-            + ", ".join(non_resource_keyword_names)
+            + ", ".join(non_resource_keywords_missing_from_resource)
         )
 
     direct_low_level_calls = [
