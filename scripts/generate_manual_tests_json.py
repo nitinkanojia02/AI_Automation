@@ -488,7 +488,7 @@ def normalize_test_case(
     if not expected:
         expected = "System behaves as expected"
 
-    normalized = {
+    return {
         "id": tc_id,
         "title": title,
         "type": tc_type,
@@ -496,8 +496,6 @@ def normalize_test_case(
         "expectedResult": expected,
         "fields": fields,
     }
-    normalized["interactionIntent"] = infer_interaction_intent(title, steps, expected)
-    return normalized
 
 
 def generate_fallback_test_cases(workflow_input: Dict[str, Any], workflow_name: str) -> List[Dict[str, Any]]:
@@ -857,6 +855,17 @@ def normalize_manual_test(generated: Dict[str, Any], workflow_input: Dict[str, A
     if not isinstance(resource_files, list) or not resource_files:
         resource_files = workflow_input.get("resourceFiles", [])
 
+    inferred_reuse = workflow_input.get("inferredReuseContext") or infer_workflow_reuse_context(workflow_input)
+    if isinstance(inferred_reuse, dict):
+        authoritative_files = inferred_reuse.get("authoritativeResourceFiles") or inferred_reuse.get("inferredRelevantResourceFiles") or []
+        if isinstance(authoritative_files, list):
+            existing = {str(x).replace("\\", "/").strip() for x in resource_files if str(x).strip()}
+            for rel_path in authoritative_files:
+                normalized_path = str(rel_path).replace("\\", "/").strip()
+                if normalized_path and normalized_path not in existing:
+                    resource_files.append(normalized_path)
+                    existing.add(normalized_path)
+
     preconditions = ensure_list_of_strings(
         generated.get("preconditions", workflow_input.get("preconditions", []))
     )
@@ -920,7 +929,6 @@ def normalize_manual_test(generated: Dict[str, Any], workflow_input: Dict[str, A
             tuple(s.strip().lower() for s in tc["steps"]),
             tc["expectedResult"].strip().lower(),
             tuple(f.strip().lower() for f in tc["fields"]),
-            tuple(sorted((tc.get("interactionIntent") or {}).items())),
         )
 
         if signature not in seen_signatures:
@@ -951,7 +959,6 @@ def normalize_manual_test(generated: Dict[str, Any], workflow_input: Dict[str, A
                 "steps": case["steps"],
                 "expectedResult": case["expectedResult"],
                 "fields": case["fields"],
-                "interactionIntent": case.get("interactionIntent", infer_interaction_intent(case["title"], case["steps"], case["expectedResult"])),
             }
             for case in deduped_cases
         ],
@@ -1006,7 +1013,7 @@ def process_workflow_file(config: Dict[str, Any], input_path: Path) -> None:
     )
     final_json = normalize_manual_test(reviewed or generated, workflow_input)
     is_valid, validation_message = validate_manual_content(final_json, workflow_context)
-    if not is_valid or validation_message:
+    if validation_message:
         refinement_prompt = build_manual_refiner_prompt(generated, final_json, workflow_context)
         refined = call_devex_ai(
             endpoint=endpoint,

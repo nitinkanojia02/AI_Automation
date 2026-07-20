@@ -1587,6 +1587,121 @@ def warn_on_assertion_quality(manual_expected_outcomes: list[str], robot_content
     return ""
 
 
+def repair_navigation_return_tests(content: str, manual_data: dict, resource_context: list[dict]) -> str:
+    if not isinstance(manual_data, dict):
+        return content
+
+    resource_keywords = {
+        clean_text(str(keyword.get("name", ""))).lower(): clean_text(str(keyword.get("name", "")))
+        for resource in resource_context
+        for keyword in resource.get("keywords", [])
+        if clean_text(str(keyword.get("name", "")))
+    }
+
+    required_keywords = {
+        "click person profile button",
+        "verify login page opened",
+        "click back button",
+        "click home button",
+        "verify home page remains in guest state",
+    }
+    if not required_keywords.issubset(set(resource_keywords.keys())):
+        return content
+
+    title_to_steps = {}
+    for case in manual_data.get("testCases", []) or []:
+        if not isinstance(case, dict):
+            continue
+        title_to_steps[clean_text(str(case.get("title", ""))).lower()] = [
+            clean_text(str(step)).lower() for step in case.get("steps", []) if clean_text(str(step))
+        ]
+
+    lines = content.splitlines()
+    result: list[str] = []
+    current_title = ""
+    current_manual_steps: list[str] = []
+    in_test_cases = False
+    current_test_block: list[str] = []
+
+    def flush_current_test_block():
+        nonlocal current_test_block, current_title, current_manual_steps
+        if not current_test_block:
+            return
+        if not current_title:
+            result.extend(current_test_block)
+            current_test_block = []
+            return
+
+        lower_title = current_title.lower()
+        expects_back = "back button" in lower_title or any("click the back button" in step for step in current_manual_steps)
+        expects_home = ("home button" in lower_title and "login page" in lower_title) or any("click the home button" in step for step in current_manual_steps)
+        if not (expects_back or expects_home):
+            result.extend(current_test_block)
+            current_test_block = []
+            return
+
+        body_lines = current_test_block[1:]
+        action_keyword = resource_keywords["click back button"] if expects_back else resource_keywords["click home button"]
+        repaired_body: list[str] = []
+        has_tags = False
+        injected_action = False
+        for raw_line in body_lines:
+            stripped = raw_line.strip()
+            lowered = clean_text(stripped).lower()
+            if stripped.startswith("[Tags]"):
+                has_tags = True
+                repaired_body.append(raw_line)
+                continue
+            if not raw_line.startswith((" ", "\t")) or not stripped:
+                repaired_body.append(raw_line)
+                continue
+            if lowered.startswith("go to url") or lowered.startswith("open browser to url"):
+                continue
+            if lowered == "verify login form loaded":
+                repaired_body.append("    " + resource_keywords["click person profile button"])
+                repaired_body.append("    " + resource_keywords["verify login page opened"])
+                repaired_body.append(raw_line)
+                repaired_body.append("    " + action_keyword)
+                injected_action = True
+                continue
+            if lowered in {"wait until page does not contain element", "wait until element is not visible", "page should not contain element"} or lowered.startswith("wait until page does not contain element"):
+                continue
+            if lowered == resource_keywords["click back button"].lower() or lowered == resource_keywords["click home button"].lower():
+                injected_action = True
+            repaired_body.append(raw_line)
+        if not injected_action:
+            repaired_body.append("    " + resource_keywords["click person profile button"])
+            repaired_body.append("    " + resource_keywords["verify login page opened"])
+            repaired_body.append("    " + resource_keywords["verify login form loaded"])
+            repaired_body.append("    " + action_keyword)
+        repaired_body.append("    " + resource_keywords["verify home page remains in guest state"])
+        result.append(current_test_block[0])
+        result.extend(repaired_body)
+        current_test_block = []
+
+    for line in lines:
+        stripped = line.strip()
+        lowered = stripped.lower()
+        if lowered == "*** test cases ***":
+            flush_current_test_block()
+            in_test_cases = True
+            result.append(line)
+            continue
+        if in_test_cases and stripped and not line.startswith((" ", "\t")) and not stripped.startswith("***"):
+            flush_current_test_block()
+            current_test_block = [line]
+            current_title = clean_text(stripped.split(":", 1)[1] if ":" in stripped else stripped)
+            current_manual_steps = title_to_steps.get(current_title.lower(), [])
+            continue
+        if in_test_cases and current_test_block:
+            current_test_block.append(line)
+            continue
+        result.append(line)
+
+    flush_current_test_block()
+    return "\n".join(result) + ("\n" if content.endswith("\n") else "")
+
+
 def normalize_generated_robot_identifiers(content: str, identifier_policy: dict) -> str:
     family_prefix = clean_text(str(identifier_policy.get("family_prefix", "")))
     if not family_prefix:
@@ -2221,6 +2336,7 @@ def process_manual_file(config: dict, manual_json_path: Path):
     robot_content = re.sub(r"\n```$", "", robot_content)
     robot_content = normalize_generated_robot_identifiers(robot_content, identifier_policy)
     robot_content = rewrite_suite_to_prefer_common_wrappers(robot_content, resource_context)
+    robot_content = repair_navigation_return_tests(robot_content, manual_data, resource_context)
     robot_content = promote_repeated_setup_teardown(robot_content)
 
     review_prompt = build_review_prompt(manual_data, resource_context, robot_content)
@@ -2236,6 +2352,7 @@ def process_manual_file(config: dict, manual_json_path: Path):
     reviewed_robot_content = re.sub(r"\n```$", "", reviewed_robot_content)
     robot_content = normalize_generated_robot_identifiers(reviewed_robot_content or robot_content, identifier_policy)
     robot_content = rewrite_suite_to_prefer_common_wrappers(robot_content, resource_context)
+    robot_content = repair_navigation_return_tests(robot_content, manual_data, resource_context)
     robot_content = promote_repeated_setup_teardown(robot_content)
 
     validation_review_prompt = build_validation_review_prompt(manual_data, resource_context, robot_content)
@@ -2251,6 +2368,7 @@ def process_manual_file(config: dict, manual_json_path: Path):
     validated_robot_content = re.sub(r"\n```$", "", validated_robot_content)
     robot_content = normalize_generated_robot_identifiers(validated_robot_content or robot_content, identifier_policy)
     robot_content = rewrite_suite_to_prefer_common_wrappers(robot_content, resource_context)
+    robot_content = repair_navigation_return_tests(robot_content, manual_data, resource_context)
     robot_content = promote_repeated_setup_teardown(robot_content)
 
     is_valid, validation_message = validate_robot_content(robot_content, resource_files)
@@ -2277,6 +2395,7 @@ def process_manual_file(config: dict, manual_json_path: Path):
         repaired_robot_content = re.sub(r"\n```$", "", repaired_robot_content)
         robot_content = normalize_generated_robot_identifiers(repaired_robot_content or robot_content, identifier_policy)
         robot_content = rewrite_suite_to_prefer_common_wrappers(robot_content, resource_context)
+        robot_content = repair_navigation_return_tests(robot_content, manual_data, resource_context)
         robot_content = promote_repeated_setup_teardown(robot_content)
         is_valid, validation_message = validate_robot_content(robot_content, resource_files)
 
@@ -2303,6 +2422,7 @@ def process_manual_file(config: dict, manual_json_path: Path):
         followup_robot_content = re.sub(r"\n```$", "", followup_robot_content)
         robot_content = normalize_generated_robot_identifiers(followup_robot_content or robot_content, identifier_policy)
         robot_content = rewrite_suite_to_prefer_common_wrappers(robot_content, resource_context)
+        robot_content = repair_navigation_return_tests(robot_content, manual_data, resource_context)
         robot_content = promote_repeated_setup_teardown(robot_content)
         is_valid, validation_message = validate_robot_content(robot_content, resource_files)
     alignment_valid, alignment_message = validate_robot_alignment_with_resource_context(robot_content, resource_context, manual_data)

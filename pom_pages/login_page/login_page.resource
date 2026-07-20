@@ -12,17 +12,16 @@ ${VALID_USERNAME}    krisadmin
 ${VALID_PASSWORD}    Carwash#1
 ${INVALID_USERNAME}    invaliduser
 ${INVALID_PASSWORD}    InvalidPassword1!
-${UPPERCASE_USERNAME}    KRISADMIN
 ${SPECIAL_CHARACTER_USERNAME}    !@#$%^&*
 ${SPECIAL_CHARACTER_PASSWORD}    <>?:{}|+_
 
 *** Keywords ***
-Enter Username Textbox
+Enter Username Field
     [Documentation]    Enter text into the Username field.
     [Arguments]    ${text}
     Input Text When Ready    ${USERNAME_TEXTBOX}    ${text}
 
-Enter Password Textbox
+Enter Password Field
     [Documentation]    Enter password into the Password field.
     [Arguments]    ${password}
     Input Password When Ready    ${PASSWORD_TEXTBOX}    ${password}
@@ -67,8 +66,8 @@ Verify Login Page Still Visible
 Login With Credentials
     [Documentation]    Perform login using provided credentials.
     [Arguments]    ${username}    ${password}
-    Enter Username Textbox    ${username}
-    Enter Password Textbox    ${password}
+    Enter Username Field    ${username}
+    Enter Password Field    ${password}
     Click Sign In Button
 
 Login With Valid Credentials
