@@ -9,52 +9,28 @@
       "kind": "page_url"
     },
     {
-      "variableName": "USERNAME_FIELD",
-      "value": "xpath=//input[@placeholder='User Name']",
+      "variableName": "USER_NAME_TEXTBOX",
+      "value": "id=ion-input-0",
       "source": "approved_element",
       "kind": "locator",
-      "approvedName": "username_field",
+      "approvedName": "user_name_textbox",
       "type": "textbox"
     },
     {
-      "variableName": "PASSWORD_FIELD",
-      "value": "id=password",
+      "variableName": "PASSWORD_TEXTBOX",
+      "value": "id=ion-input-1",
       "source": "approved_element",
       "kind": "locator",
-      "approvedName": "password_field",
+      "approvedName": "password_textbox",
       "type": "password"
     },
     {
       "variableName": "SIGN_IN_BUTTON",
-      "value": "xpath=//ion-button[contains(normalize-space(.),'SIGN IN') or @text='Login']",
+      "value": "xpath=//ion-button[normalize-space(.)='SIGN IN']",
       "source": "approved_element",
       "kind": "locator",
       "approvedName": "sign_in_button",
       "type": "button"
-    },
-    {
-      "variableName": "BACK_BUTTON",
-      "value": "id=auto_back_btn",
-      "source": "approved_element",
-      "kind": "locator",
-      "approvedName": "back_button",
-      "type": "button"
-    },
-    {
-      "variableName": "HOME_BUTTON",
-      "value": "id=auto_home_btn",
-      "source": "approved_element",
-      "kind": "locator",
-      "approvedName": "home_button",
-      "type": "button"
-    },
-    {
-      "variableName": "GENERIC_AUTHENTICATION_FAILED_MESSAGE",
-      "value": "xpath=//*[contains(normalize-space(.),'Failed')]",
-      "source": "approved_element",
-      "kind": "locator",
-      "approvedName": "generic_authentication_failed_message",
-      "type": "message"
     }
   ]
 }

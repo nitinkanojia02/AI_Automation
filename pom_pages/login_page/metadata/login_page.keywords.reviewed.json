@@ -3,135 +3,88 @@
   "keywords": [
     {
       "keywordId": "KW_001",
-      "keywordName": "Enter Username Field",
-      "targetElement": "username_field",
+      "keywordName": "Enter User Name Textbox",
+      "targetElement": "user_name_textbox",
       "action": "input",
       "arguments": [
         "text"
       ],
       "implementation": [
-        "[Documentation]    Enter text into the Username field.",
-        "    Input Text When Ready    ${USER_NAME_TEXTBOX}    ${text}"
+        "Input Text When Ready    ${USER_NAME_TEXTBOX}    ${text}"
       ],
       "approved": true
     },
     {
       "keywordId": "KW_002",
-      "keywordName": "Enter Password Field",
-      "targetElement": "password_field",
+      "keywordName": "Enter Password Textbox",
+      "targetElement": "password_textbox",
       "action": "input",
       "arguments": [
         "password"
       ],
       "implementation": [
-        "[Documentation]    Enter password into the Password field.",
-        "    Input Password When Ready    ${PASSWORD}    ${password}"
-      ],
-      "approved": true
-    },
-    {
-      "keywordId": "KW_003",
-      "keywordName": "Click Sign In Button",
-      "targetElement": "sign_in_button",
-      "action": "click",
-      "arguments": [],
-      "implementation": [
-        "[Documentation]    Click the Sign In button.",
-        "    Click When Ready    ${SIGN_IN_BUTTON}"
+        "Input Password When Ready    ${ION_INPUT_1_PASSWORD}    ${password}"
       ],
       "approved": true
     },
     {
       "keywordId": "KW_004",
-      "keywordName": "Verify Username Field",
-      "targetElement": "username_field",
-      "action": "verify",
+      "keywordName": "Click Sign In Button",
+      "targetElement": "sign_in_button",
+      "action": "click",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Verify the Username field, Password field, and Sign In button are visible and enabled on the Login page.",
-        "    Wait For Element To Be Ready    ${USER_NAME_TEXTBOX}",
-        "    Wait For Element To Be Ready    ${PASSWORD}",
-        "    Wait For Element To Be Ready    ${SIGN_IN_BUTTON}"
-      ],
-      "approved": true
-    },
-    {
-      "keywordId": "KW_005",
-      "keywordName": "Verify Back Button",
-      "targetElement": "back_button",
-      "action": "verify",
-      "arguments": [],
-      "implementation": [
-        "[Documentation]    Verify the Back button and Home button are visible and enabled on the Login page.",
-        "    Wait For Element To Be Ready    id=auto_back_btn",
-        "    Wait For Element To Be Ready    id=auto_home_btn"
+        "Click When Ready    ${SIGN_IN_BUTTON}"
       ],
       "approved": true
     },
     {
       "keywordId": "KW_006",
-      "keywordName": "Verify Password Field",
-      "targetElement": "password_field",
-      "action": "verify",
+      "keywordName": "Login With Valid Credentials",
+      "targetElement": "",
+      "action": "generic",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Verify the Password field masks entered characters.",
-        "    Wait For Element To Be Ready    ${PASSWORD}",
-        "    ${password_type}=    Get Element Attribute    ${PASSWORD}    type",
-        "    Should Be Equal    ${password_type}    password"
+        "Enter User Name Textbox    ${VALID_USERNAME}",
+        "Enter Password Textbox    ${VALID_PASSWORD}",
+        "Click Sign In Button"
       ],
       "approved": true
     },
     {
       "keywordId": "KW_007",
-      "keywordName": "Verify Generic Authentication Failed Message",
-      "targetElement": "generic_authentication_failed_message",
+      "keywordName": "Login With Invalid Credentials",
+      "targetElement": "",
+      "action": "generic",
+      "arguments": [],
+      "implementation": [
+        "Enter User Name Textbox    ${INVALID_USERNAME}",
+        "Enter Password Textbox    ${INVALID_PASSWORD}",
+        "Click Sign In Button"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_008",
+      "keywordName": "Verify Login Form Loaded",
+      "targetElement": "",
       "action": "verify",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Verify the generic Failed authentication message is displayed.",
-        "    Wait Until Element Is Visible    xpath=//*[contains(normalize-space(.),'Failed')]"
+        "Wait For Element To Be Ready    ${USER_NAME_TEXTBOX}",
+        "Wait For Element To Be Ready    ${ION_INPUT_1_PASSWORD}",
+        "Wait For Element To Be Ready    ${SIGN_IN_BUTTON}"
       ],
       "approved": true
     },
     {
       "keywordId": "KW_009",
-      "keywordName": "Login With Credentials",
-      "targetElement": "sign_in_button",
-      "action": "generic",
-      "arguments": [
-        "username",
-        "password"
-      ],
-      "implementation": [
-        "[Documentation]    Enter provided credentials and submit login.",
-        "    Enter User Name    ${username}",
-        "    Enter Password    ${password}",
-        "    Click Sign In Button"
-      ],
-      "approved": true
-    },
-    {
-      "keywordId": "KW_010",
-      "keywordName": "Login With Valid Credentials",
-      "targetElement": "sign_in_button",
-      "action": "generic",
+      "keywordName": "Verify Password Textbox",
+      "targetElement": "password_textbox",
+      "action": "verify",
       "arguments": [],
       "implementation": [
-        "[Documentation]    Enter approved valid credentials and submit login.",
-        "    Login With Credentials    ${VALID_USERNAME}    ${VALID_PASSWORD}"
-      ],
-      "approved": true
-    },
-    {
-      "keywordId": "KW_011",
-      "keywordName": "Login With Invalid Credentials",
-      "targetElement": "sign_in_button",
-      "action": "generic",
-      "arguments": [],
-      "implementation": [
-        "[Documentation]    Enter invalid credentials and submit login.",
-        "    Login With Credentials    ${INVALID_USERNAME}    ${INVALID_PASSWORD}"
+        "Element Attribute Value Should Be    ${ION_INPUT_1_PASSWORD}    type    password"
       ],
       "approved": true
     }
