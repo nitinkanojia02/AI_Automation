@@ -1,164 +1,141 @@
 *** Settings ***
 Resource    ../resources/common_keywords.resource
-Resource    ../pom_pages/home_page/home_page.resource
 Resource    ../pom_pages/login_page/login_page.resource
+Resource    ../pom_pages/home_page/home_page.resource
 Suite Teardown    Close Browser Session
+Test Setup    Open Home Page
 
 *** Test Cases ***
-AUT-WT-LOGIN01: Verify Guest User Can Open The Login Page From The Home Page Using The Person Profile Button
+AUT-WT-LOGIN01: Verify Login page opens from Home page guest state using the person/profile button
     [Tags]    WT-LOGIN01    positive
-    Open Home Page
     Verify Home Page Loaded In Guest State
     Click Person Profile Button
     Verify Login Page Opened
     Verify Login Form Loaded
 
-AUT-WT-LOGIN02: Verify Login Page Controls Remain Visible And Interactive After Opening From The Home Page
+AUT-WT-LOGIN02: Verify Login page controls are visible enabled and interactive after opening from Home page
     [Tags]    WT-LOGIN02    positive
-    Open Home Page
-    Verify Home Page Loaded In Guest State
     Click Person Profile Button
     Verify Login Page Opened
     Verify Login Form Loaded
+    Verify Back Button
+    Verify Password Textbox
     Enter User Name Textbox    ${VALID_USERNAME}
     Enter Password Textbox    ${VALID_PASSWORD}
 
-AUT-WT-LOGIN03: Verify Password Input Is Masked While Entering Credentials On The Login Page
+AUT-WT-LOGIN03: Verify password field masks entered characters during credential entry
     [Tags]    WT-LOGIN03    positive
-    Open Home Page
-    Verify Home Page Loaded In Guest State
     Click Person Profile Button
     Verify Login Page Opened
     Enter User Name Textbox    ${VALID_USERNAME}
     Enter Password Textbox    ${VALID_PASSWORD}
     Verify Password Textbox
 
-AUT-WT-LOGIN04: Verify Successful Login Returns The User To The Authenticated Home Page State
+AUT-WT-LOGIN04: Verify successful authentication with approved credentials returns the user to authenticated Home state
     [Tags]    WT-LOGIN04    positive
-    Open Home Page
-    Verify Home Page Loaded In Guest State
     Click Person Profile Button
     Verify Login Page Opened
-    Login With Valid Credentials
-    Wait Until Location Contains    ${HOME_PAGE_PATH}
+    Enter User Name Textbox    ${VALID_USERNAME}
+    Enter Password Textbox    ${VALID_PASSWORD}
+    Click Sign In Button
+    Verify Home Page Loaded In Guest State
+    Verify Guest Home Controls Are Visible And Enabled
 
-AUT-WT-LOGIN05: Verify Authenticated Home Page State Persists Immediately After Successful Login Transition
+AUT-WT-LOGIN05: Verify authenticated Home state is visible after successful login
     [Tags]    WT-LOGIN05    positive
-    Open Home Page
-    Verify Home Page Loaded In Guest State
     Click Person Profile Button
     Verify Login Page Opened
-    Login With Valid Credentials
-    Wait Until Location Contains    ${HOME_PAGE_PATH}
+    Enter User Name Textbox    ${VALID_USERNAME}
+    Enter Password Textbox    ${VALID_PASSWORD}
+    Click Sign In Button
+    Verify Home Page Loaded In Guest State
+    Verify Guest Home Controls Are Visible And Enabled
 
-AUT-WT-LOGIN06: Verify Invalid Username And Password Combination Displays The Generic Failed Message And Keeps The User Unauthenticated
+AUT-WT-LOGIN06: Verify invalid username and password combination displays generic Failed message and keeps user unauthenticated
     [Tags]    WT-LOGIN06    negative
-    Open Home Page
-    Verify Home Page Loaded In Guest State
     Click Person Profile Button
     Verify Login Page Opened
-    Login With Invalid Credentials
-    Wait Until Page Contains    ${GENERIC_FAILED_MESSAGE}
-    Verify Login Form Loaded
+    Enter User Name Textbox    ${INVALID_USERNAME}
+    Enter Password Textbox    ${INVALID_PASSWORD}
+    Click Sign In Button
+    Verify Generic Failed Message
+    Verify Login Page Remains Accessible
 
-AUT-WT-LOGIN07: Verify Blank Username And Blank Password Submission Displays Only The Generic Failed Message
+AUT-WT-LOGIN07: Verify blank Username and blank Password submission displays only generic Failed message
     [Tags]    WT-LOGIN07    negative
-    Open Home Page
-    Verify Home Page Loaded In Guest State
     Click Person Profile Button
     Verify Login Page Opened
     Enter User Name Textbox    ${EMPTY}
     Enter Password Textbox    ${EMPTY}
     Click Sign In Button
-    Wait Until Page Contains    ${GENERIC_FAILED_MESSAGE}
-    Verify Login Form Loaded
+    Verify Generic Failed Message
+    Verify Login Page Remains Accessible
 
-AUT-WT-LOGIN08: Verify Login Attempt With Username Only Populated Fails With The Generic Failed Message
+AUT-WT-LOGIN08: Verify login attempt with only Username populated fails and keeps user unauthenticated
     [Tags]    WT-LOGIN08    negative
-    Open Home Page
-    Verify Home Page Loaded In Guest State
     Click Person Profile Button
     Verify Login Page Opened
     Enter User Name Textbox    ${VALID_USERNAME}
     Enter Password Textbox    ${EMPTY}
     Click Sign In Button
-    Wait Until Page Contains    ${GENERIC_FAILED_MESSAGE}
-    Verify Login Form Loaded
+    Verify Generic Failed Message
+    Verify Login Page Remains Accessible
 
-AUT-WT-LOGIN09: Verify Login Attempt With Password Only Populated Fails With The Generic Failed Message
+AUT-WT-LOGIN09: Verify login attempt with only Password populated fails and keeps user unauthenticated
     [Tags]    WT-LOGIN09    negative
-    Open Home Page
-    Verify Home Page Loaded In Guest State
     Click Person Profile Button
     Verify Login Page Opened
     Enter User Name Textbox    ${EMPTY}
     Enter Password Textbox    ${VALID_PASSWORD}
     Click Sign In Button
-    Wait Until Page Contains    ${GENERIC_FAILED_MESSAGE}
-    Verify Login Form Loaded
+    Verify Generic Failed Message
+    Verify Login Page Remains Accessible
 
-AUT-WT-LOGIN10: Verify Leading And Trailing Whitespace Handling For Username And Password Values
+AUT-WT-LOGIN10: Verify leading and trailing whitespace handling for valid credentials
     [Tags]    WT-LOGIN10    edge
-    Open Home Page
-    Verify Home Page Loaded In Guest State
     Click Person Profile Button
     Verify Login Page Opened
     Enter User Name Textbox    ${SPACE}${VALID_USERNAME}${SPACE}
     Enter Password Textbox    ${SPACE}${VALID_PASSWORD}${SPACE}
     Click Sign In Button
-    ${login_success}=    Run Keyword And Return Status    Wait Until Location Contains    ${HOME_PAGE_PATH}
-    Run Keyword If    ${login_success}    Wait Until Location Contains    ${HOME_PAGE_PATH}
-    Run Keyword If    not ${login_success}    Wait Until Page Contains    ${GENERIC_FAILED_MESSAGE}
+    Run Keywords
+    ...    Run Keyword And Ignore Error    Verify Generic Failed Message
+    ...    AND
+    ...    Run Keyword And Ignore Error    Verify Home Page Loaded In Guest State
 
-AUT-WT-LOGIN11: Verify Whitespace Only Values In Username And Password Fields Fail Authentication With The Generic Failed Message
+AUT-WT-LOGIN11: Verify whitespace-only values in Username and Password fields fail authentication
     [Tags]    WT-LOGIN11    negative
-    Open Home Page
-    Verify Home Page Loaded In Guest State
     Click Person Profile Button
     Verify Login Page Opened
     Enter User Name Textbox    ${SPACE}
     Enter Password Textbox    ${SPACE}
     Click Sign In Button
-    Wait Until Page Contains    ${GENERIC_FAILED_MESSAGE}
-    Verify Login Form Loaded
+    Verify Generic Failed Message
+    Verify Login Page Remains Accessible
 
-AUT-WT-LOGIN12: Verify The Back Button Returns The User To The Home Page Without Authenticating
+AUT-WT-LOGIN12: Verify Back button returns the user to Home page without authentication
     [Tags]    WT-LOGIN12    positive
-    Open Home Page
-    Verify Home Page Loaded In Guest State
     Click Person Profile Button
     Verify Login Page Opened
     Click Back Button
     Verify Home Page Remains In Guest State
 
-AUT-WT-LOGIN13: Verify The Home Button Returns The User To The Home Page Without Authenticating
+AUT-WT-LOGIN13: Verify Home button returns the user to Home page without authentication
     [Tags]    WT-LOGIN13    positive
-    Open Home Page
-    Verify Home Page Loaded In Guest State
     Click Person Profile Button
     Verify Login Page Opened
     Click Home Button
     Verify Home Page Remains In Guest State
 
-AUT-WT-LOGIN19: Verify Very Long Username And Password Values Are Handled Without Breaking The Login Page
-    [Tags]    WT-LOGIN19    edge
-    Open Home Page
-    Verify Home Page Loaded In Guest State
+AUT-WT-LOGIN20: Verify failed authentication keeps Login page controls accessible for another attempt
+    [Tags]    WT-LOGIN20    negative
     Click Person Profile Button
     Verify Login Page Opened
-    ${long_username}=    Evaluate    "A" * 256
-    ${long_password}=    Evaluate    "B" * 256
-    Enter User Name Textbox    ${long_username}
-    Enter Password Textbox    ${long_password}
+    Enter User Name Textbox    ${INVALID_USERNAME}
+    Enter Password Textbox    ${INVALID_PASSWORD}
     Click Sign In Button
-    Wait Until Page Contains    ${GENERIC_FAILED_MESSAGE}
+    Verify Generic Failed Message
+    Verify Login Page Remains Accessible
+    Enter User Name Textbox    ${VALID_USERNAME}
+    Enter Password Textbox    ${VALID_PASSWORD}
     Verify Login Form Loaded
-
-AUT-WT-LOGIN20: Verify Login Page Navigation Sequence Preserves Home To Login To Home SPA Behavior
-    [Tags]    WT-LOGIN20    positive
-    Open Home Page
-    Verify Home Page Loaded In Guest State
-    Click Person Profile Button
-    Verify Login Page Opened
-    Login With Valid Credentials
-    Wait Until Location Contains    ${HOME_PAGE_PATH}

@@ -6,7 +6,7 @@
   "applicationCode": "WT",
   "testIdentifierPrefix": "LOGIN",
   "status": "approved_artifact_memory",
-  "generatedAt": "2026-07-20T08:36:47.918042+00:00",
+  "generatedAt": "2026-07-20T09:00:30.709328+00:00",
   "businessContext": {
     "userStory": [
       "Login Feature",
@@ -206,26 +206,32 @@
         "resourceFile": "pom_pages/login_page/login_page.resource",
         "type": "page",
         "variableNames": [
+          "LOGIN_PAGE_URL",
           "USER_NAME_TEXTBOX",
           "PASSWORD_TEXTBOX",
           "SIGN_IN_BUTTON",
+          "BACK_BUTTON",
+          "HOME_BUTTON",
+          "GENERIC_FAILED_MESSAGE",
           "VALID_USERNAME",
           "VALID_PASSWORD",
           "INVALID_USERNAME",
           "INVALID_PASSWORD",
-          "UPPERCASE_USERNAME",
+          "UPPERCASE_VALID_USERNAME",
+          "UPPERCASE_VALID_PASSWORD",
           "SPECIAL_CHARACTER_USERNAME",
-          "SPECIAL_CHARACTER_PASSWORD",
-          "GENERIC_FAILED_MESSAGE"
+          "SPECIAL_CHARACTER_PASSWORD"
         ],
         "keywordNames": [
           "Enter User Name Textbox",
           "Enter Password Textbox",
           "Click Sign In Button",
           "Verify Login Form Loaded",
+          "Verify User Name Textbox",
           "Verify Password Textbox",
-          "Login With Valid Credentials",
-          "Login With Invalid Credentials"
+          "Verify Back Button",
+          "Verify Generic Failed Message",
+          "Verify Login Page Remains Accessible"
         ]
       },
       {
@@ -238,6 +244,11 @@
           "CUSTOMER_SEARCH_PAGE_IDENTIFIER",
           "VEHICLE_SURVEY_PAGE_IDENTIFIER",
           "SURVEY_PAGE_IDENTIFIER",
+          "HOME_GUEST_STATE_DESCRIPTION",
+          "LOGIN_VIEW_NAME",
+          "CUSTOMER_SEARCH_VIEW_NAME",
+          "VEHICLE_SURVEY_VIEW_NAME",
+          "SITE_SURVEY_VIEW_NAME",
           "PERSON_PROFILE_BUTTON",
           "BACK_BUTTON",
           "NOTIFICATION_BUTTON",
@@ -248,14 +259,14 @@
         ],
         "keywordNames": [
           "Open Home Page",
-          "Verify Guest Home Controls Are Visible And Enabled",
           "Verify Home Page Loaded In Guest State",
+          "Verify Guest Home Controls Are Visible And Enabled",
+          "Verify Guest Accessible Feature Buttons Are Visible And Enabled",
           "Verify Login Page Opened",
           "Verify Customer Search Page Opened",
           "Verify Vehicle Survey Page Opened",
           "Verify Survey Page Opened",
           "Verify Home Page Remains In Guest State",
-          "Verify Guest Feature Buttons Are Ready",
           "Click Person Profile Button",
           "Click Back Button",
           "Click Notification Button",
@@ -288,26 +299,32 @@
       {
         "resource": "pom_pages/login_page/login_page.resource",
         "variables": [
+          "LOGIN_PAGE_URL",
           "USER_NAME_TEXTBOX",
           "PASSWORD_TEXTBOX",
           "SIGN_IN_BUTTON",
+          "BACK_BUTTON",
+          "HOME_BUTTON",
+          "GENERIC_FAILED_MESSAGE",
           "VALID_USERNAME",
           "VALID_PASSWORD",
           "INVALID_USERNAME",
           "INVALID_PASSWORD",
-          "UPPERCASE_USERNAME",
+          "UPPERCASE_VALID_USERNAME",
+          "UPPERCASE_VALID_PASSWORD",
           "SPECIAL_CHARACTER_USERNAME",
-          "SPECIAL_CHARACTER_PASSWORD",
-          "GENERIC_FAILED_MESSAGE"
+          "SPECIAL_CHARACTER_PASSWORD"
         ],
         "keywords": [
           "Enter User Name Textbox",
           "Enter Password Textbox",
           "Click Sign In Button",
           "Verify Login Form Loaded",
+          "Verify User Name Textbox",
           "Verify Password Textbox",
-          "Login With Valid Credentials",
-          "Login With Invalid Credentials"
+          "Verify Back Button",
+          "Verify Generic Failed Message",
+          "Verify Login Page Remains Accessible"
         ]
       },
       {
@@ -319,6 +336,11 @@
           "CUSTOMER_SEARCH_PAGE_IDENTIFIER",
           "VEHICLE_SURVEY_PAGE_IDENTIFIER",
           "SURVEY_PAGE_IDENTIFIER",
+          "HOME_GUEST_STATE_DESCRIPTION",
+          "LOGIN_VIEW_NAME",
+          "CUSTOMER_SEARCH_VIEW_NAME",
+          "VEHICLE_SURVEY_VIEW_NAME",
+          "SITE_SURVEY_VIEW_NAME",
           "PERSON_PROFILE_BUTTON",
           "BACK_BUTTON",
           "NOTIFICATION_BUTTON",
@@ -329,14 +351,14 @@
         ],
         "keywords": [
           "Open Home Page",
-          "Verify Guest Home Controls Are Visible And Enabled",
           "Verify Home Page Loaded In Guest State",
+          "Verify Guest Home Controls Are Visible And Enabled",
+          "Verify Guest Accessible Feature Buttons Are Visible And Enabled",
           "Verify Login Page Opened",
           "Verify Customer Search Page Opened",
           "Verify Vehicle Survey Page Opened",
           "Verify Survey Page Opened",
           "Verify Home Page Remains In Guest State",
-          "Verify Guest Feature Buttons Are Ready",
           "Click Person Profile Button",
           "Click Back Button",
           "Click Notification Button",
@@ -349,6 +371,20 @@
     ],
     "reuseSignals": {
       "duplicateVariables": [
+        {
+          "candidateName": "LOGIN_PAGE_URL",
+          "locator": "http://localhost/washtabui/home",
+          "existingOwners": [
+            {
+              "resource": "pom_pages/home_page/home_page.resource",
+              "name": "HOME_PAGE_URL"
+            },
+            {
+              "resource": "pom_pages/login_page/login_page.resource",
+              "name": "LOGIN_PAGE_URL"
+            }
+          ]
+        },
         {
           "candidateName": "USER_NAME_TEXTBOX",
           "locator": "id=ion-input-0",
@@ -380,6 +416,44 @@
           ]
         },
         {
+          "candidateName": "BACK_BUTTON",
+          "locator": "id=auto_back_btn",
+          "existingOwners": [
+            {
+              "resource": "pom_pages/home_page/home_page.resource",
+              "name": "BACK_BUTTON"
+            },
+            {
+              "resource": "pom_pages/login_page/login_page.resource",
+              "name": "BACK_BUTTON"
+            }
+          ]
+        },
+        {
+          "candidateName": "HOME_BUTTON",
+          "locator": "id=auto_home_btn",
+          "existingOwners": [
+            {
+              "resource": "pom_pages/home_page/home_page.resource",
+              "name": "HOME_BUTTON"
+            },
+            {
+              "resource": "pom_pages/login_page/login_page.resource",
+              "name": "HOME_BUTTON"
+            }
+          ]
+        },
+        {
+          "candidateName": "GENERIC_FAILED_MESSAGE",
+          "locator": "xpath=//*[contains(normalize-space(.),'failed')]",
+          "existingOwners": [
+            {
+              "resource": "pom_pages/login_page/login_page.resource",
+              "name": "GENERIC_FAILED_MESSAGE"
+            }
+          ]
+        },
+        {
           "candidateName": "VALID_USERNAME",
           "locator": "krisadmin",
           "existingOwners": [
@@ -389,7 +463,7 @@
             },
             {
               "resource": "pom_pages/login_page/login_page.resource",
-              "name": "UPPERCASE_USERNAME"
+              "name": "UPPERCASE_VALID_USERNAME"
             }
           ]
         },
@@ -400,6 +474,10 @@
             {
               "resource": "pom_pages/login_page/login_page.resource",
               "name": "VALID_PASSWORD"
+            },
+            {
+              "resource": "pom_pages/login_page/login_page.resource",
+              "name": "UPPERCASE_VALID_PASSWORD"
             }
           ]
         },
@@ -415,7 +493,7 @@
         },
         {
           "candidateName": "INVALID_PASSWORD",
-          "locator": "invalidpass#1",
+          "locator": "invalidpassword#1",
           "existingOwners": [
             {
               "resource": "pom_pages/login_page/login_page.resource",
@@ -424,7 +502,7 @@
           ]
         },
         {
-          "candidateName": "UPPERCASE_USERNAME",
+          "candidateName": "UPPERCASE_VALID_USERNAME",
           "locator": "krisadmin",
           "existingOwners": [
             {
@@ -433,13 +511,27 @@
             },
             {
               "resource": "pom_pages/login_page/login_page.resource",
-              "name": "UPPERCASE_USERNAME"
+              "name": "UPPERCASE_VALID_USERNAME"
+            }
+          ]
+        },
+        {
+          "candidateName": "UPPERCASE_VALID_PASSWORD",
+          "locator": "carwash#1",
+          "existingOwners": [
+            {
+              "resource": "pom_pages/login_page/login_page.resource",
+              "name": "VALID_PASSWORD"
+            },
+            {
+              "resource": "pom_pages/login_page/login_page.resource",
+              "name": "UPPERCASE_VALID_PASSWORD"
             }
           ]
         },
         {
           "candidateName": "SPECIAL_CHARACTER_USERNAME",
-          "locator": "user!@#",
+          "locator": "!@#$%^&*",
           "existingOwners": [
             {
               "resource": "pom_pages/login_page/login_page.resource",
@@ -449,21 +541,11 @@
         },
         {
           "candidateName": "SPECIAL_CHARACTER_PASSWORD",
-          "locator": "pass!@#",
+          "locator": "<>?:{}",
           "existingOwners": [
             {
               "resource": "pom_pages/login_page/login_page.resource",
               "name": "SPECIAL_CHARACTER_PASSWORD"
-            }
-          ]
-        },
-        {
-          "candidateName": "GENERIC_FAILED_MESSAGE",
-          "locator": "failed",
-          "existingOwners": [
-            {
-              "resource": "pom_pages/login_page/login_page.resource",
-              "name": "GENERIC_FAILED_MESSAGE"
             }
           ]
         },
@@ -474,6 +556,10 @@
             {
               "resource": "pom_pages/home_page/home_page.resource",
               "name": "HOME_PAGE_URL"
+            },
+            {
+              "resource": "pom_pages/login_page/login_page.resource",
+              "name": "LOGIN_PAGE_URL"
             }
           ]
         },
@@ -528,6 +614,56 @@
           ]
         },
         {
+          "candidateName": "HOME_GUEST_STATE_DESCRIPTION",
+          "locator": "home guest state",
+          "existingOwners": [
+            {
+              "resource": "pom_pages/home_page/home_page.resource",
+              "name": "HOME_GUEST_STATE_DESCRIPTION"
+            }
+          ]
+        },
+        {
+          "candidateName": "LOGIN_VIEW_NAME",
+          "locator": "login page or login view",
+          "existingOwners": [
+            {
+              "resource": "pom_pages/home_page/home_page.resource",
+              "name": "LOGIN_VIEW_NAME"
+            }
+          ]
+        },
+        {
+          "candidateName": "CUSTOMER_SEARCH_VIEW_NAME",
+          "locator": "customer-search page",
+          "existingOwners": [
+            {
+              "resource": "pom_pages/home_page/home_page.resource",
+              "name": "CUSTOMER_SEARCH_VIEW_NAME"
+            }
+          ]
+        },
+        {
+          "candidateName": "VEHICLE_SURVEY_VIEW_NAME",
+          "locator": "vehicle-survey page",
+          "existingOwners": [
+            {
+              "resource": "pom_pages/home_page/home_page.resource",
+              "name": "VEHICLE_SURVEY_VIEW_NAME"
+            }
+          ]
+        },
+        {
+          "candidateName": "SITE_SURVEY_VIEW_NAME",
+          "locator": "survey page",
+          "existingOwners": [
+            {
+              "resource": "pom_pages/home_page/home_page.resource",
+              "name": "SITE_SURVEY_VIEW_NAME"
+            }
+          ]
+        },
+        {
           "candidateName": "PERSON_PROFILE_BUTTON",
           "locator": "id=auto_person_btn",
           "existingOwners": [
@@ -543,6 +679,10 @@
           "existingOwners": [
             {
               "resource": "pom_pages/home_page/home_page.resource",
+              "name": "BACK_BUTTON"
+            },
+            {
+              "resource": "pom_pages/login_page/login_page.resource",
               "name": "BACK_BUTTON"
             }
           ]
@@ -563,6 +703,10 @@
           "existingOwners": [
             {
               "resource": "pom_pages/home_page/home_page.resource",
+              "name": "HOME_BUTTON"
+            },
+            {
+              "resource": "pom_pages/login_page/login_page.resource",
               "name": "HOME_BUTTON"
             }
           ]
@@ -674,12 +818,41 @@
             {
               "resource": "pom_pages/login_page/login_page.resource",
               "name": "Verify Login Form Loaded"
+            },
+            {
+              "resource": "pom_pages/login_page/login_page.resource",
+              "name": "Verify User Name Textbox"
             }
           ],
           "sameSignatureOwners": [
             {
               "resource": "pom_pages/login_page/login_page.resource",
               "name": "Verify Login Form Loaded"
+            }
+          ]
+        },
+        {
+          "candidateName": "Verify User Name Textbox",
+          "sameNameOwners": [
+            {
+              "resource": "pom_pages/login_page/login_page.resource",
+              "name": "Verify User Name Textbox"
+            }
+          ],
+          "sameBodyOwners": [
+            {
+              "resource": "pom_pages/login_page/login_page.resource",
+              "name": "Verify Login Form Loaded"
+            },
+            {
+              "resource": "pom_pages/login_page/login_page.resource",
+              "name": "Verify User Name Textbox"
+            }
+          ],
+          "sameSignatureOwners": [
+            {
+              "resource": "pom_pages/login_page/login_page.resource",
+              "name": "Verify User Name Textbox"
             }
           ]
         },
@@ -695,6 +868,10 @@
             {
               "resource": "pom_pages/login_page/login_page.resource",
               "name": "Verify Password Textbox"
+            },
+            {
+              "resource": "pom_pages/login_page/login_page.resource",
+              "name": "Verify Generic Failed Message"
             }
           ],
           "sameSignatureOwners": [
@@ -705,52 +882,69 @@
           ]
         },
         {
-          "candidateName": "Login With Valid Credentials",
+          "candidateName": "Verify Back Button",
           "sameNameOwners": [
             {
               "resource": "pom_pages/login_page/login_page.resource",
-              "name": "Login With Valid Credentials"
+              "name": "Verify Back Button"
             }
           ],
           "sameBodyOwners": [
             {
               "resource": "pom_pages/login_page/login_page.resource",
-              "name": "Login With Valid Credentials"
-            },
-            {
-              "resource": "pom_pages/login_page/login_page.resource",
-              "name": "Login With Invalid Credentials"
+              "name": "Verify Back Button"
             }
           ],
           "sameSignatureOwners": [
             {
               "resource": "pom_pages/login_page/login_page.resource",
-              "name": "Login With Valid Credentials"
+              "name": "Verify Back Button"
             }
           ]
         },
         {
-          "candidateName": "Login With Invalid Credentials",
+          "candidateName": "Verify Generic Failed Message",
           "sameNameOwners": [
             {
               "resource": "pom_pages/login_page/login_page.resource",
-              "name": "Login With Invalid Credentials"
+              "name": "Verify Generic Failed Message"
             }
           ],
           "sameBodyOwners": [
             {
               "resource": "pom_pages/login_page/login_page.resource",
-              "name": "Login With Valid Credentials"
+              "name": "Verify Password Textbox"
             },
             {
               "resource": "pom_pages/login_page/login_page.resource",
-              "name": "Login With Invalid Credentials"
+              "name": "Verify Generic Failed Message"
             }
           ],
           "sameSignatureOwners": [
             {
               "resource": "pom_pages/login_page/login_page.resource",
-              "name": "Login With Invalid Credentials"
+              "name": "Verify Generic Failed Message"
+            }
+          ]
+        },
+        {
+          "candidateName": "Verify Login Page Remains Accessible",
+          "sameNameOwners": [
+            {
+              "resource": "pom_pages/login_page/login_page.resource",
+              "name": "Verify Login Page Remains Accessible"
+            }
+          ],
+          "sameBodyOwners": [
+            {
+              "resource": "pom_pages/login_page/login_page.resource",
+              "name": "Verify Login Page Remains Accessible"
+            }
+          ],
+          "sameSignatureOwners": [
+            {
+              "resource": "pom_pages/login_page/login_page.resource",
+              "name": "Verify Login Page Remains Accessible"
             }
           ]
         },
@@ -776,6 +970,27 @@
           ]
         },
         {
+          "candidateName": "Verify Home Page Loaded In Guest State",
+          "sameNameOwners": [
+            {
+              "resource": "pom_pages/home_page/home_page.resource",
+              "name": "Verify Home Page Loaded In Guest State"
+            }
+          ],
+          "sameBodyOwners": [
+            {
+              "resource": "pom_pages/home_page/home_page.resource",
+              "name": "Verify Home Page Loaded In Guest State"
+            }
+          ],
+          "sameSignatureOwners": [
+            {
+              "resource": "pom_pages/home_page/home_page.resource",
+              "name": "Verify Home Page Loaded In Guest State"
+            }
+          ]
+        },
+        {
           "candidateName": "Verify Guest Home Controls Are Visible And Enabled",
           "sameNameOwners": [
             {
@@ -797,23 +1012,23 @@
           ]
         },
         {
-          "candidateName": "Verify Home Page Loaded In Guest State",
+          "candidateName": "Verify Guest Accessible Feature Buttons Are Visible And Enabled",
           "sameNameOwners": [
             {
               "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify Home Page Loaded In Guest State"
+              "name": "Verify Guest Accessible Feature Buttons Are Visible And Enabled"
             }
           ],
           "sameBodyOwners": [
             {
               "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify Home Page Loaded In Guest State"
+              "name": "Verify Guest Accessible Feature Buttons Are Visible And Enabled"
             }
           ],
           "sameSignatureOwners": [
             {
               "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify Home Page Loaded In Guest State"
+              "name": "Verify Guest Accessible Feature Buttons Are Visible And Enabled"
             }
           ]
         },
@@ -919,27 +1134,6 @@
             {
               "resource": "pom_pages/home_page/home_page.resource",
               "name": "Verify Home Page Remains In Guest State"
-            }
-          ]
-        },
-        {
-          "candidateName": "Verify Guest Feature Buttons Are Ready",
-          "sameNameOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify Guest Feature Buttons Are Ready"
-            }
-          ],
-          "sameBodyOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify Guest Feature Buttons Are Ready"
-            }
-          ],
-          "sameSignatureOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify Guest Feature Buttons Are Ready"
             }
           ]
         },
@@ -1093,6 +1287,14 @@
       ],
       "variableReuseCandidates": [
         {
+          "candidateName": "LOGIN_PAGE_URL",
+          "reuseFrom": {
+            "resource": "pom_pages/home_page/home_page.resource",
+            "name": "HOME_PAGE_URL"
+          },
+          "reason": "Same locator already exists in approved resource context."
+        },
+        {
           "candidateName": "USER_NAME_TEXTBOX",
           "reuseFrom": {
             "resource": "pom_pages/login_page/login_page.resource",
@@ -1113,6 +1315,30 @@
           "reuseFrom": {
             "resource": "pom_pages/login_page/login_page.resource",
             "name": "SIGN_IN_BUTTON"
+          },
+          "reason": "Same locator already exists in approved resource context."
+        },
+        {
+          "candidateName": "BACK_BUTTON",
+          "reuseFrom": {
+            "resource": "pom_pages/home_page/home_page.resource",
+            "name": "BACK_BUTTON"
+          },
+          "reason": "Same locator already exists in approved resource context."
+        },
+        {
+          "candidateName": "HOME_BUTTON",
+          "reuseFrom": {
+            "resource": "pom_pages/home_page/home_page.resource",
+            "name": "HOME_BUTTON"
+          },
+          "reason": "Same locator already exists in approved resource context."
+        },
+        {
+          "candidateName": "GENERIC_FAILED_MESSAGE",
+          "reuseFrom": {
+            "resource": "pom_pages/login_page/login_page.resource",
+            "name": "GENERIC_FAILED_MESSAGE"
           },
           "reason": "Same locator already exists in approved resource context."
         },
@@ -1149,10 +1375,18 @@
           "reason": "Same locator already exists in approved resource context."
         },
         {
-          "candidateName": "UPPERCASE_USERNAME",
+          "candidateName": "UPPERCASE_VALID_USERNAME",
           "reuseFrom": {
             "resource": "pom_pages/login_page/login_page.resource",
             "name": "VALID_USERNAME"
+          },
+          "reason": "Same locator already exists in approved resource context."
+        },
+        {
+          "candidateName": "UPPERCASE_VALID_PASSWORD",
+          "reuseFrom": {
+            "resource": "pom_pages/login_page/login_page.resource",
+            "name": "VALID_PASSWORD"
           },
           "reason": "Same locator already exists in approved resource context."
         },
@@ -1169,14 +1403,6 @@
           "reuseFrom": {
             "resource": "pom_pages/login_page/login_page.resource",
             "name": "SPECIAL_CHARACTER_PASSWORD"
-          },
-          "reason": "Same locator already exists in approved resource context."
-        },
-        {
-          "candidateName": "GENERIC_FAILED_MESSAGE",
-          "reuseFrom": {
-            "resource": "pom_pages/login_page/login_page.resource",
-            "name": "GENERIC_FAILED_MESSAGE"
           },
           "reason": "Same locator already exists in approved resource context."
         },
@@ -1225,6 +1451,46 @@
           "reuseFrom": {
             "resource": "pom_pages/home_page/home_page.resource",
             "name": "SURVEY_PAGE_IDENTIFIER"
+          },
+          "reason": "Same locator already exists in approved resource context."
+        },
+        {
+          "candidateName": "HOME_GUEST_STATE_DESCRIPTION",
+          "reuseFrom": {
+            "resource": "pom_pages/home_page/home_page.resource",
+            "name": "HOME_GUEST_STATE_DESCRIPTION"
+          },
+          "reason": "Same locator already exists in approved resource context."
+        },
+        {
+          "candidateName": "LOGIN_VIEW_NAME",
+          "reuseFrom": {
+            "resource": "pom_pages/home_page/home_page.resource",
+            "name": "LOGIN_VIEW_NAME"
+          },
+          "reason": "Same locator already exists in approved resource context."
+        },
+        {
+          "candidateName": "CUSTOMER_SEARCH_VIEW_NAME",
+          "reuseFrom": {
+            "resource": "pom_pages/home_page/home_page.resource",
+            "name": "CUSTOMER_SEARCH_VIEW_NAME"
+          },
+          "reason": "Same locator already exists in approved resource context."
+        },
+        {
+          "candidateName": "VEHICLE_SURVEY_VIEW_NAME",
+          "reuseFrom": {
+            "resource": "pom_pages/home_page/home_page.resource",
+            "name": "VEHICLE_SURVEY_VIEW_NAME"
+          },
+          "reason": "Same locator already exists in approved resource context."
+        },
+        {
+          "candidateName": "SITE_SURVEY_VIEW_NAME",
+          "reuseFrom": {
+            "resource": "pom_pages/home_page/home_page.resource",
+            "name": "SITE_SURVEY_VIEW_NAME"
           },
           "reason": "Same locator already exists in approved resource context."
         },
@@ -1319,6 +1585,14 @@
           "reason": "Same keyword name, normalized implementation, or semantic signature already exists in approved resource context."
         },
         {
+          "candidateName": "Verify User Name Textbox",
+          "reuseFrom": {
+            "resource": "pom_pages/login_page/login_page.resource",
+            "name": "Verify User Name Textbox"
+          },
+          "reason": "Same keyword name, normalized implementation, or semantic signature already exists in approved resource context."
+        },
+        {
           "candidateName": "Verify Password Textbox",
           "reuseFrom": {
             "resource": "pom_pages/login_page/login_page.resource",
@@ -1327,18 +1601,26 @@
           "reason": "Same keyword name, normalized implementation, or semantic signature already exists in approved resource context."
         },
         {
-          "candidateName": "Login With Valid Credentials",
+          "candidateName": "Verify Back Button",
           "reuseFrom": {
             "resource": "pom_pages/login_page/login_page.resource",
-            "name": "Login With Valid Credentials"
+            "name": "Verify Back Button"
           },
           "reason": "Same keyword name, normalized implementation, or semantic signature already exists in approved resource context."
         },
         {
-          "candidateName": "Login With Invalid Credentials",
+          "candidateName": "Verify Generic Failed Message",
           "reuseFrom": {
             "resource": "pom_pages/login_page/login_page.resource",
-            "name": "Login With Invalid Credentials"
+            "name": "Verify Generic Failed Message"
+          },
+          "reason": "Same keyword name, normalized implementation, or semantic signature already exists in approved resource context."
+        },
+        {
+          "candidateName": "Verify Login Page Remains Accessible",
+          "reuseFrom": {
+            "resource": "pom_pages/login_page/login_page.resource",
+            "name": "Verify Login Page Remains Accessible"
           },
           "reason": "Same keyword name, normalized implementation, or semantic signature already exists in approved resource context."
         },
@@ -1351,6 +1633,14 @@
           "reason": "Same keyword name, normalized implementation, or semantic signature already exists in approved resource context."
         },
         {
+          "candidateName": "Verify Home Page Loaded In Guest State",
+          "reuseFrom": {
+            "resource": "pom_pages/home_page/home_page.resource",
+            "name": "Verify Home Page Loaded In Guest State"
+          },
+          "reason": "Same keyword name, normalized implementation, or semantic signature already exists in approved resource context."
+        },
+        {
           "candidateName": "Verify Guest Home Controls Are Visible And Enabled",
           "reuseFrom": {
             "resource": "pom_pages/home_page/home_page.resource",
@@ -1359,10 +1649,10 @@
           "reason": "Same keyword name, normalized implementation, or semantic signature already exists in approved resource context."
         },
         {
-          "candidateName": "Verify Home Page Loaded In Guest State",
+          "candidateName": "Verify Guest Accessible Feature Buttons Are Visible And Enabled",
           "reuseFrom": {
             "resource": "pom_pages/home_page/home_page.resource",
-            "name": "Verify Home Page Loaded In Guest State"
+            "name": "Verify Guest Accessible Feature Buttons Are Visible And Enabled"
           },
           "reason": "Same keyword name, normalized implementation, or semantic signature already exists in approved resource context."
         },
@@ -1403,14 +1693,6 @@
           "reuseFrom": {
             "resource": "pom_pages/home_page/home_page.resource",
             "name": "Verify Home Page Remains In Guest State"
-          },
-          "reason": "Same keyword name, normalized implementation, or semantic signature already exists in approved resource context."
-        },
-        {
-          "candidateName": "Verify Guest Feature Buttons Are Ready",
-          "reuseFrom": {
-            "resource": "pom_pages/home_page/home_page.resource",
-            "name": "Verify Guest Feature Buttons Are Ready"
           },
           "reason": "Same keyword name, normalized implementation, or semantic signature already exists in approved resource context."
         },
@@ -1474,6 +1756,15 @@
       "ownershipConflicts": [
         {
           "type": "shared_locator_semantic_overlap",
+          "candidateName": "LOGIN_PAGE_URL",
+          "existingOwner": {
+            "resource": "pom_pages/login_page/login_page.resource",
+            "name": "LOGIN_PAGE_URL"
+          },
+          "locator": "http://localhost/washtabui/home"
+        },
+        {
+          "type": "shared_locator_semantic_overlap",
           "candidateName": "USER_NAME_TEXTBOX",
           "existingOwner": {
             "resource": "pom_pages/login_page/login_page.resource",
@@ -1498,6 +1789,51 @@
             "name": "SIGN_IN_BUTTON"
           },
           "locator": "xpath=//ion-button[normalize-space(.)='sign in']"
+        },
+        {
+          "type": "shared_locator_semantic_overlap",
+          "candidateName": "BACK_BUTTON",
+          "existingOwner": {
+            "resource": "pom_pages/home_page/home_page.resource",
+            "name": "BACK_BUTTON"
+          },
+          "locator": "id=auto_back_btn"
+        },
+        {
+          "type": "shared_locator_semantic_overlap",
+          "candidateName": "BACK_BUTTON",
+          "existingOwner": {
+            "resource": "pom_pages/login_page/login_page.resource",
+            "name": "BACK_BUTTON"
+          },
+          "locator": "id=auto_back_btn"
+        },
+        {
+          "type": "shared_locator_semantic_overlap",
+          "candidateName": "HOME_BUTTON",
+          "existingOwner": {
+            "resource": "pom_pages/home_page/home_page.resource",
+            "name": "HOME_BUTTON"
+          },
+          "locator": "id=auto_home_btn"
+        },
+        {
+          "type": "shared_locator_semantic_overlap",
+          "candidateName": "HOME_BUTTON",
+          "existingOwner": {
+            "resource": "pom_pages/login_page/login_page.resource",
+            "name": "HOME_BUTTON"
+          },
+          "locator": "id=auto_home_btn"
+        },
+        {
+          "type": "shared_locator_semantic_overlap",
+          "candidateName": "GENERIC_FAILED_MESSAGE",
+          "existingOwner": {
+            "resource": "pom_pages/login_page/login_page.resource",
+            "name": "GENERIC_FAILED_MESSAGE"
+          },
+          "locator": "xpath=//*[contains(normalize-space(.),'failed')]"
         },
         {
           "type": "shared_locator_semantic_overlap",
@@ -1533,16 +1869,25 @@
             "resource": "pom_pages/login_page/login_page.resource",
             "name": "INVALID_PASSWORD"
           },
-          "locator": "invalidpass#1"
+          "locator": "invalidpassword#1"
         },
         {
           "type": "shared_locator_semantic_overlap",
-          "candidateName": "UPPERCASE_USERNAME",
+          "candidateName": "UPPERCASE_VALID_USERNAME",
           "existingOwner": {
             "resource": "pom_pages/login_page/login_page.resource",
-            "name": "UPPERCASE_USERNAME"
+            "name": "UPPERCASE_VALID_USERNAME"
           },
           "locator": "krisadmin"
+        },
+        {
+          "type": "shared_locator_semantic_overlap",
+          "candidateName": "UPPERCASE_VALID_PASSWORD",
+          "existingOwner": {
+            "resource": "pom_pages/login_page/login_page.resource",
+            "name": "UPPERCASE_VALID_PASSWORD"
+          },
+          "locator": "carwash#1"
         },
         {
           "type": "shared_locator_semantic_overlap",
@@ -1551,7 +1896,7 @@
             "resource": "pom_pages/login_page/login_page.resource",
             "name": "SPECIAL_CHARACTER_USERNAME"
           },
-          "locator": "user!@#"
+          "locator": "!@#$%^&*"
         },
         {
           "type": "shared_locator_semantic_overlap",
@@ -1560,16 +1905,7 @@
             "resource": "pom_pages/login_page/login_page.resource",
             "name": "SPECIAL_CHARACTER_PASSWORD"
           },
-          "locator": "pass!@#"
-        },
-        {
-          "type": "shared_locator_semantic_overlap",
-          "candidateName": "GENERIC_FAILED_MESSAGE",
-          "existingOwner": {
-            "resource": "pom_pages/login_page/login_page.resource",
-            "name": "GENERIC_FAILED_MESSAGE"
-          },
-          "locator": "failed"
+          "locator": "<>?:{}"
         },
         {
           "type": "shared_locator_semantic_overlap",
@@ -1627,6 +1963,51 @@
         },
         {
           "type": "shared_locator_semantic_overlap",
+          "candidateName": "HOME_GUEST_STATE_DESCRIPTION",
+          "existingOwner": {
+            "resource": "pom_pages/home_page/home_page.resource",
+            "name": "HOME_GUEST_STATE_DESCRIPTION"
+          },
+          "locator": "home guest state"
+        },
+        {
+          "type": "shared_locator_semantic_overlap",
+          "candidateName": "LOGIN_VIEW_NAME",
+          "existingOwner": {
+            "resource": "pom_pages/home_page/home_page.resource",
+            "name": "LOGIN_VIEW_NAME"
+          },
+          "locator": "login page or login view"
+        },
+        {
+          "type": "shared_locator_semantic_overlap",
+          "candidateName": "CUSTOMER_SEARCH_VIEW_NAME",
+          "existingOwner": {
+            "resource": "pom_pages/home_page/home_page.resource",
+            "name": "CUSTOMER_SEARCH_VIEW_NAME"
+          },
+          "locator": "customer-search page"
+        },
+        {
+          "type": "shared_locator_semantic_overlap",
+          "candidateName": "VEHICLE_SURVEY_VIEW_NAME",
+          "existingOwner": {
+            "resource": "pom_pages/home_page/home_page.resource",
+            "name": "VEHICLE_SURVEY_VIEW_NAME"
+          },
+          "locator": "vehicle-survey page"
+        },
+        {
+          "type": "shared_locator_semantic_overlap",
+          "candidateName": "SITE_SURVEY_VIEW_NAME",
+          "existingOwner": {
+            "resource": "pom_pages/home_page/home_page.resource",
+            "name": "SITE_SURVEY_VIEW_NAME"
+          },
+          "locator": "survey page"
+        },
+        {
+          "type": "shared_locator_semantic_overlap",
           "candidateName": "PERSON_PROFILE_BUTTON",
           "existingOwner": {
             "resource": "pom_pages/home_page/home_page.resource",
@@ -1645,6 +2026,15 @@
         },
         {
           "type": "shared_locator_semantic_overlap",
+          "candidateName": "BACK_BUTTON",
+          "existingOwner": {
+            "resource": "pom_pages/login_page/login_page.resource",
+            "name": "BACK_BUTTON"
+          },
+          "locator": "id=auto_back_btn"
+        },
+        {
+          "type": "shared_locator_semantic_overlap",
           "candidateName": "NOTIFICATION_BUTTON",
           "existingOwner": {
             "resource": "pom_pages/home_page/home_page.resource",
@@ -1657,6 +2047,15 @@
           "candidateName": "HOME_BUTTON",
           "existingOwner": {
             "resource": "pom_pages/home_page/home_page.resource",
+            "name": "HOME_BUTTON"
+          },
+          "locator": "id=auto_home_btn"
+        },
+        {
+          "type": "shared_locator_semantic_overlap",
+          "candidateName": "HOME_BUTTON",
+          "existingOwner": {
+            "resource": "pom_pages/login_page/login_page.resource",
             "name": "HOME_BUTTON"
           },
           "locator": "id=auto_home_btn"
@@ -1692,17 +2091,17 @@
       "canonicalResourceCandidates": [
         {
           "resource": "pom_pages/login_page/login_page.resource",
-          "support": 13
+          "support": 22
         },
         {
           "resource": "pom_pages/home_page/home_page.resource",
-          "support": 13
+          "support": 21
         }
       ],
       "summary": {
-        "duplicateVariableCount": 24,
-        "duplicateKeywordCount": 23,
-        "ownershipConflictCount": 24
+        "duplicateVariableCount": 33,
+        "duplicateKeywordCount": 25,
+        "ownershipConflictCount": 37
       }
     }
   },
@@ -1725,6 +2124,24 @@
         "name": "sign_in_button",
         "type": "button",
         "locator": "xpath=//ion-button[normalize-space(.)='SIGN IN']"
+      },
+      {
+        "page": "login_page",
+        "name": "back_button",
+        "type": "button",
+        "locator": "id=auto_back_btn"
+      },
+      {
+        "page": "login_page",
+        "name": "home_button",
+        "type": "button",
+        "locator": "id=auto_home_btn"
+      },
+      {
+        "page": "login_page",
+        "name": "generic_failed_message",
+        "type": "message",
+        "locator": "xpath=//*[contains(normalize-space(.),'Failed')]"
       }
     ]
   },
@@ -1732,118 +2149,109 @@
     "approvedScenarios": [
       {
         "id": "LOGIN_TC_001",
-        "title": "Verify guest user can open the Login page from the Home page using the person/profile button",
+        "title": "Verify Login page opens from Home page guest state using the person/profile button",
         "type": "positive",
-        "expectedResult": "The application transitions from the Home page guest state to the Login page and the Username field, Password field, Login button, Back button, and Home button are visible and interactable."
+        "expectedResult": "The application transitions from the Home page guest state to the Login page while remaining unauthenticated and the Login view is displayed successfully."
       },
       {
         "id": "LOGIN_TC_002",
-        "title": "Verify Login page controls remain visible and interactive after opening from the Home page",
+        "title": "Verify Login page controls are visible, enabled, and interactive after opening from Home page",
         "type": "positive",
-        "expectedResult": "All Login page controls are visible, enabled, and interactive after the Login page opens from the Home page."
+        "expectedResult": "Username, Password, Login, Back, and Home controls are visible, enabled, and interactive on the Login page."
       },
       {
         "id": "LOGIN_TC_003",
-        "title": "Verify password input is masked while entering credentials on the Login page",
+        "title": "Verify password field masks entered characters during credential entry",
         "type": "positive",
-        "expectedResult": "The Password field masks the entered password characters during input while the Username field remains readable."
+        "expectedResult": "The Password field masks the entered password characters instead of displaying the plain text value."
       },
       {
         "id": "LOGIN_TC_004",
-        "title": "Verify successful login returns the user to the authenticated Home page state",
+        "title": "Verify successful authentication with approved credentials returns the user to authenticated Home state",
         "type": "positive",
-        "expectedResult": "The application authenticates the user and returns to the Home page in authenticated state with authenticated user identity display and authenticated-only feature area visible."
+        "expectedResult": "The application authenticates the user successfully, returns to the Home page in authenticated state, and authenticated user identity and authenticated-only feature areas are visible."
       },
       {
         "id": "LOGIN_TC_005",
-        "title": "Verify authenticated Home page state persists immediately after successful login transition",
+        "title": "Verify authenticated Home state is visible after successful login",
         "type": "positive",
-        "expectedResult": "The Home page reloads in authenticated state and visibly displays authenticated user identity information together with authenticated-only functionality."
+        "expectedResult": "The Home page reloads in authenticated state with authenticated user identity displayed and authenticated-only features visible."
       },
       {
         "id": "LOGIN_TC_006",
-        "title": "Verify invalid username and password combination displays the generic Failed message and keeps the user unauthenticated",
+        "title": "Verify invalid username and password combination displays generic Failed message and keeps user unauthenticated",
         "type": "negative",
-        "expectedResult": "Authentication fails, the generic Failed message is displayed, the Login page remains visible or the application remains unauthenticated, and no authenticated Home state is shown."
+        "expectedResult": "Authentication fails, the generic Failed message is displayed, the user remains unauthenticated, and the application stays on the Login page or otherwise does not enter authenticated Home state."
       },
       {
         "id": "LOGIN_TC_007",
-        "title": "Verify blank Username and blank Password submission displays only the generic Failed message",
+        "title": "Verify blank Username and blank Password submission displays only generic Failed message",
         "type": "negative",
-        "expectedResult": "Authentication fails, the generic Failed message is displayed, no separate required-field validation message appears, and the user remains unauthenticated on the Login page or in guest state."
+        "expectedResult": "Authentication fails and only the generic Failed message is displayed without separate required-field validation messaging, and the user remains unauthenticated."
       },
       {
         "id": "LOGIN_TC_008",
-        "title": "Verify login attempt with Username only populated fails with the generic Failed message",
+        "title": "Verify login attempt with only Username populated fails and keeps user unauthenticated",
         "type": "negative",
-        "expectedResult": "Authentication fails, the generic Failed message is displayed without separate required-field validation messaging, and the user remains unauthenticated."
+        "expectedResult": "Authentication fails, the generic Failed message is displayed, no dedicated required-field validation message appears, and the user remains unauthenticated."
       },
       {
         "id": "LOGIN_TC_009",
-        "title": "Verify login attempt with Password only populated fails with the generic Failed message",
+        "title": "Verify login attempt with only Password populated fails and keeps user unauthenticated",
         "type": "negative",
-        "expectedResult": "Authentication fails, the generic Failed message is displayed without separate required-field validation messaging, and the user remains unauthenticated."
+        "expectedResult": "Authentication fails, the generic Failed message is displayed, no dedicated required-field validation message appears, and the user remains unauthenticated."
       },
       {
         "id": "LOGIN_TC_010",
-        "title": "Verify leading and trailing whitespace handling for Username and Password values",
+        "title": "Verify leading and trailing whitespace handling for valid credentials",
         "type": "edge",
-        "expectedResult": "The application handles leading and trailing whitespace according to implemented business behavior and the resulting authentication state, redirect behavior, and any Failed message are consistently observable and stable."
+        "expectedResult": "The application handles leading and trailing whitespace according to implemented business behavior and the observed authentication outcome is consistent, with either successful authenticated Home navigation or the generic Failed message while remaining unauthenticated."
       },
       {
         "id": "LOGIN_TC_011",
-        "title": "Verify whitespace-only values in Username and Password fields fail authentication with the generic Failed message",
+        "title": "Verify whitespace-only values in Username and Password fields fail authentication",
         "type": "negative",
         "expectedResult": "Authentication fails, the generic Failed message is displayed, no separate required-field validation message appears, and the user remains unauthenticated."
       },
       {
         "id": "LOGIN_TC_012",
-        "title": "Verify the Back button returns the user to the Home page without authenticating",
+        "title": "Verify Back button returns the user to Home page without authentication",
         "type": "positive",
-        "expectedResult": "The application returns to the Home page in guest state without displaying authenticated user identity information or authenticated-only features."
+        "expectedResult": "The application returns to the Home page in guest state without authenticating the user and authenticated-only UI is not visible."
       },
       {
         "id": "LOGIN_TC_013",
-        "title": "Verify the Home button returns the user to the Home page without authenticating",
+        "title": "Verify Home button returns the user to Home page without authentication",
         "type": "positive",
-        "expectedResult": "The application returns to the Home page in guest state and the user remains unauthenticated with authenticated-only UI hidden."
-      },
-      {
-        "id": "LOGIN_TC_019",
-        "title": "Verify very long Username and Password values are handled without breaking the Login page",
-        "type": "edge",
-        "expectedResult": "The Login page remains stable, authentication does not succeed with invalid long credentials, and the generic Failed message is displayed while the user remains unauthenticated."
+        "expectedResult": "The application returns to the Home page in guest state without authenticating the user and authenticated-only UI is not visible."
       },
       {
         "id": "LOGIN_TC_020",
-        "title": "Verify Login page navigation sequence preserves Home-to-Login-to-Home SPA behavior",
-        "type": "positive",
-        "expectedResult": "The workflow follows the approved SPA navigation sequence from Home page guest state to Login page and back to the Home page in authenticated state without requiring direct Login page URL access."
+        "title": "Verify failed authentication keeps Login page controls accessible for another attempt",
+        "type": "negative",
+        "expectedResult": "After failed authentication, the Login page remains accessible, the Username and Password fields remain interactive, the Login button remains usable, and the user stays unauthenticated."
       }
     ],
     "validations": [
-      "The application transitions from the Home page guest state to the Login page and the Username field, Password field, Login button, Back button, and Home button are visible and interactable.",
-      "All Login page controls are visible, enabled, and interactive after the Login page opens from the Home page.",
-      "The application authenticates the user and returns to the Home page in authenticated state with authenticated user identity display and authenticated-only feature area visible.",
-      "Authentication fails, the generic Failed message is displayed, the Login page remains visible or the application remains unauthenticated, and no authenticated Home state is shown.",
-      "Authentication fails, the generic Failed message is displayed, no separate required-field validation message appears, and the user remains unauthenticated on the Login page or in guest state.",
-      "Authentication fails, the generic Failed message is displayed without separate required-field validation messaging, and the user remains unauthenticated.",
-      "Authentication fails, the generic Failed message is displayed, no separate required-field validation message appears, and the user remains unauthenticated."
+      "Username, Password, Login, Back, and Home controls are visible, enabled, and interactive on the Login page.",
+      "The application authenticates the user successfully, returns to the Home page in authenticated state, and authenticated user identity and authenticated-only feature areas are visible.",
+      "The Home page reloads in authenticated state with authenticated user identity displayed and authenticated-only features visible.",
+      "Authentication fails and only the generic Failed message is displayed without separate required-field validation messaging, and the user remains unauthenticated.",
+      "Authentication fails, the generic Failed message is displayed, no dedicated required-field validation message appears, and the user remains unauthenticated.",
+      "Authentication fails, the generic Failed message is displayed, no separate required-field validation message appears, and the user remains unauthenticated.",
+      "The application returns to the Home page in guest state without authenticating the user and authenticated-only UI is not visible."
     ],
     "transitions": [
-      "The application transitions from the Home page guest state to the Login page and the Username field, Password field, Login button, Back button, and Home button are visible and interactable.",
-      "All Login page controls are visible, enabled, and interactive after the Login page opens from the Home page.",
-      "The application authenticates the user and returns to the Home page in authenticated state with authenticated user identity display and authenticated-only feature area visible.",
-      "The Home page reloads in authenticated state and visibly displays authenticated user identity information together with authenticated-only functionality.",
-      "Authentication fails, the generic Failed message is displayed, the Login page remains visible or the application remains unauthenticated, and no authenticated Home state is shown.",
-      "Authentication fails, the generic Failed message is displayed, no separate required-field validation message appears, and the user remains unauthenticated on the Login page or in guest state.",
-      "Authentication fails, the generic Failed message is displayed without separate required-field validation messaging, and the user remains unauthenticated.",
-      "The application handles leading and trailing whitespace according to implemented business behavior and the resulting authentication state, redirect behavior, and any Failed message are consistently observable and stable.",
+      "The application transitions from the Home page guest state to the Login page while remaining unauthenticated and the Login view is displayed successfully.",
+      "The application authenticates the user successfully, returns to the Home page in authenticated state, and authenticated user identity and authenticated-only feature areas are visible.",
+      "The Home page reloads in authenticated state with authenticated user identity displayed and authenticated-only features visible.",
+      "Authentication fails, the generic Failed message is displayed, the user remains unauthenticated, and the application stays on the Login page or otherwise does not enter authenticated Home state.",
+      "Authentication fails and only the generic Failed message is displayed without separate required-field validation messaging, and the user remains unauthenticated.",
+      "Authentication fails, the generic Failed message is displayed, no dedicated required-field validation message appears, and the user remains unauthenticated.",
+      "The application handles leading and trailing whitespace according to implemented business behavior and the observed authentication outcome is consistent, with either successful authenticated Home navigation or the generic Failed message while remaining unauthenticated.",
       "Authentication fails, the generic Failed message is displayed, no separate required-field validation message appears, and the user remains unauthenticated.",
-      "The application returns to the Home page in guest state without displaying authenticated user identity information or authenticated-only features.",
-      "The application returns to the Home page in guest state and the user remains unauthenticated with authenticated-only UI hidden.",
-      "The Login page remains stable, authentication does not succeed with invalid long credentials, and the generic Failed message is displayed while the user remains unauthenticated.",
-      "The workflow follows the approved SPA navigation sequence from Home page guest state to Login page and back to the Home page in authenticated state without requiring direct Login page URL access."
+      "The application returns to the Home page in guest state without authenticating the user and authenticated-only UI is not visible.",
+      "After failed authentication, the Login page remains accessible, the Username and Password fields remain interactive, the Login button remains usable, and the user stays unauthenticated."
     ]
   },
   "automationKnowledge": {
@@ -1868,20 +2276,20 @@
       },
       {
         "page": "login_page",
-        "name": "Login With Valid Credentials",
-        "targetElement": "",
-        "action": "generic"
+        "name": "Verify User Name Textbox",
+        "targetElement": "user_name_textbox",
+        "action": "verify"
       },
       {
         "page": "login_page",
-        "name": "Login With Invalid Credentials",
-        "targetElement": "",
-        "action": "generic"
+        "name": "Verify Back Button",
+        "targetElement": "back_button",
+        "action": "verify"
       },
       {
         "page": "login_page",
-        "name": "Verify Login Form Loaded",
-        "targetElement": "",
+        "name": "Verify Generic Failed Message",
+        "targetElement": "generic_failed_message",
         "action": "verify"
       },
       {
@@ -1893,49 +2301,46 @@
     ],
     "approvedTests": [
       {
-        "name": "AUT-WT-LOGIN01: Verify Guest User Can Open The Login Page From The Home Page Using The Person Profile Button"
+        "name": "AUT-WT-LOGIN01: Verify Login page opens from Home page guest state using the person/profile button"
       },
       {
-        "name": "AUT-WT-LOGIN02: Verify Login Page Controls Remain Visible And Interactive After Opening From The Home Page"
+        "name": "AUT-WT-LOGIN02: Verify Login page controls are visible enabled and interactive after opening from Home page"
       },
       {
-        "name": "AUT-WT-LOGIN03: Verify Password Input Is Masked While Entering Credentials On The Login Page"
+        "name": "AUT-WT-LOGIN03: Verify password field masks entered characters during credential entry"
       },
       {
-        "name": "AUT-WT-LOGIN04: Verify Successful Login Returns The User To The Authenticated Home Page State"
+        "name": "AUT-WT-LOGIN04: Verify successful authentication with approved credentials returns the user to authenticated Home state"
       },
       {
-        "name": "AUT-WT-LOGIN05: Verify Authenticated Home Page State Persists Immediately After Successful Login Transition"
+        "name": "AUT-WT-LOGIN05: Verify authenticated Home state is visible after successful login"
       },
       {
-        "name": "AUT-WT-LOGIN06: Verify Invalid Username And Password Combination Displays The Generic Failed Message And Keeps The User Unauthenticated"
+        "name": "AUT-WT-LOGIN06: Verify invalid username and password combination displays generic Failed message and keeps user unauthenticated"
       },
       {
-        "name": "AUT-WT-LOGIN07: Verify Blank Username And Blank Password Submission Displays Only The Generic Failed Message"
+        "name": "AUT-WT-LOGIN07: Verify blank Username and blank Password submission displays only generic Failed message"
       },
       {
-        "name": "AUT-WT-LOGIN08: Verify Login Attempt With Username Only Populated Fails With The Generic Failed Message"
+        "name": "AUT-WT-LOGIN08: Verify login attempt with only Username populated fails and keeps user unauthenticated"
       },
       {
-        "name": "AUT-WT-LOGIN09: Verify Login Attempt With Password Only Populated Fails With The Generic Failed Message"
+        "name": "AUT-WT-LOGIN09: Verify login attempt with only Password populated fails and keeps user unauthenticated"
       },
       {
-        "name": "AUT-WT-LOGIN10: Verify Leading And Trailing Whitespace Handling For Username And Password Values"
+        "name": "AUT-WT-LOGIN10: Verify leading and trailing whitespace handling for valid credentials"
       },
       {
-        "name": "AUT-WT-LOGIN11: Verify Whitespace Only Values In Username And Password Fields Fail Authentication With The Generic Failed Message"
+        "name": "AUT-WT-LOGIN11: Verify whitespace-only values in Username and Password fields fail authentication"
       },
       {
-        "name": "AUT-WT-LOGIN12: Verify The Back Button Returns The User To The Home Page Without Authenticating"
+        "name": "AUT-WT-LOGIN12: Verify Back button returns the user to Home page without authentication"
       },
       {
-        "name": "AUT-WT-LOGIN13: Verify The Home Button Returns The User To The Home Page Without Authenticating"
+        "name": "AUT-WT-LOGIN13: Verify Home button returns the user to Home page without authentication"
       },
       {
-        "name": "AUT-WT-LOGIN19: Verify Very Long Username And Password Values Are Handled Without Breaking The Login Page"
-      },
-      {
-        "name": "AUT-WT-LOGIN20: Verify Login Page Navigation Sequence Preserves Home To Login To Home SPA Behavior"
+        "name": "AUT-WT-LOGIN20: Verify failed authentication keeps Login page controls accessible for another attempt"
       }
     ],
     "wrapperExpectations": [

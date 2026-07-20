@@ -31,6 +31,30 @@
       "kind": "locator",
       "approvedName": "sign_in_button",
       "type": "button"
+    },
+    {
+      "variableName": "BACK_BUTTON",
+      "value": "id=auto_back_btn",
+      "source": "approved_element",
+      "kind": "locator",
+      "approvedName": "back_button",
+      "type": "button"
+    },
+    {
+      "variableName": "HOME_BUTTON",
+      "value": "id=auto_home_btn",
+      "source": "approved_element",
+      "kind": "locator",
+      "approvedName": "home_button",
+      "type": "button"
+    },
+    {
+      "variableName": "GENERIC_FAILED_MESSAGE",
+      "value": "xpath=//*[contains(normalize-space(.),'Failed')]",
+      "source": "approved_element",
+      "kind": "locator",
+      "approvedName": "generic_failed_message",
+      "type": "message"
     }
   ]
 }

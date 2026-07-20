@@ -3,14 +3,13 @@
   "keywords": [
     {
       "keywordId": "KW_001",
-      "keywordName": "Open Home Page",
+      "keywordName": "Open Home Page In Guest State",
       "targetElement": "",
       "action": "generic",
       "arguments": [],
       "implementation": [
         "Open Browser To Url    ${HOME_PAGE_URL}",
-        "Wait For Element To Be Ready    ${AUTO_PERSON_BTN_BUTTON}",
-        "Wait For Element To Be Ready    ${AUTO_HOME_BTN_BUTTON}"
+        "Wait For Element To Be Ready    ${BACKGROUND_CONTENT_ELEMENT}"
       ],
       "approved": true
     },
@@ -93,7 +92,22 @@
     },
     {
       "keywordId": "KW_009",
-      "keywordName": "Verify Guest Home Controls Are Visible And Enabled",
+      "keywordName": "Verify Home Page Guest State Loaded",
+      "targetElement": "",
+      "action": "verify",
+      "arguments": [],
+      "implementation": [
+        "Wait For Element To Be Ready    ${BACKGROUND_CONTENT_ELEMENT}",
+        "Wait For Element To Be Ready    ${AUTO_PERSON_BTN_BUTTON}",
+        "Wait For Element To Be Ready    ${AUTO_BACK_BTN_BUTTON}",
+        "Wait For Element To Be Ready    ${AUTO_NOTIFICATION_BTN_BUTTON}",
+        "Wait For Element To Be Ready    ${AUTO_HOME_BTN_BUTTON}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_010",
+      "keywordName": "Verify Guest State Controls Are Visible And Enabled",
       "targetElement": "",
       "action": "verify",
       "arguments": [],
@@ -105,19 +119,6 @@
         "Wait For Element To Be Ready    ${AUTO_BTN_CUSTOMER_SIGNUP_BUTTON}",
         "Wait For Element To Be Ready    ${AUTO_BTN_CLEAN_SURVEY_BUTTON}",
         "Wait For Element To Be Ready    ${AUTO_BTN_SITE_SURVEY_BUTTON}"
-      ],
-      "approved": true
-    },
-    {
-      "keywordId": "KW_010",
-      "keywordName": "Verify Home Page Loaded In Guest State",
-      "targetElement": "",
-      "action": "verify",
-      "arguments": [],
-      "implementation": [
-        "Wait For Element To Be Ready    ${AUTO_PERSON_BTN_BUTTON}",
-        "Wait For Element To Be Ready    ${AUTO_HOME_BTN_BUTTON}",
-        "Wait For Element To Be Ready    ${AUTO_BTN_CUSTOMER_SIGNUP_BUTTON}"
       ],
       "approved": true
     }

@@ -40,34 +40,8 @@
     },
     {
       "keywordId": "KW_006",
-      "keywordName": "Login With Valid Credentials",
-      "targetElement": "",
-      "action": "generic",
-      "arguments": [],
-      "implementation": [
-        "Enter User Name Textbox    ${VALID_USERNAME}",
-        "Enter Password Textbox    ${VALID_PASSWORD}",
-        "Click Sign In Button"
-      ],
-      "approved": true
-    },
-    {
-      "keywordId": "KW_007",
-      "keywordName": "Login With Invalid Credentials",
-      "targetElement": "",
-      "action": "generic",
-      "arguments": [],
-      "implementation": [
-        "Enter User Name Textbox    ${INVALID_USERNAME}",
-        "Enter Password Textbox    ${INVALID_PASSWORD}",
-        "Click Sign In Button"
-      ],
-      "approved": true
-    },
-    {
-      "keywordId": "KW_008",
-      "keywordName": "Verify Login Form Loaded",
-      "targetElement": "",
+      "keywordName": "Verify User Name Textbox",
+      "targetElement": "user_name_textbox",
       "action": "verify",
       "arguments": [],
       "implementation": [
@@ -78,12 +52,36 @@
       "approved": true
     },
     {
+      "keywordId": "KW_007",
+      "keywordName": "Verify Back Button",
+      "targetElement": "back_button",
+      "action": "verify",
+      "arguments": [],
+      "implementation": [
+        "Wait For Element To Be Ready    id=auto_back_btn",
+        "Wait For Element To Be Ready    id=auto_home_btn"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_008",
+      "keywordName": "Verify Generic Failed Message",
+      "targetElement": "generic_failed_message",
+      "action": "verify",
+      "arguments": [],
+      "implementation": [
+        "Wait For Element To Be Ready    xpath=//*[contains(normalize-space(.),'Failed')]"
+      ],
+      "approved": true
+    },
+    {
       "keywordId": "KW_009",
       "keywordName": "Verify Password Textbox",
       "targetElement": "password_textbox",
       "action": "verify",
       "arguments": [],
       "implementation": [
+        "Wait For Element To Be Ready    ${ION_INPUT_1_PASSWORD}",
         "Element Attribute Value Should Be    ${ION_INPUT_1_PASSWORD}    type    password"
       ],
       "approved": true
