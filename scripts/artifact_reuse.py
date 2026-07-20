@@ -404,6 +404,19 @@ def analyze_keyword_artifact_reuse(keywords: List[Dict[str, Any]], page_name: st
 
     low_value_wrapper_keywords: List[Dict[str, Any]] = []
     common_reuse_opportunities: List[Dict[str, Any]] = []
+    helper_pattern = re.compile(
+        r"^(Click Element|Input Text|Input Password|Wait Until Element Is Visible|Wait Until Page Contains Element|Click When Ready|Input Text When Ready|Input Password When Ready)\b",
+        flags=re.IGNORECASE,
+    )
+    meaningful_action_tokens = {
+        "enter", "input", "click", "tap", "select", "choose", "open", "submit", "verify", "validate",
+        "confirm", "search", "filter", "toggle", "check", "uncheck", "navigate", "login", "logout",
+    }
+    semantic_object_tokens = {
+        "username", "user", "password", "login", "button", "textbox", "field", "message", "link",
+        "checkbox", "radio", "dropdown", "menu", "page", "dialog", "popup", "error", "success",
+        "banner", "tab", "section", "home", "back", "submit",
+    }
     for keyword in keywords:
         if not isinstance(keyword, dict):
             continue
@@ -413,18 +426,17 @@ def analyze_keyword_artifact_reuse(keywords: List[Dict[str, Any]], page_name: st
             implementation = [line.rstrip() for line in implementation.splitlines() if clean_text(line)]
         normalized_lines = [clean_text(line) for line in implementation if clean_text(line)]
         normalized_name = keyword_name.lower()
-        if len(normalized_lines) <= 2 and any(
-            re.match(r"^(Click Element|Input Text|Input Password|Wait Until Element Is Visible|Wait Until Page Contains Element)\b", line, flags=re.IGNORECASE)
-            for line in normalized_lines
-        ):
+        name_tokens = set(normalize_name_tokens(keyword_name).split()) if keyword_name else set()
+        implementation_uses_helpers = any(helper_pattern.match(line) for line in normalized_lines)
+        references_page_variable = any("${" in line for line in normalized_lines)
+        has_semantic_name = bool(name_tokens & meaningful_action_tokens) and bool(name_tokens & semantic_object_tokens)
+
+        if len(normalized_lines) <= 2 and implementation_uses_helpers and not (references_page_variable and has_semantic_name):
             low_value_wrapper_keywords.append({
                 "keywordName": keyword_name,
                 "reason": "Keyword is a thin low-level wrapper and may not provide enough reusable page-level abstraction.",
             })
-        if common_keyword_names and any(
-            re.match(r"^(Click Element|Input Text|Input Password|Wait Until Element Is Visible|Wait Until Page Contains Element)\b", line, flags=re.IGNORECASE)
-            for line in normalized_lines
-        ):
+        if common_keyword_names and implementation_uses_helpers and not (references_page_variable and has_semantic_name):
             common_reuse_opportunities.append({
                 "keywordName": keyword_name,
                 "reason": "Implementation uses low-level steps even though shared/common helpers exist in approved resource context.",

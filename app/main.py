@@ -1685,15 +1685,14 @@ def validate_reviewed_keywords_against_existing_resources(keywords: list[dict], 
     if keyword_reuse_analysis.get("summary", {}).get("ownershipConflictCount", 0) > 0:
         warnings.append("Reviewed keywords indicate overlapping ownership with approved existing resource capability and should be refined toward reuse.")
     if keyword_reuse_analysis.get("summary", {}).get("commonReuseOpportunityCount", 0) > 0:
-        warnings.append("Reviewed keywords still use low-level or shared/common-overlapping patterns where approved common helper reuse is available.")
+        warnings.append("Reviewed keywords include low-level or shared/common-overlapping patterns; prefer common-helper-backed page abstractions and avoid redefining shared/common helpers.")
     if keyword_reuse_analysis.get("summary", {}).get("lowValueWrapperCount", 0) > 0:
-        warnings.append("Reviewed keywords still contain thin low-value wrappers that may not provide meaningful reusable page abstraction.")
+        warnings.append("Reviewed keywords include some thin wrappers; keep meaningful page abstractions, but avoid aliases that add no page-specific value.")
 
-    blocking_warning_count = len(warnings)
-    if errors or blocking_warning_count > 0:
+    if errors:
         messages = [f"- {error}" for error in errors] + [f"- {warning}" for warning in warnings]
         return False, "\n".join(messages)
-    return True, ""
+    return True, "\n".join(f"- {warning}" for warning in warnings)
 
 
 def get_keyword_review_data(workflow: dict):
@@ -4375,18 +4374,18 @@ async def save_keyword_review(request: Request, workflow_name: str):
 
     keywords_valid, keyword_warnings, normalized_keywords = validate_keyword_grounding(workflow, approved_keywords)
     keyword_reuse_validation_ok, keyword_reuse_validation_message = validate_reviewed_keywords_against_existing_resources(normalized_keywords, get_keyword_review_data(workflow)["page_name"])
+    keyword_data = get_keyword_review_data(workflow)
+    combined_warnings = list(keyword_warnings)
+    if keyword_reuse_validation_message:
+        combined_warnings.extend([line.lstrip("- ").strip() for line in keyword_reuse_validation_message.splitlines() if clean_text(line)])
     if not keywords_valid or not keyword_reuse_validation_ok:
-        keyword_data = get_keyword_review_data(workflow)
-        combined_warnings = list(keyword_warnings)
-        if keyword_reuse_validation_message:
-            combined_warnings.extend([line.lstrip("- ").strip() for line in keyword_reuse_validation_message.splitlines() if clean_text(line)])
         return render_template(request, "keyword_review.html", {
             "workflow_name": workflow_name,
             "page_name": keyword_data["page_name"],
             "keywords": normalized_keywords or keyword_data["keywords"],
             "review_summary": keyword_data.get("review_summary"),
             "source_artifact": keyword_data.get("source_artifact", "raw"),
-            "error_message": "Keyword review contains grounding or reuse conflicts. Please resolve the highlighted issues before continuing.",
+            "error_message": "Keyword review contains grounding conflicts that must be resolved before continuing.",
             "grounding_warnings": combined_warnings,
         }, status_code=400)
 
