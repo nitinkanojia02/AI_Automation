@@ -1579,6 +1579,37 @@ def validate_robot_alignment_with_resource_context(content: str, resource_contex
                 warnings.append(
                     "One or more successful authentication tests rely only on URL/location checks after login submission. Successful authentication must be validated with stronger authenticated destination-state evidence when approved workflow knowledge or imported resource context supports it."
                 )
+
+    manual_cases = manual_data.get("testCases") or manual_data.get("manualTests") or []
+    if isinstance(manual_cases, list) and test_step_sequences:
+        for index, case in enumerate(manual_cases):
+            if index >= len(test_step_sequences):
+                break
+            if not isinstance(case, dict):
+                continue
+            expected = clean_text(str(case.get("expectedResult") or case.get("expected") or case.get("expectedOutcome") or "")).lower()
+            title = clean_text(str(case.get("title") or "")).lower()
+            step_text = " ".join(clean_text(str(step)).lower() for step in (case.get("steps") or []) if clean_text(str(step)))
+            combined_case_text = " ".join(part for part in [title, step_text, expected] if part)
+            sequence = test_step_sequences[index]
+            lowered_steps = [step.lower() for step in sequence]
+            verification_steps = [
+                step for step in lowered_steps
+                if step.startswith("verify ") or step.startswith("validate ") or step.startswith("wait until ") or step.startswith("location should")
+            ]
+            if any(token in combined_case_text for token in ["authenticated or failed state", "either successful authenticated", "either authenticated", "or the generic failed", "or generic failed"]):
+                if not verification_steps:
+                    warnings.append(
+                        f"Test case '{clean_text(str(case.get('id') or case.get('title') or f'#{index+1}'))}' has branch-capable expected behavior but the generated suite ends without any verification. Add an observable assertion that proves one approved outcome branch."
+                    )
+            if any(token in combined_case_text for token in ["mask", "masked", "password field masks", "password masking"]):
+                has_mask_verification = any(
+                    any(token in step for token in ["mask", "attribute", "password textbox", "password field"]) for step in verification_steps
+                )
+                if not has_mask_verification:
+                    warnings.append(
+                        f"Test case '{clean_text(str(case.get('id') or case.get('title') or f'#{index+1}'))}' expects password masking behavior, but the generated suite does not contain an explicit masking-oriented verification. Preserve the masking assertion instead of reducing it to page presence or generic readiness only."
+                    )
             if strongest_sequence and strongest_count >= max(2, len(test_step_sequences) // 2):
                 sequence_lower = strongest_sequence.lower()
                 if all(token in knowledge_blob for token in ["must be opened through the home page person/profile button", "home page", "login page"]):

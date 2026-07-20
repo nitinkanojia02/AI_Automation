@@ -3739,7 +3739,7 @@ def generate_automation_for_workflow(workflow_name: str) -> str:
             build_validation_review_prompt(manual_data, resource_context, robot_content)
             + "\n\nAdditional validation findings to repair with highest priority:\n"
             + validation_message
-            + "\n\nWarnings are non-blocking, but you must still repair them when approved workflow knowledge, approved manual expectations, or imported resources provide enough evidence to do so. In particular, do not keep guest-state destination checks after successful authentication and do not keep repeated entry-journey steps in test bodies when setup can absorb them. Return only corrected Robot Framework code. Preserve approved scenario intent."
+            + "\n\nWarnings are non-blocking, but you must still repair them when approved workflow knowledge, approved manual expectations, or imported resources provide enough evidence to do so. In particular, do not keep guest-state destination checks after successful authentication, do not keep repeated entry-journey steps in test bodies when setup can absorb them, do not leave any test without a final observable verification, and do not weaken password-masking scenarios into generic field-readiness checks. If approved resources do not yet expose a strong enough destination or masking validation keyword, preserve the strongest supported observable assertion and make the behavior-specific validation as explicit as the imported resources allow. Return only corrected Robot Framework code. Preserve approved scenario intent."
         )
         repaired_robot_content = call_ai_with_workflow_session(
             workflow_name=workflow_name,
