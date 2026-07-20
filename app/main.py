@@ -2837,6 +2837,28 @@ def generate_resource_for_workflow(workflow: dict, approved_keywords: list[dict]
         raise HTTPException(status_code=400, detail=consistency_message)
     variables_payload = sync_page_variables_from_approved_elements(workflow, approved_elements)
 
+    def build_deterministic_resource() -> str:
+        try:
+            from scripts.extract_page_model import generate_resource as generate_page_resource
+        except ModuleNotFoundError:
+            import sys
+            sys.path.append(str(BASE_DIR))
+            from scripts.extract_page_model import generate_resource as generate_page_resource
+
+        metadata_dir = get_page_metadata_dir(page_name)
+        entry_url = ""
+        pages = workflow.get("pages", []) if isinstance(workflow, dict) else []
+        if pages and isinstance(pages[0], dict):
+            entry_url = clean_text(str(pages[0].get("url", "")))
+        return normalize_resource_content(
+            generate_page_resource(
+                entry_url,
+                approved_elements,
+                page_name=page_name,
+                metadata_dir=metadata_dir,
+            )
+        )
+
     approved_manual_tests = []
     workflow_name = derive_canonical_workflow_name(workflow, page_name)
     manual_path = get_manual_json_path(workflow_name)
@@ -2881,38 +2903,42 @@ def generate_resource_for_workflow(workflow: dict, approved_keywords: list[dict]
         common_resource_context,
         existing_page_resource + ("\n\n# METADATA_VARIABLE_CONTEXT\n" + json.dumps(metadata_variable_context, indent=2) if metadata_variable_context else ""),
     )
-    resource_content = call_ai_with_workflow_session(
-        workflow_name=page_name,
-        stage="resource_generation",
-        endpoint=endpoint,
-        token=token,
-        prompt=prompt,
-        timeout_seconds=ai_cfg.get("timeout_seconds", 120),
-        verify_ssl=ai_cfg.get("verify_ssl", False),
-    )
+    try:
+        resource_content = call_ai_with_workflow_session(
+            workflow_name=page_name,
+            stage="resource_generation",
+            endpoint=endpoint,
+            token=token,
+            prompt=prompt,
+            timeout_seconds=ai_cfg.get("timeout_seconds", 120),
+            verify_ssl=ai_cfg.get("verify_ssl", False),
+        )
+        resource_content = normalize_resource_content(resource_content)
 
-    resource_content = normalize_resource_content(resource_content)
-
-    review_prompt = build_resource_review_prompt(
-        workflow,
-        approved_elements,
-        approved_keywords,
-        approved_manual_tests,
-        common_resource_context,
-        resource_content,
-    )
-    reviewed_resource_content = call_ai_with_workflow_session(
-        workflow_name=page_name,
-        stage="resource_review",
-        endpoint=endpoint,
-        token=token,
-        prompt=review_prompt,
-        timeout_seconds=ai_cfg.get("timeout_seconds", 120),
-        verify_ssl=ai_cfg.get("verify_ssl", False),
-    )
-    reviewed_resource_content = normalize_resource_content(reviewed_resource_content)
-    if reviewed_resource_content:
-        resource_content = reviewed_resource_content
+        review_prompt = build_resource_review_prompt(
+            workflow,
+            approved_elements,
+            approved_keywords,
+            approved_manual_tests,
+            common_resource_context,
+            resource_content,
+        )
+        reviewed_resource_content = call_ai_with_workflow_session(
+            workflow_name=page_name,
+            stage="resource_review",
+            endpoint=endpoint,
+            token=token,
+            prompt=review_prompt,
+            timeout_seconds=ai_cfg.get("timeout_seconds", 120),
+            verify_ssl=ai_cfg.get("verify_ssl", False),
+        )
+        reviewed_resource_content = normalize_resource_content(reviewed_resource_content)
+        if reviewed_resource_content:
+            resource_content = reviewed_resource_content
+    except requests.HTTPError as exc:
+        logger.warning("AI resource generation/review failed for %s; falling back to deterministic approved-artifact generation. Error: %s", page_name, exc)
+        append_session_message(page_name, "assistant", "resource_generation_warning", f"AI resource generation failed; using deterministic approved-artifact generation instead. Details: {exc}")
+        resource_content = build_deterministic_resource()
 
     is_valid, validation_message = validate_resource_content(resource_content, common_resource_context)
     artifact_valid, artifact_message = validate_generated_resource_against_approved_artifacts(
@@ -2941,16 +2967,21 @@ def generate_resource_for_workflow(workflow: dict, approved_keywords: list[dict]
             + artifact_message
             + "\n\nReturn only corrected Robot Framework resource content. Reuse approved existing variables/keywords/resources where conflicts were identified."
         )
-        refined_resource_content = call_ai_with_workflow_session(
-            workflow_name=page_name,
-            stage="resource_conflict_refinement",
-            endpoint=endpoint,
-            token=token,
-            prompt=refinement_prompt,
-            timeout_seconds=ai_cfg.get("timeout_seconds", 120),
-            verify_ssl=ai_cfg.get("verify_ssl", False),
-        )
-        refined_resource_content = normalize_resource_content(refined_resource_content)
+        try:
+            refined_resource_content = call_ai_with_workflow_session(
+                workflow_name=page_name,
+                stage="resource_conflict_refinement",
+                endpoint=endpoint,
+                token=token,
+                prompt=refinement_prompt,
+                timeout_seconds=ai_cfg.get("timeout_seconds", 120),
+                verify_ssl=ai_cfg.get("verify_ssl", False),
+            )
+            refined_resource_content = normalize_resource_content(refined_resource_content)
+        except requests.HTTPError as exc:
+            logger.warning("AI resource refinement failed for %s; falling back to deterministic approved-artifact generation. Error: %s", page_name, exc)
+            append_session_message(page_name, "assistant", "resource_conflict_refinement_warning", f"AI resource refinement failed; using deterministic approved-artifact generation instead. Details: {exc}")
+            refined_resource_content = build_deterministic_resource()
         refined_valid, refined_validation_message = validate_resource_content(refined_resource_content, common_resource_context)
         refined_artifact_valid, refined_artifact_message = validate_generated_resource_against_approved_artifacts(
             workflow,
