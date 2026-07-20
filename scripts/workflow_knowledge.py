@@ -4,16 +4,15 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List
 
+BASE_DIR = Path(__file__).resolve().parent.parent
+
 try:
-    from scripts.workflow_context import infer_workflow_reuse_context
     from scripts.artifact_reuse import analyze_reuse_conflicts
 except ModuleNotFoundError:
     import sys
     sys.path.append(str(BASE_DIR))
-    from scripts.workflow_context import infer_workflow_reuse_context
     from scripts.artifact_reuse import analyze_reuse_conflicts
 
-BASE_DIR = Path(__file__).resolve().parent.parent
 WORKFLOW_INPUT_DIR = BASE_DIR / "workflow_inputs"
 MANUAL_DIR = BASE_DIR / "manual_tests"
 TESTS_DIR = BASE_DIR / "tests"
@@ -510,6 +509,8 @@ def extract_upstream_workflow_candidates(workflow_input: Dict[str, Any], resourc
 
 
 def build_workflow_knowledge_context(workflow_input: Dict[str, Any]) -> Dict[str, Any]:
+    from scripts.workflow_context import infer_workflow_reuse_context
+
     workflow_name = clean_text(workflow_input.get('workflowName')) or clean_text(workflow_input.get('feature')) or 'workflow'
     workflow_slug = slugify(workflow_name)
     enriched_workflow_input = dict(workflow_input)
