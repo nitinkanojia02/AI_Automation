@@ -26,7 +26,7 @@ from scripts.generate_manual_tests_json import (
     validate_config as validate_manual_config,
 )
 from scripts.workflow_knowledge import save_workflow_knowledge, build_workflow_knowledge_context, discover_relevant_workflow_knowledge
-from scripts.artifact_reuse import analyze_reuse_conflicts
+from scripts.artifact_reuse import analyze_reuse_conflicts, normalize_name_tokens
 from scripts.generate_robot_from_manual import (
     build_manual_refiner_prompt,
     build_manual_review_prompt,
@@ -1419,6 +1419,7 @@ def build_keyword_generation_prompt(
         for item in approved_manual_tests
         if isinstance(item, dict) and clean_text(str(item.get("expectedResult", "")))
     })
+    keyword_reuse_analysis = analyze_reuse_conflicts(existing_resource_content or "", str(get_resource_path(approved_elements[0].get("pageName", "") or workflow.get("pages", [{}])[0].get("name", "page")).relative_to(BASE_DIR)).replace("\\", "/") if (approved_elements or workflow.get("pages")) and get_resource_path(approved_elements[0].get("pageName", "") or workflow.get("pages", [{}])[0].get("name", "page")).exists() else "")
     payload = {
         "workflow": clean_workflow_for_prompting(workflow),
         "approved_elements": approved_elements,
@@ -1432,6 +1433,7 @@ def build_keyword_generation_prompt(
         "common_resource_context": common_resource_context,
         "retrieved_common_keyword_names": common_keyword_names,
         "retrieved_common_variable_names": common_variable_names,
+        "reuse_analysis": keyword_reuse_analysis,
     }
     return (
         "You are AI Layer K1: a Robot Framework page-keyword designer in a staged AI automation framework.\n"
@@ -1450,6 +1452,7 @@ def build_keyword_generation_prompt(
         "- Reuse approved element names from approved_element_names exactly whenever a keyword targets one of those elements.\n"
         "- If a keyword implementation needs waits, clicks, typing, or generic navigation, compose it from retrieved common keywords such as Click When Ready, Input Text When Ready, Wait For Element To Be Ready, Open Browser Session, Close Browser Session, Open Browser To Url, or Go To Url when those are present in common_resource_context.\n"
         "- If existing_page_resource_context already contains a suitable page keyword or page variable, prefer preserving and refining it rather than inventing a parallel one.\n"
+        "- Treat reuse_analysis as authoritative duplicate-risk context. If it indicates overlapping ownership or reusable existing capability, minimize net-new keyword creation and preserve reuse.\n"
         "- Keep page keywords page-specific and semantically grounded in approved_elements and approved_manual_tests; use common_resource_context for generic mechanics.\n\n"
         "Mandatory rules:\n"
         "- Return only a valid JSON array.\n"
@@ -1461,7 +1464,10 @@ def build_keyword_generation_prompt(
         "- For generic interaction steps in implementation, prefer retrieved common/shared keywords over raw SeleniumLibrary calls whenever available in common_resource_context.\n"
         "- Implementation lines should explicitly reuse common/shared helpers like Click When Ready, Input Text When Ready, and Wait For Element To Be Ready when applicable instead of raw Wait Until Element Is Visible / Click Element / Input Text.\n"
         "- Do not return markdown fences or explanation text.\n"
-        "- Do not invent unsupported keywords, locators, fields, messages, or workflows.\n\n"
+        "- Do not invent unsupported keywords, locators, fields, messages, or workflows.\n"
+        "- Reuse-first rule: identify reusable approved keyword capability first, identify only true gaps second, and keep net-new keywords minimal.\n"
+        "- Do not emit duplicate keywordName values or parallel synonyms for the same approved page behavior.\n"
+        "- If a candidate implementation would duplicate an existing approved keyword name, normalized implementation, or shared/common helper-backed behavior, reuse/refine the existing capability instead of emitting a parallel keyword.\n\n"
         "Design guidance:\n"
         "- Prefer semantic reusable page-object keywords such as Enter Username, Enter Password, Click Sign In Button, Verify Password Field Is Masked, Verify Login Form Loaded, Verify Login Failed And Still On Login Page, Verify Successful Login Redirect, or similarly grounded page-specific validations.\n"
         "- Avoid generating scenario-wrapper keywords that merely encode one approved manual test case, unless a concise page-level composite action is clearly justified.\n"
@@ -1482,6 +1488,7 @@ def build_keyword_review_prompt(
     common_resource_context: list[dict] | None = None,
 ) -> str:
     common_resource_context = common_resource_context or []
+    reuse_analysis = analyze_reuse_conflicts(existing_page_resource or "", str(get_resource_path(approved_elements[0].get("pageName", "") or workflow.get("pages", [{}])[0].get("name", "page")).relative_to(BASE_DIR)).replace("\\", "/") if (approved_elements or workflow.get("pages")) and get_resource_path(approved_elements[0].get("pageName", "") or workflow.get("pages", [{}])[0].get("name", "page")).exists() else "")
     payload = {
         "workflow": clean_workflow_for_prompting(workflow),
         "approved_elements": approved_elements,
@@ -1489,6 +1496,7 @@ def build_keyword_review_prompt(
         "candidate_keywords": candidate_keywords,
         "existing_page_resource": existing_page_resource,
         "common_resource_context": common_resource_context,
+        "reuse_analysis": reuse_analysis,
         "review_goals": [
             "Preserve approved semantic keyword names and target-element grounding.",
             "Improve implementation quality using dynamic common/shared helper discovery rather than hardcoded mappings.",
@@ -1514,6 +1522,7 @@ def build_keyword_review_prompt(
         "- approved must be true for retained keywords.\n"
         "- Do not invent unsupported locators, messages, page flows, or framework keywords.\n"
         "- Do not add markdown fences or explanation text.\n"
+        "- Treat reuse_analysis as authoritative duplicate-risk context during review. Resolve overlaps by preserving/reusing approved existing capability instead of keeping parallel keywords.\n"
         "- Do not emit duplicate keywordName values in the final reviewed artifact. Each retained keyword must have a unique semantic name.\n"
         "- Do not emit implementation lines that reference non-canonical locator variables when the approved page metadata already establishes a cleaner canonical variable name for the same target element.\n"
         "- When the approved manual outcomes imply absence checks, create page-level absence validations only for controls or indicators that are explicitly grounded in approved elements, approved reviewed keywords, or stable existing page-resource evidence.\n"
@@ -1639,6 +1648,43 @@ def review_and_refine_page_elements(workflow: dict, review_data: dict) -> tuple[
         write_json(get_page_reviewed_path(review_data["page_name"]), draft_payload)
 
     return refined_elements, review_result
+
+
+def validate_reviewed_keywords_against_existing_resources(keywords: list[dict], page_name: str) -> tuple[bool, str]:
+    errors: list[str] = []
+    seen_names: set[str] = set()
+    seen_signatures: set[str] = set()
+    page_file = str(get_resource_path(page_name).relative_to(BASE_DIR)).replace("\\", "/")
+
+    synthetic_resource_lines = ["*** Keywords ***"]
+    for keyword in keywords:
+        name = clean_text(str(keyword.get("keywordName", "")))
+        if not name:
+            continue
+        lowered = name.lower()
+        if lowered in seen_names:
+            errors.append(f"Duplicate reviewed keyword name: {name}")
+        seen_names.add(lowered)
+        synthetic_resource_lines.append(name)
+        for line in keyword.get("implementation", []) or []:
+            synthetic_resource_lines.append(f"    {str(line).rstrip()}")
+
+        normalized_signature = normalize_name_tokens(name) + "::" + "|".join(
+            clean_text(line).lower() for line in (keyword.get("implementation", []) or []) if clean_text(line)
+        )
+        if normalized_signature in seen_signatures:
+            errors.append(f"Duplicate reviewed keyword implementation signature inside artifact: {name}")
+        seen_signatures.add(normalized_signature)
+
+    reuse_analysis = analyze_reuse_conflicts("\n".join(synthetic_resource_lines) + "\n", page_file)
+    if reuse_analysis.get("summary", {}).get("duplicateKeywordCount", 0) > 0:
+        conflict_names = sorted({item.get("candidateName", "") for item in reuse_analysis.get("duplicateKeywords", []) if item.get("candidateName")})
+        if conflict_names:
+            errors.append("Reviewed keywords duplicate approved existing keyword capability: " + ", ".join(conflict_names))
+
+    if errors:
+        return False, "\n".join(f"- {error}" for error in errors)
+    return True, ""
 
 
 def get_keyword_review_data(workflow: dict):
@@ -1835,11 +1881,64 @@ def get_keyword_review_data(workflow: dict):
                                 "approved": bool(item.get("approved", True)),
                             })
                         if normalized_reviewed:
-                            keywords = normalized_reviewed
-                            write_json(reviewed_keywords_path, {
-                                "pageName": page_name,
-                                "keywords": normalized_reviewed,
-                            })
+                            reviewed_valid, reviewed_message = validate_reviewed_keywords_against_existing_resources(normalized_reviewed, page_name)
+                            if not reviewed_valid:
+                                keyword_review_prompt_with_failures = (
+                                    keyword_review_prompt
+                                    + "\n\nAdditional validation failures that must be resolved before saving reviewed keywords:\n"
+                                    + reviewed_message
+                                    + "\n\nReturn only a corrected valid JSON array of reviewed keywords that reuses approved existing capability instead of duplicating it."
+                                )
+                                reviewed_keywords_refined_raw = call_ai_with_workflow_session(
+                                    workflow_name=workflow_name,
+                                    stage="keyword_artifact_refine_conflicts",
+                                    endpoint=endpoint,
+                                    token=token,
+                                    prompt=keyword_review_prompt_with_failures,
+                                    timeout_seconds=ai_cfg.get("timeout_seconds", 120),
+                                    verify_ssl=ai_cfg.get("verify_ssl", False),
+                                )
+                                refined_reviewed_keywords = json.loads(strip_markdown_fences(reviewed_keywords_refined_raw))
+                                if isinstance(refined_reviewed_keywords, list) and refined_reviewed_keywords:
+                                    retry_normalized_reviewed = []
+                                    for idx, item in enumerate(refined_reviewed_keywords, start=1):
+                                        if not isinstance(item, dict):
+                                            continue
+                                        keyword_name = clean_text(str(item.get("keywordName", "")))
+                                        if not keyword_name or keyword_name.lower() in disallowed_resource_keywords:
+                                            continue
+                                        target_element = clean_text(str(item.get("targetElement", ""))) or resolve_target_element(keyword_name)
+                                        if target_element and target_element not in approved_elements_by_name:
+                                            continue
+                                        keyword_name = sanitize_keyword_name(keyword_name, target_element)
+                                        implementation = item.get("implementation", [])
+                                        if isinstance(implementation, str):
+                                            implementation = [line.rstrip() for line in implementation.splitlines() if clean_text(line)]
+                                        implementation = [str(line).rstrip() for line in implementation if clean_text(str(line))]
+                                        if not implementation:
+                                            continue
+                                        arguments = item.get("arguments", [])
+                                        if isinstance(arguments, str):
+                                            arguments = [arg.strip() for arg in arguments.split(",") if arg.strip()]
+                                        arguments = [str(arg).replace("${", "").replace("}", "").strip() for arg in arguments if clean_text(str(arg))]
+                                        retry_normalized_reviewed.append({
+                                            "keywordId": clean_text(str(item.get("keywordId", ""))) or f"KW_{idx:03d}",
+                                            "keywordName": keyword_name,
+                                            "targetElement": target_element,
+                                            "action": clean_text(str(item.get("action", ""))) or "generic",
+                                            "arguments": arguments,
+                                            "implementation": implementation,
+                                            "approved": bool(item.get("approved", True)),
+                                        })
+                                    retry_valid, retry_message = validate_reviewed_keywords_against_existing_resources(retry_normalized_reviewed, page_name)
+                                    if retry_normalized_reviewed and retry_valid:
+                                        normalized_reviewed = retry_normalized_reviewed
+                            if normalized_reviewed:
+                                keywords = normalized_reviewed
+                                write_json(reviewed_keywords_path, {
+                                    "pageName": page_name,
+                                    "keywords": normalized_reviewed,
+                                })
         except Exception:
             pass
 

@@ -1,10 +1,12 @@
 import re
+from collections import Counter
 from pathlib import Path
 from typing import Any, Dict, List
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 POM_DIR = BASE_DIR / "pom_pages"
 RESOURCES_DIR = BASE_DIR / "resources"
+ROBOT_TESTS_DIR = BASE_DIR / "tests"
 
 
 def clean_text(value: Any) -> str:
@@ -18,8 +20,28 @@ def normalize_locator(value: str) -> str:
 def normalize_name_tokens(value: str) -> str:
     text = clean_text(value).lower()
     text = re.sub(r"[^a-z0-9]+", " ", text)
-    text = re.sub(r"\b(button|btn|field|input|textbox|link|icon|label|page)\b", " ", text)
+    text = re.sub(r"\b(button|btn|field|input|textbox|link|icon|label|page|section|panel|form|menu|nav|navigation)\b", " ", text)
     return re.sub(r"\s+", " ", text).strip()
+
+
+def normalize_keyword_body_lines(lines: List[Any]) -> str:
+    normalized: List[str] = []
+    for raw_line in lines:
+        line = clean_text(raw_line)
+        if not line:
+            continue
+        line = re.sub(r"\$\{[^}]+\}", "${VAR}", line)
+        line = re.sub(r"\b(id|name|xpath|css)\s*=\s*[^\s]+", "LOCATOR", line, flags=re.IGNORECASE)
+        normalized.append(line.lower())
+    return "\n".join(normalized)
+
+
+def keyword_signature(keyword_name: str, body_lines: List[Any]) -> str:
+    name_tokens = normalize_name_tokens(keyword_name)
+    body_signature = normalize_keyword_body_lines(body_lines)
+    if name_tokens and body_signature:
+        return f"{name_tokens}::{body_signature}"
+    return name_tokens or body_signature
 
 
 def extract_variables_from_resource(resource_text: str) -> List[Dict[str, str]]:
@@ -106,6 +128,7 @@ def analyze_reuse_conflicts(candidate_content: str, candidate_file: str = "") ->
     locator_owners: Dict[str, List[Dict[str, str]]] = {}
     keyword_name_owners: Dict[str, List[Dict[str, str]]] = {}
     keyword_body_owners: Dict[str, List[Dict[str, str]]] = {}
+    keyword_signature_owners: Dict[str, List[Dict[str, str]]] = {}
 
     for resource in existing_resources:
         resource_file = str(resource.get("file", ""))
@@ -125,9 +148,15 @@ def analyze_reuse_conflicts(candidate_content: str, candidate_file: str = "") ->
                     "resource": resource_file,
                     "name": keyword_name,
                 })
-            normalized_body = "\n".join(clean_text(line) for line in keyword.get("body", []) if clean_text(line))
+            normalized_body = normalize_keyword_body_lines(keyword.get("body", []))
             if normalized_body:
-                keyword_body_owners.setdefault(normalized_body.lower(), []).append({
+                keyword_body_owners.setdefault(normalized_body, []).append({
+                    "resource": resource_file,
+                    "name": keyword_name,
+                })
+            signature = keyword_signature(keyword_name, keyword.get("body", []))
+            if signature:
+                keyword_signature_owners.setdefault(signature, []).append({
                     "resource": resource_file,
                     "name": keyword_name,
                 })
@@ -157,20 +186,23 @@ def analyze_reuse_conflicts(candidate_content: str, candidate_file: str = "") ->
         name = clean_text(keyword.get("name", ""))
         if not name:
             continue
-        normalized_body = "\n".join(clean_text(line) for line in keyword.get("body", []) if clean_text(line)).lower()
+        normalized_body = normalize_keyword_body_lines(keyword.get("body", []))
+        signature = keyword_signature(name, keyword.get("body", []))
         same_name = keyword_name_owners.get(name.lower(), [])
         same_body = keyword_body_owners.get(normalized_body, []) if normalized_body else []
-        if same_name or same_body:
+        same_signature = keyword_signature_owners.get(signature, []) if signature else []
+        if same_name or same_body or same_signature:
             duplicate_keywords.append({
                 "candidateName": name,
                 "sameNameOwners": same_name,
                 "sameBodyOwners": same_body,
+                "sameSignatureOwners": same_signature,
             })
-            chosen_owner = (same_name or same_body)[0]
+            chosen_owner = (same_name or same_signature or same_body)[0]
             keyword_reuse_candidates.append({
                 "candidateName": name,
                 "reuseFrom": chosen_owner,
-                "reason": "Same keyword name or normalized implementation already exists in approved resource context.",
+                "reason": "Same keyword name, normalized implementation, or semantic signature already exists in approved resource context.",
             })
 
     ownership_conflicts: List[Dict[str, Any]] = []
@@ -186,15 +218,118 @@ def analyze_reuse_conflicts(candidate_content: str, candidate_file: str = "") ->
                     "locator": variable.get("locator", ""),
                 })
 
+    owner_resource_frequency = Counter(
+        owner.get("resource", "")
+        for item in duplicate_variables
+        for owner in item.get("existingOwners", [])
+        if owner.get("resource")
+    )
+    canonical_resource_candidates = [
+        {"resource": resource, "support": count}
+        for resource, count in owner_resource_frequency.most_common(10)
+    ]
+
     return {
         "duplicateVariables": duplicate_variables,
         "duplicateKeywords": duplicate_keywords,
         "variableReuseCandidates": variable_reuse_candidates,
         "keywordReuseCandidates": keyword_reuse_candidates,
         "ownershipConflicts": ownership_conflicts,
+        "canonicalResourceCandidates": canonical_resource_candidates,
         "summary": {
             "duplicateVariableCount": len(duplicate_variables),
             "duplicateKeywordCount": len(duplicate_keywords),
             "ownershipConflictCount": len(ownership_conflicts),
+        },
+    }
+
+
+def analyze_robot_suite_reuse(robot_content: str, resource_context: List[Dict[str, Any]]) -> Dict[str, Any]:
+    approved_variable_values: Dict[str, List[Dict[str, str]]] = {}
+    approved_keywords: Dict[str, List[Dict[str, str]]] = {}
+    common_keywords: set[str] = set()
+    page_keywords: set[str] = set()
+
+    for resource in resource_context:
+        resource_file = clean_text(resource.get("file", ""))
+        resource_type = clean_text(resource.get("type", "")) or "page"
+        for variable in resource.get("variables", []):
+            value = clean_text(variable.get("value", ""))
+            name = clean_text(variable.get("name", ""))
+            if value and name:
+                approved_variable_values.setdefault(value, []).append({
+                    "resource": resource_file,
+                    "name": name,
+                })
+        for keyword in resource.get("keywords", []):
+            name = clean_text(keyword.get("name", ""))
+            if not name:
+                continue
+            normalized_name = name.lower()
+            approved_keywords.setdefault(normalized_name, []).append({
+                "resource": resource_file,
+                "name": name,
+                "type": resource_type,
+            })
+            if resource_type == "common":
+                common_keywords.add(normalized_name)
+            else:
+                page_keywords.add(normalized_name)
+
+    literal_value_hits: List[Dict[str, Any]] = []
+    low_level_calls_with_reuse_available: List[Dict[str, Any]] = []
+    reused_keywords: set[str] = set()
+    suite_called_keywords: List[str] = []
+    generic_wrapper_names = {
+        "go to url", "click when ready", "wait for element to be ready", "input text when ready",
+        "input text", "input password", "wait until page contains element", "click element"
+    }
+
+    for raw_line in robot_content.splitlines():
+        stripped = raw_line.strip()
+        if not raw_line.startswith((" ", "\t")) or not stripped or stripped.startswith("["):
+            continue
+        parts = [part.strip() for part in re.split(r"\s{2,}|\t+", stripped) if part.strip()]
+        if not parts:
+            continue
+        keyword_name = clean_text(parts[0]).lower()
+        args = parts[1:]
+        suite_called_keywords.append(keyword_name)
+        if keyword_name in approved_keywords:
+            reused_keywords.add(keyword_name)
+        for arg in args:
+            candidate = clean_text(arg)
+            if not candidate or candidate.startswith("${"):
+                continue
+            owners = approved_variable_values.get(candidate, [])
+            if owners:
+                literal_value_hits.append({
+                    "literal": candidate,
+                    "approvedVariables": owners,
+                    "usedByKeyword": keyword_name,
+                })
+                if keyword_name in generic_wrapper_names:
+                    low_level_calls_with_reuse_available.append({
+                        "keyword": keyword_name,
+                        "literal": candidate,
+                        "approvedVariables": owners,
+                        "reason": "Suite is using a low-level or generic interaction with a literal even though approved semantic variables already exist.",
+                    })
+
+    missing_common_wrapper_reuse: List[str] = []
+    if "input text when ready" in common_keywords and any(name in suite_called_keywords for name in {"input text", "input password"}):
+        missing_common_wrapper_reuse.append("input text when ready")
+    if "click when ready" in common_keywords and "click element" in suite_called_keywords:
+        missing_common_wrapper_reuse.append("click when ready")
+
+    return {
+        "literalReuseOpportunities": literal_value_hits,
+        "lowLevelReuseOpportunities": low_level_calls_with_reuse_available,
+        "missingCommonWrapperReuse": sorted(set(missing_common_wrapper_reuse)),
+        "reusedApprovedKeywords": sorted(reused_keywords),
+        "summary": {
+            "literalReuseOpportunityCount": len(literal_value_hits),
+            "lowLevelReuseOpportunityCount": len(low_level_calls_with_reuse_available),
+            "reusedApprovedKeywordCount": len(reused_keywords),
         },
     }

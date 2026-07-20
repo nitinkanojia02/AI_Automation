@@ -19,6 +19,8 @@ Refinement rules:
 - Return ONLY Robot Framework code
 - Do not return markdown or explanation
 - Treat current_workflow_knowledge and relevant_workflow_knowledge as mandatory approved-memory context during final refinement
+- Treat robot_reuse_analysis as mandatory reuse-governance context; if it identifies reusable resource keywords, reusable resource variables, duplicate ownership risks, or literal leakage, refine the suite by reusing approved artifacts instead of preserving parallel or literal-driven behavior
+- Follow retrieval-first refinement logic: identify reusable approved keywords/variables/resources first, identify only true gaps second, and minimize low-level suite behavior
 - Preserve upstream workflow reuse guidance, approved navigation journey, approved ownership boundaries, state-transition expectations, and approved business-visible outcomes from workflow knowledge
 - Do not modify page-resource content
 - Use only imported resource files and ../resources/common_keywords.resource

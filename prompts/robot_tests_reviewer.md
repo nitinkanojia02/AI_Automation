@@ -19,6 +19,8 @@ Review rules:
 - Return ONLY Robot Framework code
 - Do not return markdown or explanations
 - Treat current_workflow_knowledge and relevant_workflow_knowledge as mandatory approved-memory context during review and repair
+- Treat robot_reuse_analysis as mandatory reuse-governance context; if it identifies reusable resource keywords, reusable resource variables, duplicate ownership risks, or literal leakage, repair the suite by reusing approved artifacts instead of preserving parallel behavior
+- Follow retrieval-first review logic: identify reusable approved keywords/variables/resources first, identify only true gaps second, and minimize net-new or low-level suite behavior
 - Preserve upstream workflow reuse guidance, approved navigation journey, approved ownership boundaries, state-transition expectations, and approved business-visible outcomes from workflow knowledge
 - Import ../resources/common_keywords.resource
 - Use only approved page resources and shared common resources

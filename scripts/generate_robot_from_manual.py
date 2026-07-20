@@ -11,11 +11,13 @@ import requests
 import urllib3
 
 try:
+    from scripts.artifact_reuse import analyze_reuse_conflicts, analyze_robot_suite_reuse
     from scripts.workflow_context import infer_workflow_reuse_context
     from scripts.workflow_knowledge import build_workflow_knowledge_context, discover_relevant_workflow_knowledge
 except ModuleNotFoundError:
     import sys
     sys.path.append(str(Path(__file__).resolve().parent.parent))
+    from scripts.artifact_reuse import analyze_reuse_conflicts, analyze_robot_suite_reuse
     from scripts.workflow_context import infer_workflow_reuse_context
     from scripts.workflow_knowledge import build_workflow_knowledge_context, discover_relevant_workflow_knowledge
 
@@ -529,11 +531,13 @@ def build_review_prompt(manual_data: dict, resource_context: List[Dict], generat
 
     page_resources = [resource.get("file", "") for resource in resource_context if "/pom_pages/" in f"/{resource.get('file', '')}" or str(resource.get("file", "")).startswith("pom_pages/")]
     allowed_builtin_keywords, allowed_selenium_keywords = get_framework_keyword_catalog()
+    robot_reuse_analysis = analyze_robot_suite_reuse(generated_robot, resource_context)
     payload = {
         "manual_test": prompt_manual_data,
         "resource_context": resource_context,
         "inferred_reuse_context": infer_workflow_reuse_context(prompt_manual_data),
         "generated_robot": generated_robot,
+        "robot_reuse_analysis": robot_reuse_analysis,
         "resource_import_prefix": "../pom_pages/",
         "common_resource_hint": "../resources/common_keywords.resource",
         "approved_artifact_lineage": {
@@ -628,12 +632,14 @@ def build_validation_review_prompt(manual_data: dict, resource_context: List[Dic
     page_resources = [resource.get("file", "") for resource in resource_context if "/pom_pages/" in f"/{resource.get('file', '')}" or str(resource.get("file", "")).startswith("pom_pages/")]
     allowed_builtin_keywords, allowed_selenium_keywords = get_framework_keyword_catalog()
     manual_expected_outcomes = collect_manual_expected_outcomes(prompt_manual_data)
+    robot_reuse_analysis = analyze_robot_suite_reuse(generated_robot, resource_context)
     resource_validation_keywords = collect_resource_validation_keywords(resource_context)
     payload = {
         "manual_test": prompt_manual_data,
         "resource_context": resource_context,
         "inferred_reuse_context": infer_workflow_reuse_context(prompt_manual_data),
         "generated_robot": generated_robot,
+        "robot_reuse_analysis": robot_reuse_analysis,
         "allowed_builtin_keywords": sorted(allowed_builtin_keywords),
         "allowed_selenium_keywords": sorted(allowed_selenium_keywords),
         "resource_import_prefix": "../pom_pages/",
@@ -1303,6 +1309,31 @@ def validate_robot_alignment_with_resource_context(content: str, resource_contex
                 warnings.append(
                     "Generated suite uses synthetic abstraction(s) where approved upstream/page resource reuse is expected from workflow knowledge and retrieved context. Replace invented convenience keywords with direct reuse of approved resource keywords."
                 )
+
+    robot_reuse_analysis = analyze_robot_suite_reuse(content, resource_context)
+    if robot_reuse_analysis.get("summary", {}).get("literalReuseOpportunityCount", 0) > 0:
+        samples = []
+        for item in (robot_reuse_analysis.get("literalReuseOpportunities") or [])[:8]:
+            literal = clean_text(item.get("literal", ""))
+            variables = item.get("approvedVariables") or []
+            if literal and variables:
+                reuse_names = ", ".join(clean_text(owner.get("name", "")) for owner in variables[:3] if clean_text(owner.get("name", "")))
+                if reuse_names:
+                    samples.append(f"'{literal}' -> {reuse_names}")
+        if samples:
+            warnings.append(
+                "Generated suite contains literal values that should reuse approved semantic resource variables instead: "
+                + "; ".join(samples)
+            )
+    if robot_reuse_analysis.get("summary", {}).get("lowLevelReuseOpportunityCount", 0) > 0:
+        warnings.append(
+            "Generated suite uses low-level or generic interactions where approved semantic variable or keyword reuse opportunities already exist in retrieved resource context. Prefer approved page/common resource reuse over literal-driven low-level calls."
+        )
+    if robot_reuse_analysis.get("missingCommonWrapperReuse"):
+        warnings.append(
+            "Generated suite bypasses available shared/common wrappers that already exist in retrieved resource context: "
+            + ", ".join(robot_reuse_analysis.get("missingCommonWrapperReuse")[:8])
+        )
 
     approved_variable_values: dict[str, set[str]] = {}
     for resource in resource_context:
