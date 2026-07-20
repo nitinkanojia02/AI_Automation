@@ -275,6 +275,39 @@ def migrate_manual_artifacts_to_feature_dir(workflow_name: str):
         shutil.move(str(legacy_excel), str(feature_excel))
 
 
+def rename_workflow_slug_artifacts(old_slug: str, new_slug: str):
+    old_slug = clean_text(old_slug)
+    new_slug = clean_text(new_slug)
+    if not old_slug or not new_slug or old_slug == new_slug:
+        return
+
+    rename_pairs = [
+        (WORKFLOW_DIR / f"{old_slug}.json", WORKFLOW_DIR / f"{new_slug}.json"),
+        (get_status_path(old_slug), get_status_path(new_slug)),
+        (get_session_path(old_slug), get_session_path(new_slug)),
+        (BASE_DIR / "artifacts" / "workflow_knowledge" / f"{old_slug}.json", BASE_DIR / "artifacts" / "workflow_knowledge" / f"{new_slug}.json"),
+        (get_manual_json_path(old_slug), get_manual_json_path(new_slug)),
+        (get_manual_excel_path(old_slug), get_manual_excel_path(new_slug)),
+    ]
+
+    for source, target in rename_pairs:
+        if not source.exists() or source == target:
+            continue
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if target.exists():
+            if target.is_file() and source.is_file():
+                source.unlink()
+            continue
+        shutil.move(str(source), str(target))
+
+    old_manual_dir = get_manual_workflow_dir(old_slug)
+    new_manual_dir = get_manual_workflow_dir(new_slug)
+    if old_manual_dir.exists() and old_manual_dir != new_manual_dir:
+        if not new_manual_dir.exists() or not any(new_manual_dir.iterdir()):
+            new_manual_dir.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(old_manual_dir), str(new_manual_dir))
+
+
 def export_manual_tests_to_excel(workflow_name: str, workflow: dict | None, manual_data: dict) -> Path:
     workbook = Workbook()
     sheet = workbook.active
@@ -517,10 +550,25 @@ def update_workflow_status(workflow_name: str, **updates):
 # -------------------------------------------------------------------
 
 def load_workflow_or_404(workflow_name: str) -> dict:
-    workflow_path = WORKFLOW_DIR / f"{workflow_name}.json"
+    requested_slug = clean_text(workflow_name)
+    workflow_path = WORKFLOW_DIR / f"{requested_slug}.json"
+    if not workflow_path.exists():
+        requested_normalized = slugify(requested_slug)
+        for candidate in WORKFLOW_DIR.glob("*.json"):
+            if candidate.name.endswith(".status.json"):
+                continue
+            try:
+                payload = read_json(candidate)
+            except Exception:
+                continue
+            candidate_name = clean_text(str(payload.get("workflowName", "")))
+            candidate_slug = derive_workflow_artifact_slug(payload, candidate_name or candidate.stem)
+            if requested_slug == candidate_name or requested_normalized == slugify(candidate_name) or requested_slug == candidate_slug:
+                workflow_path = candidate
+                break
     if not workflow_path.exists():
         raise HTTPException(status_code=404, detail=f"Workflow not found: {workflow_name}")
-    migrate_manual_artifacts_to_feature_dir(workflow_name)
+    migrate_manual_artifacts_to_feature_dir(workflow_path.stem)
     return read_json(workflow_path)
 
 def collect_workflow_expected_outcomes(workflow: dict) -> list[str]:
@@ -4354,7 +4402,13 @@ async def save_workflow(
     if canonical_workflow_name:
         payload["workflowName"] = canonical_workflow_name
 
-    target_slug = existing_workflow_slug.strip() or derive_workflow_artifact_slug(payload, canonical_workflow_name or workflow_name)
+    existing_slug = clean_text(existing_workflow_slug)
+    target_slug = derive_workflow_artifact_slug(payload, canonical_workflow_name or workflow_name)
+    if existing_slug and existing_slug != target_slug:
+        rename_workflow_slug_artifacts(existing_slug, target_slug)
+    elif existing_slug and not (WORKFLOW_DIR / f"{target_slug}.json").exists() and (WORKFLOW_DIR / f"{existing_slug}.json").exists():
+        target_slug = existing_slug
+
     target = WORKFLOW_DIR / f"{target_slug}.json"
     write_json(target, payload)
 
