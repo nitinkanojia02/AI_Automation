@@ -1550,6 +1550,35 @@ def validate_robot_alignment_with_resource_context(content: str, resource_contex
                 warnings.append(
                     "Workflow knowledge indicates successful authentication should end in authenticated Home state, but one or more success tests still assert guest-state Home validation after login submission. Replace guest-state destination checks with authenticated destination validation or request that missing destination validation be generated/refined from approved workflow knowledge."
                 )
+            success_tests_with_url_only_assertion = 0
+            for sequence in test_step_sequences:
+                if not sequence:
+                    continue
+                joined = " > ".join(sequence)
+                lowered_steps = [step.lower() for step in sequence]
+                indicates_login_submission = any(
+                    token in joined for token in [
+                        "click sign in button",
+                        "click login button",
+                        "login with credentials",
+                        "submit login",
+                        "submit authentication",
+                    ]
+                )
+                if not indicates_login_submission:
+                    continue
+                verification_steps = [
+                    step for step in lowered_steps
+                    if step.startswith("verify ") or step.startswith("validate ") or step.startswith("wait until ") or step.startswith("location should")
+                ]
+                if verification_steps and all(
+                    "location contains" in step or "location should" in step for step in verification_steps
+                ):
+                    success_tests_with_url_only_assertion += 1
+            if success_tests_with_url_only_assertion:
+                warnings.append(
+                    "One or more successful authentication tests rely only on URL/location checks after login submission. Successful authentication must be validated with stronger authenticated destination-state evidence when approved workflow knowledge or imported resource context supports it."
+                )
             if strongest_sequence and strongest_count >= max(2, len(test_step_sequences) // 2):
                 sequence_lower = strongest_sequence.lower()
                 if all(token in knowledge_blob for token in ["must be opened through the home page person/profile button", "home page", "login page"]):

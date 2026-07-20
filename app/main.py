@@ -3492,12 +3492,165 @@ def apply_robot_test_naming_and_tags(content: str, workflow: dict | None, workfl
     return "\n".join(result)
 
 
+def compact_robot_tests_after_setup(content: str) -> str:
+    lines = content.splitlines()
+
+    settings_section: list[str] = []
+    test_section: list[str] = []
+    other_section: list[str] = []
+    section = None
+    for line in lines:
+        lowered = line.strip().lower()
+        if lowered == "*** settings ***":
+            section = "settings"
+            settings_section.append(line)
+            continue
+        if lowered == "*** test cases ***":
+            section = "tests"
+            test_section.append(line)
+            continue
+        if lowered.startswith("***"):
+            section = "other"
+            other_section.append(line)
+            continue
+        if section == "settings":
+            settings_section.append(line)
+        elif section == "tests":
+            test_section.append(line)
+        else:
+            other_section.append(line)
+
+    if not test_section:
+        return content
+
+    setup_lines: list[str] = []
+    for line in settings_section:
+        match = re.match(r"(?im)^\s*Test Setup\s{2,}(.+)$", line)
+        if not match:
+            continue
+        rhs = match.group(1).strip()
+        if rhs.lower().startswith("run keywords"):
+            parts = [part.strip() for part in re.split(r"\s{2,}|\t+", rhs) if part.strip()]
+            current: list[str] = []
+            for token in parts[1:]:
+                lowered = clean_text(token).lower()
+                if lowered == "and":
+                    if current:
+                        setup_lines.append("    " + "    ".join(current))
+                        current = []
+                    continue
+                current.append(token)
+            if current:
+                setup_lines.append("    " + "    ".join(current))
+        else:
+            setup_lines.append("    " + rhs)
+        break
+
+    normalized_setup_steps = {clean_text(line).lower() for line in setup_lines if clean_text(line)}
+    if not normalized_setup_steps:
+        return content
+
+    home_loaded_variants = {
+        "verify home page loaded in guest state",
+        "verify home page remains in guest state",
+    }
+    login_opened_variants = {
+        "verify login page opened",
+        "verify login form loaded",
+    }
+    setup_contains_login_entry = any("click person profile button" in step or "verify login page opened" in step for step in normalized_setup_steps)
+
+    def parse_tests(test_lines: list[str]) -> tuple[list[str], list[dict]]:
+        header: list[str] = []
+        tests: list[dict] = []
+        current = None
+        seen_first_test = False
+        for line in test_lines:
+            stripped = line.strip()
+            if not seen_first_test:
+                header.append(line)
+                if stripped.lower() == "*** test cases ***":
+                    continue
+                if stripped and not line.startswith((" ", "\t")) and not stripped.startswith("***"):
+                    seen_first_test = True
+                    current = {"name": line, "body": []}
+                    tests.append(current)
+                    header.pop()
+                continue
+            if stripped and not line.startswith((" ", "\t")) and not stripped.startswith("***"):
+                current = {"name": line, "body": []}
+                tests.append(current)
+                continue
+            if current is not None:
+                current["body"].append(line)
+        return header, tests
+
+    header_lines, tests = parse_tests(test_section)
+    if not tests:
+        return content
+
+    changed = False
+    for test in tests:
+        new_body: list[str] = []
+        seen_non_metadata_step = False
+        for line in test["body"]:
+            stripped = line.strip()
+            normalized = clean_text(stripped).lower()
+            if not stripped:
+                if new_body and new_body[-1].strip():
+                    new_body.append(line)
+                continue
+            if stripped.startswith("["):
+                new_body.append(line)
+                continue
+            if not line.startswith((" ", "\t")):
+                new_body.append(line)
+                continue
+
+            if normalized in normalized_setup_steps:
+                changed = True
+                continue
+
+            if setup_contains_login_entry and normalized in home_loaded_variants | login_opened_variants and not seen_non_metadata_step:
+                changed = True
+                continue
+
+            new_body.append(line)
+            seen_non_metadata_step = True
+
+        while new_body and not new_body[-1].strip():
+            new_body.pop()
+        test["body"] = new_body
+
+    if not changed:
+        return content
+
+    rebuilt: list[str] = []
+    if settings_section:
+        rebuilt.extend(settings_section)
+        if rebuilt and rebuilt[-1].strip():
+            rebuilt.append("")
+    rebuilt.extend(header_lines)
+    for index, test in enumerate(tests):
+        if index > 0 and rebuilt and rebuilt[-1].strip():
+            rebuilt.append("")
+        rebuilt.append(test["name"])
+        rebuilt.extend(test["body"])
+    if other_section:
+        if rebuilt and rebuilt[-1].strip():
+            rebuilt.append("")
+        rebuilt.extend(other_section)
+    return "\n".join(rebuilt) + ("\n" if content.endswith("\n") else "")
+
+
 def normalize_robot_content(content: str, workflow: dict | None = None, workflow_name: str = "") -> str:
     content = strip_markdown_fences(content)
     content = normalize_robot_blank_and_space_arguments(content)
+    content = compact_robot_tests_after_setup(content)
     content = normalize_robot_content_spacing(content)
     if workflow_name:
         content = apply_robot_test_naming_and_tags(content, workflow, workflow_name)
+        content = compact_robot_tests_after_setup(content)
         content = normalize_robot_content_spacing(content)
     return content
 
