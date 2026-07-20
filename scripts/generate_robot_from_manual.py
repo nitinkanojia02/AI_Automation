@@ -1496,6 +1496,8 @@ def validate_robot_alignment_with_resource_context(content: str, resource_contex
             key = " > ".join(steps[:length])
             repeated_leading_sequences[key] = repeated_leading_sequences.get(key, 0) + 1
             break
+    strongest_sequence = ""
+    strongest_count = 0
     if repeated_leading_sequences:
         strongest_sequence = max(repeated_leading_sequences, key=repeated_leading_sequences.get)
         strongest_count = repeated_leading_sequences[strongest_sequence]
@@ -1515,16 +1517,46 @@ def validate_robot_alignment_with_resource_context(content: str, resource_contex
         success_mentions_authenticated_home = "authenticated home" in knowledge_blob or "authenticated state" in knowledge_blob
         if success_mentions_authenticated_home:
             success_tests_with_origin_recheck = 0
+            guest_state_success_assertions = 0
             for sequence in test_step_sequences:
                 if not sequence:
                     continue
                 joined = " > ".join(sequence)
-                if "login with credentials" in joined and "verify login form loaded" in joined:
+                lowered_steps = [step.lower() for step in sequence]
+                indicates_login_submission = any(
+                    token in joined for token in [
+                        "click sign in button",
+                        "click login button",
+                        "login with credentials",
+                        "submit login",
+                        "submit authentication",
+                    ]
+                )
+                if indicates_login_submission and any("verify login form loaded" in step for step in lowered_steps):
                     success_tests_with_origin_recheck += 1
+                if indicates_login_submission and any(
+                    phrase in step for step in lowered_steps for phrase in [
+                        "verify home page loaded in guest state",
+                        "verify home page remains in guest state",
+                        "verify guest home controls are visible and enabled",
+                    ]
+                ):
+                    guest_state_success_assertions += 1
             if success_tests_with_origin_recheck:
                 warnings.append(
                     "Workflow knowledge indicates successful transition to a different destination state, but one or more tests still re-verify the origin page after success. Replace origin-page success checks with approved destination-state validation from upstream/current resources."
                 )
+            if guest_state_success_assertions:
+                warnings.append(
+                    "Workflow knowledge indicates successful authentication should end in authenticated Home state, but one or more success tests still assert guest-state Home validation after login submission. Replace guest-state destination checks with authenticated destination validation or request that missing destination validation be generated/refined from approved workflow knowledge."
+                )
+            if strongest_sequence and strongest_count >= max(2, len(test_step_sequences) // 2):
+                sequence_lower = strongest_sequence.lower()
+                if all(token in knowledge_blob for token in ["must be opened through the home page person/profile button", "home page", "login page"]):
+                    if all(token in sequence_lower for token in ["click person profile button", "verify login page opened"]):
+                        warnings.append(
+                            "Workflow knowledge and repeated suite structure both indicate that the dominant shared entry journey reaches the Login page from Home, but the current setup does not fully absorb that repeated entry flow. Prefer a setup that leaves each test at the Login page when most tests begin there."
+                        )
 
     return len(errors) == 0, ("Warnings:\n" + "\n".join(warnings)) if warnings else ""
 
