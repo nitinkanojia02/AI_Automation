@@ -6,10 +6,12 @@ from typing import Any, Dict, List
 
 try:
     from scripts.workflow_context import infer_workflow_reuse_context
+    from scripts.artifact_reuse import analyze_reuse_conflicts
 except ModuleNotFoundError:
     import sys
     sys.path.append(str(BASE_DIR))
     from scripts.workflow_context import infer_workflow_reuse_context
+    from scripts.artifact_reuse import analyze_reuse_conflicts
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 WORKFLOW_INPUT_DIR = BASE_DIR / "workflow_inputs"
@@ -373,11 +375,26 @@ def collect_resource_knowledge(workflow_input: Dict[str, Any]) -> Dict[str, Any]
             'keywordNames': unique_strings([item.get('name', '') for item in keywords], limit=60),
         })
 
+    combined_resource_text = "\n\n".join(
+        read_text(BASE_DIR / rel_path) if (BASE_DIR / rel_path).exists() else read_text(POM_DIR / rel_path)
+        for rel_path in merged_resources
+        if clean_text(rel_path)
+    )
+    reuse_analysis = analyze_reuse_conflicts(combined_resource_text, "") if clean_text(combined_resource_text) else {
+        "duplicateVariables": [],
+        "duplicateKeywords": [],
+        "variableReuseCandidates": [],
+        "keywordReuseCandidates": [],
+        "ownershipConflicts": [],
+        "summary": {},
+    }
+
     return {
         'authoritativeResources': unique_strings(merged_resources, limit=30),
         'sharedResources': unique_strings(shared_resources, limit=20),
         'resourceSummaries': resource_summaries,
         'resourceOwnership': resource_ownership,
+        'reuseSignals': reuse_analysis,
     }
 
 

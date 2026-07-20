@@ -26,6 +26,7 @@ from scripts.generate_manual_tests_json import (
     validate_config as validate_manual_config,
 )
 from scripts.workflow_knowledge import save_workflow_knowledge, build_workflow_knowledge_context, discover_relevant_workflow_knowledge
+from scripts.artifact_reuse import analyze_reuse_conflicts
 from scripts.generate_robot_from_manual import (
     build_manual_refiner_prompt,
     build_manual_review_prompt,
@@ -2407,6 +2408,7 @@ def build_resource_review_prompt(
     generated_resource: str,
 ) -> str:
     prompt_ready_workflow = clean_workflow_for_prompting(workflow)
+    reuse_analysis = analyze_reuse_conflicts(generated_resource, "")
     payload = {
         "workflow": prompt_ready_workflow,
         "approved_elements": approved_elements,
@@ -2415,6 +2417,7 @@ def build_resource_review_prompt(
         "common_resource_context": common_resource_context,
         "current_workflow_knowledge": build_workflow_knowledge_context(workflow),
         "relevant_workflow_knowledge": discover_relevant_workflow_knowledge(workflow),
+        "reuse_analysis": reuse_analysis,
         "generated_page_resource": generated_resource,
     }
 
@@ -2435,6 +2438,10 @@ def build_resource_review_prompt(
         "- Page action keywords should reuse the best available shared/common helpers discoverable in common_resource_context when applicable instead of directly repeating lower-level SeleniumLibrary interaction patterns.\n"
         "- Treat approved reviewed keyword implementations as authoritative implementation lineage whenever they are valid and supported. If the approved implementation already uses a reusable shared/common helper, preserve that choice. If it uses raw framework steps but the shared/common resource clearly exposes a reusable helper for the same interaction pattern, intelligently refine toward the shared/common helper without introducing unsupported behavior.\n"
         "- Infer helper preference from the provided shared/common resource content and approved artifacts rather than from hardcoded interaction maps.\n"
+        "- Treat reuse_analysis as authoritative conflict guidance. If it shows duplicate variables, duplicate keywords, or ownership conflicts, repair the resource by reusing existing approved names/ownership rather than keeping parallel definitions.\n"
+        "- Before returning the final resource, internally perform a retrieval-first decision sequence: identify reusable approved variables/keywords first, identify only the true gaps second, and keep net-new additions minimal and justified.\n"
+        "- If a candidate variable points to a locator already owned elsewhere, do not preserve that duplicate local ownership unless the provided context proves a truly distinct page-specific semantic need.\n"
+        "- If a candidate keyword duplicates an approved keyword name or normalized implementation already present in approved resource context, reuse that existing capability rather than preserving a parallel keyword.\n"
         "- Enforce workflow knowledge → authoritative upstream resources → approved entry journey → approved destination-state validation as a mandatory review chain when the page/resource behavior depends on upstream workflow context or post-action destination state.\n"
         "- If workflow knowledge identifies authoritative upstream resources for entry, return, or destination-state validation, keep those ownership boundaries explicit and do not duplicate them as local page-resource behavior.\n"
         "- Reject or repair page-resource behavior that assumes unsupported direct access when workflow knowledge says the page is reached through an upstream journey.\n"
@@ -2533,6 +2540,7 @@ def validate_generated_resource_against_approved_artifacts(
     approved_keywords: list[dict],
     resource_content: str,
     common_resource_context: list[dict] | None = None,
+    candidate_file: str = "",
 ) -> tuple[bool, str]:
     approved_elements = load_approved_elements_for_workflow(workflow)
     approved_variable_names = {
@@ -2684,6 +2692,20 @@ def validate_generated_resource_against_approved_artifacts(
             + ", ".join(sorted(set(forbidden_builtin_hits)))
         )
 
+    reuse_analysis = analyze_reuse_conflicts(resource_content, candidate_file)
+    if reuse_analysis.get("summary", {}).get("duplicateVariableCount", 0) > 0:
+        errors.append(
+            "Generated page resource introduces locator ownership duplication against approved resources. Reuse existing approved variables/owners instead of creating parallel locator variables."
+        )
+    if reuse_analysis.get("summary", {}).get("duplicateKeywordCount", 0) > 0:
+        errors.append(
+            "Generated page resource introduces duplicate keyword capability against approved resources. Reuse existing approved keywords instead of creating parallel keyword definitions."
+        )
+    if reuse_analysis.get("summary", {}).get("ownershipConflictCount", 0) > 0:
+        warnings.append(
+            "Ownership conflicts detected in reuse analysis; keep ownership conservative and prefer upstream/shared/page-authoritative reuse over duplicate local ownership."
+        )
+
     is_valid = len(errors) == 0
     message_parts = []
     if errors:
@@ -2785,11 +2807,56 @@ def generate_resource_for_workflow(workflow: dict, approved_keywords: list[dict]
         approved_keywords,
         resource_content,
         common_resource_context,
+        str(resource_path.relative_to(BASE_DIR)).replace("\\", "/"),
     )
     if validation_message:
         append_session_message(page_name, "assistant", "resource_validation", validation_message)
     if artifact_message:
         append_session_message(page_name, "assistant", "resource_artifact_validation", artifact_message)
+
+    if (not is_valid or not artifact_valid) and artifact_message:
+        refinement_prompt = (
+            build_resource_review_prompt(
+                workflow,
+                approved_elements,
+                approved_keywords,
+                approved_manual_tests,
+                common_resource_context,
+                resource_content,
+            )
+            + "\n\nAdditional validation failures that must be resolved before finalizing:\n"
+            + artifact_message
+            + "\n\nReturn only corrected Robot Framework resource content. Reuse approved existing variables/keywords/resources where conflicts were identified."
+        )
+        refined_resource_content = call_ai_with_workflow_session(
+            workflow_name=page_name,
+            stage="resource_conflict_refinement",
+            endpoint=endpoint,
+            token=token,
+            prompt=refinement_prompt,
+            timeout_seconds=ai_cfg.get("timeout_seconds", 120),
+            verify_ssl=ai_cfg.get("verify_ssl", False),
+        )
+        refined_resource_content = normalize_resource_content(refined_resource_content)
+        refined_valid, refined_validation_message = validate_resource_content(refined_resource_content, common_resource_context)
+        refined_artifact_valid, refined_artifact_message = validate_generated_resource_against_approved_artifacts(
+            workflow,
+            approved_keywords,
+            refined_resource_content,
+            common_resource_context,
+            str(resource_path.relative_to(BASE_DIR)).replace("\\", "/"),
+        )
+        if refined_validation_message:
+            append_session_message(page_name, "assistant", "resource_conflict_refinement_validation", refined_validation_message)
+        if refined_artifact_message:
+            append_session_message(page_name, "assistant", "resource_conflict_refinement_artifact_validation", refined_artifact_message)
+        if refined_valid and refined_artifact_valid:
+            resource_content = refined_resource_content
+            is_valid = refined_valid
+            artifact_valid = refined_artifact_valid
+        else:
+            raise HTTPException(status_code=400, detail=refined_artifact_message or refined_validation_message or artifact_message or validation_message)
+
     resource_path.write_text(resource_content, encoding="utf-8")
     enrich_resource_with_manual_test_variables(workflow, approved_keywords)
 
