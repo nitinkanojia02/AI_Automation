@@ -9,6 +9,7 @@ import subprocess
 import sys
 
 import requests
+import logging
 from openpyxl import Workbook
 
 from fastapi import FastAPI, Form, HTTPException, Request
@@ -92,6 +93,7 @@ CONFIG_PATH = BASE_DIR / "config" / "page_model_config.json"
 
 app = FastAPI(title="WashTab Automation MVP")
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
+logger = logging.getLogger(__name__)
 
 # -------------------------------------------------------------------
 # Generic helpers
