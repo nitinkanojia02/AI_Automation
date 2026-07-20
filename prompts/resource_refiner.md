@@ -80,6 +80,7 @@ Refinement guidance:
 - Do not create long-string or boundary-value variables unless the approved artifacts clearly require that exact reusable boundary dataset
 - Add reusable observable validation keywords for approved negative and validation scenarios when grounded in approved artifacts
 - Ensure the final resource gives downstream suite generation enough semantic support to avoid literal business data and weak same-page-only assertions
+- When the approved manual/tests/workflow imply a stronger business-visible validation class such as authenticated state, masked password behavior, visible-and-enabled controls, or visible rejection feedback, do not collapse that into a weaker generic loaded/present check; either create a grounded stronger page validation or leave the capability clearly absent rather than faking equivalence
 - Strengthen negative validations only when visible or approved evidence supports them
 - Do not invent unsupported validation messages, unsupported business rules, unsupported page behavior, or unsupported framework/library keywords
 - Before finalizing, self-review every called keyword and keep only keywords that are valid Robot Framework/BuiltIn/SeleniumLibrary keywords or imported shared-resource keywords

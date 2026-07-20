@@ -59,6 +59,7 @@ Flag as a major quality issue if:
 - reusable semantic business data from approved manual tests is missing from the Variables section, causing likely hardcoding in downstream suites
 - negative or validation-focused approved manual expectations cannot be expressed through observable page validation keywords
 - the resource supports only same-page or URL-presence negative checks even though richer approved manual expectations clearly require visible rejection or validation evidence
+- the resource weakens stronger business-visible expectations such as authenticated state, password masking, or visible-and-enabled controls into generic loaded/present checks that would cause false confidence downstream
 
 Examples of desired improvements:
 - use Click When Ready instead of raw click patterns where appropriate

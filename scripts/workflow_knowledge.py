@@ -241,6 +241,35 @@ def derive_navigation_model(workflow_input: Dict[str, Any], story_sections: Dict
     target_page = workflow_input.get("targetPage") if isinstance(workflow_input.get("targetPage"), dict) else {}
     pages = workflow_input.get("pages") if isinstance(workflow_input.get("pages"), list) else []
     primary_page = pages[0] if pages and isinstance(pages[0], dict) else {}
+
+    inferred_target_name = clean_text(target_page.get("name") or primary_page.get("name"))
+    inferred_target_url = clean_text(target_page.get("url") or primary_page.get("url"))
+    inferred_entry_name = clean_text(entry_page.get("name"))
+    inferred_entry_url = clean_text(entry_page.get("url"))
+
+    story_blob = " ".join(
+        story_sections.get("applicationContext", [])
+        + story_sections.get("behaviorRules", [])
+        + story_sections.get("reuseGuidance", [])
+        + story_sections.get("acceptanceCriteria", [])
+        + story_sections.get("transitionExpectations", [])
+    ).lower()
+
+    if not inferred_entry_name:
+        inferred_entry_name = clean_text(primary_page.get("name"))
+
+    if inferred_entry_name and inferred_target_name and inferred_entry_name.lower() == inferred_target_name.lower():
+        for step in ensure_list(workflow_input.get("navigationSteps")):
+            if not isinstance(step, dict):
+                continue
+            candidate_page = clean_text(step.get("page"))
+            if candidate_page and candidate_page.lower() != inferred_target_name.lower():
+                inferred_entry_name = candidate_page
+                break
+
+    if not inferred_target_url:
+        inferred_target_url = clean_text(target_page.get("url"))
+
     journey = []
     for step in ensure_list(workflow_input.get("navigationSteps")):
         if not isinstance(step, dict):
@@ -255,21 +284,35 @@ def derive_navigation_model(workflow_input: Dict[str, Any], story_sections: Dict
             "action": action,
             "element": element,
         })
+
     if not journey:
-        for line in story_sections.get("acceptanceCriteria", []) + story_sections.get("reuseGuidance", []):
+        selected_lines = []
+        for line in story_sections.get("acceptanceCriteria", []) + story_sections.get("reuseGuidance", []) + story_sections.get("transitionExpectations", []):
             lowered = line.lower()
-            if any(token in lowered for token in ["click", "open", "return", "navigate", "login page", "home page"]):
-                journey.append({"page": "", "action": line, "element": ""})
-            if len(journey) >= 8:
+            if any(token in lowered for token in ["click", "open", "return", "navigate", "login page", "home page", "back button", "home button"]):
+                if inferred_target_name and inferred_target_name.lower() in lowered:
+                    page_name = inferred_target_name
+                elif inferred_entry_name and inferred_entry_name.lower() in lowered:
+                    page_name = inferred_entry_name
+                else:
+                    page_name = inferred_target_name or inferred_entry_name
+                selected_lines.append({
+                    "page": page_name,
+                    "action": line,
+                    "element": "",
+                })
+            if len(selected_lines) >= 8:
                 break
+        journey = selected_lines
+
     return {
         "entryPoint": {
-            "name": clean_text(entry_page.get("name") or primary_page.get("name")),
-            "url": clean_text(entry_page.get("url") or primary_page.get("url")),
+            "name": inferred_entry_name,
+            "url": inferred_entry_url,
         },
         "target": {
-            "name": clean_text(target_page.get("name") or primary_page.get("name")),
-            "url": clean_text(target_page.get("url") or primary_page.get("url")),
+            "name": inferred_target_name,
+            "url": inferred_target_url,
         },
         "journey": journey[:10],
         "targetSignals": [item for item in ensure_list(workflow_input.get("targetPageSignals")) if isinstance(item, dict)][:10],
@@ -653,6 +696,24 @@ def summarize_workflow_knowledge_for_generation(payload: Dict[str, Any]) -> Dict
     manual = payload.get('manualCoverage') if isinstance(payload.get('manualCoverage'), dict) else {}
     automation = payload.get('automationKnowledge') if isinstance(payload.get('automationKnowledge'), dict) else {}
     downstream = payload.get('downstreamGuidance') if isinstance(payload.get('downstreamGuidance'), dict) else {}
+
+    def compact_journey_steps(steps: List[Any]) -> List[Dict[str, Any]]:
+        compacted: List[Dict[str, Any]] = []
+        for item in ensure_list(steps):
+            if not isinstance(item, dict):
+                continue
+            page = clean_text(item.get('page'))
+            action = clean_text(item.get('action'))
+            element = clean_text(item.get('element'))
+            if not any([page, action, element]):
+                continue
+            compacted.append({
+                'page': page,
+                'action': action,
+                'element': element,
+            })
+        return compacted[:6]
+
     return {
         'workflowSlug': clean_text(payload.get('workflowSlug')),
         'workflowName': clean_text(payload.get('workflowName')),
@@ -672,7 +733,7 @@ def summarize_workflow_knowledge_for_generation(payload: Dict[str, Any]) -> Dict
         'navigationModel': {
             'entryPoint': payload.get('navigationModel', {}).get('entryPoint', {}),
             'target': payload.get('navigationModel', {}).get('target', {}),
-            'journey': ensure_list(payload.get('navigationModel', {}).get('journey'))[:6],
+            'journey': compact_journey_steps(payload.get('navigationModel', {}).get('journey')),
         },
         'journeyKnowledge': {
             'directAccessPolicy': clean_text((payload.get('journeyKnowledge') or {}).get('directAccessPolicy')),

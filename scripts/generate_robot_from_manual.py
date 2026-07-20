@@ -338,7 +338,9 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
         "- Any navigation/open-page/wait-for-page-ready keyword already belongs in the resource layer and must be reused from there.\n"
         "- Any reusable test data such as usernames, passwords, URLs, paths, expected validation text, long strings, invalid variants, SQL injection payloads, whitespace variants, and boundary values belongs in the resource layer, not in the test suite.\n"
         "- Every generated test must align with the manual test title, steps, and expectedResult; do not skip the expected validation.\n"
-        "- Prefer resource validation keywords and resource variables whenever the resource file suggests they exist or should be reused.\n\n"
+        "- Prefer resource validation keywords and resource variables whenever the resource file suggests they exist or should be reused.\n"
+        "- Never downgrade a required business-visible assertion into a weaker proxy such as page presence, form presence, or URL-only checking when the manual expectedResult implies a stronger observable outcome.\n"
+        "- If the manual expectedResult requires a stronger validation than the currently imported resources can support, keep the suite thin, reuse the strongest approved evidence available, and make the missing capability visible as a gap in reasoning instead of fabricating confidence through weak assertions.\n\n"
         "Mandatory output rules:\n"
         "- Use only the provided resource files and the shared common resource hint.\n"
         "- Always import ../resources/common_keywords.resource in the suite Settings section.\n"
@@ -413,7 +415,9 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
         "- Use built-in variables correctly: ${EMPTY}, ${SPACE}, ${True}, ${False}, ${None} only when semantically correct.\n"
         "- Do not leave missing data arguments blank in a keyword call; use an explicit built-in or resource variable.\n"
         "- Each test case should have a clear final verification aligned to its expectedResult.\n"
-        "- If a manual test is about password masking, generate an explicit verification for masking behavior instead of only entering data.\n"
+        "- Setup-only confidence is not enough: unless the scenario itself is explicitly only about navigation/setup, each test body must contain at least one scenario-specific verification beyond shared setup.\n"
+        "- If a manual test title or expectedResult claims a specific state or observable behavior, the suite must verify that claimed outcome explicitly using the strongest approved evidence available from reusable resources and workflow knowledge rather than substituting only route/form-presence evidence.\n"
+        "- Preserve specialized manual intent. When the scenario concerns a field property, state transition, rejection, validation, visibility, interactivity, or another observable behavior, generate an explicit verification aligned to that intent instead of only performing actions.\n"
         "- If a manual test expects an error message, validation message, rejection, blocked transition, or failed protected action, generate an explicit verification for that result, not only a generic page-loaded check. Prefer dedicated page validation keywords from resource_context when they are supported or clearly implied.\n"
         "- For negative protected-flow scenarios, do not rely solely on a same-page-loaded check. Include at least one stronger observable assertion such as an error message check, validation message check, no-navigation check, protected-area-not-visible check, or another resource-backed visible rejection check.\n"
         "- If the approved manual expectedResult describes visible failure, validation feedback, rejection, required indication, blocked access, or another observable negative outcome, a same-page-only or URL-only assertion is insufficient unless the resource context genuinely provides no stronger supported validation.\n"
@@ -1514,70 +1518,37 @@ def validate_robot_alignment_with_resource_context(content: str, resource_contex
 
     if isinstance(current_workflow_knowledge, dict):
         knowledge_blob = json.dumps(current_workflow_knowledge, ensure_ascii=False).lower()
-        success_mentions_authenticated_home = "authenticated home" in knowledge_blob or "authenticated state" in knowledge_blob
-        if success_mentions_authenticated_home:
-            success_tests_with_origin_recheck = 0
-            guest_state_success_assertions = 0
+        destination_signals = [
+            clean_text(item.get("name") or item.get("signal") or item.get("label") or "").lower()
+            for item in current_workflow_knowledge.get("navigationModel", {}).get("targetSignals", [])
+            if isinstance(item, dict)
+        ]
+        if destination_signals:
+            tests_with_origin_recheck = 0
+            tests_with_url_only_assertion = 0
             for sequence in test_step_sequences:
                 if not sequence:
                     continue
-                joined = " > ".join(sequence)
                 lowered_steps = [step.lower() for step in sequence]
-                indicates_login_submission = any(
-                    token in joined for token in [
-                        "click sign in button",
-                        "click login button",
-                        "login with credentials",
-                        "submit login",
-                        "submit authentication",
-                    ]
-                )
-                if indicates_login_submission and any("verify login form loaded" in step for step in lowered_steps):
-                    success_tests_with_origin_recheck += 1
-                if indicates_login_submission and any(
-                    phrase in step for step in lowered_steps for phrase in [
-                        "verify home page loaded in guest state",
-                        "verify home page remains in guest state",
-                        "verify guest home controls are visible and enabled",
-                    ]
-                ):
-                    guest_state_success_assertions += 1
-            if success_tests_with_origin_recheck:
-                warnings.append(
-                    "Workflow knowledge indicates successful transition to a different destination state, but one or more tests still re-verify the origin page after success. Replace origin-page success checks with approved destination-state validation from upstream/current resources."
-                )
-            if guest_state_success_assertions:
-                warnings.append(
-                    "Workflow knowledge indicates successful authentication should end in authenticated Home state, but one or more success tests still assert guest-state Home validation after login submission. Replace guest-state destination checks with authenticated destination validation or request that missing destination validation be generated/refined from approved workflow knowledge."
-                )
-            success_tests_with_url_only_assertion = 0
-            for sequence in test_step_sequences:
-                if not sequence:
-                    continue
-                joined = " > ".join(sequence)
-                lowered_steps = [step.lower() for step in sequence]
-                indicates_login_submission = any(
-                    token in joined for token in [
-                        "click sign in button",
-                        "click login button",
-                        "login with credentials",
-                        "submit login",
-                        "submit authentication",
-                    ]
-                )
-                if not indicates_login_submission:
-                    continue
                 verification_steps = [
                     step for step in lowered_steps
                     if step.startswith("verify ") or step.startswith("validate ") or step.startswith("wait until ") or step.startswith("location should")
                 ]
-                if verification_steps and all(
-                    "location contains" in step or "location should" in step for step in verification_steps
-                ):
-                    success_tests_with_url_only_assertion += 1
-            if success_tests_with_url_only_assertion:
+                if not verification_steps:
+                    continue
+                if any(any(signal and signal in step for signal in destination_signals) for step in verification_steps):
+                    continue
+                if any("page loaded" in step or "form loaded" in step for step in verification_steps):
+                    tests_with_origin_recheck += 1
+                if all("location" in step for step in verification_steps):
+                    tests_with_url_only_assertion += 1
+            if tests_with_origin_recheck:
                 warnings.append(
-                    "One or more successful authentication tests rely only on URL/location checks after login submission. Successful authentication must be validated with stronger authenticated destination-state evidence when approved workflow knowledge or imported resource context supports it."
+                    "Workflow knowledge provides destination-state signals, but one or more generated tests still end by re-verifying an origin/intermediate page instead of using destination-state evidence from approved reusable context."
+                )
+            if tests_with_url_only_assertion:
+                warnings.append(
+                    "Workflow knowledge provides destination-state signals, but one or more generated tests still rely only on URL/location checks. Prefer reusable destination-state evidence instead of route-only assertions when approved context supports it."
                 )
 
     manual_cases = manual_data.get("testCases") or manual_data.get("manualTests") or []
@@ -1597,19 +1568,19 @@ def validate_robot_alignment_with_resource_context(content: str, resource_contex
                 step for step in lowered_steps
                 if step.startswith("verify ") or step.startswith("validate ") or step.startswith("wait until ") or step.startswith("location should")
             ]
-            if any(token in combined_case_text for token in ["authenticated or failed state", "either successful authenticated", "either authenticated", "or the generic failed", "or generic failed"]):
-                if not verification_steps:
-                    warnings.append(
-                        f"Test case '{clean_text(str(case.get('id') or case.get('title') or f'#{index+1}'))}' has branch-capable expected behavior but the generated suite ends without any verification. Add an observable assertion that proves one approved outcome branch."
-                    )
-            if any(token in combined_case_text for token in ["mask", "masked", "password field masks", "password masking"]):
-                has_mask_verification = any(
-                    any(token in step for token in ["mask", "attribute", "password textbox", "password field"]) for step in verification_steps
+            if any(token in combined_case_text for token in ["either", "or", "one of", "alternate outcome", "fallback outcome"]) and not verification_steps:
+                warnings.append(
+                    f"Test case '{clean_text(str(case.get('id') or case.get('title') or f'#{index+1}'))}' describes more than one possible observable outcome, but the generated suite ends without any verification. Add an assertion that proves at least one approved outcome branch."
                 )
-                if not has_mask_verification:
-                    warnings.append(
-                        f"Test case '{clean_text(str(case.get('id') or case.get('title') or f'#{index+1}'))}' expects password masking behavior, but the generated suite does not contain an explicit masking-oriented verification. Preserve the masking assertion instead of reducing it to page presence or generic readiness only."
-                    )
+            field_property_signals = ["mask", "masked", "type=", "placeholder", "readonly", "read only", "disabled", "enabled", "hidden", "visible"]
+            expects_field_property = any(token in combined_case_text for token in field_property_signals)
+            has_field_property_verification = any(
+                any(token in step for token in ["attribute", "enabled", "disabled", "visible", "not visible", "interactable", "mask", "placeholder", "readonly", "hidden"]) for step in verification_steps
+            )
+            if expects_field_property and not has_field_property_verification:
+                warnings.append(
+                    f"Test case '{clean_text(str(case.get('id') or case.get('title') or f'#{index+1}'))}' expects a field or control property/state validation, but the generated suite does not contain an explicit property-oriented verification. Preserve the observable property assertion instead of reducing it to generic readiness or page presence only."
+                )
             if strongest_sequence and strongest_count >= max(2, len(test_step_sequences) // 2):
                 sequence_lower = strongest_sequence.lower()
                 if all(token in knowledge_blob for token in ["must be opened through the home page person/profile button", "home page", "login page"]):
@@ -1667,22 +1638,43 @@ def warn_on_assertion_quality(manual_expected_outcomes: list[str], robot_content
     if not manual_expected_outcomes:
         return ""
 
-    richer_expected = any(
-        any(token in outcome.lower() for token in [
-            "error", "message", "validation", "required", "redirect", "dashboard", "home", "landing", "masked", "disabled", "enabled", "rejected", "denied"
-        ])
-        for outcome in manual_expected_outcomes
-    )
-    if not richer_expected:
+    expectation_tokens = set()
+    for outcome in manual_expected_outcomes:
+        lowered = outcome.lower()
+        if any(token in lowered for token in ["error", "message", "validation", "required", "rejected", "denied", "failed"]):
+            expectation_tokens.add("negative_feedback")
+        if any(token in lowered for token in ["redirect", "dashboard", "home", "landing", "destination", "post-condition", "state"]):
+            expectation_tokens.add("destination_state")
+        if any(token in lowered for token in ["visible", "visibility", "shown", "displayed", "enabled", "disabled", "interactable"]):
+            expectation_tokens.add("control_state")
+        if any(token in lowered for token in ["mask", "masked", "attribute", "readonly", "placeholder", "hidden"]):
+            expectation_tokens.add("field_property")
+
+    if not expectation_tokens:
         return ""
 
-    same_page_checks = len(re.findall(r"(?im)\b(still on|remain on|login page loaded|verify .* page loaded|location should be|location should contain)\b", robot_content))
+    same_page_checks = len(re.findall(r"(?im)\b(still on|remain on|page loaded|form loaded|location should be|location should contain)\b", robot_content))
     stronger_verify_checks = len(re.findall(r"(?im)^\s*(Verify|Validate)\b", robot_content))
     available_validation_keywords = len(resource_validation_keywords)
+    verification_lines = re.findall(r"(?im)^\s+(?:Verify|Validate|Wait Until|Location Should|Should|Element Attribute Value Should Be|Get Element Attribute)\b.*$", robot_content)
 
+    warnings: list[str] = []
     if same_page_checks >= 2 and stronger_verify_checks <= 2 and available_validation_keywords >= 1:
-        return "Generated suite may rely on weak same-page assertions even though richer approved expected outcomes and validation keywords appear to be available"
-    return ""
+        warnings.append("Generated suite may rely on weak same-page assertions even though richer approved expected outcomes and reusable validation keywords appear to be available")
+
+    if "control_state" in expectation_tokens:
+        if not re.search(r"(?im)^\s*(?:Element Should Be Enabled|Wait Until Element Is Enabled|Element Should Be Visible|Wait Until Element Is Visible|Verify .* Enabled|Validate .* Enabled|Verify .* Visible|Validate .* Visible)\b", robot_content):
+            warnings.append("Generated suite contains control-state expectations without clear state/interactability verification")
+
+    if "field_property" in expectation_tokens:
+        if not re.search(r"(?im)^\s*(?:Get Element Attribute|Element Attribute Value Should Be|Verify .* Attribute|Validate .* Attribute|Verify .* Mask|Validate .* Mask|Verify .* Placeholder|Validate .* Placeholder)\b", robot_content):
+            warnings.append("Generated suite contains field-property expectations without an explicit property-oriented verification")
+
+    if "destination_state" in expectation_tokens and verification_lines:
+        if all("location" in line.lower() for line in verification_lines):
+            warnings.append("Generated suite appears to validate destination-state expectations using only URL/location checks")
+
+    return "\n".join(warnings)
 
 
 def normalize_generated_robot_identifiers(content: str, identifier_policy: dict) -> str:

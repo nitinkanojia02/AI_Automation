@@ -45,7 +45,9 @@ Content rules:
 - Keep target page direct URL accessibility or indirect navigation dependency explicit if provided
 - Preserve positive, negative, validation, navigation, and state-transition expectations when supported by input
 - Acceptance Criteria must be atomic, testable, and observable
+- Keep navigation facts precise: distinguish entry page, target page, success destination, and failure/return destination whenever the input supports that distinction
 - Do not duplicate the same statement across multiple sections unless needed for clarity
+- Prefer compact factual statements over narrative prose dumps; this story is a downstream generation artifact, not a long-form requirements document
 - Prefer business-observable outcomes over implementation wording
 - Make resource reuse guidance explicit enough that downstream generation can infer which upstream resources should be reused
 - If a shared or upstream resource may already own a control or navigation behavior, state that reuse should be preferred over duplicate ownership
