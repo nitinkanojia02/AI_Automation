@@ -28,7 +28,7 @@
       "approved": true
     },
     {
-      "keywordId": "KW_003",
+      "keywordId": "KW_004",
       "keywordName": "Click Sign In Button",
       "targetElement": "sign_in_button",
       "action": "click",
@@ -39,7 +39,7 @@
       "approved": true
     },
     {
-      "keywordId": "KW_005",
+      "keywordId": "KW_006",
       "keywordName": "Verify User Name Textbox",
       "targetElement": "user_name_textbox",
       "action": "verify",
@@ -47,19 +47,9 @@
       "implementation": [
         "Wait For Element To Be Ready    ${USER_NAME_TEXTBOX}",
         "Wait For Element To Be Ready    ${ION_INPUT_1_PASSWORD}",
-        "Wait For Element To Be Ready    ${SIGN_IN_BUTTON}"
-      ],
-      "approved": true
-    },
-    {
-      "keywordId": "KW_006",
-      "keywordName": "Verify Back Button",
-      "targetElement": "back_button",
-      "action": "verify",
-      "arguments": [],
-      "implementation": [
-        "Wait For Element To Be Ready    id=auto_back_btn",
-        "Wait For Element To Be Ready    id=auto_home_btn"
+        "Wait For Element To Be Ready    ${SIGN_IN_BUTTON}",
+        "Wait For Element To Be Ready    ${BACK_BUTTON}",
+        "Wait For Element To Be Ready    ${HOME_BUTTON}"
       ],
       "approved": true
     },
@@ -70,7 +60,7 @@
       "action": "verify",
       "arguments": [],
       "implementation": [
-        "Wait For Element To Be Ready    xpath=//*[contains(normalize-space(.),'Failed')]"
+        "Wait For Element To Be Ready    ${GENERIC_FAILED_AUTHENTICATION_MESSAGE}"
       ],
       "approved": true
     },

@@ -2,24 +2,20 @@
 Resource    ../../resources/common_keywords.resource
 
 *** Variables ***
-${LOGIN_PAGE_URL}    http://localhost/washtabui/home
 ${USER_NAME_TEXTBOX}    id=ion-input-0
 ${PASSWORD_TEXTBOX}    id=ion-input-1
 ${SIGN_IN_BUTTON}    xpath=//ion-button[normalize-space(.)='SIGN IN']
 ${BACK_BUTTON}    id=auto_back_btn
 ${HOME_BUTTON}    id=auto_home_btn
 ${GENERIC_FAILED_AUTHENTICATION_MESSAGE}    xpath=//*[contains(normalize-space(.),'Failed')]
+${LOGIN_PAGE_URL}    http://localhost/washtabui/home
 ${VALID_USERNAME}    krisadmin
 ${VALID_PASSWORD}    Carwash#1
 ${INVALID_USERNAME}    invaliduser
-${INVALID_PASSWORD}    InvalidPass#1
-${UPPERCASE_INVALID_USERNAME}    KRISADMIN
-${LOWERCASE_INVALID_PASSWORD}    carwash#1
-${SPECIAL_CHARACTER_USERNAME}    !@#$%^&*()
-${SPECIAL_CHARACTER_PASSWORD}    <>?:{}|+=_-
-${LONG_USERNAME}    krisadminkrisadminkrisadminkrisadminkrisadminkrisadminkrisadminkrisadmin
-${LONG_PASSWORD}    Carwash#1Carwash#1Carwash#1Carwash#1Carwash#1Carwash#1
-${GENERIC_FAILED_MESSAGE_TEXT}    Failed
+${INVALID_PASSWORD}    Invalid#123
+${INVALID_PASSWORD_FOR_VALID_USER}    WrongPassword#1
+${WRONG_USERNAME}    wronguser
+${GENERIC_FAILED_MESSAGE}    Failed
 
 *** Keywords ***
 Enter User Name Textbox
