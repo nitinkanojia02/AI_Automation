@@ -26,7 +26,7 @@ from scripts.generate_manual_tests_json import (
     validate_config as validate_manual_config,
 )
 from scripts.workflow_knowledge import save_workflow_knowledge, build_workflow_knowledge_context, discover_relevant_workflow_knowledge
-from scripts.artifact_reuse import analyze_reuse_conflicts, normalize_name_tokens
+from scripts.artifact_reuse import analyze_keyword_artifact_reuse, analyze_reuse_conflicts, normalize_name_tokens
 from scripts.generate_robot_from_manual import (
     build_manual_refiner_prompt,
     build_manual_review_prompt,
@@ -1419,7 +1419,8 @@ def build_keyword_generation_prompt(
         for item in approved_manual_tests
         if isinstance(item, dict) and clean_text(str(item.get("expectedResult", "")))
     })
-    keyword_reuse_analysis = analyze_reuse_conflicts(existing_resource_content or "", str(get_resource_path(approved_elements[0].get("pageName", "") or workflow.get("pages", [{}])[0].get("name", "page")).relative_to(BASE_DIR)).replace("\\", "/") if (approved_elements or workflow.get("pages")) and get_resource_path(approved_elements[0].get("pageName", "") or workflow.get("pages", [{}])[0].get("name", "page")).exists() else "")
+    page_name_for_keywords = approved_elements[0].get("pageName", "") or workflow.get("pages", [{}])[0].get("name", "page") if (approved_elements or workflow.get("pages")) else "page"
+    keyword_reuse_analysis = analyze_keyword_artifact_reuse(existing_keywords, page_name_for_keywords)
     payload = {
         "workflow": clean_workflow_for_prompting(workflow),
         "approved_elements": approved_elements,
@@ -1434,6 +1435,7 @@ def build_keyword_generation_prompt(
         "retrieved_common_keyword_names": common_keyword_names,
         "retrieved_common_variable_names": common_variable_names,
         "reuse_analysis": keyword_reuse_analysis,
+        "keyword_reuse_analysis": keyword_reuse_analysis,
     }
     return (
         "You are AI Layer K1: a Robot Framework page-keyword designer in a staged AI automation framework.\n"
@@ -1488,7 +1490,8 @@ def build_keyword_review_prompt(
     common_resource_context: list[dict] | None = None,
 ) -> str:
     common_resource_context = common_resource_context or []
-    reuse_analysis = analyze_reuse_conflicts(existing_page_resource or "", str(get_resource_path(approved_elements[0].get("pageName", "") or workflow.get("pages", [{}])[0].get("name", "page")).relative_to(BASE_DIR)).replace("\\", "/") if (approved_elements or workflow.get("pages")) and get_resource_path(approved_elements[0].get("pageName", "") or workflow.get("pages", [{}])[0].get("name", "page")).exists() else "")
+    page_name_for_keywords = approved_elements[0].get("pageName", "") or workflow.get("pages", [{}])[0].get("name", "page") if (approved_elements or workflow.get("pages")) else "page"
+    keyword_reuse_analysis = analyze_keyword_artifact_reuse(candidate_keywords, page_name_for_keywords)
     payload = {
         "workflow": clean_workflow_for_prompting(workflow),
         "approved_elements": approved_elements,
@@ -1496,7 +1499,8 @@ def build_keyword_review_prompt(
         "candidate_keywords": candidate_keywords,
         "existing_page_resource": existing_page_resource,
         "common_resource_context": common_resource_context,
-        "reuse_analysis": reuse_analysis,
+        "reuse_analysis": keyword_reuse_analysis,
+        "keyword_reuse_analysis": keyword_reuse_analysis,
         "review_goals": [
             "Preserve approved semantic keyword names and target-element grounding.",
             "Improve implementation quality using dynamic common/shared helper discovery rather than hardcoded mappings.",
@@ -1652,11 +1656,10 @@ def review_and_refine_page_elements(workflow: dict, review_data: dict) -> tuple[
 
 def validate_reviewed_keywords_against_existing_resources(keywords: list[dict], page_name: str) -> tuple[bool, str]:
     errors: list[str] = []
+    warnings: list[str] = []
     seen_names: set[str] = set()
     seen_signatures: set[str] = set()
-    page_file = str(get_resource_path(page_name).relative_to(BASE_DIR)).replace("\\", "/")
 
-    synthetic_resource_lines = ["*** Keywords ***"]
     for keyword in keywords:
         name = clean_text(str(keyword.get("keywordName", "")))
         if not name:
@@ -1665,9 +1668,6 @@ def validate_reviewed_keywords_against_existing_resources(keywords: list[dict], 
         if lowered in seen_names:
             errors.append(f"Duplicate reviewed keyword name: {name}")
         seen_names.add(lowered)
-        synthetic_resource_lines.append(name)
-        for line in keyword.get("implementation", []) or []:
-            synthetic_resource_lines.append(f"    {str(line).rstrip()}")
 
         normalized_signature = normalize_name_tokens(name) + "::" + "|".join(
             clean_text(line).lower() for line in (keyword.get("implementation", []) or []) if clean_text(line)
@@ -1676,14 +1676,23 @@ def validate_reviewed_keywords_against_existing_resources(keywords: list[dict], 
             errors.append(f"Duplicate reviewed keyword implementation signature inside artifact: {name}")
         seen_signatures.add(normalized_signature)
 
-    reuse_analysis = analyze_reuse_conflicts("\n".join(synthetic_resource_lines) + "\n", page_file)
-    if reuse_analysis.get("summary", {}).get("duplicateKeywordCount", 0) > 0:
-        conflict_names = sorted({item.get("candidateName", "") for item in reuse_analysis.get("duplicateKeywords", []) if item.get("candidateName")})
+    keyword_reuse_analysis = analyze_keyword_artifact_reuse(keywords, page_name)
+    conflict_analysis = keyword_reuse_analysis.get("conflictAnalysis", {})
+    if conflict_analysis.get("summary", {}).get("duplicateKeywordCount", 0) > 0:
+        conflict_names = sorted({item.get("candidateName", "") for item in conflict_analysis.get("duplicateKeywords", []) if item.get("candidateName")})
         if conflict_names:
             errors.append("Reviewed keywords duplicate approved existing keyword capability: " + ", ".join(conflict_names))
+    if keyword_reuse_analysis.get("summary", {}).get("ownershipConflictCount", 0) > 0:
+        warnings.append("Reviewed keywords indicate overlapping ownership with approved existing resource capability and should be refined toward reuse.")
+    if keyword_reuse_analysis.get("summary", {}).get("commonReuseOpportunityCount", 0) > 0:
+        warnings.append("Reviewed keywords still use low-level or shared/common-overlapping patterns where approved common helper reuse is available.")
+    if keyword_reuse_analysis.get("summary", {}).get("lowValueWrapperCount", 0) > 0:
+        warnings.append("Reviewed keywords still contain thin low-value wrappers that may not provide meaningful reusable page abstraction.")
 
-    if errors:
-        return False, "\n".join(f"- {error}" for error in errors)
+    blocking_warning_count = len(warnings)
+    if errors or blocking_warning_count > 0:
+        messages = [f"- {error}" for error in errors] + [f"- {warning}" for warning in warnings]
+        return False, "\n".join(messages)
     return True, ""
 
 
@@ -4365,16 +4374,20 @@ async def save_keyword_review(request: Request, workflow_name: str):
         }, status_code=400)
 
     keywords_valid, keyword_warnings, normalized_keywords = validate_keyword_grounding(workflow, approved_keywords)
-    if not keywords_valid:
+    keyword_reuse_validation_ok, keyword_reuse_validation_message = validate_reviewed_keywords_against_existing_resources(normalized_keywords, get_keyword_review_data(workflow)["page_name"])
+    if not keywords_valid or not keyword_reuse_validation_ok:
         keyword_data = get_keyword_review_data(workflow)
+        combined_warnings = list(keyword_warnings)
+        if keyword_reuse_validation_message:
+            combined_warnings.extend([line.lstrip("- ").strip() for line in keyword_reuse_validation_message.splitlines() if clean_text(line)])
         return render_template(request, "keyword_review.html", {
             "workflow_name": workflow_name,
             "page_name": keyword_data["page_name"],
             "keywords": normalized_keywords or keyword_data["keywords"],
             "review_summary": keyword_data.get("review_summary"),
             "source_artifact": keyword_data.get("source_artifact", "raw"),
-            "error_message": "Keyword review contains non-approved target element references. Please correct the highlighted keywords before continuing.",
-            "grounding_warnings": keyword_warnings,
+            "error_message": "Keyword review contains grounding or reuse conflicts. Please resolve the highlighted issues before continuing.",
+            "grounding_warnings": combined_warnings,
         }, status_code=400)
 
     save_keywords_for_workflow(workflow, normalized_keywords)

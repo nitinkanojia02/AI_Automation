@@ -42,8 +42,9 @@ Framework expectations:
 - Do not rely on hardcoded page-specific assumptions; infer only from the provided context
 - Prefer resource design that a tester or automation engineer could reuse across multiple scenarios on the same page
 - Prefer generic, future-ready framework design that stays valid across applications, workflows, and test types
-- Treat existing approved POM resources, shared resources, and workflow knowledge as authoritative reusable context before accepting any net-new variable or keyword
+- Treat existing approved POM resources, shared resources, workflow knowledge, and reviewed keyword lineage as authoritative reusable context before accepting any net-new variable or keyword
 - Use retrieval-first review logic: identify reusable approved capabilities first, identify only true gaps second, and minimize net-new ownership
+- Treat keyword_reuse_analysis and reuse_analysis as mandatory duplicate-risk and ownership-risk context during review
 - Flag unsupported or invented Robot Framework/SeleniumLibrary/shared-resource APIs as major quality issues
 - Flag noisy derived variables when built-ins or inline composition would be sufficient
 - Flag duplicate variable ownership, duplicate keyword capability, and overlapping ownership when the same locator or same normalized keyword behavior already exists in approved resource context

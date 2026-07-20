@@ -362,6 +362,93 @@ def analyze_manual_test_reuse(manual_data: Dict[str, Any], workflow_context: Dic
     }
 
 
+def analyze_keyword_artifact_reuse(keywords: List[Dict[str, Any]], page_name: str = "") -> Dict[str, Any]:
+    candidate_lines = ["*** Keywords ***"]
+    candidate_keyword_names: List[str] = []
+    for keyword in keywords:
+        if not isinstance(keyword, dict):
+            continue
+        keyword_name = clean_text(keyword.get("keywordName", ""))
+        if not keyword_name:
+            continue
+        candidate_keyword_names.append(keyword_name)
+        candidate_lines.append(keyword_name)
+        arguments = keyword.get("arguments", []) or []
+        if isinstance(arguments, str):
+            arguments = [part.strip() for part in arguments.split(",") if clean_text(part)]
+        if arguments:
+            candidate_lines.append("    [Arguments]    " + "    ".join(f"${{{clean_text(arg).replace('${', '').replace('}', '')}}}" for arg in arguments if clean_text(arg)))
+        implementation = keyword.get("implementation", []) or []
+        if isinstance(implementation, str):
+            implementation = [line.rstrip() for line in implementation.splitlines() if clean_text(line)]
+        for line in implementation:
+            if clean_text(line):
+                candidate_lines.append(f"    {str(line).rstrip()}")
+
+    candidate_file = ""
+    if page_name:
+        candidate_path = POM_DIR / page_name / f"{page_name}.resource"
+        if candidate_path.exists():
+            candidate_file = str(candidate_path.relative_to(BASE_DIR)).replace("\\", "/")
+
+    conflict_analysis = analyze_reuse_conflicts("\n".join(candidate_lines) + "\n", candidate_file)
+
+    existing_resources = collect_existing_resource_context(include_common=True)
+    common_keyword_names = {
+        clean_text(keyword.get("name", "")).lower()
+        for resource in existing_resources
+        if clean_text(resource.get("type", "")) == "common"
+        for keyword in resource.get("keywords", [])
+        if clean_text(keyword.get("name", ""))
+    }
+
+    low_value_wrapper_keywords: List[Dict[str, Any]] = []
+    common_reuse_opportunities: List[Dict[str, Any]] = []
+    for keyword in keywords:
+        if not isinstance(keyword, dict):
+            continue
+        keyword_name = clean_text(keyword.get("keywordName", ""))
+        implementation = keyword.get("implementation", []) or []
+        if isinstance(implementation, str):
+            implementation = [line.rstrip() for line in implementation.splitlines() if clean_text(line)]
+        normalized_lines = [clean_text(line) for line in implementation if clean_text(line)]
+        normalized_name = keyword_name.lower()
+        if len(normalized_lines) <= 2 and any(
+            re.match(r"^(Click Element|Input Text|Input Password|Wait Until Element Is Visible|Wait Until Page Contains Element)\b", line, flags=re.IGNORECASE)
+            for line in normalized_lines
+        ):
+            low_value_wrapper_keywords.append({
+                "keywordName": keyword_name,
+                "reason": "Keyword is a thin low-level wrapper and may not provide enough reusable page-level abstraction.",
+            })
+        if common_keyword_names and any(
+            re.match(r"^(Click Element|Input Text|Input Password|Wait Until Element Is Visible|Wait Until Page Contains Element)\b", line, flags=re.IGNORECASE)
+            for line in normalized_lines
+        ):
+            common_reuse_opportunities.append({
+                "keywordName": keyword_name,
+                "reason": "Implementation uses low-level steps even though shared/common helpers exist in approved resource context.",
+            })
+        if normalized_name in common_keyword_names:
+            common_reuse_opportunities.append({
+                "keywordName": keyword_name,
+                "reason": "Keyword name overlaps an approved shared/common helper and should not be redefined at page level.",
+            })
+
+    return {
+        "conflictAnalysis": conflict_analysis,
+        "lowValueWrapperKeywords": low_value_wrapper_keywords,
+        "commonReuseOpportunities": common_reuse_opportunities,
+        "summary": {
+            "duplicateKeywordCount": conflict_analysis.get("summary", {}).get("duplicateKeywordCount", 0),
+            "duplicateVariableCount": conflict_analysis.get("summary", {}).get("duplicateVariableCount", 0),
+            "ownershipConflictCount": conflict_analysis.get("summary", {}).get("ownershipConflictCount", 0),
+            "lowValueWrapperCount": len(low_value_wrapper_keywords),
+            "commonReuseOpportunityCount": len(common_reuse_opportunities),
+        },
+    }
+
+
 def analyze_robot_suite_reuse(robot_content: str, resource_context: List[Dict[str, Any]]) -> Dict[str, Any]:
     approved_variable_values: Dict[str, List[Dict[str, str]]] = {}
     approved_keywords: Dict[str, List[Dict[str, str]]] = {}
