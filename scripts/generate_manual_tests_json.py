@@ -944,12 +944,21 @@ def normalize_manual_test(generated: Dict[str, Any], workflow_input: Dict[str, A
     else:
         resolved_feature = workflow_name
 
+    normalized_resource_files: list[str] = []
+    seen_resource_files: set[str] = set()
+    for item in resource_files:
+        normalized_item = str(item).replace("\\", "/").strip()
+        if not normalized_item or normalized_item in seen_resource_files:
+            continue
+        seen_resource_files.add(normalized_item)
+        normalized_resource_files.append(normalized_item)
+
     return {
         "workflowName": workflow_name,
         "feature": resolved_feature,
         "applicationCode": workflow_input.get("applicationCode") or generated.get("applicationCode", ""),
         "testIdentifierPrefix": explicit_prefix,
-        "resourceFiles": [str(x).strip() for x in resource_files if str(x).strip()],
+        "resourceFiles": normalized_resource_files,
         "preconditions": preconditions,
         "testCases": [
             {

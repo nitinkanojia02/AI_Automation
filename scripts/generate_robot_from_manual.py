@@ -1050,9 +1050,15 @@ def promote_repeated_setup_teardown(content: str) -> str:
 
     def extract_executable_steps(test_body: list[str]) -> list[tuple[int, str]]:
         steps: list[tuple[int, str]] = []
+        control_settings = {"[tags]", "[setup]", "[teardown]", "[documentation]", "[timeout]"}
         for idx, line in enumerate(test_body):
             stripped = line.strip()
-            if not stripped or stripped.startswith("["):
+            if not stripped:
+                continue
+            if stripped.startswith("["):
+                setting_token = clean_text(stripped.split("    ")[0]).lower()
+                if setting_token in control_settings:
+                    continue
                 continue
             if not line.startswith((" ", "\t")):
                 continue

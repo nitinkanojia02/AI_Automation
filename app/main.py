@@ -1662,6 +1662,29 @@ def validate_reviewed_keywords_against_existing_resources(keywords: list[dict], 
     seen_names: set[str] = set()
     seen_signatures: set[str] = set()
 
+    approved_elements = load_approved_elements_for_workflow({"pages": [{"name": page_name}]})
+    canonical_variables_by_element = {
+        clean_text(str(item.get("approvedName", ""))): to_robot_variable_name(clean_text(str(item.get("approvedName", ""))))
+        for item in approved_elements
+        if clean_text(str(item.get("approvedName", "")))
+    }
+    approved_locator_variables = {name.upper() for name in canonical_variables_by_element.values() if name}
+
+    resource_path = get_resource_path(page_name)
+    existing_resource_variables: set[str] = set()
+    if resource_path.exists():
+        try:
+            parsed_resource = parse_resource_file(resource_path)
+            existing_resource_variables = {
+                clean_text(str(item.get("name", ""))).upper()
+                for item in parsed_resource.get("variables", [])
+                if clean_text(str(item.get("name", "")))
+            }
+        except Exception:
+            existing_resource_variables = set()
+
+    allowed_argument_names = {"TEXT", "PASSWORD", "VALUE", "URL", "TIMEOUT", "EXPECTED", "MESSAGE"}
+
     for keyword in keywords:
         name = clean_text(str(keyword.get("keywordName", "")))
         if not name:
@@ -1677,6 +1700,32 @@ def validate_reviewed_keywords_against_existing_resources(keywords: list[dict], 
         if normalized_signature in seen_signatures:
             errors.append(f"Duplicate reviewed keyword implementation signature inside artifact: {name}")
         seen_signatures.add(normalized_signature)
+
+        target_element = clean_text(str(keyword.get("targetElement", "")))
+        expected_target_variable = canonical_variables_by_element.get(target_element, "")
+        arguments = {
+            clean_text(str(arg)).replace("${", "").replace("}", "").upper()
+            for arg in (keyword.get("arguments", []) or [])
+            if clean_text(str(arg))
+        }
+        implementation_lines = [clean_text(str(line)) for line in (keyword.get("implementation", []) or []) if clean_text(str(line))]
+        referenced_variables = {
+            ref.upper()
+            for line in implementation_lines
+            for ref in re.findall(r"\$\{([A-Z0-9_]+)\}", line)
+        }
+
+        for ref in sorted(referenced_variables):
+            if ref in arguments or ref in allowed_argument_names:
+                continue
+            if ref in approved_locator_variables or ref in existing_resource_variables:
+                continue
+            errors.append(f"Reviewed keyword '{name}' references unknown variable '${{{ref}}}' in its implementation")
+
+        if expected_target_variable and referenced_variables and expected_target_variable not in referenced_variables and lowered.startswith(("enter ", "click ", "verify ", "select ")):
+            warnings.append(
+                f"Reviewed keyword '{name}' targets '{target_element}' but its implementation does not reference canonical variable '${{{expected_target_variable}}}'"
+            )
 
     keyword_reuse_analysis = analyze_keyword_artifact_reuse(keywords, page_name)
     conflict_analysis = keyword_reuse_analysis.get("conflictAnalysis", {})
