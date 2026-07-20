@@ -888,49 +888,59 @@ def collect_elements(page) -> List[dict]:
 
     return out
 
-def keyword_doc(action: str, label_title: str, role: str) -> str:
-    return f"{action} action for {label_title} ({role}) using page object locator."
-
-def generate_keyword(var_name: str, label: str, role: str) -> str:
+def build_fallback_keyword_name(label: str, role: str) -> str:
     label_title = title_case(label)
-
-    if role in {"button", "link", "radio", "element"}:
-        return f"""Click {label_title}
-    [Documentation]    {keyword_doc("Click", label_title, role)}
-    Wait Until Element Is Visible    ${{{var_name}}}
-    Click Element    ${{{var_name}}}"""
-
-    if role == "textbox":
-        return f"""Enter {label_title}
-    [Documentation]    {keyword_doc("Enter text", label_title, role)}
-    [Arguments]    ${{text}}
-    Wait Until Element Is Visible    ${{{var_name}}}
-    Input Text    ${{{var_name}}}    ${{text}}"""
-
-    if role == "password":
-        return f"""Enter {label_title}
-    [Documentation]    {keyword_doc("Enter password", label_title, role)}
-    [Arguments]    ${{password}}
-    Wait Until Element Is Visible    ${{{var_name}}}
-    Input Password    ${{{var_name}}}    ${{password}}"""
-
     if role == "dropdown":
-        return f"""Select {label_title}
-    [Documentation]    {keyword_doc("Select dropdown value", label_title, role)}
-    [Arguments]    ${{value}}
-    Wait Until Element Is Visible    ${{{var_name}}}
-    Select From List By Label    ${{{var_name}}}    ${{value}}"""
-
+        return f"Select {label_title}"
     if role == "checkbox":
-        return f"""Select {label_title}
-    [Documentation]    {keyword_doc("Select checkbox", label_title, role)}
-    Wait Until Element Is Visible    ${{{var_name}}}
-    Select Checkbox    ${{{var_name}}}"""
+        return f"Set {label_title}"
+    if role in {"textbox", "password"}:
+        return f"Enter {label_title}"
+    if role in {"button", "link", "radio"}:
+        return label_title if clean_text(label_title).lower().startswith(("click ", "open ", "select ")) else f"Click {label_title}"
+    return label_title or "Interact With Element"
 
-    return f"""Click {label_title}
-    [Documentation]    {keyword_doc("Click", label_title, role)}
-    Wait Until Element Is Visible    ${{{var_name}}}
-    Click Element    ${{{var_name}}}"""
+
+def build_fallback_keyword_arguments(role: str) -> List[str]:
+    if role == "textbox":
+        return ["${text}"]
+    if role == "password":
+        return ["${password}"]
+    if role == "dropdown":
+        return ["${value}"]
+    return []
+
+
+def build_fallback_keyword_steps(var_name: str, role: str) -> List[str]:
+    steps = [f"Wait Until Element Is Visible    ${{{var_name}}}"]
+    if role in {"button", "link", "radio", "element"}:
+        steps.append(f"Click Element    ${{{var_name}}}")
+        return steps
+    if role == "textbox":
+        steps.append(f"Input Text    ${{{var_name}}}    ${{text}}")
+        return steps
+    if role == "password":
+        steps.append(f"Input Password    ${{{var_name}}}    ${{password}}")
+        return steps
+    if role == "dropdown":
+        steps.append(f"Select From List By Label    ${{{var_name}}}    ${{value}}")
+        return steps
+    if role == "checkbox":
+        steps.append(f"Select Checkbox    ${{{var_name}}}")
+        return steps
+    steps.append(f"Click Element    ${{{var_name}}}")
+    return steps
+
+
+def generate_fallback_keyword_block(var_name: str, label: str, role: str) -> dict:
+    keyword_name = build_fallback_keyword_name(label, role)
+    return {
+        "keywordName": keyword_name,
+        "arguments": build_fallback_keyword_arguments(role),
+        "implementation": build_fallback_keyword_steps(var_name, role),
+        "approved": True,
+        "origin": "generator_fallback",
+    }
 
 
 def load_reviewed_keyword_artifact(page_name: str, metadata_dir: Path) -> dict:
@@ -991,7 +1001,8 @@ def normalize_reviewed_keyword_block(keyword: dict) -> str:
 
 
 def generate_resource(url: str, elements: List[dict], page_name: str = "", metadata_dir: Path | None = None) -> str:
-    used_names, variables, keywords = set(), [], []
+    used_names, variables = set(), []
+    fallback_keyword_blocks: List[dict] = []
 
     for item in elements:
         if isinstance(item, dict) and {"name", "type", "locator"}.issubset(item.keys()):
@@ -1005,8 +1016,9 @@ def generate_resource(url: str, elements: List[dict], page_name: str = "", metad
         var_name = make_var_name(label, role, used_names)
 
         variables.append(f"${{{var_name}}}    {locator}")
-        keywords.append(generate_keyword(var_name, label, role))
+        fallback_keyword_blocks.append(generate_fallback_keyword_block(var_name, label, role))
 
+    reviewed_keyword_blocks: List[dict] = []
     reviewed_keywords: List[str] = []
     if page_name and metadata_dir is not None:
         reviewed_artifact = load_reviewed_keyword_artifact(page_name, metadata_dir)
@@ -1017,6 +1029,7 @@ def generate_resource(url: str, elements: List[dict], page_name: str = "", metad
                     continue
                 if item.get("approved") is False:
                     continue
+                reviewed_keyword_blocks.append(item)
                 block = normalize_reviewed_keyword_block(item)
                 if block:
                     reviewed_keywords.append(block)
@@ -1029,9 +1042,27 @@ Resource    ../../resources/common_keywords.resource"""
         variables_block += "\n" + "\n".join(variables)
 
     keywords_block = "*** Keywords ***"
-    final_keywords = reviewed_keywords or keywords
+    final_keywords = reviewed_keywords
+    if not final_keywords:
+        final_keywords = [normalize_reviewed_keyword_block(item) for item in fallback_keyword_blocks if normalize_reviewed_keyword_block(item)]
     if final_keywords:
         keywords_block += "\n" + "\n\n".join(final_keywords)
+
+    if reviewed_keyword_blocks and fallback_keyword_blocks:
+        reviewed_names = {clean_text(str(item.get("keywordName", ""))).lower() for item in reviewed_keyword_blocks if clean_text(str(item.get("keywordName", "")))}
+        fallback_names = {clean_text(str(item.get("keywordName", ""))).lower() for item in fallback_keyword_blocks if clean_text(str(item.get("keywordName", "")))}
+        missing_reviewed_names = sorted(name for name in reviewed_names if name and name not in {clean_text(block.splitlines()[0]).lower() for block in final_keywords if clean_text(block)})
+        if missing_reviewed_names:
+            logger.warning(
+                "Reviewed approved keyword names were not fully reflected in generated resource for %s: %s",
+                page_name,
+                ", ".join(missing_reviewed_names[:10]),
+            )
+        if reviewed_names and reviewed_names != fallback_names:
+            logger.info(
+                "Fallback element-derived keyword names differ from reviewed approved names for %s; reviewed names were preferred during resource generation.",
+                page_name,
+            )
 
     return f"{settings_block}\n\n{variables_block}\n\n{keywords_block}\n"
 
@@ -1200,15 +1231,7 @@ def get_page_resource_variables(page_name: str) -> List[dict]:
 def resolve_known_element_locator(page_name: str, element_name: str) -> str:
     normalized_page = slugify(page_name)
     normalized_element = slugify(element_name)
-    aliases = {
-        "profile_button": ["profile_button", "person_button", "profile", "person", "user_button", "account_button", "profile_icon", "person_icon"],
-        "person_button": ["person_button", "profile_button", "person", "profile", "user_button", "account_button", "person_icon", "profile_icon"],
-        "login_button": ["login_button", "sign_in_button", "signin_button", "submit_login_button"],
-    }
-    candidate_names = aliases.get(normalized_element, [normalized_element])
-    candidate_tokens = set()
-    for candidate in candidate_names:
-        candidate_tokens.update(token for token in re.split(r"[_\s]+", candidate) if token)
+    element_tokens = {token for token in re.split(r"[_\s]+", normalized_element) if token}
 
     best_locator = ""
     best_score = -1
@@ -1218,14 +1241,14 @@ def resolve_known_element_locator(page_name: str, element_name: str) -> str:
         slug_name = slugify(variable_name)
         if not locator:
             continue
-        if slug_name in candidate_names:
+        if slug_name == normalized_element:
             return locator
         score = 0
         variable_tokens = {token for token in re.split(r"[_\s]+", slug_name) if token}
-        overlap = len(candidate_tokens & variable_tokens)
+        overlap = len(element_tokens & variable_tokens)
         if overlap:
             score += overlap
-        if any(candidate in slug_name for candidate in candidate_names):
+        if normalized_element and normalized_element in slug_name:
             score += 2
         if score > best_score:
             best_score = score
