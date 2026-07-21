@@ -22,62 +22,40 @@ Open Home Page
     Verify Home Page Loaded In Guest State
 
 Verify Home Page Loaded In Guest State
-    [Documentation]    Verify the Home page is loaded in guest state and primary navigation controls are interactive.
+    [Documentation]    Verify the Home page is loaded in guest state and all approved navigation controls are ready for interaction.
     Wait Until Location Contains    ${PAGE_URL}
-    Verify Person Profile Button Is Visible And Enabled
-    Verify Back Button Is Visible And Enabled
-    Verify Notification Button Is Visible And Enabled
-    Verify Home Button Is Visible And Enabled
-    Verify Customer Signup Button Is Visible And Enabled
-    Verify Clean Survey Button Is Visible And Enabled
-    Verify Site Survey Button Is Visible And Enabled
-
-Verify All Home Navigation Buttons Are Visible And Enabled
-    [Documentation]    Verify all approved Home page navigation buttons are visible and enabled.
-    Verify Home Page Loaded In Guest State
-
-Verify Person Profile Button Is Visible And Enabled
-    [Documentation]    Verify the Person/Profile button is visible and enabled.
     Wait For Element To Be Ready    ${PERSON_PROFILE_BUTTON}
-
-Verify Back Button Is Visible And Enabled
-    [Documentation]    Verify the Back button is visible and enabled.
     Wait For Element To Be Ready    ${BACK_BUTTON}
-
-Verify Notification Button Is Visible And Enabled
-    [Documentation]    Verify the Notification button is visible and enabled.
     Wait For Element To Be Ready    ${NOTIFICATION_BUTTON}
-
-Verify Home Button Is Visible And Enabled
-    [Documentation]    Verify the Home button is visible and enabled.
     Wait For Element To Be Ready    ${HOME_BUTTON}
-
-Verify Customer Signup Button Is Visible And Enabled
-    [Documentation]    Verify the Customer signup button is visible and enabled.
     Wait For Element To Be Ready    ${CUSTOMER_SIGNUP_BUTTON}
-
-Verify Clean Survey Button Is Visible And Enabled
-    [Documentation]    Verify the Clean survey button is visible and enabled.
     Wait For Element To Be Ready    ${CLEAN_SURVEY_BUTTON}
+    Wait For Element To Be Ready    ${SITE_SURVEY_BUTTON}
 
-Verify Site Survey Button Is Visible And Enabled
-    [Documentation]    Verify the Site survey button is visible and enabled.
+Verify All Home Navigation Buttons Are Enabled
+    [Documentation]    Verify all approved Home page navigation buttons are enabled and interactive.
+    Wait For Element To Be Ready    ${PERSON_PROFILE_BUTTON}
+    Wait For Element To Be Ready    ${BACK_BUTTON}
+    Wait For Element To Be Ready    ${NOTIFICATION_BUTTON}
+    Wait For Element To Be Ready    ${HOME_BUTTON}
+    Wait For Element To Be Ready    ${CUSTOMER_SIGNUP_BUTTON}
+    Wait For Element To Be Ready    ${CLEAN_SURVEY_BUTTON}
     Wait For Element To Be Ready    ${SITE_SURVEY_BUTTON}
 
 Verify Navigation To Login Page
-    [Documentation]    Verify navigation to the login page.
+    [Documentation]    Verify navigation to the login page URL.
     Wait Until Location Contains    ${EXPECTED_LOGIN_URL}
 
 Verify Navigation To Customer Search Page
-    [Documentation]    Verify navigation to the customer-search page.
+    [Documentation]    Verify navigation to the customer-search workflow URL.
     Wait Until Location Contains    ${EXPECTED_CUSTOMER_SEARCH_URL_FRAGMENT}
 
 Verify Navigation To Vehicle Survey Page
-    [Documentation]    Verify navigation to the vehicle-survey page.
+    [Documentation]    Verify navigation to the vehicle-survey workflow URL.
     Wait Until Location Contains    ${EXPECTED_VEHICLE_SURVEY_URL_FRAGMENT}
 
 Verify Navigation To Site Survey Page
-    [Documentation]    Verify navigation to the survey page.
+    [Documentation]    Verify navigation to the survey workflow URL.
     Wait Until Location Contains    ${EXPECTED_SITE_SURVEY_URL_FRAGMENT}
 
 Click Auto Person Btn Button

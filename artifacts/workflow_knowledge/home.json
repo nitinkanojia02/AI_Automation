@@ -6,7 +6,7 @@
   "applicationCode": "WT",
   "testIdentifierPrefix": "HOME",
   "status": "approved_artifact_memory",
-  "generatedAt": "2026-07-21T11:18:52.738831+00:00",
+  "generatedAt": "2026-07-21T11:29:22.351993+00:00",
   "businessContext": {
     "userStory": [
       "Home Feature - Guest State",
@@ -221,14 +221,7 @@
         "keywordNames": [
           "Open Home Page",
           "Verify Home Page Loaded In Guest State",
-          "Verify All Home Navigation Buttons Are Visible And Enabled",
-          "Verify Person Profile Button Is Visible And Enabled",
-          "Verify Back Button Is Visible And Enabled",
-          "Verify Notification Button Is Visible And Enabled",
-          "Verify Home Button Is Visible And Enabled",
-          "Verify Customer Signup Button Is Visible And Enabled",
-          "Verify Clean Survey Button Is Visible And Enabled",
-          "Verify Site Survey Button Is Visible And Enabled",
+          "Verify All Home Navigation Buttons Are Enabled",
           "Verify Navigation To Login Page",
           "Verify Navigation To Customer Search Page",
           "Verify Navigation To Vehicle Survey Page",
@@ -281,14 +274,7 @@
         "keywords": [
           "Open Home Page",
           "Verify Home Page Loaded In Guest State",
-          "Verify All Home Navigation Buttons Are Visible And Enabled",
-          "Verify Person Profile Button Is Visible And Enabled",
-          "Verify Back Button Is Visible And Enabled",
-          "Verify Notification Button Is Visible And Enabled",
-          "Verify Home Button Is Visible And Enabled",
-          "Verify Customer Signup Button Is Visible And Enabled",
-          "Verify Clean Survey Button Is Visible And Enabled",
-          "Verify Site Survey Button Is Visible And Enabled",
+          "Verify All Home Navigation Buttons Are Enabled",
           "Verify Navigation To Login Page",
           "Verify Navigation To Customer Search Page",
           "Verify Navigation To Vehicle Survey Page",
@@ -470,170 +456,23 @@
           ]
         },
         {
-          "candidateName": "Verify All Home Navigation Buttons Are Visible And Enabled",
+          "candidateName": "Verify All Home Navigation Buttons Are Enabled",
           "sameNameOwners": [
             {
               "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify All Home Navigation Buttons Are Visible And Enabled"
+              "name": "Verify All Home Navigation Buttons Are Enabled"
             }
           ],
           "sameBodyOwners": [
             {
               "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify All Home Navigation Buttons Are Visible And Enabled"
+              "name": "Verify All Home Navigation Buttons Are Enabled"
             }
           ],
           "sameSignatureOwners": [
             {
               "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify All Home Navigation Buttons Are Visible And Enabled"
-            }
-          ]
-        },
-        {
-          "candidateName": "Verify Person Profile Button Is Visible And Enabled",
-          "sameNameOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify Person Profile Button Is Visible And Enabled"
-            }
-          ],
-          "sameBodyOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify Person Profile Button Is Visible And Enabled"
-            }
-          ],
-          "sameSignatureOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify Person Profile Button Is Visible And Enabled"
-            }
-          ]
-        },
-        {
-          "candidateName": "Verify Back Button Is Visible And Enabled",
-          "sameNameOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify Back Button Is Visible And Enabled"
-            }
-          ],
-          "sameBodyOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify Back Button Is Visible And Enabled"
-            }
-          ],
-          "sameSignatureOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify Back Button Is Visible And Enabled"
-            }
-          ]
-        },
-        {
-          "candidateName": "Verify Notification Button Is Visible And Enabled",
-          "sameNameOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify Notification Button Is Visible And Enabled"
-            }
-          ],
-          "sameBodyOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify Notification Button Is Visible And Enabled"
-            }
-          ],
-          "sameSignatureOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify Notification Button Is Visible And Enabled"
-            }
-          ]
-        },
-        {
-          "candidateName": "Verify Home Button Is Visible And Enabled",
-          "sameNameOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify Home Button Is Visible And Enabled"
-            }
-          ],
-          "sameBodyOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify Home Button Is Visible And Enabled"
-            }
-          ],
-          "sameSignatureOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify Home Button Is Visible And Enabled"
-            }
-          ]
-        },
-        {
-          "candidateName": "Verify Customer Signup Button Is Visible And Enabled",
-          "sameNameOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify Customer Signup Button Is Visible And Enabled"
-            }
-          ],
-          "sameBodyOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify Customer Signup Button Is Visible And Enabled"
-            }
-          ],
-          "sameSignatureOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify Customer Signup Button Is Visible And Enabled"
-            }
-          ]
-        },
-        {
-          "candidateName": "Verify Clean Survey Button Is Visible And Enabled",
-          "sameNameOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify Clean Survey Button Is Visible And Enabled"
-            }
-          ],
-          "sameBodyOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify Clean Survey Button Is Visible And Enabled"
-            }
-          ],
-          "sameSignatureOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify Clean Survey Button Is Visible And Enabled"
-            }
-          ]
-        },
-        {
-          "candidateName": "Verify Site Survey Button Is Visible And Enabled",
-          "sameNameOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify Site Survey Button Is Visible And Enabled"
-            }
-          ],
-          "sameBodyOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify Site Survey Button Is Visible And Enabled"
-            }
-          ],
-          "sameSignatureOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify Site Survey Button Is Visible And Enabled"
+              "name": "Verify All Home Navigation Buttons Are Enabled"
             }
           ]
         },
@@ -985,66 +824,10 @@
           "reason": "Same keyword name, normalized implementation, or semantic signature already exists in approved resource context."
         },
         {
-          "candidateName": "Verify All Home Navigation Buttons Are Visible And Enabled",
+          "candidateName": "Verify All Home Navigation Buttons Are Enabled",
           "reuseFrom": {
             "resource": "pom_pages/home_page/home_page.resource",
-            "name": "Verify All Home Navigation Buttons Are Visible And Enabled"
-          },
-          "reason": "Same keyword name, normalized implementation, or semantic signature already exists in approved resource context."
-        },
-        {
-          "candidateName": "Verify Person Profile Button Is Visible And Enabled",
-          "reuseFrom": {
-            "resource": "pom_pages/home_page/home_page.resource",
-            "name": "Verify Person Profile Button Is Visible And Enabled"
-          },
-          "reason": "Same keyword name, normalized implementation, or semantic signature already exists in approved resource context."
-        },
-        {
-          "candidateName": "Verify Back Button Is Visible And Enabled",
-          "reuseFrom": {
-            "resource": "pom_pages/home_page/home_page.resource",
-            "name": "Verify Back Button Is Visible And Enabled"
-          },
-          "reason": "Same keyword name, normalized implementation, or semantic signature already exists in approved resource context."
-        },
-        {
-          "candidateName": "Verify Notification Button Is Visible And Enabled",
-          "reuseFrom": {
-            "resource": "pom_pages/home_page/home_page.resource",
-            "name": "Verify Notification Button Is Visible And Enabled"
-          },
-          "reason": "Same keyword name, normalized implementation, or semantic signature already exists in approved resource context."
-        },
-        {
-          "candidateName": "Verify Home Button Is Visible And Enabled",
-          "reuseFrom": {
-            "resource": "pom_pages/home_page/home_page.resource",
-            "name": "Verify Home Button Is Visible And Enabled"
-          },
-          "reason": "Same keyword name, normalized implementation, or semantic signature already exists in approved resource context."
-        },
-        {
-          "candidateName": "Verify Customer Signup Button Is Visible And Enabled",
-          "reuseFrom": {
-            "resource": "pom_pages/home_page/home_page.resource",
-            "name": "Verify Customer Signup Button Is Visible And Enabled"
-          },
-          "reason": "Same keyword name, normalized implementation, or semantic signature already exists in approved resource context."
-        },
-        {
-          "candidateName": "Verify Clean Survey Button Is Visible And Enabled",
-          "reuseFrom": {
-            "resource": "pom_pages/home_page/home_page.resource",
-            "name": "Verify Clean Survey Button Is Visible And Enabled"
-          },
-          "reason": "Same keyword name, normalized implementation, or semantic signature already exists in approved resource context."
-        },
-        {
-          "candidateName": "Verify Site Survey Button Is Visible And Enabled",
-          "reuseFrom": {
-            "resource": "pom_pages/home_page/home_page.resource",
-            "name": "Verify Site Survey Button Is Visible And Enabled"
+            "name": "Verify All Home Navigation Buttons Are Enabled"
           },
           "reason": "Same keyword name, normalized implementation, or semantic signature already exists in approved resource context."
         },
@@ -1255,7 +1038,7 @@
       ],
       "summary": {
         "duplicateVariableCount": 12,
-        "duplicateKeywordCount": 21,
+        "duplicateKeywordCount": 14,
         "ownershipConflictCount": 12
       }
     }
@@ -1310,104 +1093,56 @@
     "approvedScenarios": [
       {
         "id": "HOME_TC_001",
-        "title": "Verify guest user can directly access the Home page using the approved entry URL",
+        "title": "Verify guest user can directly access Home page using the approved entry URL",
         "type": "positive",
-        "expectedResult": "The application loads the Home page successfully in guest state without requiring authentication and the browser URL remains http://localhost/washtabui/home."
-      },
-      {
-        "id": "HOME_TC_002",
-        "title": "Verify Person/Profile button is visible and enabled on the Home page in guest state",
-        "type": "positive",
-        "expectedResult": "The Person/Profile button is visible, enabled, and interactive before user interaction begins."
-      },
-      {
-        "id": "HOME_TC_003",
-        "title": "Verify Back button is visible and enabled on the Home page in guest state",
-        "type": "positive",
-        "expectedResult": "The Back button is visible, enabled, and interactive before user interaction begins."
-      },
-      {
-        "id": "HOME_TC_004",
-        "title": "Verify Notification button is visible and enabled on the Home page in guest state",
-        "type": "positive",
-        "expectedResult": "The Notification button is visible, enabled, and interactive before user interaction begins."
-      },
-      {
-        "id": "HOME_TC_005",
-        "title": "Verify Home button is visible and enabled on the Home page in guest state",
-        "type": "positive",
-        "expectedResult": "The Home button is visible, enabled, and interactive before user interaction begins."
-      },
-      {
-        "id": "HOME_TC_006",
-        "title": "Verify Customer signup button is visible and enabled on the Home page in guest state",
-        "type": "positive",
-        "expectedResult": "The Customer signup button is visible, enabled, and interactive before user interaction begins."
-      },
-      {
-        "id": "HOME_TC_007",
-        "title": "Verify Clean survey button is visible and enabled on the Home page in guest state",
-        "type": "positive",
-        "expectedResult": "The Clean survey button is visible, enabled, and interactive before user interaction begins."
-      },
-      {
-        "id": "HOME_TC_008",
-        "title": "Verify Site survey button is visible and enabled on the Home page in guest state",
-        "type": "positive",
-        "expectedResult": "The Site survey button is visible, enabled, and interactive before user interaction begins."
+        "expectedResult": "The application loads successfully at http://localhost/washtabui/home and displays the Home page in guest state without prompting for authentication."
       },
       {
         "id": "HOME_TC_009",
-        "title": "Verify selecting the Person/Profile button navigates the guest user to the login page URL",
+        "title": "Verify Person/Profile button navigates guest user to login page URL",
         "type": "positive",
-        "expectedResult": "The application transitions from the Home page to the login page and the browser URL equals /washtabui/login?data=undefined."
+        "expectedResult": "The application navigates from the Home page to the login page and the URL equals /washtabui/login?data=undefined."
       },
       {
         "id": "HOME_TC_010",
-        "title": "Verify selecting the Customer signup button navigates the guest user to the customer-search workflow entry URL",
+        "title": "Verify Customer signup button navigates guest user to customer-search page",
         "type": "positive",
-        "expectedResult": "The application transitions from the Home page to the customer-search workflow and the resulting URL contains /customer-search."
+        "expectedResult": "The application navigates from the Home page to the customer-search workflow and the resulting URL contains /customer-search."
       },
       {
         "id": "HOME_TC_011",
-        "title": "Verify selecting the Clean survey button navigates the guest user to the vehicle-survey workflow entry URL",
+        "title": "Verify Clean survey button navigates guest user to vehicle-survey page",
         "type": "positive",
-        "expectedResult": "The application transitions from the Home page to the vehicle-survey workflow and the resulting URL contains vehicle-survey."
+        "expectedResult": "The application navigates from the Home page to the vehicle survey workflow and the resulting URL contains vehicle-survey."
       },
       {
         "id": "HOME_TC_012",
-        "title": "Verify selecting the Site survey button navigates the guest user to the survey workflow entry URL",
+        "title": "Verify Site survey button navigates guest user to survey page",
         "type": "positive",
-        "expectedResult": "The application transitions from the Home page to the survey workflow and the resulting URL contains survey?data."
+        "expectedResult": "The application navigates from the Home page to the survey workflow and the resulting URL contains survey?data."
+      },
+      {
+        "id": "HOME_TC_018",
+        "title": "Verify all approved Home page navigation controls are enabled before interaction",
+        "type": "positive",
+        "expectedResult": "All approved Home page navigation buttons are enabled, interactive, and available for user action before navigation begins."
       }
     ],
     "validations": [
-      "The application loads the Home page successfully in guest state without requiring authentication and the browser URL remains http://localhost/washtabui/home.",
-      "The Person/Profile button is visible, enabled, and interactive before user interaction begins.",
-      "The Back button is visible, enabled, and interactive before user interaction begins.",
-      "The Notification button is visible, enabled, and interactive before user interaction begins.",
-      "The Home button is visible, enabled, and interactive before user interaction begins.",
-      "The Customer signup button is visible, enabled, and interactive before user interaction begins.",
-      "The Clean survey button is visible, enabled, and interactive before user interaction begins.",
-      "The Site survey button is visible, enabled, and interactive before user interaction begins.",
-      "The application transitions from the Home page to the login page and the browser URL equals /washtabui/login?data=undefined.",
-      "The application transitions from the Home page to the customer-search workflow and the resulting URL contains /customer-search.",
-      "The application transitions from the Home page to the vehicle-survey workflow and the resulting URL contains vehicle-survey.",
-      "The application transitions from the Home page to the survey workflow and the resulting URL contains survey?data."
+      "The application loads successfully at http://localhost/washtabui/home and displays the Home page in guest state without prompting for authentication.",
+      "The application navigates from the Home page to the login page and the URL equals /washtabui/login?data=undefined.",
+      "The application navigates from the Home page to the customer-search workflow and the resulting URL contains /customer-search.",
+      "The application navigates from the Home page to the vehicle survey workflow and the resulting URL contains vehicle-survey.",
+      "The application navigates from the Home page to the survey workflow and the resulting URL contains survey?data.",
+      "All approved Home page navigation buttons are enabled, interactive, and available for user action before navigation begins."
     ],
     "transitions": [
-      "The application loads the Home page successfully in guest state without requiring authentication and the browser URL remains http://localhost/washtabui/home.",
-      "The Person/Profile button is visible, enabled, and interactive before user interaction begins.",
-      "The Back button is visible, enabled, and interactive before user interaction begins.",
-      "The Notification button is visible, enabled, and interactive before user interaction begins.",
-      "The Home button is visible, enabled, and interactive before user interaction begins.",
-      "The Customer signup button is visible, enabled, and interactive before user interaction begins.",
-      "The Clean survey button is visible, enabled, and interactive before user interaction begins.",
-      "The Site survey button is visible, enabled, and interactive before user interaction begins.",
-      "The application transitions from the Home page to the login page and the browser URL equals /washtabui/login?data=undefined.",
-      "The application transitions from the Home page to the customer-search workflow and the resulting URL contains /customer-search.",
-      "The application transitions from the Home page to the vehicle-survey workflow and the resulting URL contains vehicle-survey.",
-      "The application transitions from the Home page to the survey workflow and the resulting URL contains survey?data."
+      "The application loads successfully at http://localhost/washtabui/home and displays the Home page in guest state without prompting for authentication.",
+      "The application navigates from the Home page to the login page and the URL equals /washtabui/login?data=undefined.",
+      "The application navigates from the Home page to the customer-search workflow and the resulting URL contains /customer-search.",
+      "The application navigates from the Home page to the vehicle survey workflow and the resulting URL contains vehicle-survey.",
+      "The application navigates from the Home page to the survey workflow and the resulting URL contains survey?data.",
+      "All approved Home page navigation buttons are enabled, interactive, and available for user action before navigation begins."
     ]
   },
   "automationKnowledge": {
@@ -1462,73 +1197,42 @@
       },
       {
         "page": "home_page",
+        "name": "Verify All Home Navigation Buttons Are Visible",
+        "targetElement": "",
+        "action": "verify"
+      },
+      {
+        "page": "home_page",
         "name": "Verify All Home Navigation Buttons Are Enabled",
         "targetElement": "",
         "action": "verify"
       },
       {
         "page": "home_page",
-        "name": "Verify Navigation To Login Page",
+        "name": "Verify Login Navigation Url",
         "targetElement": "",
         "action": "verify"
       },
       {
         "page": "home_page",
-        "name": "Verify Navigation To Customer Search Page",
+        "name": "Verify Customer Search Navigation Url",
         "targetElement": "",
         "action": "verify"
       },
       {
         "page": "home_page",
-        "name": "Verify Navigation To Vehicle Survey Page",
+        "name": "Verify Vehicle Survey Navigation Url",
         "targetElement": "",
         "action": "verify"
       },
       {
         "page": "home_page",
-        "name": "Verify Navigation To Site Survey Page",
+        "name": "Verify Site Survey Navigation Url",
         "targetElement": "",
         "action": "verify"
       }
     ],
-    "approvedTests": [
-      {
-        "name": "AUT-WT-HOME01: Verify Guest User Can Directly Access The Home Page Using The Approved Entry URL"
-      },
-      {
-        "name": "AUT-WT-HOME02: Verify Person Profile Button Is Visible And Enabled On The Home Page In Guest State"
-      },
-      {
-        "name": "AUT-WT-HOME03: Verify Back Button Is Visible And Enabled On The Home Page In Guest State"
-      },
-      {
-        "name": "AUT-WT-HOME04: Verify Notification Button Is Visible And Enabled On The Home Page In Guest State"
-      },
-      {
-        "name": "AUT-WT-HOME05: Verify Home Button Is Visible And Enabled On The Home Page In Guest State"
-      },
-      {
-        "name": "AUT-WT-HOME06: Verify Customer Signup Button Is Visible And Enabled On The Home Page In Guest State"
-      },
-      {
-        "name": "AUT-WT-HOME07: Verify Clean Survey Button Is Visible And Enabled On The Home Page In Guest State"
-      },
-      {
-        "name": "AUT-WT-HOME08: Verify Site Survey Button Is Visible And Enabled On The Home Page In Guest State"
-      },
-      {
-        "name": "AUT-WT-HOME09: Verify Selecting The Person Profile Button Navigates The Guest User To The Login Page URL"
-      },
-      {
-        "name": "AUT-WT-HOME10: Verify Selecting The Customer Signup Button Navigates The Guest User To The Customer Search Workflow Entry URL"
-      },
-      {
-        "name": "AUT-WT-HOME11: Verify Selecting The Clean Survey Button Navigates The Guest User To The Vehicle Survey Workflow Entry URL"
-      },
-      {
-        "name": "AUT-WT-HOME12: Verify Selecting The Site Survey Button Navigates The Guest User To The Survey Workflow Entry URL"
-      }
-    ],
+    "approvedTests": [],
     "wrapperExpectations": [
       "Reuse approved shared/common wrapper keywords before low-level SeleniumLibrary actions.",
       "Do not invent suite-level custom keywords; compose from approved upstream resource knowledge."
