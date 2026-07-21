@@ -1370,16 +1370,18 @@ def sanitize_keyword_name(keyword_name: str, target_element: str = "", action: s
     normalized_name = clean_text(keyword_name)
     target = clean_text(target_element)
     normalized_action = clean_text(action).lower()
-    if target and normalized_action in {"click", "input", "select", "verify"}:
-        keyword_title = to_keyword_title(target)
+    target_title = to_keyword_title(target) if target else ""
+    if target_title:
         if normalized_action == "click":
-            return f"Click {keyword_title}"
+            return f"Click {target_title}"
         if normalized_action == "input":
-            return f"Enter {keyword_title}"
+            return f"Enter {target_title}"
         if normalized_action == "select":
-            return f"Select {keyword_title}"
+            return f"Select {target_title}"
         if normalized_action == "verify":
-            return f"Verify {keyword_title}"
+            return f"Verify {target_title}"
+    if target_title:
+        return target_title
     if not normalized_name:
         return normalized_name
     cleaned = re.sub(r"\b\d+\b", "", normalized_name, flags=re.IGNORECASE)
@@ -1391,33 +1393,77 @@ def normalize_resource_keyword_headers(resource_content: str, approved_keywords:
     content = strip_markdown_fences(resource_content or "")
     if not content.strip() or "*** Keywords ***" not in content:
         return content
-    header_map: dict[str, str] = {}
+    lines = content.splitlines()
+    approved_by_canonical: dict[tuple[str, str], str] = {}
+    approved_by_existing: dict[str, str] = {}
     for item in approved_keywords:
         if not isinstance(item, dict):
             continue
         keyword_name = clean_text(str(item.get("keywordName", "")))
         target_element = clean_text(str(item.get("targetElement", "")))
         action = clean_text(str(item.get("action", "")))
-        if not keyword_name:
-            continue
         canonical_name = sanitize_keyword_name(keyword_name, target_element, action)
-        if canonical_name and canonical_name != keyword_name:
-            header_map[keyword_name] = canonical_name
-    if not header_map:
-        return content
-    lines = content.splitlines()
+        if keyword_name and canonical_name:
+            approved_by_existing[keyword_name.lower()] = canonical_name
+        if target_element:
+            approved_by_canonical[(target_element.lower(), action.lower())] = canonical_name
+            approved_by_canonical[(target_element.lower(), "")] = canonical_name
     normalized_lines: list[str] = []
     in_keywords = False
+    current_keyword_name = ""
+    current_body: list[str] = []
+
+    def flush_block() -> None:
+        nonlocal current_keyword_name, current_body
+        if not current_keyword_name:
+            return
+        canonical_name = approved_by_existing.get(current_keyword_name.lower(), "")
+        if not canonical_name:
+            block_text = "\n".join(current_body)
+            referenced_variables = re.findall(r"\$\{([A-Z0-9_]+)\}", block_text)
+            derived_target = ""
+            if referenced_variables:
+                variable_name = clean_text(str(referenced_variables[0]))
+                if variable_name:
+                    parts = [part for part in variable_name.lower().split("_") if part]
+                    if len(parts) > 1:
+                        derived_target = "_".join(parts[:-1])
+                    else:
+                        derived_target = "_".join(parts)
+            action_hint = ""
+            if current_body:
+                first_body = clean_text(current_body[0]).lower()
+                if first_body.startswith("click "):
+                    action_hint = "click"
+                elif first_body.startswith("input "):
+                    action_hint = "input"
+                elif first_body.startswith("select "):
+                    action_hint = "select"
+            if derived_target:
+                canonical_name = approved_by_canonical.get((derived_target.lower(), action_hint), "") or approved_by_canonical.get((derived_target.lower(), ""), "") or sanitize_keyword_name(current_keyword_name, derived_target, action_hint)
+        normalized_lines.append(canonical_name or current_keyword_name)
+        normalized_lines.extend(current_body)
+        current_keyword_name = ""
+        current_body = []
+
     for line in lines:
         stripped = line.strip()
         if stripped.startswith("***"):
+            if in_keywords:
+                flush_block()
             in_keywords = stripped.lower() == "*** keywords ***"
             normalized_lines.append(line)
             continue
         if in_keywords and stripped and not line.startswith((" ", "\t")):
-            normalized_lines.append(header_map.get(stripped, stripped))
+            flush_block()
+            current_keyword_name = stripped
+            continue
+        if in_keywords and current_keyword_name:
+            current_body.append(line)
             continue
         normalized_lines.append(line)
+    if in_keywords:
+        flush_block()
     return "\n".join(normalized_lines)
 
 
