@@ -180,10 +180,10 @@ def select_relevant_lines(values: List[str], keywords: List[str], limit: int = 1
     if not cleaned_values:
         return []
     ranked = sorted(
-        cleaned_values,
-        key=lambda item: (len(clean_text(item)), cleaned_values.index(item)),
+        enumerate(cleaned_values),
+        key=lambda pair: (len(pair[1]), pair[0]),
     )
-    return ranked[:limit]
+    return [item for _, item in ranked[:limit]]
 
 
 def compact_story_lines(values: List[str], limit: int = 12) -> List[str]:
@@ -381,19 +381,42 @@ def sanitize_reuse_analysis(reuse_analysis: Dict[str, Any]) -> Dict[str, Any]:
             "summary": {},
         }
 
-    def _is_cross_resource_conflict(item: Any) -> bool:
+    def _primary_resource(item: Any) -> str:
+        if not isinstance(item, dict):
+            return ""
+        return clean_text(item.get("resource") or item.get("ownerResource") or item.get("owner"))
+
+    def _secondary_resource(item: Any) -> str:
+        if not isinstance(item, dict):
+            return ""
+        return clean_text(item.get("duplicateResource") or item.get("candidateResource") or item.get("reusedFrom") or item.get("candidate"))
+
+    def _is_cross_resource(item: Any) -> bool:
         if not isinstance(item, dict):
             return False
-        owner = clean_text(item.get("ownerResource") or item.get("owner") or item.get("resource"))
-        candidate = clean_text(item.get("candidateResource") or item.get("candidate") or item.get("reusedFrom"))
-        if owner and candidate:
-            return owner.lower() != candidate.lower()
-        return True
+        primary = _primary_resource(item)
+        secondary = _secondary_resource(item)
+        if primary and secondary:
+            return primary.lower() != secondary.lower()
+        return bool(primary or secondary)
 
     sanitized = dict(reuse_analysis)
     for key in ("duplicateVariables", "duplicateKeywords", "variableReuseCandidates", "keywordReuseCandidates", "ownershipConflicts"):
         values = ensure_list(sanitized.get(key))
-        sanitized[key] = [item for item in values if _is_cross_resource_conflict(item)]
+        filtered = [item for item in values if _is_cross_resource(item)]
+        sanitized[key] = filtered
+
+    summary = sanitized.get("summary") if isinstance(sanitized.get("summary"), dict) else {}
+    sanitized["summary"] = {
+        "duplicateVariableCount": len(sanitized.get("duplicateVariables", [])),
+        "duplicateKeywordCount": len(sanitized.get("duplicateKeywords", [])),
+        "variableReuseCandidateCount": len(sanitized.get("variableReuseCandidates", [])),
+        "keywordReuseCandidateCount": len(sanitized.get("keywordReuseCandidates", [])),
+        "ownershipConflictCount": len(sanitized.get("ownershipConflicts", [])),
+        **{k: v for k, v in summary.items() if k not in {
+            "duplicateVariableCount", "duplicateKeywordCount", "variableReuseCandidateCount", "keywordReuseCandidateCount", "ownershipConflictCount"
+        }},
+    }
     return sanitized
 
 
@@ -502,6 +525,7 @@ def collect_manual_coverage(manual_data: Dict[str, Any]) -> Dict[str, Any]:
 
 def collect_automation_knowledge(workflow_slug: str, workflow_input: Dict[str, Any]) -> Dict[str, Any]:
     approved_keywords: List[Dict[str, Any]] = []
+    seen_keyword_keys: set[str] = set()
     for page in ensure_list(workflow_input.get('pages')):
         if not isinstance(page, dict):
             continue
@@ -524,6 +548,10 @@ def collect_automation_knowledge(workflow_slug: str, workflow_input: Dict[str, A
                     action = 'open'
                 elif lowered.startswith('enter ') or lowered.startswith('input '):
                     action = 'input'
+                key = f"{page_name.lower()}::{name.lower()}::{action.lower()}"
+                if key in seen_keyword_keys:
+                    continue
+                seen_keyword_keys.add(key)
                 approved_keywords.append({
                     'page': page_name,
                     'name': name,
@@ -540,11 +568,17 @@ def collect_automation_knowledge(workflow_slug: str, workflow_input: Dict[str, A
                 for item in ensure_list(payload.get('keywords')):
                     if not isinstance(item, dict):
                         continue
+                    name = clean_text(item.get('keywordName'))
+                    action = clean_text(item.get('action')).lower()
+                    key = f"{page_name.lower()}::{name.lower()}::{action.lower()}"
+                    if not name or key in seen_keyword_keys:
+                        continue
+                    seen_keyword_keys.add(key)
                     approved_keywords.append({
                         'page': page_name,
-                        'name': clean_text(item.get('keywordName')),
+                        'name': name,
                         'targetElement': clean_text(item.get('targetElement')),
-                        'action': clean_text(item.get('action')).lower(),
+                        'action': action,
                     })
                 if approved_keywords:
                     break
@@ -574,7 +608,7 @@ def collect_automation_knowledge(workflow_slug: str, workflow_input: Dict[str, A
 
     return {
         'approvedKeywords': [item for item in approved_keywords if item.get('name')][:80],
-        'approvedTests': approved_tests[:80],
+        'approvedTests': unique_strings([item.get('name') for item in approved_tests], limit=80),
         'wrapperExpectations': [
             'Reuse approved shared/common wrapper keywords before low-level SeleniumLibrary actions.',
             'Do not invent suite-level custom keywords; compose from approved upstream resource knowledge.',
@@ -877,9 +911,9 @@ def summarize_workflow_knowledge_for_generation(payload: Dict[str, Any]) -> Dict
                 if isinstance(item, dict) and clean_text(item.get('name'))
             ],
             'approvedTests': [
-                {'name': clean_text(item.get('name'))}
+                {'name': clean_text(item)}
                 for item in ensure_list(automation.get('approvedTests'))[:12]
-                if isinstance(item, dict) and clean_text(item.get('name'))
+                if clean_text(item)
             ],
             'wrapperExpectations': unique_strings(ensure_list(automation.get('wrapperExpectations')), limit=6),
         },
