@@ -1016,11 +1016,13 @@ def normalize_reviewed_keyword_block(keyword: dict, approved_elements_by_name: D
     role = clean_text(str(keyword.get("role", ""))).lower()
     approved_elements_by_name = approved_elements_by_name or {}
     matched_element_name = ""
+    matched_element: dict | None = None
     locator = clean_text(str(keyword.get("targetElement", "")))
     if locator:
         for element_name, element in approved_elements_by_name.items():
             if clean_text(str(element.get("locator", ""))) == locator:
                 matched_element_name = element_name
+                matched_element = element
                 if not role:
                     role = clean_text(str(element.get("type", ""))).lower()
                 break
@@ -1039,7 +1041,20 @@ def normalize_reviewed_keyword_block(keyword: dict, approved_elements_by_name: D
             normalized_args.append(f"${{{cleaned_arg}}}")
     if normalized_args:
         block_lines.append("    [Arguments]    " + "    ".join(normalized_args))
-    block_lines.extend(_normalize_keyword_implementation_lines(keyword.get("implementation", [])))
+    implementation_lines = _normalize_keyword_implementation_lines(keyword.get("implementation", []))
+    if matched_element_name and matched_element is not None:
+        normalized_element_name = slugify(matched_element_name)
+        canonical_role = role or clean_text(str(matched_element.get("type", ""))).lower() or "element"
+        canonical_var_name = make_var_name(normalized_element_name, canonical_role, set())
+        expected_locator = clean_text(str(matched_element.get("locator", "")))
+        unique_locator_lines: List[str] = []
+        for line in implementation_lines:
+            if canonical_var_name in line or (expected_locator and expected_locator in line):
+                if line not in unique_locator_lines:
+                    unique_locator_lines.append(line)
+        if len(unique_locator_lines) <= 1:
+            implementation_lines = build_fallback_keyword_steps(canonical_var_name, canonical_role)
+    block_lines.extend(implementation_lines)
     return "\n".join(block_lines)
 
 
