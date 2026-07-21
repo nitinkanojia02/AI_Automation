@@ -1036,19 +1036,35 @@ def _replace_variable_references(lines: List[str], replacement_map: Dict[str, st
     return normalized_lines
 
 
-def normalize_reviewed_keyword_block(keyword: dict, approved_elements_by_name: Dict[str, dict] | None = None) -> str:
-    keyword_name = clean_text(str(keyword.get("keywordName", "")))
-    role = clean_text(str(keyword.get("role", ""))).lower()
+def _normalize_keyword_arguments(arguments: object) -> List[str]:
+    if isinstance(arguments, str):
+        raw_arguments = [part.strip() for part in arguments.split(",") if clean_text(part)]
+    elif isinstance(arguments, list):
+        raw_arguments = [clean_text(str(arg)) for arg in arguments if clean_text(str(arg))]
+    else:
+        raw_arguments = []
+    normalized_args: List[str] = []
+    for arg in raw_arguments:
+        cleaned_arg = clean_text(str(arg)).replace("${", "").replace("}", "")
+        if cleaned_arg:
+            normalized_args.append(f"${{{cleaned_arg}}}")
+    return normalized_args
+
+
+def build_normalized_reviewed_keyword_payload(keyword: dict, approved_elements_by_name: Dict[str, dict] | None = None) -> dict:
     approved_elements_by_name = approved_elements_by_name or {}
+    normalized_keyword = dict(keyword) if isinstance(keyword, dict) else {}
+    keyword_name = clean_text(str(normalized_keyword.get("keywordName", "")))
+    role = clean_text(str(normalized_keyword.get("role", ""))).lower()
     matched_element_name = ""
     matched_element: dict | None = None
-    target_element_name = clean_text(str(keyword.get("targetElement", "")))
+    target_element_name = clean_text(str(normalized_keyword.get("targetElement", "")))
     if target_element_name and target_element_name in approved_elements_by_name:
         matched_element_name = target_element_name
         matched_element = approved_elements_by_name[target_element_name]
         if not role:
             role = clean_text(str(matched_element.get("type", ""))).lower()
-    locator = clean_text(str(keyword.get("targetElement", "")))
+    locator = clean_text(str(normalized_keyword.get("targetElement", "")))
     if not matched_element_name and locator:
         for element_name, element in approved_elements_by_name.items():
             if clean_text(str(element.get("locator", ""))) == locator:
@@ -1059,20 +1075,10 @@ def normalize_reviewed_keyword_block(keyword: dict, approved_elements_by_name: D
                 break
     if matched_element_name:
         keyword_name = _derive_keyword_name_from_element_name(matched_element_name, role or "element", keyword_name)
-    if not keyword_name:
-        return ""
-    block_lines = [keyword_name]
-    arguments = keyword.get("arguments", []) or []
-    if isinstance(arguments, str):
-        arguments = [part.strip() for part in arguments.split(",") if clean_text(part)]
-    normalized_args = []
-    for arg in arguments:
-        cleaned_arg = clean_text(str(arg)).replace("${", "").replace("}", "")
-        if cleaned_arg:
-            normalized_args.append(f"${{{cleaned_arg}}}")
-    if normalized_args:
-        block_lines.append("    [Arguments]    " + "    ".join(normalized_args))
-    implementation_lines = _normalize_keyword_implementation_lines(keyword.get("implementation", []))
+        normalized_keyword["targetElement"] = matched_element_name
+    normalized_keyword["keywordName"] = keyword_name
+    normalized_keyword["arguments"] = _normalize_keyword_arguments(normalized_keyword.get("arguments", []))
+    implementation_lines = _normalize_keyword_implementation_lines(normalized_keyword.get("implementation", []))
     if matched_element_name and matched_element is not None:
         canonical_role = role or clean_text(str(matched_element.get("type", ""))).lower() or "element"
         canonical_var_name = _canonical_variable_name_for_element(matched_element_name, matched_element, set())
@@ -1086,8 +1092,47 @@ def normalize_reviewed_keyword_block(keyword: dict, approved_elements_by_name: D
             implementation_lines = _replace_variable_references(implementation_lines, replacement_map)
         if not any(f"${{{canonical_var_name}}}" in line for line in implementation_lines):
             implementation_lines = build_fallback_keyword_steps(canonical_var_name, canonical_role)
+    normalized_keyword["implementation"] = implementation_lines
+    if role:
+        normalized_keyword["role"] = role
+    return normalized_keyword
+
+
+def normalize_reviewed_keyword_block(keyword: dict, approved_elements_by_name: Dict[str, dict] | None = None) -> str:
+    normalized_keyword = build_normalized_reviewed_keyword_payload(keyword, approved_elements_by_name)
+    keyword_name = clean_text(str(normalized_keyword.get("keywordName", "")))
+    if not keyword_name:
+        return ""
+    block_lines = [keyword_name]
+    normalized_args = normalized_keyword.get("arguments", []) if isinstance(normalized_keyword.get("arguments", []), list) else []
+    if normalized_args:
+        block_lines.append("    [Arguments]    " + "    ".join(normalized_args))
+    implementation_lines = _normalize_keyword_implementation_lines(normalized_keyword.get("implementation", []))
     block_lines.extend(implementation_lines)
     return "\n".join(block_lines)
+
+
+def save_normalized_reviewed_keyword_artifact(page_name: str, metadata_dir: Path, reviewed_artifact: dict, approved_elements_by_name: Dict[str, dict]) -> None:
+    if not isinstance(reviewed_artifact, dict):
+        return
+    raw_keywords = reviewed_artifact.get("keywords", []) if isinstance(reviewed_artifact.get("keywords"), list) else []
+    normalized_keywords: List[dict] = []
+    changed = False
+    for item in raw_keywords:
+        if not isinstance(item, dict):
+            normalized_keywords.append(item)
+            continue
+        normalized_item = build_normalized_reviewed_keyword_payload(item, approved_elements_by_name)
+        normalized_keywords.append(normalized_item)
+        if normalized_item != item:
+            changed = True
+    if not changed:
+        return
+    normalized_artifact = dict(reviewed_artifact)
+    normalized_artifact["keywords"] = normalized_keywords
+    target_path = metadata_dir / f"{slugify(page_name)}.keywords.reviewed.json"
+    target_path.write_text(json.dumps(normalized_artifact, indent=2, ensure_ascii=False), encoding="utf-8")
+    logger.info("Normalized reviewed keyword artifact saved: %s", target_path)
 
 
 def generate_resource(url: str, elements: List[dict], page_name: str = "", metadata_dir: Path | None = None) -> str:
@@ -1118,6 +1163,7 @@ def generate_resource(url: str, elements: List[dict], page_name: str = "", metad
 
     reviewed_keyword_blocks: List[dict] = []
     reviewed_keywords: List[str] = []
+    reviewed_artifact: dict = {}
     if page_name and metadata_dir is not None:
         reviewed_artifact = load_reviewed_keyword_artifact(page_name, metadata_dir)
         raw_keywords = reviewed_artifact.get("keywords", []) if isinstance(reviewed_artifact, dict) else []
@@ -1131,6 +1177,8 @@ def generate_resource(url: str, elements: List[dict], page_name: str = "", metad
                 block = normalize_reviewed_keyword_block(item, approved_elements_by_name)
                 if block:
                     reviewed_keywords.append(block)
+        if reviewed_artifact:
+            save_normalized_reviewed_keyword_artifact(page_name, metadata_dir, reviewed_artifact, approved_elements_by_name)
 
     settings_block = """*** Settings ***
 Resource    ../../resources/common_keywords.resource"""
@@ -1437,27 +1485,6 @@ def perform_navigation_steps(page, navigation_steps: List[dict], wait_seconds: i
             navigation_debug.append(debug_entry)
 
 
-def semantic_login_state_satisfied(page) -> bool:
-    try:
-        password_present = page.locator("input[type='password']").count() > 0
-    except Exception:
-        password_present = False
-    try:
-        user_like_present = (
-            page.locator("input[type='text'], input[type='email'], input[name*='user' i], input[id*='user' i], input[placeholder*='user' i], input[placeholder*='email' i]").count() > 0
-        )
-    except Exception:
-        user_like_present = False
-    try:
-        action_present = (
-            page.get_by_role("button", name=re.compile(r"log\s*in|login|sign\s*in", re.I)).count() > 0
-            or page.locator("button, input[type='submit']").count() > 0
-        )
-    except Exception:
-        action_present = False
-    return password_present and (user_like_present or action_present)
-
-
 def write_signal_timeout_debug(page, metadata_dir: Path, page_name: str):
     try:
         ensure_dir(metadata_dir)
@@ -1486,14 +1513,10 @@ def wait_for_target_page_signals(page, target_page_signals: List[dict], wait_sec
         page.wait_for_timeout(max(wait_seconds, 1) * 1000)
         return
 
-    login_like = any(clean_text(str(signal.get("value", ""))).lower() in {"username", "password", "login"} for signal in target_page_signals)
     timeout_ms = max(wait_seconds, 1) * 1000 * 6
     deadline = time.time() + (timeout_ms / 1000)
     pending = list(target_page_signals)
     while time.time() < deadline:
-        if login_like and semantic_login_state_satisfied(page):
-            logger.info("Semantic login-state detection satisfied target page signals.")
-            return
         remaining = []
         for signal in pending:
             signal_type = clean_text(str(signal.get("type", "")))
