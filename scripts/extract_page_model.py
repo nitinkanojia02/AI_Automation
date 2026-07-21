@@ -1395,9 +1395,10 @@ def infer_story_navigation_steps(page_name: str, workflow_like: dict) -> Tuple[L
     target_page_name = slugify(clean_text(str(target_page_payload.get("name", ""))))
 
     if relevant_resources and entry_page_name and target_page_name and entry_page_name != target_page_name and current_page == target_page_name:
+        source_page_name = entry_page_name if entry_page_name.endswith("_page") else f"{entry_page_name}_page"
         navigation_steps.append({
             "action": "reuseApprovedEntryContext",
-            "page": f"{entry_page_name}_page",
+            "page": source_page_name,
             "element": "",
             "inferredReuseContext": {
                 "authoritativeResourceFiles": relevant_resources,
