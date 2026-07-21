@@ -80,72 +80,95 @@
     },
     {
       "keywordId": "KW_008",
-      "keywordName": "Background Content",
-      "targetElement": "",
-      "action": "generic",
+      "keywordName": "Verify Home Guest State Loaded",
+      "targetElement": "person_profile_button",
+      "action": "verify",
       "arguments": [],
       "implementation": [
-        "Wait For Element To Be Ready    ${BACKGROUND_CONTENT_ELEMENT}",
-        "    Click Element    ${BACKGROUND_CONTENT_ELEMENT}"
+        "Wait For Element To Be Ready    ${PERSON_PROFILE_BUTTON}",
+        "Wait For Element To Be Ready    ${PERSON_PROFILE_BUTTON}",
+        "Wait For Element To Be Ready    ${PERSON_PROFILE_BUTTON}",
+        "Wait For Element To Be Ready    ${PERSON_PROFILE_BUTTON}",
+        "Wait For Element To Be Ready    ${PERSON_PROFILE_BUTTON}",
+        "Wait For Element To Be Ready    ${PERSON_PROFILE_BUTTON}",
+        "Wait For Element To Be Ready    ${PERSON_PROFILE_BUTTON}"
       ],
       "approved": true
     },
     {
       "keywordId": "KW_009",
-      "keywordName": "Open Home Page In Guest State",
-      "targetElement": "",
-      "action": "generic",
+      "keywordName": "Verify Person Profile Button Visible And Enabled",
+      "targetElement": "person_profile_button",
+      "action": "verify",
       "arguments": [],
       "implementation": [
-        "Open Browser To Url    ${HOME_PAGE_GUEST_STATE_URL}",
-        "    Wait For Element To Be Ready    ${BACKGROUND_CONTENT_ELEMENT}"
+        "Wait For Element To Be Ready    ${PERSON_PROFILE_BUTTON}"
       ],
       "approved": true
     },
     {
       "keywordId": "KW_010",
-      "keywordName": "Verify Guest State Controls Are Visible",
-      "targetElement": "",
+      "keywordName": "Verify Back Button Visible And Enabled",
+      "targetElement": "back_button",
       "action": "verify",
       "arguments": [],
       "implementation": [
-        "Wait Until Element Is Visible    ${AUTO_PERSON_BTN_BUTTON}",
-        "    Wait Until Element Is Visible    ${AUTO_BACK_BTN_BUTTON}",
-        "    Wait Until Element Is Visible    ${AUTO_NOTIFICATION_BTN_BUTTON}",
-        "    Wait Until Element Is Visible    ${AUTO_HOME_BTN_BUTTON}",
-        "    Wait Until Element Is Visible    ${AUTO_BTN_CUSTOMER_SIGNUP_BUTTON}",
-        "    Wait Until Element Is Visible    ${AUTO_BTN_CLEAN_SURVEY_BUTTON}",
-        "    Wait Until Element Is Visible    ${AUTO_BTN_SITE_SURVEY_BUTTON}"
+        "Wait For Element To Be Ready    ${BACK_BUTTON}"
       ],
       "approved": true
     },
     {
       "keywordId": "KW_011",
-      "keywordName": "Verify Guest State Controls Are Enabled",
-      "targetElement": "",
+      "keywordName": "Verify Notification Button Visible And Enabled",
+      "targetElement": "notification_button",
       "action": "verify",
       "arguments": [],
       "implementation": [
-        "Wait Until Element Is Enabled    ${AUTO_PERSON_BTN_BUTTON}",
-        "    Wait Until Element Is Enabled    ${AUTO_BACK_BTN_BUTTON}",
-        "    Wait Until Element Is Enabled    ${AUTO_NOTIFICATION_BTN_BUTTON}",
-        "    Wait Until Element Is Enabled    ${AUTO_HOME_BTN_BUTTON}",
-        "    Wait Until Element Is Enabled    ${AUTO_BTN_CUSTOMER_SIGNUP_BUTTON}",
-        "    Wait Until Element Is Enabled    ${AUTO_BTN_CLEAN_SURVEY_BUTTON}",
-        "    Wait Until Element Is Enabled    ${AUTO_BTN_SITE_SURVEY_BUTTON}"
+        "Wait For Element To Be Ready    ${NOTIFICATION_BUTTON}"
       ],
       "approved": true
     },
     {
       "keywordId": "KW_012",
-      "keywordName": "Verify Home Page Loaded In Guest State",
-      "targetElement": "",
+      "keywordName": "Verify Home Button Visible And Enabled",
+      "targetElement": "home_button",
       "action": "verify",
       "arguments": [],
       "implementation": [
-        "Wait For Element To Be Ready    ${BACKGROUND_CONTENT_ELEMENT}",
-        "    Verify Guest State Controls Are Visible",
-        "    Verify Guest State Controls Are Enabled"
+        "Wait For Element To Be Ready    ${HOME_BUTTON}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_013",
+      "keywordName": "Verify Customer Signup Button Visible And Enabled",
+      "targetElement": "customer_signup_button",
+      "action": "verify",
+      "arguments": [],
+      "implementation": [
+        "Wait For Element To Be Ready    ${CUSTOMER_SIGNUP_BUTTON}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_014",
+      "keywordName": "Verify Clean Survey Button Visible And Enabled",
+      "targetElement": "clean_survey_button",
+      "action": "verify",
+      "arguments": [],
+      "implementation": [
+        "Wait For Element To Be Ready    ${CLEAN_SURVEY_BUTTON}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_015",
+      "keywordName": "Verify Site Survey Button Visible And Enabled",
+      "targetElement": "site_survey_button",
+      "action": "verify",
+      "arguments": [],
+      "implementation": [
+        "Wait For Element To Be Ready    ${SITE_SURVEY_BUTTON}"
       ],
       "approved": true
     }

@@ -293,70 +293,70 @@
   ],
   "reviewSummary": {
     "overall_quality": "medium",
-    "summary": "The draft captures the primary guest-state navigation controls required for the Home workflow, but includes noisy and duplicate elements, weak naming, and lacks explicit negative-state validation elements needed for robust guest-state automation.",
+    "summary": "The draft captures the primary guest-state navigation controls required for automation, but it includes noisy non-business elements, weak generic locators, and naming inconsistencies. Important negative-state validation elements for authenticated-only control absence and logged-in user indicator absence are missing.",
     "issues": [
       {
         "severity": "high",
-        "type": "duplicate",
-        "element_name": "element_8",
-        "message": "The generic anchor element duplicates the Home button functionality already represented by the Home button control.",
-        "suggested_fix": "Remove the generic xpath=//a element and retain only the semantic Home button element with locator id=auto_home_btn."
+        "type": "noise",
+        "element_name": "background_content",
+        "message": "Background container is decorative layout content and does not provide meaningful business interaction or validation value.",
+        "suggested_fix": "Remove the background_content element from the approved page model."
       },
       {
         "severity": "high",
         "type": "locator",
         "element_name": "element_8",
-        "message": "The locator xpath=//a is overly generic and likely to match multiple links across the application, making it brittle and unsafe for downstream automation.",
-        "suggested_fix": "Remove this element or replace it with a uniquely identifiable semantic locator tied to a business control."
+        "message": "Locator xpath=//a is overly generic, brittle, and likely to match multiple links across the page.",
+        "suggested_fix": "Remove this duplicate wrapper link element and retain the existing home_button element using id=auto_home_btn."
       },
       {
         "severity": "medium",
-        "type": "noise",
-        "element_name": "background_content",
-        "message": "The background content container is decorative/layout-only and does not provide meaningful automation value for workflow interaction or validation.",
-        "suggested_fix": "Remove the background_content element from the approved page model."
+        "type": "duplicate",
+        "element_name": "element_8",
+        "message": "The generic anchor element duplicates ownership of the Home navigation control already represented by home_button.",
+        "suggested_fix": "Keep only the semantically meaningful home_button element."
       },
       {
         "severity": "medium",
         "type": "naming",
         "element_name": "person_button",
-        "message": "The element name is too generic and loses the business meaning defined in the workflow context.",
-        "suggested_fix": "Rename to person_profile_button to align with approved workflow terminology and downstream resource naming."
+        "message": "The name is vague and does not clearly represent the business meaning described in the workflow context.",
+        "suggested_fix": "Rename to person_profile_button for consistency with workflow terminology and downstream keyword generation."
       },
       {
         "severity": "medium",
         "type": "naming",
         "element_name": "customersignup_button",
-        "message": "The element name is compressed and less readable than the approved business terminology.",
-        "suggested_fix": "Rename to customer_signup_button for readability and consistency."
+        "message": "The name lacks readability and business clarity due to compressed wording.",
+        "suggested_fix": "Rename to customer_signup_button."
       },
       {
         "severity": "medium",
         "type": "naming",
         "element_name": "cleansurvey_button",
-        "message": "The element name is compressed and less readable than the approved business terminology.",
-        "suggested_fix": "Rename to clean_survey_button for readability and consistency."
+        "message": "The name lacks readability and business clarity due to compressed wording.",
+        "suggested_fix": "Rename to clean_survey_button."
       },
       {
         "severity": "medium",
         "type": "naming",
         "element_name": "sitesurvey_button",
-        "message": "The element name is compressed and less readable than the approved business terminology.",
-        "suggested_fix": "Rename to site_survey_button for readability and consistency."
+        "message": "The name lacks readability and business clarity due to compressed wording.",
+        "suggested_fix": "Rename to site_survey_button."
       },
       {
         "severity": "high",
         "type": "validation_gap",
         "element_name": "",
-        "message": "The workflow explicitly requires validation that authenticated-only controls and the logged-in user name button are absent or non-actionable in guest state, but no corresponding validation elements are present in the artifact.",
-        "suggested_fix": "Add identifiable elements or reusable validation targets for authenticated-only controls and the logged-in user name indicator if they exist in the UI."
+        "message": "The workflow explicitly requires validation that authenticated-only controls and the logged-in user name button are absent or non-actionable, but no observable elements or indicators are modeled for these negative-state validations.",
+        "suggested_fix": "Add identifiable elements or validation indicators for authenticated-only controls and logged-in user name visibility state if available in the UI."
       },
       {
         "severity": "medium",
         "type": "validation_gap",
         "element_name": "",
-        "message": "No explicit guest-state page indicator element is modeled, even though the workflow repeatedly validates the Home page guest state.",
-        "suggested_fix": "Add a stable guest-state indicator element if available, such as a guest banner, guest header state, or authenticated-user absence indicator."
+        "message": "No explicit guest-state page indicator or guest-state validation element is modeled beyond navigation controls.",
+        "suggested_fix": "Add a stable guest-state indicator element if the UI exposes one to strengthen downstream state validation."
       }
     ],
     "approved_elements": [
@@ -364,7 +364,7 @@
         "name": "person_profile_button",
         "type": "button",
         "locator": "id=auto_person_btn",
-        "description": "Opens the Login page or Login view from the Home guest state."
+        "description": "Opens the Login page or Login view from Home guest state."
       },
       {
         "name": "back_button",
@@ -376,31 +376,31 @@
         "name": "notification_button",
         "type": "button",
         "locator": "id=auto_notification_btn",
-        "description": "Shared Home shell notification control available in guest state."
+        "description": "Shared Home shell notification access control."
       },
       {
         "name": "home_button",
         "type": "button",
         "locator": "id=auto_home_btn",
-        "description": "Shared Home shell control used to navigate or remain on the Home page."
+        "description": "Shared Home shell navigation control for returning to Home."
       },
       {
         "name": "customer_signup_button",
         "type": "button",
         "locator": "id=auto_btn_CustomerSignup",
-        "description": "Navigates guest users to the customer-search page."
+        "description": "Navigates guest users to the customer-search workflow."
       },
       {
         "name": "clean_survey_button",
         "type": "button",
         "locator": "id=auto_btn_CleanSurvey",
-        "description": "Navigates guest users to the vehicle-survey page."
+        "description": "Navigates guest users to the vehicle-survey workflow."
       },
       {
         "name": "site_survey_button",
         "type": "button",
         "locator": "id=auto_btn_SiteSurvey",
-        "description": "Navigates guest users to the survey page."
+        "description": "Navigates guest users to the survey workflow."
       }
     ]
   }

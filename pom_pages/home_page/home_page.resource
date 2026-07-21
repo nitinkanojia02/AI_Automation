@@ -3,17 +3,19 @@ Resource    ../../resources/common_keywords.resource
 
 *** Variables ***
 ${PAGE_URL}    http://localhost/washtabui/home
+${HOME_GUEST_STATE_URL}    http://localhost/washtabui/home
 ${HOME_PAGE_PATH}    /washtabui/home
-${EXPECTED_HOME_STATE}    guest state
-${EXPECTED_UNAUTHENTICATED_STATE}    unauthenticated
 ${LOGIN_PAGE_IDENTIFIER}    login
-${EXPECTED_LOGIN_DESTINATION}    Login page or Login view
 ${CUSTOMER_SEARCH_PAGE_IDENTIFIER}    customer-search
-${EXPECTED_CUSTOMER_SEARCH_DESTINATION}    customer-search page
 ${VEHICLE_SURVEY_PAGE_IDENTIFIER}    vehicle-survey
-${EXPECTED_VEHICLE_SURVEY_DESTINATION}    vehicle-survey page
 ${SURVEY_PAGE_IDENTIFIER}    survey
-${EXPECTED_SURVEY_DESTINATION}    survey page
+${LOGIN_VIEW_NAME}    Login page or Login view
+${CUSTOMER_SEARCH_VIEW_NAME}    customer-search page
+${VEHICLE_SURVEY_VIEW_NAME}    vehicle-survey page
+${SITE_SURVEY_VIEW_NAME}    survey page
+${EXPECTED_GUEST_STATE_MESSAGE}    The Home page loads successfully in guest state with guest-accessible controls visible and no authenticated user state displayed.
+${EXPECTED_UNAUTHENTICATED_STATE_MESSAGE}    No logged-in user name button or authenticated identity indicator is visible while the user remains unauthenticated.
+${EXPECTED_AUTH_ONLY_CONTROLS_HIDDEN_MESSAGE}    Authenticated-only controls and feature buttons are not visible or remain non-actionable in guest state.
 ${PERSON_PROFILE_BUTTON}    id=auto_person_btn
 ${BACK_BUTTON}    id=auto_back_btn
 ${NOTIFICATION_BUTTON}    id=auto_notification_btn
@@ -24,12 +26,12 @@ ${SITE_SURVEY_BUTTON}    id=auto_btn_SiteSurvey
 
 *** Keywords ***
 Open Home Page In Guest State
-    [Documentation]    Open the Home page and verify the guest state is loaded.
-    Open Browser To Url    ${PAGE_URL}
+    [Documentation]    Open the Home page using the approved guest-state entry URL.
+    Open Browser To Url    ${HOME_GUEST_STATE_URL}
     Verify Home Page Loaded In Guest State
 
 Verify Home Page Loaded In Guest State
-    [Documentation]    Verify the Home page is loaded in guest state and approved controls are actionable.
+    [Documentation]    Verify the Home page is loaded in guest state and approved guest controls are visible and enabled.
     ${current_url}=    Get Location
     Should Contain    ${current_url}    ${HOME_PAGE_PATH}
     Verify Guest State Controls Are Visible
@@ -37,13 +39,13 @@ Verify Home Page Loaded In Guest State
 
 Verify Guest State Controls Are Visible
     [Documentation]    Verify approved guest-state controls are visible.
-    Wait For Element To Be Ready    ${PERSON_PROFILE_BUTTON}
-    Wait For Element To Be Ready    ${BACK_BUTTON}
-    Wait For Element To Be Ready    ${NOTIFICATION_BUTTON}
-    Wait For Element To Be Ready    ${HOME_BUTTON}
-    Wait For Element To Be Ready    ${CUSTOMER_SIGNUP_BUTTON}
-    Wait For Element To Be Ready    ${CLEAN_SURVEY_BUTTON}
-    Wait For Element To Be Ready    ${SITE_SURVEY_BUTTON}
+    Wait Until Element Is Visible    ${PERSON_PROFILE_BUTTON}
+    Wait Until Element Is Visible    ${BACK_BUTTON}
+    Wait Until Element Is Visible    ${NOTIFICATION_BUTTON}
+    Wait Until Element Is Visible    ${HOME_BUTTON}
+    Wait Until Element Is Visible    ${CUSTOMER_SIGNUP_BUTTON}
+    Wait Until Element Is Visible    ${CLEAN_SURVEY_BUTTON}
+    Wait Until Element Is Visible    ${SITE_SURVEY_BUTTON}
 
 Verify Guest State Controls Are Enabled
     [Documentation]    Verify approved guest-state controls are enabled.
@@ -76,7 +78,7 @@ Verify Survey Page Opened
     Should Contain    ${current_url}    ${SURVEY_PAGE_IDENTIFIER}
 
 Verify Home Page Remains In Guest State
-    [Documentation]    Verify the application remains on the Home page in guest state.
+    [Documentation]    Verify the application remains in Home guest state after navigation or interaction.
     Verify Home Page Loaded In Guest State
 
 Click Person Button
