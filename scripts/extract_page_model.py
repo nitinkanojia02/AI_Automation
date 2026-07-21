@@ -1337,12 +1337,50 @@ def infer_story_navigation_steps(page_name: str, workflow_like: dict) -> Tuple[L
 
 
 def perform_navigation_steps(page, navigation_steps: List[dict], wait_seconds: int, navigation_debug: List[dict] | None = None):
-    for index, step in enumerate(navigation_steps, start=1):
+    expanded_steps: List[dict] = []
+    for step in navigation_steps:
+        if not isinstance(step, dict):
+            continue
+        action = clean_text(str(step.get("action", "")))
+        if action == "reuseApprovedEntryContext":
+            source_page = clean_text(str(step.get("page", "")))
+            inferred_context = step.get("inferredReuseContext") if isinstance(step.get("inferredReuseContext"), dict) else {}
+            authoritative_resources = inferred_context.get("authoritativeResourceFiles", []) if isinstance(inferred_context.get("authoritativeResourceFiles"), list) else []
+            for resource_path in authoritative_resources:
+                resource_name = Path(str(resource_path)).parent.name.strip()
+                normalized_page = clean_text(resource_name) or source_page
+                if not normalized_page:
+                    continue
+                if not normalized_page.endswith("_page"):
+                    normalized_page = f"{normalized_page}_page"
+                if source_page and normalized_page != source_page:
+                    continue
+                for candidate in extract_keywords_from_resource_file(normalized_page):
+                    keyword_name = clean_text(str(candidate.get("name", "")))
+                    if not keyword_name.lower().startswith("click "):
+                        continue
+                    element_name = keyword_name[6:].strip()
+                    if not element_name:
+                        continue
+                    expanded_steps.append({
+                        "action": "clickKnownElement",
+                        "page": normalized_page,
+                        "element": element_name,
+                    })
+                    break
+                if expanded_steps:
+                    break
+            if not expanded_steps:
+                raise ValueError(f"Unable to expand approved entry context for step targeting '{source_page or 'unknown'}'.")
+            continue
+        expanded_steps.append(step)
+
+    for index, step in enumerate(expanded_steps, start=1):
         action = clean_text(str(step.get("action", "")))
         source_page = clean_text(str(step.get("page", "")))
         element_name = clean_text(str(step.get("element", "")))
         if action != "clickKnownElement":
-            raise ValueError(f"Unsupported navigation action '{action}' in step {index}. MVP supports only clickKnownElement.")
+            raise ValueError(f"Unsupported navigation action '{action}' in step {index}. MVP supports only clickKnownElement and reuseApprovedEntryContext.")
         locator = resolve_known_element_locator(source_page, element_name)
         debug_entry = {
             "step": index,
@@ -1674,7 +1712,13 @@ def build_navigation_page_config(config: dict, page_name: str, entry_url: str, n
     page_entry = {
         "page_name": page_name,
         "url": entry_url,
-        "navigation_steps": navigation_payload.get("navigationSteps", []),
+        "navigation_steps": [
+            {
+                **step,
+                "inferredReuseContext": infer_workflow_reuse_context(workflow_like_payload),
+            } if isinstance(step, dict) else step
+            for step in navigation_payload.get("navigationSteps", [])
+        ],
         "target_page_signals": navigation_payload.get("targetPageSignals", []),
         "inferred_reuse_context": infer_workflow_reuse_context(workflow_like_payload),
     }
