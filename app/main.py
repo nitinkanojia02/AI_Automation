@@ -1366,15 +1366,59 @@ def build_keywords_from_elements(elements: list[dict]) -> list[dict]:
     return keywords
 
 
-def sanitize_keyword_name(keyword_name: str, target_element: str = "") -> str:
+def sanitize_keyword_name(keyword_name: str, target_element: str = "", action: str = "", approved_element: dict | None = None) -> str:
     normalized_name = clean_text(keyword_name)
+    target = clean_text(target_element)
+    normalized_action = clean_text(action).lower()
+    if target and normalized_action in {"click", "input", "select", "verify"}:
+        keyword_title = to_keyword_title(target)
+        if normalized_action == "click":
+            return f"Click {keyword_title}"
+        if normalized_action == "input":
+            return f"Enter {keyword_title}"
+        if normalized_action == "select":
+            return f"Select {keyword_title}"
+        if normalized_action == "verify":
+            return f"Verify {keyword_title}"
     if not normalized_name:
         return normalized_name
-
-    cleaned = normalized_name
-    cleaned = re.sub(r"\b\d+\b", "", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\b\d+\b", "", normalized_name, flags=re.IGNORECASE)
     cleaned = re.sub(r"\s+", " ", cleaned).strip()
     return cleaned or normalized_name
+
+
+def normalize_resource_keyword_headers(resource_content: str, approved_keywords: list[dict]) -> str:
+    content = strip_markdown_fences(resource_content or "")
+    if not content.strip() or "*** Keywords ***" not in content:
+        return content
+    header_map: dict[str, str] = {}
+    for item in approved_keywords:
+        if not isinstance(item, dict):
+            continue
+        keyword_name = clean_text(str(item.get("keywordName", "")))
+        target_element = clean_text(str(item.get("targetElement", "")))
+        action = clean_text(str(item.get("action", "")))
+        if not keyword_name:
+            continue
+        canonical_name = sanitize_keyword_name(keyword_name, target_element, action)
+        if canonical_name and canonical_name != keyword_name:
+            header_map[keyword_name] = canonical_name
+    if not header_map:
+        return content
+    lines = content.splitlines()
+    normalized_lines: list[str] = []
+    in_keywords = False
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("***"):
+            in_keywords = stripped.lower() == "*** keywords ***"
+            normalized_lines.append(line)
+            continue
+        if in_keywords and stripped and not line.startswith((" ", "\t")):
+            normalized_lines.append(header_map.get(stripped, stripped))
+            continue
+        normalized_lines.append(line)
+    return "\n".join(normalized_lines)
 
 
 def get_manual_tests_for_workflow(workflow: dict) -> list[dict]:
@@ -1915,7 +1959,7 @@ def get_keyword_review_data(workflow: dict):
                             target_element = clean_text(str(item.get("targetElement", ""))) or resolve_target_element(keyword_name)
                             if target_element and target_element not in approved_elements_by_name:
                                 continue
-                            keyword_name = sanitize_keyword_name(keyword_name, target_element)
+                            keyword_name = sanitize_keyword_name(keyword_name, target_element, clean_text(str(item.get("action", ""))) or "generic")
                             implementation = item.get("implementation", [])
                             if isinstance(implementation, str):
                                 implementation = [line.rstrip() for line in implementation.splitlines() if clean_text(line)]
@@ -1965,7 +2009,7 @@ def get_keyword_review_data(workflow: dict):
                                         target_element = clean_text(str(item.get("targetElement", ""))) or resolve_target_element(keyword_name)
                                         if target_element and target_element not in approved_elements_by_name:
                                             continue
-                                        keyword_name = sanitize_keyword_name(keyword_name, target_element)
+                                        keyword_name = sanitize_keyword_name(keyword_name, target_element, clean_text(str(item.get("action", ""))) or "generic")
                                         implementation = item.get("implementation", [])
                                         if isinstance(implementation, str):
                                             implementation = [line.rstrip() for line in implementation.splitlines() if clean_text(line)]
@@ -2244,7 +2288,7 @@ def save_keywords_for_workflow(workflow: dict, keywords: list[dict]):
             continue
 
         target_element = resolve_target_element(keyword_name, str(keyword.get("targetElement", "")))
-        keyword_name = sanitize_keyword_name(keyword_name, target_element)
+        keyword_name = sanitize_keyword_name(keyword_name, target_element, clean_text(str(keyword.get("action", ""))) or "generic")
         implementation = keyword.get("implementation", [])
         if isinstance(implementation, str):
             implementation = [line.rstrip() for line in implementation.splitlines() if line.strip()]
@@ -2301,7 +2345,7 @@ def build_resource_generation_prompt(
         "elements_source": f"pom_pages/{page_name}/metadata/{page_name}.elements.reviewed.json",
         "keywords_source": str(reviewed_keywords_path.relative_to(BASE_DIR)).replace("\\", "/") if reviewed_keywords_path.exists() else str(approved_keywords_path.relative_to(BASE_DIR)).replace("\\", "/") if approved_keywords_path.exists() else "",
         "resource_target": str(get_resource_path(page_name).relative_to(BASE_DIR)).replace("\\", "/"),
-        "lineage_rule": "Approved reviewed artifacts are the semantic source of truth. Preserve approved variable names and approved keyword names exactly whenever feasible.",
+        "lineage_rule": "Approved reviewed artifacts are the semantic source of truth. Preserve approved variable names, but structurally normalize element-backed keyword names from approved targetElement and action before final save.",
     }
     workflow_expected_outcomes = collect_workflow_expected_outcomes(workflow)
     current_workflow_knowledge = build_workflow_knowledge_context(workflow)
@@ -2319,7 +2363,7 @@ def build_resource_generation_prompt(
         "workflow_expected_outcomes": workflow_expected_outcomes,
         "generation_focus": [
             "Use approved reviewed artifacts as the semantic source of truth.",
-            "Preserve approved variable names and approved keyword names exactly whenever feasible.",
+            "Preserve approved variable names and structurally normalize element-backed keyword names from approved targetElement and action.",
             "Improve abstraction and naming quality through AI reasoning, not hardcoded workflow-specific logic.",
             "Prefer shared/common keywords for generic behavior and page-resource keywords for page semantics.",
             "Keep the page resource expressive enough that downstream suites can stay thin and business-readable.",
@@ -2346,7 +2390,7 @@ def build_resource_generation_prompt(
         "- Preserve human-reviewed semantic naming. Variable names and page keyword names should stay business-readable and aligned with approved element names, not raw DOM ids.\n"
         "- Remove technical locator/id noise from naming when it is not semantically meaningful, including prefixes or fragments such as auto, btn, ctl, component, generated hashes, or framework-internal tokens. Keep only domain-meaningful words in final variable and keyword names.\n"
         "- If an underlying locator uses a technical id such as auto_person_btn, the locator value may keep that id, but the resource variable name should reflect the reviewed semantic name such as PERSON_NAVIGATION_BUTTON.\n"
-        "- Use the approved keywords as the canonical source for keyword naming. Preserve approved keyword names exactly in the generated resource whenever feasible; do not silently rename approved keywords into alternate wording.\n"
+        "- Use the approved keywords as the canonical source for implementation ownership and target grounding. For single-element element-backed keywords, structurally normalize the final keyword name from approved targetElement and action rather than preserving stale extraction-era wording.\n"
         "- Approved keyword names must remain business-readable and aligned to the approved target element names. Remove technical DOM/id noise such as Auto, Btn, Ctl, Component, generated numeric fragments, or raw id wording from final page keyword names. For example, prefer Click Person Navigation Button over Click Auto Person Btn Button.\n"
         "- Use the approved keywords as the foundation for reusable keyword implementations.\n"
         "- Treat the approved reviewed keyword implementations as the primary implementation lineage whenever they are valid and supported. Do not replace them with raw framework-level alternatives unless the approved implementation is invalid, unsupported, or clearly inferior based on the shared/common resource context.\n"
@@ -3026,6 +3070,7 @@ def generate_resource_for_workflow(workflow: dict, approved_keywords: list[dict]
     if artifact_message:
         append_session_message(page_name, "assistant", "resource_final_artifact_validation", artifact_message)
 
+    resource_content = normalize_resource_keyword_headers(resource_content, approved_keywords)
     resource_path.write_text(resource_content, encoding="utf-8")
     enrich_resource_with_manual_test_variables(workflow, approved_keywords)
 
