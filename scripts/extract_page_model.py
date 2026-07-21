@@ -1486,11 +1486,13 @@ def perform_navigation_steps(page, navigation_steps: List[dict], wait_seconds: i
                 variable_to_element: Dict[str, str] = {}
                 in_variables = False
                 in_keywords = False
+                current_keyword_name = ""
                 for line in resource_text.splitlines():
                     stripped = line.strip()
                     if stripped.startswith("***"):
                         in_variables = stripped.lower() == "*** variables ***"
                         in_keywords = stripped.lower() == "*** keywords ***"
+                        current_keyword_name = ""
                         continue
                     if in_variables:
                         match = re.match(r"^\$\{([A-Z0-9_]+)\}\s{2,}.*$", stripped)
@@ -1505,9 +1507,13 @@ def perform_navigation_steps(page, navigation_steps: List[dict], wait_seconds: i
                         continue
                     if not in_keywords:
                         continue
-                    if not line.startswith(" ") and stripped:
+                    if not stripped:
+                        current_keyword_name = ""
                         continue
-                    if not stripped or stripped.startswith("["):
+                    if not line.startswith(" ") and not line.startswith("\t"):
+                        current_keyword_name = stripped
+                        continue
+                    if stripped.startswith("["):
                         continue
                     if not clean_text(stripped).lower().startswith("click "):
                         continue
@@ -1521,6 +1527,7 @@ def perform_navigation_steps(page, navigation_steps: List[dict], wait_seconds: i
                         "action": "clickKnownElement",
                         "page": normalized_page,
                         "element": element_name,
+                        "keyword": current_keyword_name,
                     })
                 if len(expanded_steps) > start_count:
                     break
