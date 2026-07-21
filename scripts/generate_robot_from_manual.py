@@ -70,35 +70,15 @@ def derive_fallback_feature_code(manual_data: dict) -> str:
     if raw_prefix:
         return raw_prefix[:16]
 
-    raw_feature = clean_text(str(manual_data.get("feature", "")))
-    if raw_feature:
-        feature_words = re.findall(r"[A-Za-z0-9]+", raw_feature)
-        if 0 < len(feature_words) <= 3:
-            compact_feature = compact_code(raw_feature)
-            if compact_feature:
-                return compact_feature[:16]
-
-    candidates = [
+    for candidate in [
         str(manual_data.get("feature", "")),
         str(manual_data.get("workflowName", "")),
         str(manual_data.get("module", "")),
-    ]
-    stop_words = {
-        "a", "an", "and", "application", "auth", "authentication", "flow", "for", "from", "in", "of", "on", "page",
-        "screen", "story", "test", "the", "to", "user", "users", "using", "validation", "verify", "workflow", "should", "support"
-    }
-    tokens: list[str] = []
-    for candidate in candidates:
-        words = re.findall(r"[A-Za-z0-9]+", clean_text(candidate).lower())
-        meaningful_words = [word for word in words if len(word) >= 3 and word not in stop_words]
-        selected_words = meaningful_words
-        for word in selected_words[:2]:
-            code = compact_code(word)
-            if code and code not in tokens:
-                tokens.append(code[:8])
-        if tokens:
-            break
-    return "_".join(tokens[:2])[:16] if tokens else "FLOW"
+    ]:
+        code = compact_code(candidate)
+        if code:
+            return code[:16]
+    return "FLOW"
 
 
 def resolve_test_identifier_policy(manual_data: dict) -> dict:

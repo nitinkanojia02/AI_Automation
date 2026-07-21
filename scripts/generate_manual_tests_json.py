@@ -403,26 +403,10 @@ def call_devex_ai(
 
 
 def map_test_type(title: str, expected_result: str, raw_type: str) -> str:
+    del title, expected_result
     raw = str(raw_type).strip().lower()
     if raw in {"positive", "negative", "edge"}:
         return raw
-
-    combined = f"{title} {expected_result} {raw}".lower()
-
-    edge_keywords = {
-        "edge", "boundary", "limit", "max", "min", "length", "special character",
-        "whitespace", "trim", "case sensitivity", "repeated", "duplicate click",
-        "copy paste", "long input"
-    }
-    negative_keywords = {
-        "invalid", "error", "reject", "required", "blank", "missing", "incorrect",
-        "fail", "not allowed", "unsupported", "validation", "disabled", "warning"
-    }
-
-    if any(keyword in combined for keyword in edge_keywords):
-        return "edge"
-    if any(keyword in combined for keyword in negative_keywords):
-        return "negative"
     return "positive"
 
 
@@ -579,37 +563,7 @@ def looks_like_acceptance_criterion(text: str) -> bool:
         return False
     if re.fullmatch(r"https?://\S+", cleaned, flags=re.IGNORECASE):
         return False
-    lowered = cleaned.lower()
-    if lowered in {
-        "acceptance criteria",
-        "application context",
-        "entry conditions",
-        "generation guidance",
-        "prefer",
-        "validate",
-    }:
-        return False
-    if lowered.startswith("given "):
-        return True
-    if lowered.startswith("when ") or lowered.startswith("then "):
-        return False
-    behavior_tokens = [
-        "button",
-        "field",
-        "form",
-        "validation",
-        "authenticate",
-        "submit",
-        "return to",
-        "navigate",
-        "redirect",
-        "open",
-        "click",
-        "visible",
-        "enabled",
-        "disabled",
-    ]
-    return any(token in lowered for token in behavior_tokens)
+    return len(cleaned.split()) >= 3
 
 
 
@@ -834,32 +788,12 @@ def test_case_signature(tc: Dict[str, Any]) -> str:
 
 def criterion_is_covered(criterion: str, test_cases: List[Dict[str, Any]]) -> bool:
     criterion_key = criterion_signature(criterion)
-    criterion_tokens = [token for token in criterion_key.split() if len(token) > 2]
-    if not criterion_tokens:
+    if not criterion_key:
         return False
-
-    stop_tokens = {"page", "state", "button", "buttons", "user", "view", "workflow", "screen", "control", "controls", "should", "when", "then", "given", "from", "into", "with", "that", "must", "will", "able", "remain", "still"}
-    significant_tokens = [token for token in criterion_tokens if token not in stop_tokens]
-    required_tokens = list(dict.fromkeys(significant_tokens or criterion_tokens))
-
     for tc in test_cases:
         candidate_key = test_case_signature(tc)
-        candidate_tokens = set(candidate_key.split())
         if criterion_key and criterion_key in candidate_key:
             return True
-        if not required_tokens:
-            continue
-        overlap = set(required_tokens) & candidate_tokens
-        overlap_ratio = len(overlap) / max(len(set(required_tokens)), 1)
-        if len(required_tokens) <= 3:
-            if overlap_ratio >= 1.0:
-                return True
-        elif len(required_tokens) <= 6:
-            if overlap_ratio >= 0.75 and len(overlap) >= 3:
-                return True
-        else:
-            if overlap_ratio >= 0.6 and len(overlap) >= 4:
-                return True
     return False
 
 
@@ -1006,7 +940,7 @@ def process_workflow_file(config: Dict[str, Any], input_path: Path) -> None:
         logger.info("Skipped excluded workflow: %s", wf_name)
         return
 
-    output_dir = BASE_DIR / config["manual_tests_output_dir"]
+    output_dir = BASE_DIR / config["manual_tests_output_dir"] / wf_slug
     output_path = output_dir / f"{wf_slug}.json"
 
     if output_path.exists() and not gc.get("overwrite_manual_tests", False):

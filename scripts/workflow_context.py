@@ -119,66 +119,14 @@ def resource_summary(resource_file: str) -> Dict[str, Any]:
 
 
 def find_relevant_existing_resources(workflow_input: Dict[str, Any]) -> List[str]:
-    story = collect_story_text(workflow_input).lower()
-    external_context = workflow_input.get("externalContext", {}) if isinstance(workflow_input.get("externalContext"), dict) else {}
-    external_story = collect_story_text(external_context).lower() if external_context else ""
-    combined_story = f"{story} {external_story}".strip()
-    current = {str(x).replace('\\', '/').strip() for x in workflow_input.get("resourceFiles", []) if str(x).strip()}
-
-    story_tokens = set(normalize_name_tokens(combined_story).split())
+    current = [str(x).replace('\\', '/').strip() for x in workflow_input.get("resourceFiles", []) if str(x).strip()]
     resources = collect_existing_resource_context(include_common=False)
-    scored: List[tuple[int, str]] = []
-    relevant_knowledge = discover_relevant_workflow_knowledge(workflow_input)
-    knowledge_resource_signals: set[str] = set()
-    knowledge_text_tokens: set[str] = set()
-
-    for item in relevant_knowledge if isinstance(relevant_knowledge, list) else []:
-        knowledge = item.get("knowledge") if isinstance(item, dict) else {}
-        if not isinstance(knowledge, dict):
-            continue
-        resource_knowledge = knowledge.get("resourceKnowledge") if isinstance(knowledge.get("resourceKnowledge"), dict) else {}
-        for path in resource_knowledge.get("authoritativeResources") or []:
-            normalized = str(path).replace("\\", "/").strip()
-            if normalized:
-                knowledge_resource_signals.add(normalized)
-        knowledge_blob = json.dumps(knowledge, ensure_ascii=False)
-        knowledge_text_tokens.update(normalize_name_tokens(knowledge_blob).split())
-
-    for resource in resources:
-        rel = str(resource.get("file", "")).replace("pom_pages/", "").strip()
-        if not rel:
-            continue
-        page_dir_name = Path(rel).parent.name
-        page_name = page_dir_name.replace("_page", "")
-        if rel in current and page_name not in {"home", "logout"}:
-            continue
-
-        resource_tokens = set()
-        resource_tokens.update(normalize_name_tokens(page_name).split())
-        resource_tokens.update(normalize_name_tokens(page_dir_name).split())
-        for keyword in resource.get("keywords", []):
-            resource_tokens.update(normalize_name_tokens(keyword.get("name", "")).split())
-        for variable in resource.get("variables", []):
-            resource_tokens.update(normalize_name_tokens(variable.get("name", "")).split())
-
-        token_overlap = len({token for token in resource_tokens if token and token in story_tokens})
-        knowledge_overlap = len({token for token in resource_tokens if token and token in knowledge_text_tokens})
-        direct_page_hit = 1 if any(token and token in combined_story for token in {page_name, page_dir_name, page_name.replace("_", " ")}) else 0
-        knowledge_resource_hit = 1 if rel in knowledge_resource_signals else 0
-        current_overlap_penalty = -2 if rel in current else 0
-        score = token_overlap * 3 + knowledge_overlap * 2 + direct_page_hit * 5 + knowledge_resource_hit * 6 + current_overlap_penalty
-
-        if score > 0:
-            scored.append((score, rel))
-
-    scored.sort(key=lambda item: (-item[0], item[1]))
-    deduped: List[str] = []
-    seen = set()
-    for _, item in scored:
-        if item not in seen:
-            seen.add(item)
-            deduped.append(item)
-    return deduped[:10]
+    available = {str(resource.get("file", "")).replace("pom_pages/", "").strip() for resource in resources if str(resource.get("file", "")).strip()}
+    ordered: List[str] = []
+    for item in current:
+        if item in available and item not in ordered:
+            ordered.append(item)
+    return ordered[:10]
 
 
 def infer_workflow_reuse_context(workflow_input: Dict[str, Any]) -> Dict[str, Any]:

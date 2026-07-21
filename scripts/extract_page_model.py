@@ -1011,14 +1011,38 @@ def _derive_keyword_name_from_element_name(element_name: str, role: str, fallbac
     return build_fallback_keyword_name(normalized_element, role)
 
 
+def _canonical_variable_name_for_element(element_name: str, element: dict | None, used_names: set[str] | None = None) -> str:
+    normalized_element_name = slugify(element_name)
+    role = clean_text(str((element or {}).get("type", ""))).lower() or "element"
+    return make_var_name(normalized_element_name, role, used_names or set())
+
+
+def _replace_variable_references(lines: List[str], replacement_map: Dict[str, str]) -> List[str]:
+    normalized_lines: List[str] = []
+    for line in lines:
+        updated = line
+        for source_name, target_name in replacement_map.items():
+            if not source_name or not target_name:
+                continue
+            updated = updated.replace(f"${{{source_name}}}", f"${{{target_name}}}")
+        normalized_lines.append(updated)
+    return normalized_lines
+
+
 def normalize_reviewed_keyword_block(keyword: dict, approved_elements_by_name: Dict[str, dict] | None = None) -> str:
     keyword_name = clean_text(str(keyword.get("keywordName", "")))
     role = clean_text(str(keyword.get("role", ""))).lower()
     approved_elements_by_name = approved_elements_by_name or {}
     matched_element_name = ""
     matched_element: dict | None = None
+    target_element_name = clean_text(str(keyword.get("targetElement", "")))
+    if target_element_name and target_element_name in approved_elements_by_name:
+        matched_element_name = target_element_name
+        matched_element = approved_elements_by_name[target_element_name]
+        if not role:
+            role = clean_text(str(matched_element.get("type", ""))).lower()
     locator = clean_text(str(keyword.get("targetElement", "")))
-    if locator:
+    if not matched_element_name and locator:
         for element_name, element in approved_elements_by_name.items():
             if clean_text(str(element.get("locator", ""))) == locator:
                 matched_element_name = element_name
@@ -1043,16 +1067,17 @@ def normalize_reviewed_keyword_block(keyword: dict, approved_elements_by_name: D
         block_lines.append("    [Arguments]    " + "    ".join(normalized_args))
     implementation_lines = _normalize_keyword_implementation_lines(keyword.get("implementation", []))
     if matched_element_name and matched_element is not None:
-        normalized_element_name = slugify(matched_element_name)
         canonical_role = role or clean_text(str(matched_element.get("type", ""))).lower() or "element"
-        canonical_var_name = make_var_name(normalized_element_name, canonical_role, set())
-        expected_locator = clean_text(str(matched_element.get("locator", "")))
-        unique_locator_lines: List[str] = []
-        for line in implementation_lines:
-            if canonical_var_name in line or (expected_locator and expected_locator in line):
-                if line not in unique_locator_lines:
-                    unique_locator_lines.append(line)
-        if len(unique_locator_lines) <= 1:
+        canonical_var_name = _canonical_variable_name_for_element(matched_element_name, matched_element, set())
+        referenced_vars = re.findall(r"\$\{([A-Z0-9_]+)\}", "\n".join(implementation_lines))
+        replacement_map = {
+            ref_name: canonical_var_name
+            for ref_name in referenced_vars
+            if ref_name and ref_name != canonical_var_name and ref_name.endswith(f"_{canonical_role.upper()}")
+        }
+        if replacement_map:
+            implementation_lines = _replace_variable_references(implementation_lines, replacement_map)
+        if not any(f"${{{canonical_var_name}}}" in line for line in implementation_lines):
             implementation_lines = build_fallback_keyword_steps(canonical_var_name, canonical_role)
     block_lines.extend(implementation_lines)
     return "\n".join(block_lines)
