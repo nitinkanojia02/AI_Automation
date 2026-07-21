@@ -23,6 +23,7 @@ Refinement rules:
 - Enforce workflow knowledge → authoritative upstream resources → approved entry journey → approved destination-state validation as a mandatory refinement chain whenever the workflow depends on upstream navigation or state transitions
 - Refine scenarios so they explicitly establish the approved upstream entry journey when workflow knowledge says the target page is not directly accessed directly by URL
 - Replace origin-page disappearance or local-page-only success checks with explicit destination-state validation when workflow knowledge and authoritative resources support that destination validation
+- If stronger destination-state validation is not yet grounded in approved page/resource evidence, keep the scenario wording accurate and observable without inventing unsupported authenticated indicators, controls, or messages
 - Preserve meaningful positive, negative, UI, validation, navigation, and edge scenarios
 - Do not collapse broad coverage into a minimal subset
 - Keep field-level distinctions when they materially affect observable behavior

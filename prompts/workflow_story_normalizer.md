@@ -48,7 +48,12 @@ Content rules:
 - Keep navigation facts precise: distinguish entry page, target page, success destination, and failure/return destination whenever the input supports that distinction
 - Do not duplicate the same statement across multiple sections unless needed for clarity
 - Prefer compact factual statements over narrative prose dumps; this story is a downstream generation artifact, not a long-form requirements document
-- Prefer business-observable outcomes over implementation wording
+- Prefer action-oriented and state-oriented statements over copied story prose when describing navigation, transitions, and validations
+- Keep each navigation or transition fact self-contained and executable in meaning; avoid broken sentence fragments, half-bullets, or clauses that require adjacent lines to make sense
+- Keep navigation journeys as ordered business actions and page/state transitions, not as repeated narrative/story prose
+- When a page is reached indirectly through an upstream page or shared shell flow, make that entry journey explicit without inventing direct URLs or direct-open behavior
+- If expected behavior is intentionally observational or implementation-dependent, preserve that wording neutrally instead of resolving it into a hardcoded outcome
+- Preserve business-observable outcomes over implementation wording
 - Make resource reuse guidance explicit enough that downstream generation can infer which upstream resources should be reused
 - If a shared or upstream resource may already own a control or navigation behavior, state that reuse should be preferred over duplicate ownership
 - If approved credentials or test data are given, state that they are approved for positive scenarios and should be reused consistently across manual and automation assets

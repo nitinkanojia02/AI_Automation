@@ -402,6 +402,7 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
         "- Any semantically meaningful credential or business-data variant required by an approved manual test, including uppercase, lowercase, mixed-case, role-specific, invalid, boundary, or other reusable edge-case data, must be referenced through a semantic page-resource variable and must never appear as a literal in the suite.\n"
         "- If an approved manual test requires reusable or semantically meaningful edge-case input and the resource context does not explicitly expose that variable yet, still structure the suite to reference a semantic page-resource variable rather than embedding a literal.\n"
         "- If the resource context contains variables such as ${PAGE_URL}, ${LOGIN_PAGE_URL}, ${VALID_USERNAME}, ${VALID_PASSWORD}, ${INVALID_USERNAME}, ${INVALID_PASSWORD}, or other approved semantic data variables, you must use those variables in the suite instead of literal values.\n"
+        "- Treat placeholder values such as literal 'None', 'null', or empty-looking string surrogates as invalid reusable business data. Do not propagate them into generated suites; reuse only grounded approved variables with real semantic values.\n"
         "- Hardcoded URLs like http://..., hardcoded credentials, and hardcoded special-character strings are not allowed in the suite when equivalent approved resource variables exist or are clearly implied by the approved manual tests and resource context.\n"
         "- Literal usernames, passwords, URLs, expected messages, and reusable edge-case strings are forbidden in the suite except for Robot built-ins such as ${EMPTY} and ${SPACE} and trivial inline composition explicitly allowed by policy.\n"
         "- For masking, visibility, error message, disabled state, enabled state, page navigation, redirection, and UI behavior expectations, include explicit assertion/verification steps that satisfy expectedResult.\n"
@@ -417,6 +418,7 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
         "- Each test case should have a clear final verification aligned to its expectedResult.\n"
         "- Setup-only confidence is not enough: unless the scenario itself is explicitly only about navigation/setup, each test body must contain at least one scenario-specific verification beyond shared setup.\n"
         "- If a manual test title or expectedResult claims a specific state or observable behavior, the suite must verify that claimed outcome explicitly using the strongest approved evidence available from reusable resources and workflow knowledge rather than substituting only route/form-presence evidence.\n"
+        "- If a manual scenario is intentionally observational or implementation-dependent, do not hardcode a concrete outcome in the suite unless approved manual wording or approved reusable resource evidence already resolves that behavior.\n"
         "- Preserve specialized manual intent. When the scenario concerns a field property, state transition, rejection, validation, visibility, interactivity, or another observable behavior, generate an explicit verification aligned to that intent instead of only performing actions.\n"
         "- If a manual test expects an error message, validation message, rejection, blocked transition, or failed protected action, generate an explicit verification for that result, not only a generic page-loaded check. Prefer dedicated page validation keywords from resource_context when they are supported or clearly implied.\n"
         "- For negative protected-flow scenarios, do not rely solely on a same-page-loaded check. Include at least one stronger observable assertion such as an error message check, validation message check, no-navigation check, protected-area-not-visible check, or another resource-backed visible rejection check.\n"
@@ -1638,43 +1640,24 @@ def warn_on_assertion_quality(manual_expected_outcomes: list[str], robot_content
     if not manual_expected_outcomes:
         return ""
 
-    expectation_tokens = set()
-    for outcome in manual_expected_outcomes:
-        lowered = outcome.lower()
-        if any(token in lowered for token in ["error", "message", "validation", "required", "rejected", "denied", "failed"]):
-            expectation_tokens.add("negative_feedback")
-        if any(token in lowered for token in ["redirect", "dashboard", "home", "landing", "destination", "post-condition", "state"]):
-            expectation_tokens.add("destination_state")
-        if any(token in lowered for token in ["visible", "visibility", "shown", "displayed", "enabled", "disabled", "interactable"]):
-            expectation_tokens.add("control_state")
-        if any(token in lowered for token in ["mask", "masked", "attribute", "readonly", "placeholder", "hidden"]):
-            expectation_tokens.add("field_property")
-
-    if not expectation_tokens:
+    manual_text = " ".join(clean_text(item).lower() for item in manual_expected_outcomes if clean_text(item))
+    if not manual_text:
         return ""
+
+    warnings: list[str] = []
 
     same_page_checks = len(re.findall(r"(?im)\b(still on|remain on|page loaded|form loaded|location should be|location should contain)\b", robot_content))
     stronger_verify_checks = len(re.findall(r"(?im)^\s*(Verify|Validate)\b", robot_content))
     available_validation_keywords = len(resource_validation_keywords)
     verification_lines = re.findall(r"(?im)^\s+(?:Verify|Validate|Wait Until|Location Should|Should|Element Attribute Value Should Be|Get Element Attribute)\b.*$", robot_content)
 
-    warnings: list[str] = []
     if same_page_checks >= 2 and stronger_verify_checks <= 2 and available_validation_keywords >= 1:
         warnings.append("Generated suite may rely on weak same-page assertions even though richer approved expected outcomes and reusable validation keywords appear to be available")
 
-    if "control_state" in expectation_tokens:
-        if not re.search(r"(?im)^\s*(?:Element Should Be Enabled|Wait Until Element Is Enabled|Element Should Be Visible|Wait Until Element Is Visible|Verify .* Enabled|Validate .* Enabled|Verify .* Visible|Validate .* Visible)\b", robot_content):
-            warnings.append("Generated suite contains control-state expectations without clear state/interactability verification")
+    if verification_lines and all("location" in line.lower() for line in verification_lines):
+        warnings.append("Generated suite appears to validate destination-state expectations using only URL/location checks")
 
-    if "field_property" in expectation_tokens:
-        if not re.search(r"(?im)^\s*(?:Get Element Attribute|Element Attribute Value Should Be|Verify .* Attribute|Validate .* Attribute|Verify .* Mask|Validate .* Mask|Verify .* Placeholder|Validate .* Placeholder)\b", robot_content):
-            warnings.append("Generated suite contains field-property expectations without an explicit property-oriented verification")
-
-    if "destination_state" in expectation_tokens and verification_lines:
-        if all("location" in line.lower() for line in verification_lines):
-            warnings.append("Generated suite appears to validate destination-state expectations using only URL/location checks")
-
-    return "\n".join(warnings)
+    return "\n".join(dict.fromkeys(warnings))
 
 
 def normalize_generated_robot_identifiers(content: str, identifier_policy: dict) -> str:

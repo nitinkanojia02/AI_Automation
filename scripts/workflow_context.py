@@ -190,13 +190,10 @@ def infer_workflow_reuse_context(workflow_input: Dict[str, Any]) -> Dict[str, An
     target_page = workflow_input.get("targetPage") if isinstance(workflow_input.get("targetPage"), dict) else {}
 
     classification = "standalone_page_or_workflow"
-    lowered = story.lower()
-    if "single page application" in lowered or "spa" in lowered:
-        classification = "spa_stateful_workflow"
     if entry_page or workflow_input.get("navigationSteps"):
         classification = "dependent_navigation_workflow"
-    if any(token in lowered for token in ["logout", "sign out", "authenticated state", "account menu"]):
-        classification = "authenticated_state_behavior"
+    elif story:
+        classification = "contextual_workflow"
 
     authoritative = current_resources + [item for item in inferred_resources if item not in current_resources]
     return {

@@ -247,14 +247,6 @@ def derive_navigation_model(workflow_input: Dict[str, Any], story_sections: Dict
     inferred_entry_name = clean_text(entry_page.get("name"))
     inferred_entry_url = clean_text(entry_page.get("url"))
 
-    story_blob = " ".join(
-        story_sections.get("applicationContext", [])
-        + story_sections.get("behaviorRules", [])
-        + story_sections.get("reuseGuidance", [])
-        + story_sections.get("acceptanceCriteria", [])
-        + story_sections.get("transitionExpectations", [])
-    ).lower()
-
     if not inferred_entry_name:
         inferred_entry_name = clean_text(primary_page.get("name"))
 
@@ -270,7 +262,7 @@ def derive_navigation_model(workflow_input: Dict[str, Any], story_sections: Dict
     if not inferred_target_url:
         inferred_target_url = clean_text(target_page.get("url"))
 
-    journey = []
+    journey: List[Dict[str, str]] = []
     for step in ensure_list(workflow_input.get("navigationSteps")):
         if not isinstance(step, dict):
             continue
@@ -286,24 +278,21 @@ def derive_navigation_model(workflow_input: Dict[str, Any], story_sections: Dict
         })
 
     if not journey:
-        selected_lines = []
-        for line in story_sections.get("acceptanceCriteria", []) + story_sections.get("reuseGuidance", []) + story_sections.get("transitionExpectations", []):
+        candidate_lines = story_sections.get("acceptanceCriteria", []) + story_sections.get("reuseGuidance", []) + story_sections.get("transitionExpectations", [])
+        for line in candidate_lines:
+            page_name = inferred_target_name or inferred_entry_name
             lowered = line.lower()
-            if any(token in lowered for token in ["click", "open", "return", "navigate", "login page", "home page", "back button", "home button"]):
-                if inferred_target_name and inferred_target_name.lower() in lowered:
-                    page_name = inferred_target_name
-                elif inferred_entry_name and inferred_entry_name.lower() in lowered:
-                    page_name = inferred_entry_name
-                else:
-                    page_name = inferred_target_name or inferred_entry_name
-                selected_lines.append({
-                    "page": page_name,
-                    "action": line,
-                    "element": "",
-                })
-            if len(selected_lines) >= 8:
+            if inferred_target_name and inferred_target_name.lower() in lowered:
+                page_name = inferred_target_name
+            elif inferred_entry_name and inferred_entry_name.lower() in lowered:
+                page_name = inferred_entry_name
+            journey.append({
+                "page": page_name,
+                "action": line,
+                "element": "",
+            })
+            if len(journey) >= 8:
                 break
-        journey = selected_lines
 
     return {
         "entryPoint": {
@@ -456,11 +445,8 @@ def collect_manual_coverage(manual_data: Dict[str, Any]) -> Dict[str, Any]:
                 'expectedResult': expected,
             })
         if expected:
-            lowered = expected.lower()
-            if any(token in lowered for token in ['verify', 'visible', 'validation', 'error', 'masked', 'enabled', 'disabled']):
-                validations.append(expected)
-            if any(token in lowered for token in ['navigate', 'return', 'redirect', 'authenticated', 'guest state', 'page opens', 'page closes', 'open', 'home page']):
-                transitions.append(expected)
+            validations.append(expected)
+            transitions.append(expected)
     return {
         'approvedScenarios': scenarios[:40],
         'validations': unique_strings(validations, limit=20),

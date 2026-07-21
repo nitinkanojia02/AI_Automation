@@ -31,6 +31,7 @@ Review emphasis:
 - Enforce workflow knowledge → authoritative upstream resources → approved entry journey → approved destination-state validation as a mandatory review chain whenever the workflow depends on upstream navigation or state transitions
 - Reject or repair manual scenarios that assume the target page is already open when workflow knowledge says it must be reached through an approved upstream journey
 - Reject or repair manual scenarios that validate only origin-page disappearance or local-page state when workflow knowledge defines a destination page/state and authoritative upstream/current resources support that destination validation
+- If the workflow describes a success destination state but approved resource/page evidence does not yet support the strongest business-visible assertion, keep the expected result honest and observable without inventing unsupported indicators; do not overstate validation capability
 - Repair vague expected results into observable outcomes that can be asserted later
 - Keep scenario wording faithful to what the user intended to do, not just the end state
 - Avoid flattening specialized interactions into generic 'enter data and submit' phrasing when the source artifact is more specific

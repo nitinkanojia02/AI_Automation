@@ -48,6 +48,9 @@ Framework expectations:
 - Flag unsupported or invented Robot Framework/SeleniumLibrary/shared-resource APIs as major quality issues
 - Flag noisy derived variables when built-ins or inline composition would be sufficient
 - Flag duplicate variable ownership, duplicate keyword capability, and overlapping ownership when the same locator or same normalized keyword behavior already exists in approved resource context
+- Flag reviewed-to-final naming instability when the draft resource reintroduces extraction-era aliases, technical DOM-id aliases, or inconsistent variable names for controls that already have cleaner approved semantic names in reviewed artifacts
+- Flag placeholder data quality issues such as page-url variables serialized as literal "None" when direct URL access is absent or optional; prefer null/omitted semantics instead of fake reusable values
+- Flag divergence between approved reviewed-keyword variable naming and final resource naming when both artifacts are describing the same retained page controls or same approved page capability
 
 Flag as a major quality issue if:
 - the resource is mostly one-element-one-keyword with little abstraction value

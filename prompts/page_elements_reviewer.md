@@ -44,6 +44,8 @@ Review rules:
 - Prioritize authentication errors, required-field messages, inline validation text, toast or banner alerts, warning messages, blocked-access indicators, disabled-state indicators, and other observable negative-outcome evidence when the workflow or manual expectations imply failed or rejected scenarios
 - If visible negative-outcome evidence is expected by the workflow but not confidently present in the draft artifact, report that gap explicitly as a validation_gap issue instead of silently approving a page model that only supports same-page checks
 - Distinguish between strong observable validation evidence and weaker fallback page-state evidence; do not imply that a generic page container or login form alone is an adequate substitute for a real error or validation element
+- If an upstream/shared page resource is the authoritative owner of a navigation control used in this workflow context, do not report that control as a missing page-owned element unless the provided context clearly requires local ownership on this page
+- When a downstream page depends on upstream/shared shell controls, prefer explicitly calling out upstream reuse guidance in the issue summary rather than forcing duplicate ownership into the approved local page model
 - Flag locators that are overly generic, brittle, likely to match multiple elements, or depend only on unstable UI text when stronger choices seem available
 - If a critical control from the workflow is missing, report it
 - If an extracted element appears wrongly classified, report it
