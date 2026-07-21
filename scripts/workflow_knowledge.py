@@ -230,6 +230,9 @@ def looks_like_journey_action(value: str) -> bool:
         return False
     if re.fullmatch(r"https?://[^\s]+", cleaned):
         return False
+    first_word = cleaned.split()[0].lower()
+    if first_word in {"as", "the", "this", "these", "washtab", "workflow", "application", "page"}:
+        return False
     return True
 
 

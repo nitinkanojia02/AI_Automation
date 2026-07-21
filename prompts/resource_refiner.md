@@ -68,7 +68,9 @@ Refinement guidance:
 - Treat approved artifact lineage as authoritative context for what names and abstractions must survive into the final page resource
 - Preserve approved variable names and approved keyword names exactly whenever feasible instead of silently renaming them during refinement
 - Keep reviewed-keyword implementations internally aligned with the same canonical semantic variable names used by the final resource; if approved reviewed keywords still reference stale extraction-era aliases, normalize them to the approved semantic variable names rather than preserving alias drift
+- Apply that canonical-variable normalization not only to single-control action keywords but also to page-state, page-load, visible-state, enabled-state, and multi-control verification keywords whenever the retained controls are grounded in approved page metadata
 - Keep reviewed-keyword implementations and final resource naming aligned: if approved reviewed keywords already establish canonical semantic variable names for retained controls, reuse those same canonical names in the final resource instead of reverting to extraction-era aliases or technical locator-derived names
+- Preserve reviewed keyword names exactly when they already express a correct approved page capability; do not compress, fuse words, or partially rewrite approved keyword names during refinement
 - Use retrieval-first refinement: reuse approved existing variables, keywords, reviewed keyword lineage, resource ownership, and workflow knowledge before creating anything net new
 - Treat keyword_reuse_analysis and reuse_analysis as mandatory duplicate-risk and ownership-risk context during refinement
 - If refinement input shows duplicate locator ownership, duplicate keyword capability, ownership conflicts, thin low-value wrappers, or shared/common overlap, resolve by reusing existing approved capability rather than preserving parallel definitions

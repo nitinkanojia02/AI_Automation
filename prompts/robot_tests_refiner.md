@@ -29,6 +29,8 @@ Refinement rules:
 - Preserve specialized interaction intent such as Enter key submission, repeated clicking, whitespace handling, paste-like input, and masking verification
 - Treat approved page/common resource context as the semantic source of truth for keyword names, variable reuse, and supported abstractions
 - Preserve approved resource keyword names and approved resource variable names exactly whenever feasible instead of renaming them in the suite
+- Copy approved resource keyword names exactly, character for character, when reusing them in test steps; do not compress words, drop spaces, merge adjacent tokens, or create near-duplicate keyword spellings
+- If the same approved resource keyword is reused across multiple tests, keep one exact spelling everywhere instead of emitting small naming variations
 - Prefer visible, observable, evidence-backed assertions when supported by approved manual expected outcomes and approved resource validations
 - For negative scenarios, use stronger approved validation evidence instead of only same-page checks when such evidence exists
 - Do not invent unsupported validation messages or unsupported business behavior
