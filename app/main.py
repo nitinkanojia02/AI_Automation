@@ -677,10 +677,6 @@ def build_workflow_payload(
     source: dict | None = None,
     external_context: dict | None = None,
     test_identifier_prefix: str = "",
-    entry_page_name: str = "",
-    entry_page_url: str = "",
-    navigation_steps: list[dict] | None = None,
-    target_page_signals: list[dict] | None = None,
 ):
     preconditions = [line.strip() for line in preconditions_text.splitlines() if line.strip()]
     steps = [line.strip() for line in steps_text.splitlines() if line.strip()]
@@ -731,25 +727,6 @@ def build_workflow_payload(
         "observedValidations": validations,
         "scenarioIntent": scenario_intent,
     }
-
-    normalized_entry_page_name = clean_text(entry_page_name)
-    normalized_entry_page_url = normalize_url_value(entry_page_url)
-    normalized_navigation_steps = navigation_steps if isinstance(navigation_steps, list) else []
-    normalized_target_page_signals = target_page_signals if isinstance(target_page_signals, list) else []
-
-    if normalized_entry_page_name or normalized_entry_page_url or normalized_navigation_steps or normalized_target_page_signals:
-        entry_page = {}
-        if normalized_entry_page_name:
-            entry_page["name"] = normalized_entry_page_name
-        if normalized_entry_page_url:
-            entry_page["url"] = normalized_entry_page_url
-        if entry_page:
-            payload["entryPage"] = entry_page
-        payload["targetPage"] = {"name": page_name}
-        if normalized_navigation_steps:
-            payload["navigationSteps"] = normalized_navigation_steps
-        if normalized_target_page_signals:
-            payload["targetPageSignals"] = normalized_target_page_signals
 
     if isinstance(external_context, dict) and external_context:
         payload["externalContext"] = external_context
@@ -3912,29 +3889,6 @@ def delete_workflow(workflow_name: str):
 
     return RedirectResponse(url="/", status_code=HTTP_303_SEE_OTHER)
 
-def get_navigation_resource_catalog() -> dict:
-    catalog: dict[str, list[str]] = {}
-    for resource_path in sorted(POM_DIR.glob("*/*.resource")):
-        page_name = resource_path.parent.name
-        try:
-            parsed = parse_resource_file(resource_path)
-        except Exception:
-            continue
-        locator_variable_names = []
-        for variable in parsed.get("variables", []):
-            if not isinstance(variable, dict):
-                continue
-            name = clean_text(str(variable.get("name", "")))
-            value = clean_text(str(variable.get("value", "")))
-            if not name or not value:
-                continue
-            if value.startswith(("xpath=", "css=", "id=", "name=", "//", "(", "#", ".")) or "@" in value:
-                locator_variable_names.append(name)
-        if locator_variable_names:
-            catalog[page_name] = sorted(set(locator_variable_names))
-    return catalog
-
-
 def load_workflow_story_normalizer_prompt() -> str:
     prompt = read_text_file(WORKFLOW_STORY_NORMALIZER_PROMPT_PATH).strip()
     if not prompt:
@@ -4031,7 +3985,6 @@ def workflow_form(request: Request):
         "edit_mode": False,
         "workflow_slug": "",
         "azure_defaults": azure_defaults,
-        "navigation_resource_catalog": get_navigation_resource_catalog(),
     })
 
 @app.get("/workflow/edit/{workflow_name}")
@@ -4047,7 +4000,6 @@ def edit_workflow(request: Request, workflow_name: str):
         "edit_mode": True,
         "workflow_slug": workflow_name,
         "azure_defaults": azure_defaults,
-        "navigation_resource_catalog": get_navigation_resource_catalog(),
     })
 
 def normalize_resource_file_path(page_name: str, resource_file: str) -> str:
@@ -4068,46 +4020,6 @@ def normalize_resource_file_path(page_name: str, resource_file: str) -> str:
 def normalize_url_value(value: str) -> str:
     value = clean_text(value)
     return value.strip()
-
-
-def extract_navigation_steps_from_form(form: FormData, step_count: int) -> list[dict]:
-    steps: list[dict] = []
-    for idx in range(max(step_count, 0)):
-        action = clean_text(str(form.get(f"navigation_step_{idx}_action", "")))
-        page = clean_text(str(form.get(f"navigation_step_{idx}_page", "")))
-        element = clean_text(str(form.get(f"navigation_step_{idx}_element", "")))
-        if not action or not page or not element:
-            continue
-        steps.append({
-            "action": action,
-            "page": page,
-            "element": element,
-        })
-    return steps
-
-
-def extract_target_signals_from_form(form: FormData, signal_count: int) -> list[dict]:
-    signals: list[dict] = []
-    for idx in range(max(signal_count, 0)):
-        signal_type = clean_text(str(form.get(f"signal_{idx}_type", ""))).lower()
-        if signal_type == "knownelement":
-            page = clean_text(str(form.get(f"signal_{idx}_page", "")))
-            element = clean_text(str(form.get(f"signal_{idx}_element", "")))
-            if page and element:
-                signals.append({
-                    "type": "knownElement",
-                    "page": page,
-                    "element": element,
-                })
-            continue
-        value = clean_text(str(form.get(f"signal_{idx}_value", "")))
-        if signal_type in {"text", "selector", "title", "urlcontains"} and value:
-            normalized_type = "urlContains" if signal_type == "urlcontains" else signal_type
-            signals.append({
-                "type": normalized_type,
-                "value": value,
-            })
-    return signals
 
 
 def strip_html_tags(value: str) -> str:
@@ -4276,10 +4188,6 @@ def build_workflow_payload_from_azure_story(
     page_url: str,
     resource_file: str,
     test_identifier_prefix: str = "",
-    entry_page_name: str = "",
-    entry_page_url: str = "",
-    navigation_steps: list[dict] | None = None,
-    target_page_signals: list[dict] | None = None,
 ) -> dict:
     workflow_name = clean_text(str(azure_context.get("title", ""))) or "Imported Workflow"
     description = clean_text(str(azure_context.get("description", "")))
@@ -4312,10 +4220,6 @@ def build_workflow_payload_from_azure_story(
         source=source,
         external_context=azure_context,
         test_identifier_prefix=clean_text(test_identifier_prefix).upper() or derive_test_identifier_prefix(azure_context),
-        entry_page_name=entry_page_name,
-        entry_page_url=entry_page_url,
-        navigation_steps=navigation_steps,
-        target_page_signals=target_page_signals,
     )
 
 
@@ -4327,10 +4231,6 @@ async def save_workflow(
     feature: str = Form("Login"),
     page_name: str = Form(...),
     page_url: str = Form(""),
-    entry_page_name: str = Form(""),
-    entry_page_url: str = Form(""),
-    navigation_step_count: int = Form(0),
-    signal_count: int = Form(0),
     resource_file: str = Form(...),
     preconditions_text: str = Form(""),
     steps_text: str = Form(""),
@@ -4346,12 +4246,9 @@ async def save_workflow(
     azure_work_item_id: str = Form(""),
     test_identifier_prefix: str = Form(""),
 ):
-    form = await request.form()
+    await request.form()
     page_url = normalize_url_value(page_url)
-    entry_page_url = normalize_url_value(entry_page_url)
     input_source = clean_text(input_source).lower() or "manual"
-    navigation_steps = extract_navigation_steps_from_form(form, navigation_step_count)
-    target_page_signals = extract_target_signals_from_form(form, signal_count)
 
     if input_source == "azure_devops":
         pat = os.getenv("AZURE_DEVOPS_PAT", "").strip()
@@ -4371,10 +4268,6 @@ async def save_workflow(
             page_url=page_url,
             resource_file=resource_file,
             test_identifier_prefix=test_identifier_prefix,
-            entry_page_name=entry_page_name,
-            entry_page_url=entry_page_url,
-            navigation_steps=navigation_steps,
-            target_page_signals=target_page_signals,
         ))
         workflow_name = clean_text(str(payload.get("workflowName", workflow_name)))
     else:
@@ -4392,10 +4285,6 @@ async def save_workflow(
             validations_text,
             scenario_intent_text,
             str(CONFIG.get("application_code", "")),
-            entry_page_name=entry_page_name,
-            entry_page_url=entry_page_url,
-            navigation_steps=navigation_steps,
-            target_page_signals=target_page_signals,
         ))
 
     canonical_workflow_name = derive_canonical_workflow_name(payload, workflow_name)
