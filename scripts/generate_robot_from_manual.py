@@ -1153,24 +1153,14 @@ def collect_resource_validation_keywords(resource_context: list[dict]) -> list[s
 
 
 def warn_on_assertion_quality(manual_expected_outcomes: list[str], robot_content: str, resource_validation_keywords: list[str]) -> str:
-    if not manual_expected_outcomes:
+    if not manual_expected_outcomes or not resource_validation_keywords:
         return ""
 
-    richer_expected = any(
-        any(token in outcome.lower() for token in [
-            "error", "message", "validation", "required", "redirect", "dashboard", "home", "landing", "masked", "disabled", "enabled", "rejected", "denied"
-        ])
-        for outcome in manual_expected_outcomes
-    )
-    if not richer_expected:
-        return ""
-
-    same_page_checks = len(re.findall(r"(?im)\b(still on|remain on|login page loaded|verify .* page loaded|location should be|location should contain)\b", robot_content))
+    same_page_checks = len(re.findall(r"(?im)\b(location should be|location should contain)\b", robot_content))
     stronger_verify_checks = len(re.findall(r"(?im)^\s*(Verify|Validate)\b", robot_content))
-    available_validation_keywords = len(resource_validation_keywords)
 
-    if same_page_checks >= 2 and stronger_verify_checks <= 2 and available_validation_keywords >= 1:
-        return "Generated suite may rely on weak same-page assertions even though richer approved expected outcomes and validation keywords appear to be available"
+    if same_page_checks >= 2 and stronger_verify_checks <= 2:
+        return "Generated suite may rely on weak same-page assertions even though approved validation keywords appear to be available"
     return ""
 
 
@@ -1564,15 +1554,6 @@ def validate_manual_content(manual_data: dict) -> tuple[bool, str]:
         return False, "\n".join(errors)
 
     seen_signatures = set()
-    positive_with_observable_success = False
-    negative_with_observable_failure = False
-    category_flags = {
-        "ui": False,
-        "validation": False,
-        "navigation": False,
-        "boundary_or_edge_behavior": False,
-        "blank_or_required": False,
-    }
 
     for idx, case in enumerate(test_cases, start=1):
         if not isinstance(case, dict):
@@ -1606,42 +1587,8 @@ def validate_manual_content(manual_data: dict) -> tuple[bool, str]:
             warnings.append(f"Potential duplicate manual test detected: {title or idx}")
         seen_signatures.add(signature)
 
-        combined = " ".join([
-            title.lower(),
-            expected.lower(),
-            " ".join(clean_text(str(step)).lower() for step in steps if clean_text(str(step))),
-            " ".join(clean_text(str(field)).lower() for field in fields if clean_text(str(field))),
-        ])
-
-        expected_lower = expected.lower()
-        if case_type == "positive" and any(token in expected_lower for token in ["dashboard", "home", "redirect", "landing", "url", "success", "authenticated", "logged in"]):
-            positive_with_observable_success = True
-        if case_type == "negative" and any(token in expected_lower for token in ["error", "validation", "rejected", "denied", "remains", "not navigate", "no navigation", "failed"]):
-            negative_with_observable_failure = True
-        if expected_lower in {"system behaves as expected", "workflow completes successfully", "login should happen", "system works correctly"}:
-            warnings.append(f"Weak expected result detected in manual test: {title or idx}")
-
-        if any(token in combined for token in ["visible", "visibility", "ui", "label", "button", "link", "placeholder", "masked", "masking"]):
-            category_flags["ui"] = True
-        if any(token in combined for token in ["validation", "required", "error", "invalid", "rejected", "denied"]):
-            category_flags["validation"] = True
-        if any(token in combined for token in ["navigate", "navigation", "redirect", "home", "back", "url", "landing"]):
-            category_flags["navigation"] = True
-        if any(token in combined for token in ["edge", "boundary", "max", "min", "long", "length", "special character", "whitespace", "case sensitivity", "copy paste", "repeated", "duplicate", "enter key"]):
-            category_flags["boundary_or_edge_behavior"] = True
-        if any(token in combined for token in ["blank", "empty", "required", "missing", "without entering", "leave"]):
-            category_flags["blank_or_required"] = True
-
-    if not positive_with_observable_success:
-        warnings.append("No positive manual test explicitly asserts observable success state")
-    if not negative_with_observable_failure:
-        warnings.append("No negative manual test explicitly asserts observable failure or rejection state")
-
     if len(test_cases) < 6:
         warnings.append("Manual test coverage appears thin: fewer than 6 test cases were generated")
-    for category_name, present in category_flags.items():
-        if not present:
-            warnings.append(f"Manual test coverage may be missing scenario category: {category_name}")
 
     is_valid = len(errors) == 0
     message_parts = []

@@ -150,8 +150,6 @@ def split_story_sentences(value: Any) -> List[str]:
     text = str(value or "").replace("\r\n", "\n").replace("\r", "\n")
     if not clean_text(text):
         return []
-    heading_pattern = r"\b(USER STORY|APPLICATION CONTEXT|ENTRY CONDITIONS|WORKFLOW SCOPE|PRIMARY NAVIGATION JOURNEY|APPROVED TEST DATA|PAGE / COMPONENT ELEMENTS|PAGE COMPONENT ELEMENTS|BUSINESS RULES|VALIDATION EXPECTATIONS|TRANSITION EXPECTATIONS|RESOURCE REUSE GUIDANCE|DOWNSTREAM AUTOMATION GUIDANCE|TEST CREDENTIALS|LOGIN PAGE ELEMENTS|BEHAVIOR RULES|POM REUSE GUIDANCE|APPROVED TEST DATA GUIDANCE|ACCEPTANCE CRITERIA)\s*:?[ \t]*"
-    text = re.sub(heading_pattern, "\n", text, flags=re.IGNORECASE)
     text = re.sub(r"(?m)^\s*\d+\.\s+", "", text)
     text = re.sub(r"(?m)^\s*[-*]\s+", "", text)
     text = re.sub(r"\n{2,}", "\n", text)
@@ -234,20 +232,14 @@ def looks_like_journey_action(value: str) -> bool:
 
 def collect_workflow_story_lines(workflow_input: Dict[str, Any]) -> Dict[str, List[str]]:
     external = workflow_input.get("externalContext") if isinstance(workflow_input.get("externalContext"), dict) else {}
-    story_blob = unique_strings([
-        workflow_input.get("userStory"),
-        external.get("title"),
-        external.get("description"),
-    ])
-    story_lines = unique_strings(sum([split_story_sentences(item) for item in story_blob], []), limit=20)
+    story_lines = unique_strings(normalize_text_blocks(workflow_input.get("userStory")), limit=12)
     acceptance = unique_strings(
         normalize_text_blocks(workflow_input.get("acceptanceCriteria"))
         + normalize_text_blocks(external.get("acceptanceCriteria")),
         limit=20,
     )
     validation_expectations = unique_strings(
-        normalize_text_blocks(external.get("validationExpectations"))
-        + normalize_text_blocks(workflow_input.get("observedValidations")),
+        normalize_text_blocks(external.get("validationExpectations")),
         limit=20,
     )
     entry_conditions = compact_story_lines(unique_strings(

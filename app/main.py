@@ -3141,42 +3141,11 @@ def generate_manual_tests_for_workflow(workflow_name: str) -> dict:
     return final_json
 
 def infer_manual_intent(title: str, steps: list[str], expected_result: str) -> dict:
-    combined = " ".join([title or "", expected_result or "", *steps]).lower()
-
-    def has_any(*tokens: str) -> bool:
-        return any(token in combined for token in tokens)
-
-    input_method = "type"
-    if has_any("paste", "copy paste", "copy-paste", "clipboard"):
-        input_method = "paste"
-
-    submission_method = "click"
-    if has_any("press enter", "hit enter", "enter key", "keyboard submit", "submit using enter"):
-        submission_method = "keyboard_enter"
-
-    interaction_pattern = "standard"
-    if has_any("multiple rapid click", "multiple clicks", "click multiple times", "repeated click", "duplicate click", "double click"):
-        interaction_pattern = "repeat_click"
-    elif has_any("whitespace", "leading spaces", "trailing spaces", "with spaces"):
-        interaction_pattern = "whitespace"
-    elif has_any("special character", "special characters", "symbols"):
-        interaction_pattern = "special_characters"
-
-    validation_type = "generic"
-    if has_any("required", "mandatory", "empty", "blank"):
-        validation_type = "required_field"
-    elif has_any("error message", "validation message", "invalid credentials", "authentication failed", "rejected", "denied"):
-        validation_type = "error_message"
-    elif has_any("redirect", "dashboard", "home page", "landing page", "successful login", "logged in"):
-        validation_type = "navigation_success"
-    elif has_any("masked", "masking", "password hidden"):
-        validation_type = "masking"
-
     return {
-        "inputMethod": input_method,
-        "submissionMethod": submission_method,
-        "interactionPattern": interaction_pattern,
-        "validationType": validation_type,
+        "inputMethod": "type",
+        "submissionMethod": "click",
+        "interactionPattern": "standard",
+        "validationType": "generic",
     }
 
 
@@ -3405,12 +3374,6 @@ def apply_robot_test_naming_and_tags(content: str, workflow: dict | None, workfl
             normalized = clean_text(tag).lower()
             if normalized in {"positive", "negative", "edge"}:
                 return normalized
-
-        title_lower = clean_text(title).lower()
-        if any(token in title_lower for token in ["invalid", "error", "fail", "reject", "required", "blank", "empty", "incorrect", "unauthorized", "denied"]):
-            return "negative"
-        if any(token in title_lower for token in ["edge", "boundary", "max", "min", "length", "whitespace", "spaces", "special character", "copy paste", "case sensitivity"]):
-            return "edge"
         return "positive"
 
     i = 0
