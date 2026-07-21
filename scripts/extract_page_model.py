@@ -1004,8 +1004,28 @@ def _normalize_keyword_implementation_lines(lines: object) -> List[str]:
     return normalized
 
 
-def normalize_reviewed_keyword_block(keyword: dict) -> str:
+def _derive_keyword_name_from_element_name(element_name: str, role: str, fallback_name: str) -> str:
+    normalized_element = slugify(element_name)
+    if not normalized_element:
+        return clean_text(fallback_name)
+    return build_fallback_keyword_name(normalized_element, role)
+
+
+def normalize_reviewed_keyword_block(keyword: dict, approved_elements_by_name: Dict[str, dict] | None = None) -> str:
     keyword_name = clean_text(str(keyword.get("keywordName", "")))
+    role = clean_text(str(keyword.get("role", ""))).lower()
+    approved_elements_by_name = approved_elements_by_name or {}
+    matched_element_name = ""
+    locator = clean_text(str(keyword.get("targetElement", "")))
+    if locator:
+        for element_name, element in approved_elements_by_name.items():
+            if clean_text(str(element.get("locator", ""))) == locator:
+                matched_element_name = element_name
+                if not role:
+                    role = clean_text(str(element.get("type", ""))).lower()
+                break
+    if matched_element_name:
+        keyword_name = _derive_keyword_name_from_element_name(matched_element_name, role or "element", keyword_name)
     if not keyword_name:
         return ""
     block_lines = [keyword_name]
@@ -1042,6 +1062,13 @@ def generate_resource(url: str, elements: List[dict], page_name: str = "", metad
         variables.append(f"${{{var_name}}}    {locator}")
         fallback_keyword_blocks.append(generate_fallback_keyword_block(var_name, label, role))
 
+    approved_elements_by_name: Dict[str, dict] = {}
+    for item in elements:
+        if isinstance(item, dict) and {"name", "type", "locator"}.issubset(item.keys()):
+            element_name = clean_text(str(item.get("name", "")))
+            if element_name:
+                approved_elements_by_name[element_name] = item
+
     reviewed_keyword_blocks: List[dict] = []
     reviewed_keywords: List[str] = []
     if page_name and metadata_dir is not None:
@@ -1054,7 +1081,7 @@ def generate_resource(url: str, elements: List[dict], page_name: str = "", metad
                 if item.get("approved") is False:
                     continue
                 reviewed_keyword_blocks.append(item)
-                block = normalize_reviewed_keyword_block(item)
+                block = normalize_reviewed_keyword_block(item, approved_elements_by_name)
                 if block:
                     reviewed_keywords.append(block)
 
@@ -1070,7 +1097,7 @@ Resource    ../../resources/common_keywords.resource"""
     keywords_block = "*** Keywords ***"
     final_keywords = reviewed_keywords
     if not final_keywords:
-        final_keywords = [normalize_reviewed_keyword_block(item) for item in fallback_keyword_blocks if normalize_reviewed_keyword_block(item)]
+        final_keywords = [normalize_reviewed_keyword_block(item, approved_elements_by_name) for item in fallback_keyword_blocks if normalize_reviewed_keyword_block(item, approved_elements_by_name)]
     if final_keywords:
         keywords_block += "\n" + "\n\n".join(final_keywords)
 
