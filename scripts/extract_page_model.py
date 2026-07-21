@@ -1077,10 +1077,11 @@ Resource    ../../resources/common_keywords.resource"""
             )
 
         reviewed_keyword_text = "\n".join(reviewed_keywords)
-        legacy_alias_refs = sorted(set(re.findall(r"\$\{(AUTO_[A-Z0-9_]+)\}", reviewed_keyword_text)))
+        legacy_alias_refs = sorted(set(re.findall(r"\$\{([A-Z0-9_]+)\}", reviewed_keyword_text)))
+        legacy_alias_refs = [name for name in legacy_alias_refs if name.startswith("AUTO_")]
         if legacy_alias_refs:
             logger.warning(
-                "Reviewed approved keyword implementations for %s still reference legacy alias variables instead of canonical semantic variables: %s",
+                "Reviewed approved keyword implementations for %s still reference non-canonical legacy alias variables: %s",
                 page_name,
                 ", ".join(legacy_alias_refs[:10]),
             )

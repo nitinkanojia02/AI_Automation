@@ -224,16 +224,13 @@ def looks_like_journey_action(value: str) -> bool:
     cleaned = clean_text(value)
     if not cleaned:
         return False
-    lowered = cleaned.lower()
-    if lowered.startswith("as a ") or lowered.startswith("i want ") or lowered.startswith("so that "):
-        return False
-    if lowered.startswith("this workflow") or lowered.startswith("workflow scope"):
-        return False
-    if lowered in {"user story", "application context", "entry conditions", "workflow scope", "primary navigation journey", "approved test data", "page / component elements", "business rules", "validation expectations", "transition expectations", "resource reuse guidance", "downstream automation guidance", "acceptance criteria"}:
-        return False
     if cleaned.endswith(":"):
         return False
-    return len(cleaned.split()) >= 3
+    if len(cleaned.split()) < 3:
+        return False
+    if re.fullmatch(r"https?://[^\s]+", cleaned):
+        return False
+    return True
 
 
 def collect_workflow_story_lines(workflow_input: Dict[str, Any]) -> Dict[str, List[str]]:
@@ -256,7 +253,7 @@ def collect_workflow_story_lines(workflow_input: Dict[str, Any]) -> Dict[str, Li
     )
     return {
         "userStory": compact_story_lines(story_lines, limit=12),
-        "applicationContext": compact_story_lines(select_relevant_lines(story_lines + normalize_text_blocks(external.get("applicationContext")), ["application", "spa", "landing", "state", "page", "url"], limit=10), limit=10),
+        "applicationContext": compact_story_lines(unique_strings(story_lines + normalize_text_blocks(external.get("applicationContext")), limit=10), limit=10),
         "entryConditions": compact_story_lines(unique_strings(
             normalize_text_blocks(external.get("entryConditions"))
             + normalize_text_blocks(workflow_input.get("observedPreconditions")),
@@ -265,7 +262,7 @@ def collect_workflow_story_lines(workflow_input: Dict[str, Any]) -> Dict[str, Li
         "acceptanceCriteria": compact_story_lines(acceptance, limit=20),
         "behaviorRules": compact_story_lines(unique_strings(
             normalize_text_blocks(external.get("behaviorRules"))
-            + select_relevant_lines(story_lines, ["should", "must", "only", "required", "masked", "authenticate", "remain", "return"], limit=12),
+            + story_lines,
             limit=14,
         ), limit=14),
         "validationExpectations": compact_story_lines(validation_expectations, limit=20),

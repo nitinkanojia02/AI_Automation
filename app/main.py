@@ -1479,7 +1479,7 @@ def build_keyword_generation_prompt(
         "- Never recreate generic common/shared keywords that already exist in retrieved_common_keyword_names.\n"
         "- Reuse approved keyword names from approved_keyword_names whenever they already express the needed page behavior.\n"
         "- Reuse approved element names from approved_element_names exactly whenever a keyword targets one of those elements.\n"
-        "- If a keyword implementation needs waits, clicks, typing, or generic navigation, compose it from retrieved common keywords such as Click When Ready, Input Text When Ready, Wait For Element To Be Ready, Open Browser Session, Close Browser Session, Open Browser To Url, or Go To Url when those are present in common_resource_context.\n"
+        "- If a keyword implementation needs waits, clicks, typing, or generic navigation, prefer retrieved common/shared helpers dynamically when those helpers are present in common_resource_context, but do not assume a fixed helper vocabulary.\n"
         "- If existing_page_resource_context already contains a suitable page keyword or page variable, prefer preserving and refining it rather than inventing a parallel one.\n"
         "- Treat reuse_analysis as authoritative duplicate-risk context. If it indicates overlapping ownership or reusable existing capability, minimize net-new keyword creation and preserve reuse.\n"
         "- Keep page keywords page-specific and semantically grounded in approved_elements and approved_manual_tests; use common_resource_context for generic mechanics.\n\n"
@@ -1490,8 +1490,8 @@ def build_keyword_generation_prompt(
         "- approved must be true.\n"
         "- targetElement must map to an approved element whenever the keyword directly acts on or validates a specific element.\n"
         "- implementation must be an array of Robot Framework keyword lines only.\n"
-        "- For generic interaction steps in implementation, prefer retrieved common/shared keywords over raw SeleniumLibrary calls whenever available in common_resource_context.\n"
-        "- Implementation lines should explicitly reuse common/shared helpers like Click When Ready, Input Text When Ready, and Wait For Element To Be Ready when applicable instead of raw Wait Until Element Is Visible / Click Element / Input Text.\n"
+        "- For generic interaction steps in implementation, prefer retrieved common/shared keywords over raw SeleniumLibrary calls whenever suitable helpers are discoverable in common_resource_context.\n"
+        "- Prefer reusable shared/common helper style when the provided shared context clearly supports it, but do not rely on a fixed list of helper names or hardcoded interaction mappings.\n"
         "- Do not return markdown fences or explanation text.\n"
         "- Do not invent unsupported keywords, locators, fields, messages, or workflows.\n"
         "- Reuse-first rule: identify reusable approved keyword capability first, identify only true gaps second, and keep net-new keywords minimal.\n"
@@ -1531,7 +1531,7 @@ def build_keyword_review_prompt(
         "review_goals": [
             "Preserve approved semantic keyword names and target-element grounding.",
             "Improve implementation quality using dynamic common/shared helper discovery rather than hardcoded mappings.",
-            "Normalize inconsistent low-level interaction patterns when stronger reusable common helpers are discoverable from shared resource context.",
+            "Normalize inconsistent interaction patterns when stronger reusable shared/common helpers are discoverable from the provided resource context.",
             "Keep reviewed keyword artifacts compact, reusable, page-specific, and suitable as the implementation lineage for final resource generation.",
             "Repair duplicate names, technical variable leakage, and keyword-name versus implementation-scope mismatches before the reviewed artifact is saved.",
         ],
@@ -1750,23 +1750,10 @@ def validate_reviewed_keywords_against_existing_resources(keywords: list[dict], 
                 continue
             errors.append(f"Reviewed keyword '{name}' references unknown variable '${{{ref}}}' in its implementation")
 
-        if expected_target_variable and referenced_variables and expected_target_variable not in referenced_variables and lowered.startswith(("enter ", "click ", "verify ", "select ")):
+        if expected_target_variable and referenced_variables and expected_target_variable not in referenced_variables:
             warnings.append(
                 f"Reviewed keyword '{name}' targets '{target_element}' but its implementation does not reference canonical variable '${{{expected_target_variable}}}'"
             )
-
-    keyword_reuse_analysis = analyze_keyword_artifact_reuse(keywords, page_name)
-    conflict_analysis = keyword_reuse_analysis.get("conflictAnalysis", {})
-    if conflict_analysis.get("summary", {}).get("duplicateKeywordCount", 0) > 0:
-        conflict_names = sorted({item.get("candidateName", "") for item in conflict_analysis.get("duplicateKeywords", []) if item.get("candidateName")})
-        if conflict_names:
-            warnings.append("Reviewed keywords duplicate approved existing keyword capability: " + ", ".join(conflict_names))
-    if keyword_reuse_analysis.get("summary", {}).get("ownershipConflictCount", 0) > 0:
-        warnings.append("Reviewed keywords indicate overlapping ownership with approved existing resource capability and should be refined toward reuse.")
-    if keyword_reuse_analysis.get("summary", {}).get("commonReuseOpportunityCount", 0) > 0:
-        warnings.append("Reviewed keywords include low-level or shared/common-overlapping patterns; prefer common-helper-backed page abstractions and avoid redefining shared/common helpers.")
-    if keyword_reuse_analysis.get("summary", {}).get("lowValueWrapperCount", 0) > 0:
-        warnings.append("Reviewed keywords include some thin wrappers; keep meaningful page abstractions, but avoid aliases that add no page-specific value.")
 
     if errors:
         messages = [f"- {error}" for error in errors] + [f"- {warning}" for warning in warnings]
