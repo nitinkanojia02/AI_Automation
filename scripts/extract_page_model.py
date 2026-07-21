@@ -1139,47 +1139,8 @@ def is_valid_ai_resource(content: str) -> bool:
     return True
 
 def maybe_ai_generate_keywords(config: dict, page_name: str, url: str, elements: List[dict], resource_path: Path):
-    ai = config.get("ai", {})
-    if not ai.get("enabled", False):
-        return
-
-    endpoint = ai.get("endpoint", "")
-    token = get_ai_token(ai)
-    temperature = ai.get("temperature", 0.2)
-
-    if not endpoint or not token:
-        logger.warning("AI enabled but endpoint/token missing. Skipping AI keyword generation.")
-        return
-
-    system_prompt = (
-        "You are an expert Robot Framework engineer. "
-        "Generate a single valid .resource file with *** Settings ***, *** Variables ***, *** Keywords ***. "
-        "Use SeleniumLibrary. Include [Documentation] for every keyword. "
-        "Prefer reliable locators from provided elements. Return only Robot code."
-    )
-    user_payload = {
-        "page_name": page_name,
-        "url": url,
-        "elements": elements
-    }
-
-    try:
-        ai_content = call_ai_chat(
-            endpoint,
-            token,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": json.dumps(user_payload, indent=2)}
-            ],
-            temperature=temperature
-        )
-        if is_valid_ai_resource(ai_content):
-            resource_path.write_text(ai_content, encoding="utf-8")
-            logger.info("AI-enhanced resource generated: %s", resource_path)
-        else:
-            logger.warning("AI response not in expected Robot format. Kept deterministic resource.")
-    except Exception as exc:
-        logger.warning("AI keyword generation failed for %s: %s", page_name, exc)
+    logger.info("Skipping AI resource overwrite for %s; preserving deterministic resource generation as canonical output.", page_name)
+    return
 
 def get_browser_engine(playwright, browser_name: str):
     if browser_name in {"chromium", "chrome", "edge"}:
