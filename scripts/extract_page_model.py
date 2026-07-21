@@ -1774,18 +1774,21 @@ def process_page(playwright, config: dict, page_entry: Dict[str, str]):
 
         debug_path.write_text(json.dumps(navigation_debug, indent=2, ensure_ascii=False), encoding="utf-8")
 
+        resolved_page_url = url
         if navigation_steps:
             try:
                 perform_navigation_steps(page, navigation_steps, config["wait_seconds"], navigation_debug)
                 wait_for_target_page_signals(page, target_page_signals, config["wait_seconds"], metadata_dir=metadata_dir, page_name=page_name)
-                navigation_debug.append({"target_signals_satisfied": True, "final_url": page.url})
+                resolved_page_url = clean_text(page.url) or url
+                navigation_debug.append({"target_signals_satisfied": True, "final_url": resolved_page_url})
             except Exception as nav_exc:
                 navigation_debug.append({"target_signals_satisfied": False, "final_url": page.url, "error": str(nav_exc)})
                 debug_path.write_text(json.dumps(navigation_debug, indent=2, ensure_ascii=False), encoding="utf-8")
                 raise
             debug_path.write_text(json.dumps(navigation_debug, indent=2, ensure_ascii=False), encoding="utf-8")
         else:
-            navigation_debug.append({"navigation_attempted": False, "reason": "No navigation steps were available or inferred.", "final_url": page.url})
+            resolved_page_url = clean_text(page.url) or url
+            navigation_debug.append({"navigation_attempted": False, "reason": "No navigation steps were available or inferred.", "final_url": resolved_page_url})
             debug_path.write_text(json.dumps(navigation_debug, indent=2, ensure_ascii=False), encoding="utf-8")
 
         wait_for_meaningful_page_content(page, config["wait_seconds"])
@@ -1819,7 +1822,7 @@ def process_page(playwright, config: dict, page_entry: Dict[str, str]):
         approved_page_model = refine_page_elements_with_ai(
             config,
             page_name,
-            url,
+            resolved_page_url,
             elements,
             screenshot_path,
             html_path,
@@ -1831,7 +1834,7 @@ def process_page(playwright, config: dict, page_entry: Dict[str, str]):
             approved_path.write_text(json.dumps(approved_page_model, indent=2, ensure_ascii=False), encoding="utf-8")
         resource_elements = approved_page_model.get("elements", []) if isinstance(approved_page_model, dict) else elements
 
-        resource_content = generate_resource(url, resource_elements, page_name=page_name, metadata_dir=metadata_dir)
+        resource_content = generate_resource(resolved_page_url, resource_elements, page_name=page_name, metadata_dir=metadata_dir)
         reviewed_keyword_artifact = load_reviewed_keyword_artifact(page_name, metadata_dir)
         reviewed_keyword_names = {
             clean_text(str(item.get("keywordName", "")))

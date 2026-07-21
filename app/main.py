@@ -1251,6 +1251,21 @@ def sync_page_variables_from_approved_elements(workflow: dict, approved_elements
     page_name = pages[0].get("name") if pages else "page"
     page_url = pages[0].get("url") if pages and isinstance(pages[0], dict) else ""
     page_url = normalize_url_value(str(page_url))
+    metadata_dir = get_page_metadata_dir(page_name)
+    navigation_debug_path = metadata_dir / f"{page_name}.navigation.debug.json"
+    if navigation_debug_path.exists():
+        try:
+            navigation_debug_payload = read_json(navigation_debug_path)
+            if isinstance(navigation_debug_payload, list):
+                for item in reversed(navigation_debug_payload):
+                    if not isinstance(item, dict):
+                        continue
+                    final_url = normalize_url_value(str(item.get("final_url", "")))
+                    if final_url:
+                        page_url = final_url
+                        break
+        except Exception:
+            pass
 
     canonical_elements = load_approved_elements_for_workflow(workflow) if workflow else []
     if not canonical_elements:
