@@ -1312,6 +1312,34 @@ def wait_for_meaningful_page_content(page, wait_seconds: int):
 
 def get_page_resource_variables(page_name: str) -> List[dict]:
     page_slug = slugify(page_name)
+    metadata_path = BASE_DIR / "pom_pages" / page_slug / "metadata" / f"{page_slug}.variables.json"
+    if metadata_path.exists():
+        try:
+            metadata_payload = json.loads(metadata_path.read_text(encoding="utf-8"))
+            raw_variables = metadata_payload.get("variables", []) if isinstance(metadata_payload, dict) else []
+            normalized_variables: List[dict] = []
+            for item in raw_variables:
+                if not isinstance(item, dict):
+                    continue
+                variable_name = clean_text(str(item.get("name") or item.get("variableName") or ""))
+                value = clean_text(str(item.get("value", "")))
+                approved_name = clean_text(str(item.get("approvedName", "")))
+                if not variable_name and not approved_name:
+                    continue
+                normalized_variables.append({
+                    "name": variable_name,
+                    "variableName": variable_name,
+                    "approvedName": approved_name,
+                    "value": value,
+                    "kind": clean_text(str(item.get("kind", ""))),
+                    "source": clean_text(str(item.get("source", ""))),
+                    "type": clean_text(str(item.get("type", ""))),
+                })
+            if normalized_variables:
+                return normalized_variables
+        except Exception:
+            pass
+
     resource_path = BASE_DIR / "pom_pages" / page_slug / f"{page_slug}.resource"
     if not resource_path.exists():
         return []
@@ -1338,9 +1366,15 @@ def get_page_resource_variables(page_name: str) -> List[dict]:
             continue
         variable_token, value = parts
         if variable_token.startswith("${") and variable_token.endswith("}"):
+            variable_name = variable_token[2:-1].strip()
             variables.append({
-                "name": variable_token[2:-1].strip(),
+                "name": variable_name,
+                "variableName": variable_name,
+                "approvedName": "",
                 "value": value.strip(),
+                "kind": "",
+                "source": "resource_file",
+                "type": "",
             })
     return variables
 
@@ -1536,6 +1570,23 @@ def perform_navigation_steps(page, navigation_steps: List[dict], wait_seconds: i
                         "keyword": current_keyword_name,
                     })
                 if len(expanded_steps) > start_count:
+                    break
+            if len(expanded_steps) == start_count and source_page:
+                approved_variables = get_page_resource_variables(source_page)
+                for item in approved_variables:
+                    approved_name = clean_text(str(item.get("approvedName", "")))
+                    locator = clean_text(str(item.get("value", "")))
+                    kind = clean_text(str(item.get("kind", ""))).lower()
+                    if not approved_name or not locator:
+                        continue
+                    if kind and kind != "locator":
+                        continue
+                    expanded_steps.append({
+                        "action": "clickKnownElement",
+                        "page": source_page,
+                        "element": approved_name,
+                        "keyword": "metadata_fallback",
+                    })
                     break
             if len(expanded_steps) == start_count:
                 raise ValueError(f"Unable to expand approved entry context for step targeting '{source_page or 'unknown'}'.")
