@@ -363,6 +363,7 @@ def load_approved_elements_for_workflow(workflow_input: Dict[str, Any]) -> List[
         page_name = clean_text(page.get("name"))
         if not page_name:
             continue
+        page_approved: List[Dict[str, Any]] = []
         candidates = [
             POM_DIR / page_name / "metadata" / f"{page_name}.elements.reviewed.json",
             POM_DIR / page_name / "metadata" / f"{page_name}.elements.json",
@@ -379,13 +380,14 @@ def load_approved_elements_for_workflow(workflow_input: Dict[str, Any]) -> List[
                 locator = clean_text(item.get("locator"))
                 if not name or not locator:
                     continue
-                approved.append({
+                page_approved.append({
                     "page": page_name,
                     "name": name,
                     "type": clean_text(item.get("type") or "element").lower() or "element",
                     "locator": locator,
                 })
-            if approved:
+            if page_approved:
+                approved.extend(page_approved)
                 break
     unique_payloads: List[Dict[str, Any]] = []
     seen: set[str] = set()
@@ -509,6 +511,29 @@ def collect_automation_knowledge(workflow_slug: str, workflow_input: Dict[str, A
         page_name = clean_text(page.get('name'))
         if not page_name:
             continue
+        resource_path = POM_DIR / page_name / f'{page_name}.resource'
+        if resource_path.exists():
+            for item in extract_keywords_from_resource(read_text(resource_path)):
+                name = clean_text(item.get('name'))
+                if not name:
+                    continue
+                lowered = name.lower()
+                action = 'generic'
+                if lowered.startswith('click '):
+                    action = 'click'
+                elif lowered.startswith('verify ') or lowered.startswith('validate '):
+                    action = 'verify'
+                elif lowered.startswith('open '):
+                    action = 'open'
+                elif lowered.startswith('enter ') or lowered.startswith('input '):
+                    action = 'input'
+                approved_keywords.append({
+                    'page': page_name,
+                    'name': name,
+                    'targetElement': '',
+                    'action': action,
+                })
+            continue
         for path in [
             POM_DIR / page_name / 'metadata' / f'{page_name}.keywords.reviewed.json',
             POM_DIR / page_name / 'metadata' / f'{page_name}.keywords.json',
@@ -584,6 +609,31 @@ def extract_upstream_workflow_candidates(workflow_input: Dict[str, Any], resourc
     return [item for item in candidates if item and item != current_slug][:10]
 
 
+def collect_unresolved_gaps_for_workflow(workflow_input: Dict[str, Any]) -> List[str]:
+    gaps: List[str] = []
+    for page in ensure_list(workflow_input.get('pages')):
+        if not isinstance(page, dict):
+            continue
+        page_name = clean_text(page.get('name'))
+        if not page_name:
+            continue
+        reviewed_path = POM_DIR / page_name / 'metadata' / f'{page_name}.elements.reviewed.json'
+        payload = safe_load_json(reviewed_path)
+        if not isinstance(payload, dict):
+            continue
+        review_summary = payload.get('reviewSummary') if isinstance(payload.get('reviewSummary'), dict) else {}
+        candidate_text = [
+            review_summary.get('summary'),
+            review_summary.get('overall_quality'),
+        ]
+        candidate_text.extend(review_summary.get('issues', []) if isinstance(review_summary.get('issues'), list) else [])
+        for item in unique_strings(candidate_text, limit=20):
+            lowered = item.lower()
+            if any(token in lowered for token in ['gap', 'missing', 'cannot validate', 'not modeled', 'unresolved', 'absence']):
+                gaps.append(item)
+    return unique_strings(gaps, limit=20)
+
+
 def build_workflow_knowledge_context(workflow_input: Dict[str, Any]) -> Dict[str, Any]:
     from scripts.workflow_context import infer_workflow_reuse_context
 
@@ -595,6 +645,7 @@ def build_workflow_knowledge_context(workflow_input: Dict[str, Any]) -> Dict[str
     approved_elements = load_approved_elements_for_workflow(enriched_workflow_input)
     resource_knowledge = collect_resource_knowledge(enriched_workflow_input)
     navigation_model = derive_navigation_model(enriched_workflow_input, story_sections)
+    unresolved_gaps = collect_unresolved_gaps_for_workflow(enriched_workflow_input)
 
     feature = clean_text(enriched_workflow_input.get('feature')) or clean_text(enriched_workflow_input.get('workflowName')) or workflow_slug
     application_code = clean_text(enriched_workflow_input.get('applicationCode'))
@@ -612,7 +663,12 @@ def build_workflow_knowledge_context(workflow_input: Dict[str, Any]) -> Dict[str
         'generationRule': 'Downstream generation must consume approved workflow knowledge plus approved resource context before creating new artifacts.',
     }
 
-    direct_access_policy = "must_use_entry_journey" if navigation_model.get('journey') else "direct_access_allowed"
+    entry_url = clean_text(((navigation_model.get('entryPoint') or {}).get('url')))
+    target_url = clean_text(((navigation_model.get('target') or {}).get('url')))
+    if entry_url and target_url and entry_url == target_url:
+        direct_access_policy = "direct_access_allowed"
+    else:
+        direct_access_policy = "must_use_entry_journey" if navigation_model.get('journey') else "direct_access_allowed"
 
     entry_journey = compact_story_lines(unique_strings(
         [
@@ -682,6 +738,7 @@ def build_workflow_knowledge_context(workflow_input: Dict[str, Any]) -> Dict[str
         'manualCoverage': {},
         'automationKnowledge': {},
         'downstreamGuidance': downstream_guidance,
+        'unresolvedGaps': unresolved_gaps,
         'provenance': {
             'workflowInput': '',
             'approvedManualTests': '',
@@ -836,6 +893,7 @@ def summarize_workflow_knowledge_for_generation(payload: Dict[str, Any]) -> Dict
             'mustNotInvent': unique_strings(ensure_list(downstream.get('mustNotInvent')), limit=8),
             'generationRule': clean_text(downstream.get('generationRule')),
         },
+        'unresolvedGaps': unique_strings(ensure_list(payload.get('unresolvedGaps')), limit=10),
     }
 
 

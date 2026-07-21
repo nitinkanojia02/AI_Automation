@@ -3516,16 +3516,6 @@ def compact_robot_tests_after_setup(content: str) -> str:
     if not normalized_setup_steps:
         return content
 
-    home_loaded_variants = {
-        "verify home page loaded in guest state",
-        "verify home page remains in guest state",
-    }
-    login_opened_variants = {
-        "verify login page opened",
-        "verify login form loaded",
-    }
-    setup_contains_login_entry = any("click person profile button" in step or "verify login page opened" in step for step in normalized_setup_steps)
-
     def parse_tests(test_lines: list[str]) -> tuple[list[str], list[dict]]:
         header: list[str] = []
         tests: list[dict] = []
@@ -3574,10 +3564,6 @@ def compact_robot_tests_after_setup(content: str) -> str:
                 continue
 
             if normalized in normalized_setup_steps:
-                changed = True
-                continue
-
-            if setup_contains_login_entry and normalized in home_loaded_variants | login_opened_variants and not seen_non_metadata_step:
                 changed = True
                 continue
 
