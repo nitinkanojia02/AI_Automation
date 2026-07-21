@@ -249,151 +249,133 @@
   ],
   "elements": [
     {
-      "approvedName": "person_profile_button",
+      "approvedName": "user_profile_button",
       "type": "button",
       "locator": "id=auto_person_btn",
-      "approved": true
+      "approved": true,
+      "description": "Profile or account access control used for authentication entry and authenticated-state validation."
     },
     {
-      "approvedName": "back_button",
+      "approvedName": "back_navigation_button",
       "type": "button",
       "locator": "id=auto_back_btn",
-      "approved": true
+      "approved": true,
+      "description": "Shared application back navigation control."
     },
     {
       "approvedName": "notification_button",
       "type": "button",
       "locator": "id=auto_notification_btn",
-      "approved": true
+      "approved": true,
+      "description": "Authenticated user notification access control."
     },
     {
-      "approvedName": "home_button",
-      "type": "button",
+      "approvedName": "home_navigation_link",
+      "type": "link",
       "locator": "id=auto_home_btn",
-      "approved": true
-    },
-    {
-      "approvedName": "customer_signup_button",
-      "type": "button",
-      "locator": "id=auto_btn_CustomerSignup",
-      "approved": true
-    },
-    {
-      "approvedName": "clean_survey_button",
-      "type": "button",
-      "locator": "id=auto_btn_CleanSurvey",
-      "approved": true
-    },
-    {
-      "approvedName": "site_survey_button",
-      "type": "button",
-      "locator": "id=auto_btn_SiteSurvey",
-      "approved": true
+      "approved": true,
+      "description": "Navigation control that returns the user to the Home page."
     }
   ],
   "reviewSummary": {
-    "overall_quality": "medium",
-    "summary": "The draft captures the core guest-state navigation controls required for the workflow, but several element names are weak or inconsistent, and there are noisy non-actionable elements and brittle locators that should be removed or normalized before downstream automation generation.",
+    "overall_quality": "low",
+    "summary": "The draft artifact includes several noisy or workflow-unrelated elements and omits the core authenticated Home feature navigation controls required for downstream automation. Existing retained controls are only partially useful for workflow validation.",
     "issues": [
       {
-        "severity": "medium",
-        "type": "naming",
-        "element_name": "person_button",
-        "message": "The element name is too generic and does not reflect the business meaning described in the workflow.",
-        "suggested_fix": "Rename to 'person_profile_button' to align with workflow terminology and downstream keyword generation."
+        "severity": "critical",
+        "type": "missing_element",
+        "element_name": "",
+        "message": "Required authenticated Home navigation controls for Vehicles On Site, Damage Claim, and Presell are missing from the approved page model.",
+        "suggested_fix": "Add semantically named feature navigation controls using stable locators tied to the authenticated Home workflow."
       },
       {
-        "severity": "medium",
+        "severity": "high",
         "type": "naming",
         "element_name": "customersignup_button",
-        "message": "The element name lacks readability and semantic consistency.",
-        "suggested_fix": "Rename to 'customer_signup_button' using underscore-separated business terminology."
+        "message": "Element appears unrelated to the documented Home authentication and feature-navigation workflow.",
+        "suggested_fix": "Remove the element unless it is confirmed to represent a required workflow action."
       },
       {
-        "severity": "medium",
+        "severity": "high",
         "type": "naming",
         "element_name": "cleansurvey_button",
-        "message": "The element name is compressed and inconsistent with approved workflow terminology.",
-        "suggested_fix": "Rename to 'clean_survey_button'."
+        "message": "Element naming is unsupported by the workflow context and lacks business relevance for authenticated Home navigation.",
+        "suggested_fix": "Remove the element unless it directly maps to a validated workflow feature."
       },
       {
-        "severity": "medium",
+        "severity": "high",
         "type": "naming",
         "element_name": "sitesurvey_button",
-        "message": "The element name is compressed and inconsistent with approved workflow terminology.",
-        "suggested_fix": "Rename to 'site_survey_button'."
+        "message": "Element does not correspond to any required authenticated Home navigation action.",
+        "suggested_fix": "Remove the element unless it is verified as part of the supported workflow."
+      },
+      {
+        "severity": "high",
+        "type": "duplicate",
+        "element_name": "element_8",
+        "message": "Generic anchor element duplicates the existing home navigation control and adds no automation value.",
+        "suggested_fix": "Remove the duplicate generic anchor element and retain the semantic Home navigation control only."
       },
       {
         "severity": "high",
         "type": "locator",
         "element_name": "element_8",
-        "message": "The locator 'xpath=//a' is overly generic and likely to match multiple links, making it brittle and unsafe for automation.",
-        "suggested_fix": "Remove this element entirely because it duplicates the Home button navigation control already represented by a stronger ID-based locator."
+        "message": "Locator xpath=//a is overly generic and likely to match multiple elements.",
+        "suggested_fix": "Use a unique locator such as id or href-specific selector for the intended control."
       },
       {
         "severity": "medium",
         "type": "noise",
         "element_name": "background_content",
-        "message": "The background container is a layout-only element and does not represent a meaningful business interaction or validation target for this workflow.",
-        "suggested_fix": "Remove the element from the approved page model unless a future workflow explicitly requires background-content verification."
+        "message": "Background container is layout-only and provides no meaningful automation or validation value.",
+        "suggested_fix": "Remove the background container from the approved page model."
       },
       {
         "severity": "medium",
-        "type": "duplicate",
-        "element_name": "element_8",
-        "message": "This link element appears to be the native anchor inside the Home button shadow DOM and duplicates the already approved Home button control.",
-        "suggested_fix": "Keep only the ID-based 'home_button' element as the canonical automation control."
+        "type": "naming",
+        "element_name": "person_button",
+        "message": "Element name is too generic and does not clearly reflect authentication or account access intent.",
+        "suggested_fix": "Rename to user_profile_button or account_access_button for clearer automation semantics."
+      },
+      {
+        "severity": "medium",
+        "type": "validation_gap",
+        "element_name": "",
+        "message": "The artifact lacks explicit authenticated feature navigation controls needed for URL transition validation coverage.",
+        "suggested_fix": "Include the authenticated Home feature controls or equivalent navigation-state indicators supporting downstream assertions."
       },
       {
         "severity": "low",
         "type": "classification",
         "element_name": "home_button",
-        "message": "The shadow DOM indicates the native control renders as an anchor element rather than a button, but workflow intent treats it as a navigation button.",
-        "suggested_fix": "Retain type 'button' for workflow readability and interaction consistency while documenting that the native control is anchor-backed."
+        "message": "Underlying native control behaves as a link instead of a standard button.",
+        "suggested_fix": "Classify the control as a navigation link to align with actual behavior."
       }
     ],
     "approved_elements": [
       {
-        "name": "person_profile_button",
+        "name": "user_profile_button",
         "type": "button",
         "locator": "id=auto_person_btn",
-        "description": "Navigates the guest user to the login page."
+        "description": "Profile or account access control used for authentication entry and authenticated-state validation."
       },
       {
-        "name": "back_button",
+        "name": "back_navigation_button",
         "type": "button",
         "locator": "id=auto_back_btn",
-        "description": "Provides backward navigation control from the home page header."
+        "description": "Shared application back navigation control."
       },
       {
         "name": "notification_button",
         "type": "button",
         "locator": "id=auto_notification_btn",
-        "description": "Provides access to notifications from the home page header."
+        "description": "Authenticated user notification access control."
       },
       {
-        "name": "home_button",
-        "type": "button",
+        "name": "home_navigation_link",
+        "type": "link",
         "locator": "id=auto_home_btn",
-        "description": "Represents the primary home navigation control."
-      },
-      {
-        "name": "customer_signup_button",
-        "type": "button",
-        "locator": "id=auto_btn_CustomerSignup",
-        "description": "Navigates the guest user to the customer signup or customer-search workflow."
-      },
-      {
-        "name": "clean_survey_button",
-        "type": "button",
-        "locator": "id=auto_btn_CleanSurvey",
-        "description": "Navigates the guest user to the vehicle survey workflow."
-      },
-      {
-        "name": "site_survey_button",
-        "type": "button",
-        "locator": "id=auto_btn_SiteSurvey",
-        "description": "Navigates the guest user to the site survey workflow."
+        "description": "Navigation control that returns the user to the Home page."
       }
     ]
   }

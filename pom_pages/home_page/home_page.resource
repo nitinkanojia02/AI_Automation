@@ -16,22 +16,6 @@ ${CLEAN_SURVEY_BUTTON}    id=auto_btn_CleanSurvey
 ${SITE_SURVEY_BUTTON}    id=auto_btn_SiteSurvey
 
 *** Keywords ***
-Click Person Button
-    [Documentation]    Click the Person/Profile button.
-    Click When Ready    ${PERSON_PROFILE_BUTTON}
-
-Click Back Button
-    [Documentation]    Click the Back button.
-    Click When Ready    ${BACK_BUTTON}
-
-Click Notification Button
-    [Documentation]    Click the Notification button.
-    Click When Ready    ${NOTIFICATION_BUTTON}
-
-Click Home Button
-    [Documentation]    Click the Home button.
-    Click When Ready    ${HOME_BUTTON}
-
 Click Customer Signup Button
     [Documentation]    Click the Customer signup button.
     Click When Ready    ${CUSTOMER_SIGNUP_BUTTON}

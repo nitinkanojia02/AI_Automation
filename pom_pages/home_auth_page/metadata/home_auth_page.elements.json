@@ -1,0 +1,40 @@
+[
+  {
+    "tag": "a",
+    "text": "",
+    "attributes": {
+      "href": "http://go.microsoft.com/fwlink/?linkid=66138&clcid=0x409"
+    },
+    "label": "",
+    "visibility": {
+      "is_visible": true,
+      "is_in_viewport": true,
+      "is_covered": false,
+      "has_visible_descendant": true,
+      "width": 960,
+      "height": 17,
+      "x": 480,
+      "y": 586
+    },
+    "shadow": null
+  },
+  {
+    "tag": "div",
+    "text": "container",
+    "attributes": {
+      "id": "container"
+    },
+    "label": "",
+    "visibility": {
+      "is_visible": true,
+      "is_in_viewport": true,
+      "is_covered": false,
+      "has_visible_descendant": true,
+      "width": 1920,
+      "height": 604,
+      "x": 0,
+      "y": 0
+    },
+    "shadow": null
+  }
+]
