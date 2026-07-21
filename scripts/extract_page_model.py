@@ -1298,7 +1298,6 @@ def infer_story_navigation_steps(page_name: str, workflow_like: dict) -> Tuple[L
     if not isinstance(workflow_like, dict):
         return [], []
 
-    story = build_story_text(workflow_like).lower()
     current_page = slugify(page_name)
     reuse_context = workflow_like.get("inferred_reuse_context") if isinstance(workflow_like.get("inferred_reuse_context"), dict) else {}
     relevant_resources = [str(item).replace("\\", "/").strip() for item in reuse_context.get("authoritativeResourceFiles", []) if str(item).strip()]
@@ -1306,24 +1305,20 @@ def infer_story_navigation_steps(page_name: str, workflow_like: dict) -> Tuple[L
         explicit_resources = workflow_like.get("resourceFiles", []) if isinstance(workflow_like.get("resourceFiles"), list) else []
         relevant_resources = [str(item).replace("\\", "/").strip() for item in explicit_resources if str(item).strip()]
 
-    external_context = workflow_like.get("externalContext", {}) if isinstance(workflow_like.get("externalContext"), dict) else {}
-    external_story = build_story_text(external_context).lower() if external_context else ""
-    combined_story = f"{story} {external_story}".strip()
-
     navigation_steps: List[dict] = []
     target_page_signals: List[dict] = []
 
-    if current_page in {"login", "login_page"} and relevant_resources:
-        for resource_path in relevant_resources:
-            resource_name = Path(resource_path).parent.name.replace("_page", "")
-            if not resource_name or resource_name == current_page:
-                continue
-            navigation_steps.append({
-                "action": "reuseApprovedEntryContext",
-                "page": f"{resource_name}_page",
-                "element": "",
-            })
-            break
+    entry_page_payload = workflow_like.get("entryPage") if isinstance(workflow_like.get("entryPage"), dict) else {}
+    target_page_payload = workflow_like.get("targetPage") if isinstance(workflow_like.get("targetPage"), dict) else {}
+    entry_page_name = slugify(clean_text(str(entry_page_payload.get("name", ""))))
+    target_page_name = slugify(clean_text(str(target_page_payload.get("name", ""))))
+
+    if relevant_resources and entry_page_name and target_page_name and entry_page_name != target_page_name and current_page == target_page_name:
+        navigation_steps.append({
+            "action": "reuseApprovedEntryContext",
+            "page": f"{entry_page_name}_page",
+            "element": "",
+        })
 
     deduped_signals: List[dict] = []
     seen = set()
@@ -1346,9 +1341,10 @@ def perform_navigation_steps(page, navigation_steps: List[dict], wait_seconds: i
             source_page = clean_text(str(step.get("page", "")))
             inferred_context = step.get("inferredReuseContext") if isinstance(step.get("inferredReuseContext"), dict) else {}
             authoritative_resources = inferred_context.get("authoritativeResourceFiles", []) if isinstance(inferred_context.get("authoritativeResourceFiles"), list) else []
+            start_count = len(expanded_steps)
             for resource_path in authoritative_resources:
                 resource_name = Path(str(resource_path)).parent.name.strip()
-                normalized_page = clean_text(resource_name) or source_page
+                normalized_page = clean_text(resource_name)
                 if not normalized_page:
                     continue
                 if not normalized_page.endswith("_page"):
@@ -1367,10 +1363,9 @@ def perform_navigation_steps(page, navigation_steps: List[dict], wait_seconds: i
                         "page": normalized_page,
                         "element": element_name,
                     })
+                if len(expanded_steps) > start_count:
                     break
-                if expanded_steps:
-                    break
-            if not expanded_steps:
+            if len(expanded_steps) == start_count:
                 raise ValueError(f"Unable to expand approved entry context for step targeting '{source_page or 'unknown'}'.")
             continue
         expanded_steps.append(step)
