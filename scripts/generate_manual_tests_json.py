@@ -241,6 +241,7 @@ Context usage requirements:
 13. If workflow knowledge indicates the target page is not directly accessed by URL, do not design manual scenarios as if the target page is the unexplained starting point; model the approved upstream entry journey explicitly.
 14. If workflow knowledge defines a success destination or return destination, generate explicit manual coverage for those destination states instead of validating only local-page disappearance or remaining on the origin page.
 15. If workflow knowledge identifies authoritative upstream resources for entry flow, return-path validation, or destination-state validation, preserve that reuse intent explicitly in scenario steps and expected results.
+16. Distinguish business expectation from reviewed observable evidence: if reviewed page evidence identifies unresolved or unmodeled validation gaps, preserve the business intent without phrasing unsupported indicators as directly observed or already proven.
 
 Mandatory coverage requirements:
 1. testCases must be a non-empty array.

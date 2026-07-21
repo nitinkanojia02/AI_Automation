@@ -178,7 +178,14 @@ def split_story_sentences(value: Any) -> List[str]:
 def select_relevant_lines(values: List[str], keywords: List[str], limit: int = 12) -> List[str]:
     if not values:
         return []
-    return unique_strings(values, limit=limit)
+    cleaned_values = unique_strings(values)
+    if not cleaned_values:
+        return []
+    ranked = sorted(
+        cleaned_values,
+        key=lambda item: (len(clean_text(item)), cleaned_values.index(item)),
+    )
+    return ranked[:limit]
 
 
 def compact_story_lines(values: List[str], limit: int = 12) -> List[str]:
@@ -311,28 +318,6 @@ def derive_navigation_model(workflow_input: Dict[str, Any], story_sections: Dict
             "action": action,
             "element": element,
         })
-
-    if not journey:
-        candidate_lines = compact_story_lines(
-            story_sections.get("acceptanceCriteria", []) + story_sections.get("reuseGuidance", []) + story_sections.get("transitionExpectations", []),
-            limit=16,
-        )
-        for line in candidate_lines:
-            if not looks_like_journey_action(line):
-                continue
-            page_name = inferred_target_name or inferred_entry_name
-            lowered = line.lower()
-            if inferred_target_name and inferred_target_name.lower() in lowered:
-                page_name = inferred_target_name
-            elif inferred_entry_name and inferred_entry_name.lower() in lowered:
-                page_name = inferred_entry_name
-            journey.append({
-                "page": page_name,
-                "action": line,
-                "element": "",
-            })
-            if len(journey) >= 8:
-                break
 
     return {
         "entryPoint": {
@@ -695,21 +680,20 @@ def build_workflow_knowledge_context(workflow_input: Dict[str, Any]) -> Dict[str
             item.get('action', '')
             for item in navigation_model.get('journey', [])
             if isinstance(item, dict) and clean_text(item.get('action', ''))
-        ]
-        + select_relevant_lines(
-            story_sections.get('acceptanceCriteria', []) + story_sections.get('reuseGuidance', []) + story_sections.get('entryConditions', []),
-            [],
-            limit=10,
-        ),
+        ],
         limit=10,
     ), limit=10)
 
+    unresolved_blob = ' '.join(unresolved_gaps).lower()
     success_destination = compact_story_lines(unique_strings(
-        select_relevant_lines(
-            story_sections.get('transitionExpectations', []) + story_sections.get('validationExpectations', []) + story_sections.get('acceptanceCriteria', []),
-            [],
-            limit=8,
-        ),
+        [
+            item for item in select_relevant_lines(
+                story_sections.get('transitionExpectations', []) + story_sections.get('validationExpectations', []) + story_sections.get('acceptanceCriteria', []),
+                [],
+                limit=8,
+            )
+            if clean_text(item).lower() not in unresolved_blob
+        ],
         limit=8,
     ), limit=8)
 
