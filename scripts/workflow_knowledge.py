@@ -172,15 +172,7 @@ def split_story_sentences(value: Any) -> List[str]:
             if cleaned and not re.fullmatch(r"\d+", cleaned):
                 parts.append(cleaned)
 
-    filtered = [
-        part for part in parts
-        if part.lower() not in {
-            "user story", "application context", "entry conditions", "workflow scope", "primary navigation journey",
-            "approved test data", "page / component elements", "business rules", "validation expectations",
-            "transition expectations", "resource reuse guidance", "downstream automation guidance", "acceptance criteria"
-        }
-    ]
-    return unique_strings(filtered)
+    return unique_strings(parts)
 
 
 def select_relevant_lines(values: List[str], keywords: List[str], limit: int = 12) -> List[str]:
@@ -226,7 +218,7 @@ def looks_like_journey_action(value: str) -> bool:
         return False
     if cleaned.endswith(":"):
         return False
-    if len(cleaned.split()) < 3:
+    if len(cleaned.split()) < 2:
         return False
     if re.fullmatch(r"https?://[^\s]+", cleaned):
         return False
@@ -251,24 +243,25 @@ def collect_workflow_story_lines(workflow_input: Dict[str, Any]) -> Dict[str, Li
         + normalize_text_blocks(workflow_input.get("observedValidations")),
         limit=20,
     )
+    entry_conditions = compact_story_lines(unique_strings(
+        normalize_text_blocks(external.get("entryConditions"))
+        + normalize_text_blocks(workflow_input.get("observedPreconditions")),
+        limit=10,
+    ), limit=10)
+    transition_expectations = compact_story_lines(unique_strings(
+        normalize_text_blocks(external.get("transitionExpectations")),
+        limit=12,
+    ), limit=12)
     return {
-        "userStory": compact_story_lines(story_lines, limit=12),
-        "applicationContext": compact_story_lines(unique_strings(story_lines + normalize_text_blocks(external.get("applicationContext")), limit=10), limit=10),
-        "entryConditions": compact_story_lines(unique_strings(
-            normalize_text_blocks(external.get("entryConditions"))
-            + normalize_text_blocks(workflow_input.get("observedPreconditions")),
-            limit=10,
-        ), limit=10),
-        "acceptanceCriteria": compact_story_lines(acceptance, limit=20),
-        "behaviorRules": compact_story_lines(unique_strings(
-            normalize_text_blocks(external.get("behaviorRules"))
-            + story_lines,
-            limit=14,
-        ), limit=14),
-        "validationExpectations": compact_story_lines(validation_expectations, limit=20),
-        "transitionExpectations": compact_story_lines(unique_strings(normalize_text_blocks(external.get("transitionExpectations")), limit=12), limit=12),
-        "reuseGuidance": compact_story_lines(unique_strings(normalize_text_blocks(external.get("pomReuseGuidance")), limit=12), limit=12),
-        "approvedTestDataGuidance": compact_story_lines(unique_strings(normalize_text_blocks(external.get("approvedTestDataGuidance")), limit=12), limit=12),
+        "userStory": compact_story_lines(story_lines[:4], limit=4),
+        "applicationContext": compact_story_lines(unique_strings(normalize_text_blocks(external.get("applicationContext")), limit=6), limit=6),
+        "entryConditions": entry_conditions,
+        "acceptanceCriteria": compact_story_lines(acceptance, limit=10),
+        "behaviorRules": compact_story_lines(unique_strings(normalize_text_blocks(external.get("behaviorRules")), limit=10), limit=10),
+        "validationExpectations": compact_story_lines(validation_expectations, limit=10),
+        "transitionExpectations": transition_expectations,
+        "reuseGuidance": compact_story_lines(unique_strings(normalize_text_blocks(external.get("pomReuseGuidance")), limit=8), limit=8),
+        "approvedTestDataGuidance": compact_story_lines(unique_strings(normalize_text_blocks(external.get("approvedTestDataGuidance")), limit=8), limit=8),
     }
 
 
@@ -400,6 +393,33 @@ def load_approved_elements_for_workflow(workflow_input: Dict[str, Any]) -> List[
     return unique_payloads[:80]
 
 
+def sanitize_reuse_analysis(reuse_analysis: Dict[str, Any]) -> Dict[str, Any]:
+    if not isinstance(reuse_analysis, dict):
+        return {
+            "duplicateVariables": [],
+            "duplicateKeywords": [],
+            "variableReuseCandidates": [],
+            "keywordReuseCandidates": [],
+            "ownershipConflicts": [],
+            "summary": {},
+        }
+
+    def _is_cross_resource_conflict(item: Any) -> bool:
+        if not isinstance(item, dict):
+            return False
+        owner = clean_text(item.get("ownerResource") or item.get("owner") or item.get("resource"))
+        candidate = clean_text(item.get("candidateResource") or item.get("candidate") or item.get("reusedFrom"))
+        if owner and candidate:
+            return owner.lower() != candidate.lower()
+        return True
+
+    sanitized = dict(reuse_analysis)
+    for key in ("duplicateVariables", "duplicateKeywords", "variableReuseCandidates", "keywordReuseCandidates", "ownershipConflicts"):
+        values = ensure_list(sanitized.get(key))
+        sanitized[key] = [item for item in values if _is_cross_resource_conflict(item)]
+    return sanitized
+
+
 def collect_resource_knowledge(workflow_input: Dict[str, Any]) -> Dict[str, Any]:
     resource_files = [str(item).replace('\\', '/').strip() for item in ensure_list(workflow_input.get('resourceFiles')) if clean_text(item)]
     inferred = workflow_input.get('inferredReuseContext') if isinstance(workflow_input.get('inferredReuseContext'), dict) else {}
@@ -460,7 +480,7 @@ def collect_resource_knowledge(workflow_input: Dict[str, Any]) -> Dict[str, Any]
         for rel_path in merged_resources
         if clean_text(rel_path)
     )
-    reuse_analysis = analyze_reuse_conflicts(combined_resource_text, "") if clean_text(combined_resource_text) else {
+    reuse_analysis = sanitize_reuse_analysis(analyze_reuse_conflicts(combined_resource_text, "")) if clean_text(combined_resource_text) else {
         "duplicateVariables": [],
         "duplicateKeywords": [],
         "variableReuseCandidates": [],

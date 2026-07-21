@@ -348,7 +348,7 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
         "- Follow a concise enterprise-style identifier standard: short stable application code, short stable feature code, then a two-digit sequence. Keep identifiers readable and bounded in length.\n"
         "- <FEATURECODE> must be a compact semantic code, typically one or two meaningful tokens, uppercase alphanumeric with optional underscores only when needed for readability. Do not derive it by concatenating the full workflow or story title.\n"
         "- Every generated test case must include a [Tags] line immediately after the test case name. Keep tags minimal: only the testcase id tag and the scenario type tag, for example [Tags]    WT-LOGIN01    positive.\n"
-        "- If the workflow input does not explicitly provide a short feature tag, derive a concise semantic feature code/tag from the workflow feature or target page intent, such as LOGIN, SIGNUP, PAYMENT, SEARCH, or PROFILE. Never use the full user-story sentence or full workflow title as a tag-like feature code.\n"
+        "- If the workflow input does not explicitly provide a short feature tag, derive a concise semantic feature code/tag from the workflow feature or workflow intent. Never use the full user-story sentence or full workflow title as a tag-like feature code.\n"
         "- <APPCODE> should be the uppercase abbreviated application code from the input. Use a short stable abbreviation.\n"
         "- Do not add extra tags such as AUT, ui, validation, security, accessibility, or feature-name tags.\n"
         "- Do NOT include a *** Keywords *** section in the generated .robot file. The suite must not define AI-created helper keywords.\n"

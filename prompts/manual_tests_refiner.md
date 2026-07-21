@@ -24,6 +24,7 @@ Refinement rules:
 - Refine scenarios so they explicitly establish the approved upstream entry journey when workflow knowledge says the target page is not directly accessed directly by URL
 - Replace origin-page disappearance or local-page-only success checks with explicit destination-state validation when workflow knowledge and authoritative resources support that destination validation
 - If stronger destination-state validation is not yet grounded in approved page/resource evidence, keep the scenario wording accurate and observable without inventing unsupported authenticated indicators, controls, or messages
+- If reviewed page evidence identifies unresolved gaps or unmodeled negative-state indicators, preserve that limitation honestly in expected results and scenario wording instead of implying that unsupported indicators are already observable/validated
 - Preserve meaningful positive, negative, UI, validation, navigation, and edge scenarios
 - Do not collapse broad coverage into a minimal subset
 - Treat the supplied workflow acceptance-criteria coverage map and extracted requirement units as mandatory refinement obligations: if any requirement unit is not clearly represented by at least one scenario, add or repair scenario coverage until it is explicit in title, steps, or expectedResult
