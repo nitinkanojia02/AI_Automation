@@ -948,8 +948,11 @@ def build_fallback_keyword_steps(var_name: str, role: str) -> List[str]:
 
 def generate_fallback_keyword_block(var_name: str, label: str, role: str) -> dict:
     keyword_name = build_fallback_keyword_name(label, role)
+    normalized_label = slugify(label)
     return {
         "keywordName": keyword_name,
+        "targetElement": normalized_label,
+        "role": role,
         "arguments": build_fallback_keyword_arguments(role),
         "implementation": build_fallback_keyword_steps(var_name, role),
         "approved": True,
@@ -1145,7 +1148,9 @@ def generate_resource(url: str, elements: List[dict], page_name: str = "", metad
         var_name = make_var_name(label, role, used_names)
 
         variables.append(f"${{{var_name}}}    {locator}")
-        fallback_keyword_blocks.append(generate_fallback_keyword_block(var_name, label, role))
+        fallback_block = generate_fallback_keyword_block(var_name, label, role)
+        fallback_block["targetElement"] = label
+        fallback_keyword_blocks.append(fallback_block)
 
     approved_elements_by_name: Dict[str, dict] = {}
     for item in elements:
@@ -1201,7 +1206,7 @@ Resource    ../../resources/common_keywords.resource"""
             )
         if reviewed_names and reviewed_names != fallback_names:
             logger.info(
-                "Fallback element-derived keyword names differ from reviewed approved names for %s; reviewed names were preferred during resource generation.",
+                "Fallback element-derived keyword names differ from incoming reviewed names for %s; canonical normalized names were used during resource generation.",
                 page_name,
             )
 
