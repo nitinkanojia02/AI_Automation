@@ -8,11 +8,12 @@ ${LOGIN_PAGE_IDENTIFIER}    login
 ${CUSTOMER_SEARCH_PAGE_IDENTIFIER}    customer-search
 ${VEHICLE_SURVEY_PAGE_IDENTIFIER}    vehicle-survey
 ${SURVEY_PAGE_IDENTIFIER}    survey
-${HOME_GUEST_STATE_DESCRIPTION}    Home guest state
-${LOGIN_VIEW_NAME}    Login page or Login view
-${CUSTOMER_SEARCH_VIEW_NAME}    customer-search page
-${VEHICLE_SURVEY_VIEW_NAME}    vehicle-survey page
-${SITE_SURVEY_VIEW_NAME}    survey page
+${HOME_GUEST_STATE_NAME}    Home guest state
+${LOGIN_PAGE_NAME}    Login page
+${LOGIN_VIEW_NAME}    Login view
+${CUSTOMER_SEARCH_PAGE_NAME}    customer-search page
+${VEHICLE_SURVEY_PAGE_NAME}    vehicle-survey page
+${SURVEY_PAGE_NAME}    survey page
 ${PERSON_PROFILE_BUTTON}    id=auto_person_btn
 ${BACK_BUTTON}    id=auto_back_btn
 ${NOTIFICATION_BUTTON}    id=auto_notification_btn
@@ -22,21 +23,22 @@ ${CLEAN_SURVEY_BUTTON}    id=auto_btn_CleanSurvey
 ${SITE_SURVEY_BUTTON}    id=auto_btn_SiteSurvey
 
 *** Keywords ***
-Open Home Page
+Open Home Page In Guest State
     [Documentation]    Open the application Home page in guest state.
     Open Browser To Url    ${HOME_PAGE_URL}
     Wait For Element To Be Ready    ${PERSON_PROFILE_BUTTON}
     Wait For Element To Be Ready    ${HOME_BUTTON}
 
-Verify Home Page Loaded In Guest State
-    [Documentation]    Verify the Home page is loaded in guest state.
+Verify Home Page Guest State Loaded
+    [Documentation]    Verify the Home page guest state is loaded successfully.
     ${current_url}=    Get Location
     Should Contain    ${current_url}    ${HOME_PAGE_PATH}
     Wait For Element To Be Ready    ${PERSON_PROFILE_BUTTON}
+    Wait For Element To Be Ready    ${BACK_BUTTON}
+    Wait For Element To Be Ready    ${NOTIFICATION_BUTTON}
     Wait For Element To Be Ready    ${HOME_BUTTON}
-    Wait For Element To Be Ready    ${CUSTOMER_SIGNUP_BUTTON}
 
-Verify Guest Home Controls Are Visible And Enabled
+Verify Guest State Controls Are Visible And Enabled
     [Documentation]    Verify approved guest-state and shared Home controls are visible and enabled.
     Wait For Element To Be Ready    ${PERSON_PROFILE_BUTTON}
     Wait For Element To Be Ready    ${BACK_BUTTON}
@@ -46,14 +48,8 @@ Verify Guest Home Controls Are Visible And Enabled
     Wait For Element To Be Ready    ${CLEAN_SURVEY_BUTTON}
     Wait For Element To Be Ready    ${SITE_SURVEY_BUTTON}
 
-Verify Guest Accessible Feature Buttons Are Visible And Enabled
-    [Documentation]    Verify guest-accessible feature buttons are visible and enabled.
-    Wait For Element To Be Ready    ${CUSTOMER_SIGNUP_BUTTON}
-    Wait For Element To Be Ready    ${CLEAN_SURVEY_BUTTON}
-    Wait For Element To Be Ready    ${SITE_SURVEY_BUTTON}
-
 Verify Login Page Opened
-    [Documentation]    Verify the Login page or Login view is opened from the Home page.
+    [Documentation]    Verify navigation to the Login page or Login view.
     ${current_url}=    Get Location
     Should Contain    ${current_url}    ${LOGIN_PAGE_IDENTIFIER}
 
@@ -73,9 +69,9 @@ Verify Survey Page Opened
     Should Contain    ${current_url}    ${SURVEY_PAGE_IDENTIFIER}
 
 Verify Home Page Remains In Guest State
-    [Documentation]    Verify the Home page remains loaded in guest state after navigation.
-    Verify Home Page Loaded In Guest State
-    Verify Guest Home Controls Are Visible And Enabled
+    [Documentation]    Verify the Home page remains in guest state after navigation.
+    Verify Home Page Guest State Loaded
+    Verify Guest State Controls Are Visible And Enabled
 
 Click Person Profile Button
     [Documentation]    Click the Person/Profile button from the Home page.

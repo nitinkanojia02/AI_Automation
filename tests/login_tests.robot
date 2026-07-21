@@ -2,116 +2,141 @@
 Resource    ../resources/common_keywords.resource
 Resource    ../pom_pages/login_page/login_page.resource
 Resource    ../pom_pages/home_page/home_page.resource
-Suite Setup    Open Home Page
 Suite Teardown    Close Browser Session
-Test Setup    Run Keywords    Verify Home Page Loaded In Guest State    AND    Click Person Profile Button    AND    Verify Login Page Opened
+Test Setup    Open Home Page In Guest State
 
 *** Test Cases ***
-AUT-WT-LOGIN01: Verify Login page opens from Home page using the person/profile button while user is in guest state
+AUT-WT-LOGIN01: Verify Home page guest state opens and Login page is accessed through the person profile button
     [Tags]    WT-LOGIN01    positive
-
-AUT-WT-LOGIN02: Verify Login page controls are visible and enabled after opening Login page from Home page
-    [Tags]    WT-LOGIN02    positive
-
-AUT-WT-LOGIN03: Verify password input is masked while entering password characters
-    [Tags]    WT-LOGIN03    positive
-    Enter User Name Textbox    ${VALID_USERNAME}
-    Enter Password Textbox    ${VALID_PASSWORD}
-    Verify Password Textbox
-
-AUT-WT-LOGIN04: Verify successful login using approved credentials returns user to authenticated Home state
-    [Tags]    WT-LOGIN04    positive
-    Enter User Name Textbox    ${VALID_USERNAME}
-    Enter Password Textbox    ${VALID_PASSWORD}
-    Click Sign In Button
-    Wait Until Location Contains    ${HOME_PAGE_PATH}
-
-AUT-WT-LOGIN05: Verify invalid username and password combination displays generic Failed message and keeps user unauthenticated
-    [Tags]    WT-LOGIN05    negative
-    Enter User Name Textbox    ${INVALID_USERNAME}
-    Enter Password Textbox    ${INVALID_PASSWORD}
-    Click Sign In Button
-    Verify Login Rejected
-
-AUT-WT-LOGIN06: Verify login submission with both Username and Password fields empty displays only the generic Failed message
-    [Tags]    WT-LOGIN06    negative
-    Enter User Name Textbox    ${EMPTY}
-    Enter Password Textbox    ${EMPTY}
-    Click Sign In Button
-    Verify Login Rejected
-
-AUT-WT-LOGIN07: Verify login submission with Username populated and Password empty displays generic Failed message
-    [Tags]    WT-LOGIN07    negative
-    Enter User Name Textbox    ${VALID_USERNAME}
-    Enter Password Textbox    ${EMPTY}
-    Click Sign In Button
-    Verify Login Rejected
-
-AUT-WT-LOGIN08: Verify login submission with Password populated and Username empty displays generic Failed message
-    [Tags]    WT-LOGIN08    negative
-    Enter User Name Textbox    ${EMPTY}
-    Enter Password Textbox    ${VALID_PASSWORD}
-    Click Sign In Button
-    Verify Login Rejected
-
-AUT-WT-LOGIN09: Verify login attempt with leading and trailing spaces around valid credentials follows implemented whitespace handling behavior
-    [Tags]    WT-LOGIN09    edge
-    Enter User Name Textbox    ${SPACE}${SPACE}${VALID_USERNAME}${SPACE}${SPACE}
-    Enter Password Textbox    ${SPACE}${SPACE}${VALID_PASSWORD}${SPACE}${SPACE}
-    Click Sign In Button
+    Verify Home Page Guest State Loaded
+    Click Person Profile Button
+    Verify Login Page Opened
     Verify Login Form Loaded
 
-AUT-WT-LOGIN10: Verify whitespace-only values in Username and Password fields display generic Failed message
-    [Tags]    WT-LOGIN10    negative
-    Enter User Name Textbox    ${SPACE}
-    Enter Password Textbox    ${SPACE}
-    Click Sign In Button
-    Verify Login Rejected
+AUT-WT-LOGIN02: Verify Login page controls are visible and interactive after opening from Home page
+    [Tags]    WT-LOGIN02    positive
+    Click Person Profile Button
+    Verify Login Page Opened
+    Verify Login Form Loaded
+    Click When Ready    ${USERNAME_FIELD}
+    Click When Ready    ${PASSWORD_FIELD}
+    Wait For Element To Be Ready    ${LOGIN_BUTTON}
+    Wait For Element To Be Ready    ${BACK_BUTTON}
+    Wait For Element To Be Ready    ${HOME_BUTTON}
 
-AUT-WT-LOGIN11: Verify Back button returns the user to Home page without authentication
-    [Tags]    WT-LOGIN11    positive
+AUT-WT-LOGIN03: Verify password entry is masked while typing credentials
+    [Tags]    WT-LOGIN03    positive
+    Click Person Profile Button
+    Verify Login Page Opened
+    Enter Username Field    ${VALID_USERNAME}
+    Enter Password Field    ${VALID_PASSWORD}
+    Verify Password Field
+
+AUT-WT-LOGIN04: Verify successful authentication returns the user to authenticated Home page state
+    [Tags]    WT-LOGIN04    positive
+    Click Person Profile Button
+    Verify Login Page Opened
+    Enter Username Field    ${VALID_USERNAME}
+    Enter Password Field    ${VALID_PASSWORD}
+    Click Login Button
+    Wait Until Location Contains    ${AUTHENTICATED_HOME_STATE_IDENTIFIER}
+
+AUT-WT-LOGIN06: Verify invalid username and password combination displays generic Failed message and keeps user unauthenticated
+    [Tags]    WT-LOGIN06    negative
+    Click Person Profile Button
+    Verify Login Page Opened
+    Enter Username Field    ${INVALID_USERNAME}
+    Enter Password Field    ${INVALID_PASSWORD}
+    Click Login Button
+    Verify Login Failed And User Remains Unauthenticated
+
+AUT-WT-LOGIN07: Verify blank Username and blank Password submission displays only generic Failed message
+    [Tags]    WT-LOGIN07    negative
+    Click Person Profile Button
+    Verify Login Page Opened
+    Enter Username Field    ${EMPTY}
+    Enter Password Field    ${EMPTY}
+    Click Login Button
+    Verify Login Failed And User Remains Unauthenticated
+
+AUT-WT-LOGIN08: Verify submission with Username populated and Password blank fails authentication
+    [Tags]    WT-LOGIN08    negative
+    Click Person Profile Button
+    Verify Login Page Opened
+    Enter Username Field    ${VALID_USERNAME}
+    Enter Password Field    ${EMPTY}
+    Click Login Button
+    Verify Login Failed And User Remains Unauthenticated
+
+AUT-WT-LOGIN09: Verify submission with Password populated and Username blank fails authentication
+    [Tags]    WT-LOGIN09    negative
+    Click Person Profile Button
+    Verify Login Page Opened
+    Enter Username Field    ${EMPTY}
+    Enter Password Field    ${VALID_PASSWORD}
+    Click Login Button
+    Verify Login Failed And User Remains Unauthenticated
+
+AUT-WT-LOGIN10: Verify leading and trailing whitespace handling for valid credentials
+    [Tags]    WT-LOGIN10    edge
+    Click Person Profile Button
+    Verify Login Page Opened
+    Enter Username Field    ${SPACE}${VALID_USERNAME}${SPACE}
+    Enter Password Field    ${SPACE}${VALID_PASSWORD}${SPACE}
+    Click Login Button
+    Verify Login Failed And User Remains Unauthenticated
+
+AUT-WT-LOGIN11: Verify whitespace only credential submission fails with generic Failed message
+    [Tags]    WT-LOGIN11    negative
+    Click Person Profile Button
+    Verify Login Page Opened
+    Enter Username Field    ${SPACE}
+    Enter Password Field    ${SPACE}
+    Click Login Button
+    Verify Login Failed And User Remains Unauthenticated
+
+AUT-WT-LOGIN12: Verify Back button returns user to Home page without authentication
+    [Tags]    WT-LOGIN12    positive
+    Click Person Profile Button
+    Verify Login Page Opened
     Click Back Button
     Verify Home Page Remains In Guest State
 
-AUT-WT-LOGIN12: Verify Home button returns the user to Home page without authentication
-    [Tags]    WT-LOGIN12    positive
+AUT-WT-LOGIN13: Verify Home button returns user to Home page without authentication
+    [Tags]    WT-LOGIN13    positive
+    Click Person Profile Button
+    Verify Login Page Opened
     Click Home Button
     Verify Home Page Remains In Guest State
 
-AUT-WT-LOGIN13: Verify generic Failed message remains consistent across multiple invalid authentication attempts
-    [Tags]    WT-LOGIN13    negative
-    Enter User Name Textbox    ${INVALID_USERNAME}
-    Enter Password Textbox    ${INVALID_PASSWORD}
-    Click Sign In Button
+AUT-WT-LOGIN14: Verify generic Failed message consistency across invalid credential scenarios
+    [Tags]    WT-LOGIN14    negative
+    Click Person Profile Button
+    Verify Login Page Opened
+    Enter Username Field    ${INVALID_USERNAME}
+    Enter Password Field    ${INVALID_PASSWORD}
+    Click Login Button
     Verify Generic Failed Authentication Message
-    Enter User Name Textbox    ${EMPTY}
-    Enter Password Textbox    ${EMPTY}
-    Click Sign In Button
-    Verify Login Rejected
+    Clear Element Text    ${USERNAME_FIELD}
+    Clear Element Text    ${PASSWORD_FIELD}
+    Enter Username Field    ${EMPTY}
+    Enter Password Field    ${EMPTY}
+    Click Login Button
+    Verify Generic Failed Authentication Message
+    Clear Element Text    ${USERNAME_FIELD}
+    Clear Element Text    ${PASSWORD_FIELD}
+    Enter Username Field    ${VALID_USERNAME}
+    Enter Password Field    ${EMPTY}
+    Click Login Button
+    Verify Login Failed And User Remains Unauthenticated
 
-AUT-WT-LOGIN14: Verify successful login state displays authenticated-only UI after returning to Home page
-    [Tags]    WT-LOGIN14    positive
-    Enter User Name Textbox    ${VALID_USERNAME}
-    Enter Password Textbox    ${VALID_PASSWORD}
-    Click Sign In Button
-    Wait Until Location Contains    ${HOME_PAGE_PATH}
-
-AUT-WT-LOGIN15: Verify credential fields accept special characters in password input without breaking masking behavior
-    [Tags]    WT-LOGIN15    edge
-    Enter User Name Textbox    ${VALID_USERNAME}
-    Enter Password Textbox    ${VALID_PASSWORD}
-    Verify Password Textbox
-
-AUT-WT-LOGIN16: Verify invalid credentials with correct username and incorrect password do not authenticate the user
-    [Tags]    WT-LOGIN16    negative
-    Enter User Name Textbox    ${VALID_USERNAME}
-    Enter Password Textbox    ${INVALID_PASSWORD_FOR_VALID_USER}
-    Click Sign In Button
-    Verify Login Rejected
-
-AUT-WT-LOGIN17: Verify invalid credentials with incorrect username and correct password do not authenticate the user
-    [Tags]    WT-LOGIN17    negative
-    Enter User Name Textbox    ${WRONG_USERNAME}
-    Enter Password Textbox    ${VALID_PASSWORD}
-    Click Sign In Button
-    Verify Login Rejected
+AUT-WT-LOGIN20: Verify user remains unauthenticated after failed login and can still navigate back to Home page
+    [Tags]    WT-LOGIN20    negative
+    Click Person Profile Button
+    Verify Login Page Opened
+    Enter Username Field    ${INVALID_USERNAME}
+    Enter Password Field    ${INVALID_PASSWORD}
+    Click Login Button
+    Verify Login Failed And User Remains Unauthenticated
+    Click Home Button
+    Verify Home Page Remains In Guest State

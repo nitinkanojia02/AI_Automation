@@ -18,8 +18,7 @@
   ],
   "pages": [
     {
-      "name": "home_page",
-      "url": "http://localhost/washtabui/home"
+      "name": "home_page"
     }
   ],
   "observedPreconditions": [],

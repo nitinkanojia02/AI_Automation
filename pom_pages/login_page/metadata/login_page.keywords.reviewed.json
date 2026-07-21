@@ -3,8 +3,8 @@
   "keywords": [
     {
       "keywordId": "KW_001",
-      "keywordName": "Enter User Name Textbox",
-      "targetElement": "user_name_textbox",
+      "keywordName": "Enter Username Field",
+      "targetElement": "username_field",
       "action": "input",
       "arguments": [
         "text"
@@ -16,8 +16,8 @@
     },
     {
       "keywordId": "KW_002",
-      "keywordName": "Enter Password Textbox",
-      "targetElement": "password_textbox",
+      "keywordName": "Enter Password Field",
+      "targetElement": "password_field",
       "action": "input",
       "arguments": [
         "password"
@@ -29,50 +29,49 @@
     },
     {
       "keywordId": "KW_004",
-      "keywordName": "Click Sign In Button",
-      "targetElement": "sign_in_button",
+      "keywordName": "Click Login Button",
+      "targetElement": "login_button",
       "action": "click",
       "arguments": [],
       "implementation": [
-        "Click When Ready    ${SIGN_IN_BUTTON}"
+        "Click When Ready    ${LOGIN_BUTTON}"
       ],
       "approved": true
     },
     {
       "keywordId": "KW_006",
-      "keywordName": "Verify User Name Textbox",
-      "targetElement": "user_name_textbox",
+      "keywordName": "Verify Login Form Loaded",
+      "targetElement": "",
       "action": "verify",
       "arguments": [],
       "implementation": [
         "Wait For Element To Be Ready    ${USER_NAME_TEXTBOX}",
         "Wait For Element To Be Ready    ${ION_INPUT_1_PASSWORD}",
-        "Wait For Element To Be Ready    ${SIGN_IN_BUTTON}",
-        "Wait For Element To Be Ready    ${BACK_BUTTON}",
-        "Wait For Element To Be Ready    ${HOME_BUTTON}"
+        "Wait For Element To Be Ready    ${LOGIN_BUTTON}"
       ],
       "approved": true
     },
     {
       "keywordId": "KW_007",
-      "keywordName": "Verify Generic Failed Authentication Message",
-      "targetElement": "generic_failed_authentication_message",
-      "action": "verify",
-      "arguments": [],
-      "implementation": [
-        "Wait For Element To Be Ready    ${GENERIC_FAILED_AUTHENTICATION_MESSAGE}"
-      ],
-      "approved": true
-    },
-    {
-      "keywordId": "KW_008",
-      "keywordName": "Verify Password Textbox",
-      "targetElement": "password_textbox",
+      "keywordName": "Verify Password Field",
+      "targetElement": "password_field",
       "action": "verify",
       "arguments": [],
       "implementation": [
         "Wait For Element To Be Ready    ${ION_INPUT_1_PASSWORD}",
         "Element Attribute Value Should Be    ${ION_INPUT_1_PASSWORD}    type    password"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_008",
+      "keywordName": "Verify Login Failed And User Remains Unauthenticated",
+      "targetElement": "",
+      "action": "verify",
+      "arguments": [],
+      "implementation": [
+        "Page Should Contain    ${FAILED_AUTHENTICATION_MESSAGE}",
+        "Wait For Element To Be Ready    ${LOGIN_BUTTON}"
       ],
       "approved": true
     }

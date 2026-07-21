@@ -2,53 +2,45 @@
 Resource    ../../resources/common_keywords.resource
 
 *** Variables ***
-${USER_NAME_TEXTBOX}    id=ion-input-0
-${PASSWORD_TEXTBOX}    id=ion-input-1
-${SIGN_IN_BUTTON}    xpath=//ion-button[normalize-space(.)='SIGN IN']
-${BACK_BUTTON}    id=auto_back_btn
-${HOME_BUTTON}    id=auto_home_btn
-${GENERIC_FAILED_AUTHENTICATION_MESSAGE}    xpath=//*[contains(normalize-space(.),'Failed')]
 ${LOGIN_PAGE_URL}    http://localhost/washtabui/home
+${LOGIN_PAGE_IDENTIFIER}    login
+${AUTHENTICATED_HOME_STATE_IDENTIFIER}    home
+${USERNAME_FIELD}    id=ion-input-0
+${PASSWORD_FIELD}    id=ion-input-1
+${LOGIN_BUTTON}    xpath=//ion-button[contains(normalize-space(.),'SIGN IN') or contains(normalize-space(.),'Login')]
 ${VALID_USERNAME}    krisadmin
 ${VALID_PASSWORD}    Carwash#1
 ${INVALID_USERNAME}    invaliduser
-${INVALID_PASSWORD}    Invalid#123
-${INVALID_PASSWORD_FOR_VALID_USER}    WrongPassword#1
-${WRONG_USERNAME}    wronguser
-${GENERIC_FAILED_MESSAGE}    Failed
+${INVALID_PASSWORD}    InvalidPass#1
+${UPPERCASE_USERNAME}    KRISADMIN
+${UPPERCASE_PASSWORD}    CARWASH#1
+${FAILED_AUTHENTICATION_MESSAGE}    Failed
 
 *** Keywords ***
-Enter User Name Textbox
+Enter Username Field
     [Arguments]    ${text}
-    Input Text When Ready    ${USER_NAME_TEXTBOX}    ${text}
+    Input Text When Ready    ${USERNAME_FIELD}    ${text}
 
-Enter Password Textbox
+Enter Password Field
     [Arguments]    ${password}
-    Input Password When Ready    ${PASSWORD_TEXTBOX}    ${password}
+    Input Password When Ready    ${PASSWORD_FIELD}    ${password}
 
-Click Sign In Button
-    Click When Ready    ${SIGN_IN_BUTTON}
+Click Login Button
+    Click When Ready    ${LOGIN_BUTTON}
 
 Verify Login Form Loaded
-    Verify User Name Textbox
-    Verify Password Textbox
-    Verify Back Button
+    Wait For Element To Be Ready    ${USERNAME_FIELD}
+    Wait For Element To Be Ready    ${PASSWORD_FIELD}
+    Wait For Element To Be Ready    ${LOGIN_BUTTON}
 
-Verify User Name Textbox
-    Wait For Element To Be Ready    ${USER_NAME_TEXTBOX}
-    Wait For Element To Be Ready    ${PASSWORD_TEXTBOX}
-    Wait For Element To Be Ready    ${SIGN_IN_BUTTON}
-
-Verify Password Textbox
-    Wait For Element To Be Ready    ${PASSWORD_TEXTBOX}
-
-Verify Back Button
-    Wait For Element To Be Ready    ${BACK_BUTTON}
-    Wait For Element To Be Ready    ${HOME_BUTTON}
+Verify Password Field
+    Wait For Element To Be Ready    ${PASSWORD_FIELD}
+    ${password_field_type}=    Get Element Attribute    ${PASSWORD_FIELD}    type
+    Should Be Equal    ${password_field_type}    password
 
 Verify Generic Failed Authentication Message
-    Wait For Element To Be Ready    ${GENERIC_FAILED_AUTHENTICATION_MESSAGE}
+    Page Should Contain    ${FAILED_AUTHENTICATION_MESSAGE}
 
-Verify Login Rejected
-    Verify Login Form Loaded
+Verify Login Failed And User Remains Unauthenticated
     Verify Generic Failed Authentication Message
+    Wait For Element To Be Ready    ${LOGIN_BUTTON}

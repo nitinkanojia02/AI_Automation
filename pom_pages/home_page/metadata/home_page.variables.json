@@ -1,10 +1,10 @@
 {
   "pageName": "home_page",
-  "pageUrl": "http://localhost/washtabui/home",
+  "pageUrl": "None",
   "variables": [
     {
       "variableName": "PAGE_URL",
-      "value": "http://localhost/washtabui/home",
+      "value": "None",
       "source": "approved_page",
       "kind": "page_url"
     },
