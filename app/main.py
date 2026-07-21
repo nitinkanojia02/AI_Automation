@@ -3079,7 +3079,7 @@ def generate_manual_tests_for_workflow(workflow_name: str) -> dict:
         raise HTTPException(status_code=502, detail="Manual test AI returned no content for generation stage.")
 
     final_json = normalize_manual_test(generated, workflow_input)
-    is_valid, validation_message = validate_manual_content(final_json, workflow_with_elements)
+    is_valid, validation_message = validate_manual_content(final_json)
 
     if not is_valid:
         reviewed_manual = call_manual_ai_with_workflow_session(
@@ -3102,7 +3102,7 @@ def generate_manual_tests_for_workflow(workflow_name: str) -> dict:
             timeout_seconds=timeout_seconds,
         )
         final_json = normalize_manual_test(refined_manual or reviewed_manual or generated, workflow_input)
-        is_valid, validation_message = validate_manual_content(final_json, workflow_with_elements)
+        is_valid, validation_message = validate_manual_content(final_json)
 
         if is_valid and validation_message and (
             "fewer than 6 test cases" in validation_message.lower()
@@ -3140,7 +3140,7 @@ def generate_manual_tests_for_workflow(workflow_name: str) -> dict:
                 timeout_seconds=timeout_seconds,
             )
             expanded_json = normalize_manual_test(expanded_refined or expanded_reviewed or expanded, workflow_input)
-            expanded_valid, expanded_message = validate_manual_content(expanded_json, workflow_with_elements)
+            expanded_valid, expanded_message = validate_manual_content(expanded_json)
             if expanded_valid and len(extract_manual_test_cases(expanded_json)) >= len(extract_manual_test_cases(final_json)):
                 final_json = expanded_json
                 validation_message = expanded_message
