@@ -1499,11 +1499,16 @@ def perform_navigation_steps(page, navigation_steps: List[dict], wait_seconds: i
                         if match:
                             variable_name = clean_text(match.group(1))
                             if variable_name:
-                                parts = [part for part in variable_name.lower().split("_") if part]
-                                if len(parts) > 1:
-                                    variable_to_element[variable_name] = "_".join(parts[:-1])
+                                locator_entry = next((item for item in get_page_resource_variables(normalized_page) if clean_text(str(item.get("name", ""))) == variable_name), None)
+                                approved_name = clean_text(str(locator_entry.get("approvedName", ""))) if locator_entry else ""
+                                if approved_name:
+                                    variable_to_element[variable_name] = approved_name
                                 else:
-                                    variable_to_element[variable_name] = "_".join(parts)
+                                    parts = [part for part in variable_name.lower().split("_") if part]
+                                    if len(parts) > 1:
+                                        variable_to_element[variable_name] = "_".join(parts[:-1])
+                                    else:
+                                        variable_to_element[variable_name] = "_".join(parts)
                         continue
                     if not in_keywords:
                         continue
@@ -1516,7 +1521,7 @@ def perform_navigation_steps(page, navigation_steps: List[dict], wait_seconds: i
                     if stripped.startswith("["):
                         continue
                     lowered = clean_text(stripped).lower()
-                    if not (lowered.startswith("click ") or lowered.startswith("click when ready")):
+                    if not lowered.startswith("click"):
                         continue
                     references = re.findall(r"\$\{([A-Z0-9_]+)\}", stripped)
                     if not references:
