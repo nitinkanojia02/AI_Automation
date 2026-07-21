@@ -1554,8 +1554,11 @@ def build_keyword_review_prompt(
         "- Do not invent unsupported locators, messages, page flows, or framework keywords.\n"
         "- Do not add markdown fences or explanation text.\n"
         "- Treat reuse_analysis as authoritative duplicate-risk context during review. Resolve overlaps by preserving/reusing approved existing capability instead of keeping parallel keywords.\n"
-        "- Do not emit duplicate keywordName values in the final reviewed artifact. Each retained keyword must have a unique semantic name.\n"
+        "- Do not emit duplicate keywordName values in the final reviewed artifact. Each retained keyword must have a unique semantic name. If multiple candidates normalize to the same semantic name, keep one retained keyword with the strongest grounded implementation and merge or drop weaker duplicates.\n"
         "- Do not emit implementation lines that reference non-canonical locator variables when the approved page metadata already establishes a cleaner canonical variable name for the same target element.\n"
+        "- Normalize reviewed implementations toward the same canonical semantic variable names that the final page resource is expected to preserve. Avoid leaving extraction-era aliases, technical DOM-id aliases, or mixed naming styles for the same retained control.\n"
+        "- When a retained keyword has a grounded targetElement and that targetElement has an approved canonical page variable, ensure the implementation references that canonical variable for the direct page interaction or validation instead of a stale alias.\n"
+        "- If a candidate implementation is grounded but uses stale alias variables, refine the implementation to the approved canonical variable names rather than preserving the stale aliases.\n"
         "- When the approved manual outcomes imply absence checks, create page-level absence validations only for controls or indicators that are explicitly grounded in approved elements, approved reviewed keywords, or stable existing page-resource evidence.\n"
         "- Do not invent self-created placeholder indicators, text aliases, synthetic absence-only variables, or speculative element/variable names that are not grounded in approved page artifacts.\n"
         "- If authenticated-state absence is mentioned in manual expectations but there is no approved element or stable page-resource evidence for a specific indicator, keep the reviewed artifact focused on grounded positive page-state validations instead of generating speculative negative keywords.\n"
@@ -1716,7 +1719,8 @@ def validate_reviewed_keywords_against_existing_resources(keywords: list[dict], 
             continue
         lowered = name.lower()
         if lowered in seen_names:
-            errors.append(f"Duplicate reviewed keyword name: {name}")
+            warnings.append(f"Duplicate reviewed keyword name: {name}")
+            continue
         seen_names.add(lowered)
 
         normalized_signature = normalize_name_tokens(name) + "::" + "|".join(
@@ -2214,10 +2218,12 @@ def validate_keyword_grounding(workflow: dict, keywords: list[dict]) -> tuple[bo
     if validation_keywords:
         warnings.append(f"Retrieved common validation/helper context: {', '.join(validation_keywords[:8])}")
 
+    seen_keyword_names: set[str] = set()
     for keyword in keywords:
         if not isinstance(keyword, dict):
             continue
         item = dict(keyword)
+        keyword_name = clean_text(str(item.get("keywordName", "")))
         implementation = item.get("implementation", [])
         if isinstance(implementation, str):
             implementation = [line.rstrip() for line in implementation.splitlines() if clean_text(line)]
@@ -2227,6 +2233,13 @@ def validate_keyword_grounding(workflow: dict, keywords: list[dict]) -> tuple[bo
         target_element = clean_text(str(item.get("targetElement", "")))
         if target_element and target_element not in approved_element_names:
             warnings.append(f"Keyword '{clean_text(str(item.get('keywordName', '')))}' references non-approved target element '{target_element}'")
+
+        normalized_name = keyword_name.lower()
+        if normalized_name:
+            if normalized_name in seen_keyword_names:
+                warnings.append(f"Reviewed keyword output includes duplicate semantic name '{keyword_name}'; later save/refine stages should merge or keep only the strongest grounded instance")
+            else:
+                seen_keyword_names.add(normalized_name)
 
         for line in implementation:
             lowered = clean_text(line).lower()
@@ -4573,7 +4586,6 @@ async def save_keyword_review(request: Request, workflow_name: str):
     blocking_keyword_warnings = [
         warning for warning in combined_warnings
         if any(token in warning.lower() for token in (
-            "duplicate reviewed keyword name",
             "duplicate reviewed keyword implementation signature",
             "references unknown variable",
             "non-approved target element",
