@@ -6,7 +6,7 @@
   "applicationCode": "WT",
   "testIdentifierPrefix": "HOME",
   "status": "approved_artifact_memory",
-  "generatedAt": "2026-07-21T11:29:22.351993+00:00",
+  "generatedAt": "2026-07-21T12:03:17.136490+00:00",
   "businessContext": {
     "userStory": [
       "Home Feature - Guest State",
@@ -205,7 +205,7 @@
         "resourceFile": "pom_pages/home_page/home_page.resource",
         "type": "page",
         "variableNames": [
-          "PAGE_URL",
+          "EXPECTED_HOME_URL",
           "EXPECTED_LOGIN_URL",
           "EXPECTED_CUSTOMER_SEARCH_URL_FRAGMENT",
           "EXPECTED_VEHICLE_SURVEY_URL_FRAGMENT",
@@ -219,20 +219,19 @@
           "SITE_SURVEY_BUTTON"
         ],
         "keywordNames": [
-          "Open Home Page",
-          "Verify Home Page Loaded In Guest State",
-          "Verify All Home Navigation Buttons Are Enabled",
-          "Verify Navigation To Login Page",
-          "Verify Navigation To Customer Search Page",
-          "Verify Navigation To Vehicle Survey Page",
-          "Verify Navigation To Site Survey Page",
           "Click Auto Person Btn Button",
           "Click Auto Back Btn Button",
           "Click Auto Notification Btn Button",
           "Click Auto Home Btn Button",
           "Click Auto Btn Customer Signup Button",
           "Click Auto Btn Clean Survey Button",
-          "Click Auto Btn Site Survey Button"
+          "Click Auto Btn Site Survey Button",
+          "Verify Home Page Loaded In Guest State",
+          "Verify All Home Navigation Controls Are Enabled",
+          "Verify Person Profile Navigation",
+          "Verify Customer Signup Navigation",
+          "Verify Clean Survey Navigation",
+          "Verify Site Survey Navigation"
         ]
       },
       {
@@ -258,7 +257,7 @@
       {
         "resource": "pom_pages/home_page/home_page.resource",
         "variables": [
-          "PAGE_URL",
+          "EXPECTED_HOME_URL",
           "EXPECTED_LOGIN_URL",
           "EXPECTED_CUSTOMER_SEARCH_URL_FRAGMENT",
           "EXPECTED_VEHICLE_SURVEY_URL_FRAGMENT",
@@ -272,32 +271,31 @@
           "SITE_SURVEY_BUTTON"
         ],
         "keywords": [
-          "Open Home Page",
-          "Verify Home Page Loaded In Guest State",
-          "Verify All Home Navigation Buttons Are Enabled",
-          "Verify Navigation To Login Page",
-          "Verify Navigation To Customer Search Page",
-          "Verify Navigation To Vehicle Survey Page",
-          "Verify Navigation To Site Survey Page",
           "Click Auto Person Btn Button",
           "Click Auto Back Btn Button",
           "Click Auto Notification Btn Button",
           "Click Auto Home Btn Button",
           "Click Auto Btn Customer Signup Button",
           "Click Auto Btn Clean Survey Button",
-          "Click Auto Btn Site Survey Button"
+          "Click Auto Btn Site Survey Button",
+          "Verify Home Page Loaded In Guest State",
+          "Verify All Home Navigation Controls Are Enabled",
+          "Verify Person Profile Navigation",
+          "Verify Customer Signup Navigation",
+          "Verify Clean Survey Navigation",
+          "Verify Site Survey Navigation"
         ]
       }
     ],
     "reuseSignals": {
       "duplicateVariables": [
         {
-          "candidateName": "PAGE_URL",
+          "candidateName": "EXPECTED_HOME_URL",
           "locator": "http://localhost/washtabui/home",
           "existingOwners": [
             {
               "resource": "pom_pages/home_page/home_page.resource",
-              "name": "PAGE_URL"
+              "name": "EXPECTED_HOME_URL"
             }
           ]
         },
@@ -414,153 +412,6 @@
       ],
       "duplicateKeywords": [
         {
-          "candidateName": "Open Home Page",
-          "sameNameOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Open Home Page"
-            }
-          ],
-          "sameBodyOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Open Home Page"
-            }
-          ],
-          "sameSignatureOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Open Home Page"
-            }
-          ]
-        },
-        {
-          "candidateName": "Verify Home Page Loaded In Guest State",
-          "sameNameOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify Home Page Loaded In Guest State"
-            }
-          ],
-          "sameBodyOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify Home Page Loaded In Guest State"
-            }
-          ],
-          "sameSignatureOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify Home Page Loaded In Guest State"
-            }
-          ]
-        },
-        {
-          "candidateName": "Verify All Home Navigation Buttons Are Enabled",
-          "sameNameOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify All Home Navigation Buttons Are Enabled"
-            }
-          ],
-          "sameBodyOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify All Home Navigation Buttons Are Enabled"
-            }
-          ],
-          "sameSignatureOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify All Home Navigation Buttons Are Enabled"
-            }
-          ]
-        },
-        {
-          "candidateName": "Verify Navigation To Login Page",
-          "sameNameOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify Navigation To Login Page"
-            }
-          ],
-          "sameBodyOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify Navigation To Login Page"
-            }
-          ],
-          "sameSignatureOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify Navigation To Login Page"
-            }
-          ]
-        },
-        {
-          "candidateName": "Verify Navigation To Customer Search Page",
-          "sameNameOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify Navigation To Customer Search Page"
-            }
-          ],
-          "sameBodyOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify Navigation To Customer Search Page"
-            }
-          ],
-          "sameSignatureOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify Navigation To Customer Search Page"
-            }
-          ]
-        },
-        {
-          "candidateName": "Verify Navigation To Vehicle Survey Page",
-          "sameNameOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify Navigation To Vehicle Survey Page"
-            }
-          ],
-          "sameBodyOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify Navigation To Vehicle Survey Page"
-            }
-          ],
-          "sameSignatureOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify Navigation To Vehicle Survey Page"
-            }
-          ]
-        },
-        {
-          "candidateName": "Verify Navigation To Site Survey Page",
-          "sameNameOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify Navigation To Site Survey Page"
-            }
-          ],
-          "sameBodyOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify Navigation To Site Survey Page"
-            }
-          ],
-          "sameSignatureOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify Navigation To Site Survey Page"
-            }
-          ]
-        },
-        {
           "candidateName": "Click Auto Person Btn Button",
           "sameNameOwners": [
             {
@@ -706,14 +557,140 @@
               "name": "Click Auto Btn Site Survey Button"
             }
           ]
+        },
+        {
+          "candidateName": "Verify Home Page Loaded In Guest State",
+          "sameNameOwners": [
+            {
+              "resource": "pom_pages/home_page/home_page.resource",
+              "name": "Verify Home Page Loaded In Guest State"
+            }
+          ],
+          "sameBodyOwners": [
+            {
+              "resource": "pom_pages/home_page/home_page.resource",
+              "name": "Verify Home Page Loaded In Guest State"
+            }
+          ],
+          "sameSignatureOwners": [
+            {
+              "resource": "pom_pages/home_page/home_page.resource",
+              "name": "Verify Home Page Loaded In Guest State"
+            }
+          ]
+        },
+        {
+          "candidateName": "Verify All Home Navigation Controls Are Enabled",
+          "sameNameOwners": [
+            {
+              "resource": "pom_pages/home_page/home_page.resource",
+              "name": "Verify All Home Navigation Controls Are Enabled"
+            }
+          ],
+          "sameBodyOwners": [
+            {
+              "resource": "pom_pages/home_page/home_page.resource",
+              "name": "Verify All Home Navigation Controls Are Enabled"
+            }
+          ],
+          "sameSignatureOwners": [
+            {
+              "resource": "pom_pages/home_page/home_page.resource",
+              "name": "Verify All Home Navigation Controls Are Enabled"
+            }
+          ]
+        },
+        {
+          "candidateName": "Verify Person Profile Navigation",
+          "sameNameOwners": [
+            {
+              "resource": "pom_pages/home_page/home_page.resource",
+              "name": "Verify Person Profile Navigation"
+            }
+          ],
+          "sameBodyOwners": [
+            {
+              "resource": "pom_pages/home_page/home_page.resource",
+              "name": "Verify Person Profile Navigation"
+            }
+          ],
+          "sameSignatureOwners": [
+            {
+              "resource": "pom_pages/home_page/home_page.resource",
+              "name": "Verify Person Profile Navigation"
+            }
+          ]
+        },
+        {
+          "candidateName": "Verify Customer Signup Navigation",
+          "sameNameOwners": [
+            {
+              "resource": "pom_pages/home_page/home_page.resource",
+              "name": "Verify Customer Signup Navigation"
+            }
+          ],
+          "sameBodyOwners": [
+            {
+              "resource": "pom_pages/home_page/home_page.resource",
+              "name": "Verify Customer Signup Navigation"
+            }
+          ],
+          "sameSignatureOwners": [
+            {
+              "resource": "pom_pages/home_page/home_page.resource",
+              "name": "Verify Customer Signup Navigation"
+            }
+          ]
+        },
+        {
+          "candidateName": "Verify Clean Survey Navigation",
+          "sameNameOwners": [
+            {
+              "resource": "pom_pages/home_page/home_page.resource",
+              "name": "Verify Clean Survey Navigation"
+            }
+          ],
+          "sameBodyOwners": [
+            {
+              "resource": "pom_pages/home_page/home_page.resource",
+              "name": "Verify Clean Survey Navigation"
+            }
+          ],
+          "sameSignatureOwners": [
+            {
+              "resource": "pom_pages/home_page/home_page.resource",
+              "name": "Verify Clean Survey Navigation"
+            }
+          ]
+        },
+        {
+          "candidateName": "Verify Site Survey Navigation",
+          "sameNameOwners": [
+            {
+              "resource": "pom_pages/home_page/home_page.resource",
+              "name": "Verify Site Survey Navigation"
+            }
+          ],
+          "sameBodyOwners": [
+            {
+              "resource": "pom_pages/home_page/home_page.resource",
+              "name": "Verify Site Survey Navigation"
+            }
+          ],
+          "sameSignatureOwners": [
+            {
+              "resource": "pom_pages/home_page/home_page.resource",
+              "name": "Verify Site Survey Navigation"
+            }
+          ]
         }
       ],
       "variableReuseCandidates": [
         {
-          "candidateName": "PAGE_URL",
+          "candidateName": "EXPECTED_HOME_URL",
           "reuseFrom": {
             "resource": "pom_pages/home_page/home_page.resource",
-            "name": "PAGE_URL"
+            "name": "EXPECTED_HOME_URL"
           },
           "reason": "Same locator already exists in approved resource context."
         },
@@ -808,62 +785,6 @@
       ],
       "keywordReuseCandidates": [
         {
-          "candidateName": "Open Home Page",
-          "reuseFrom": {
-            "resource": "pom_pages/home_page/home_page.resource",
-            "name": "Open Home Page"
-          },
-          "reason": "Same keyword name, normalized implementation, or semantic signature already exists in approved resource context."
-        },
-        {
-          "candidateName": "Verify Home Page Loaded In Guest State",
-          "reuseFrom": {
-            "resource": "pom_pages/home_page/home_page.resource",
-            "name": "Verify Home Page Loaded In Guest State"
-          },
-          "reason": "Same keyword name, normalized implementation, or semantic signature already exists in approved resource context."
-        },
-        {
-          "candidateName": "Verify All Home Navigation Buttons Are Enabled",
-          "reuseFrom": {
-            "resource": "pom_pages/home_page/home_page.resource",
-            "name": "Verify All Home Navigation Buttons Are Enabled"
-          },
-          "reason": "Same keyword name, normalized implementation, or semantic signature already exists in approved resource context."
-        },
-        {
-          "candidateName": "Verify Navigation To Login Page",
-          "reuseFrom": {
-            "resource": "pom_pages/home_page/home_page.resource",
-            "name": "Verify Navigation To Login Page"
-          },
-          "reason": "Same keyword name, normalized implementation, or semantic signature already exists in approved resource context."
-        },
-        {
-          "candidateName": "Verify Navigation To Customer Search Page",
-          "reuseFrom": {
-            "resource": "pom_pages/home_page/home_page.resource",
-            "name": "Verify Navigation To Customer Search Page"
-          },
-          "reason": "Same keyword name, normalized implementation, or semantic signature already exists in approved resource context."
-        },
-        {
-          "candidateName": "Verify Navigation To Vehicle Survey Page",
-          "reuseFrom": {
-            "resource": "pom_pages/home_page/home_page.resource",
-            "name": "Verify Navigation To Vehicle Survey Page"
-          },
-          "reason": "Same keyword name, normalized implementation, or semantic signature already exists in approved resource context."
-        },
-        {
-          "candidateName": "Verify Navigation To Site Survey Page",
-          "reuseFrom": {
-            "resource": "pom_pages/home_page/home_page.resource",
-            "name": "Verify Navigation To Site Survey Page"
-          },
-          "reason": "Same keyword name, normalized implementation, or semantic signature already exists in approved resource context."
-        },
-        {
           "candidateName": "Click Auto Person Btn Button",
           "reuseFrom": {
             "resource": "pom_pages/home_page/home_page.resource",
@@ -918,15 +839,63 @@
             "name": "Click Auto Btn Site Survey Button"
           },
           "reason": "Same keyword name, normalized implementation, or semantic signature already exists in approved resource context."
+        },
+        {
+          "candidateName": "Verify Home Page Loaded In Guest State",
+          "reuseFrom": {
+            "resource": "pom_pages/home_page/home_page.resource",
+            "name": "Verify Home Page Loaded In Guest State"
+          },
+          "reason": "Same keyword name, normalized implementation, or semantic signature already exists in approved resource context."
+        },
+        {
+          "candidateName": "Verify All Home Navigation Controls Are Enabled",
+          "reuseFrom": {
+            "resource": "pom_pages/home_page/home_page.resource",
+            "name": "Verify All Home Navigation Controls Are Enabled"
+          },
+          "reason": "Same keyword name, normalized implementation, or semantic signature already exists in approved resource context."
+        },
+        {
+          "candidateName": "Verify Person Profile Navigation",
+          "reuseFrom": {
+            "resource": "pom_pages/home_page/home_page.resource",
+            "name": "Verify Person Profile Navigation"
+          },
+          "reason": "Same keyword name, normalized implementation, or semantic signature already exists in approved resource context."
+        },
+        {
+          "candidateName": "Verify Customer Signup Navigation",
+          "reuseFrom": {
+            "resource": "pom_pages/home_page/home_page.resource",
+            "name": "Verify Customer Signup Navigation"
+          },
+          "reason": "Same keyword name, normalized implementation, or semantic signature already exists in approved resource context."
+        },
+        {
+          "candidateName": "Verify Clean Survey Navigation",
+          "reuseFrom": {
+            "resource": "pom_pages/home_page/home_page.resource",
+            "name": "Verify Clean Survey Navigation"
+          },
+          "reason": "Same keyword name, normalized implementation, or semantic signature already exists in approved resource context."
+        },
+        {
+          "candidateName": "Verify Site Survey Navigation",
+          "reuseFrom": {
+            "resource": "pom_pages/home_page/home_page.resource",
+            "name": "Verify Site Survey Navigation"
+          },
+          "reason": "Same keyword name, normalized implementation, or semantic signature already exists in approved resource context."
         }
       ],
       "ownershipConflicts": [
         {
           "type": "shared_locator_semantic_overlap",
-          "candidateName": "PAGE_URL",
+          "candidateName": "EXPECTED_HOME_URL",
           "existingOwner": {
             "resource": "pom_pages/home_page/home_page.resource",
-            "name": "PAGE_URL"
+            "name": "EXPECTED_HOME_URL"
           },
           "locator": "http://localhost/washtabui/home"
         },
@@ -1038,7 +1007,7 @@
       ],
       "summary": {
         "duplicateVariableCount": 12,
-        "duplicateKeywordCount": 14,
+        "duplicateKeywordCount": 13,
         "ownershipConflictCount": 12
       }
     }
@@ -1099,50 +1068,50 @@
       },
       {
         "id": "HOME_TC_009",
-        "title": "Verify Person/Profile button navigates guest user to login page URL",
+        "title": "Verify clicking the Person/Profile button navigates guest user to the login page URL",
         "type": "positive",
-        "expectedResult": "The application navigates from the Home page to the login page and the URL equals /washtabui/login?data=undefined."
+        "expectedResult": "The application transitions from the Home page to the Login page and the browser URL equals /washtabui/login?data=undefined."
       },
       {
         "id": "HOME_TC_010",
-        "title": "Verify Customer signup button navigates guest user to customer-search page",
+        "title": "Verify clicking the Customer signup button navigates guest user to customer-search workflow entry",
         "type": "positive",
-        "expectedResult": "The application navigates from the Home page to the customer-search workflow and the resulting URL contains /customer-search."
+        "expectedResult": "The application transitions from the Home page to the customer-search workflow entry page and the browser URL contains /customer-search."
       },
       {
         "id": "HOME_TC_011",
-        "title": "Verify Clean survey button navigates guest user to vehicle-survey page",
+        "title": "Verify clicking the Clean survey button navigates guest user to vehicle-survey workflow entry",
         "type": "positive",
-        "expectedResult": "The application navigates from the Home page to the vehicle survey workflow and the resulting URL contains vehicle-survey."
+        "expectedResult": "The application transitions from the Home page to the vehicle-survey workflow entry page and the browser URL contains vehicle-survey."
       },
       {
         "id": "HOME_TC_012",
-        "title": "Verify Site survey button navigates guest user to survey page",
+        "title": "Verify clicking the Site survey button navigates guest user to survey workflow entry",
         "type": "positive",
-        "expectedResult": "The application navigates from the Home page to the survey workflow and the resulting URL contains survey?data."
+        "expectedResult": "The application transitions from the Home page to the survey workflow entry page and the browser URL contains survey?data."
       },
       {
         "id": "HOME_TC_018",
-        "title": "Verify all approved Home page navigation controls are enabled before interaction",
+        "title": "Verify all approved Home page navigation controls are enabled together after page load",
         "type": "positive",
-        "expectedResult": "All approved Home page navigation buttons are enabled, interactive, and available for user action before navigation begins."
+        "expectedResult": "All approved Home page buttons accept interaction and none of the controls appear disabled, blocked, or non-clickable."
       }
     ],
     "validations": [
       "The application loads successfully at http://localhost/washtabui/home and displays the Home page in guest state without prompting for authentication.",
-      "The application navigates from the Home page to the login page and the URL equals /washtabui/login?data=undefined.",
-      "The application navigates from the Home page to the customer-search workflow and the resulting URL contains /customer-search.",
-      "The application navigates from the Home page to the vehicle survey workflow and the resulting URL contains vehicle-survey.",
-      "The application navigates from the Home page to the survey workflow and the resulting URL contains survey?data.",
-      "All approved Home page navigation buttons are enabled, interactive, and available for user action before navigation begins."
+      "The application transitions from the Home page to the Login page and the browser URL equals /washtabui/login?data=undefined.",
+      "The application transitions from the Home page to the customer-search workflow entry page and the browser URL contains /customer-search.",
+      "The application transitions from the Home page to the vehicle-survey workflow entry page and the browser URL contains vehicle-survey.",
+      "The application transitions from the Home page to the survey workflow entry page and the browser URL contains survey?data.",
+      "All approved Home page buttons accept interaction and none of the controls appear disabled, blocked, or non-clickable."
     ],
     "transitions": [
       "The application loads successfully at http://localhost/washtabui/home and displays the Home page in guest state without prompting for authentication.",
-      "The application navigates from the Home page to the login page and the URL equals /washtabui/login?data=undefined.",
-      "The application navigates from the Home page to the customer-search workflow and the resulting URL contains /customer-search.",
-      "The application navigates from the Home page to the vehicle survey workflow and the resulting URL contains vehicle-survey.",
-      "The application navigates from the Home page to the survey workflow and the resulting URL contains survey?data.",
-      "All approved Home page navigation buttons are enabled, interactive, and available for user action before navigation begins."
+      "The application transitions from the Home page to the Login page and the browser URL equals /washtabui/login?data=undefined.",
+      "The application transitions from the Home page to the customer-search workflow entry page and the browser URL contains /customer-search.",
+      "The application transitions from the Home page to the vehicle-survey workflow entry page and the browser URL contains vehicle-survey.",
+      "The application transitions from the Home page to the survey workflow entry page and the browser URL contains survey?data.",
+      "All approved Home page buttons accept interaction and none of the controls appear disabled, blocked, or non-clickable."
     ]
   },
   "automationKnowledge": {
@@ -1197,38 +1166,26 @@
       },
       {
         "page": "home_page",
-        "name": "Verify All Home Navigation Buttons Are Visible",
-        "targetElement": "",
+        "name": "Verify Person Profile Navigation",
+        "targetElement": "person_profile_button",
         "action": "verify"
       },
       {
         "page": "home_page",
-        "name": "Verify All Home Navigation Buttons Are Enabled",
-        "targetElement": "",
+        "name": "Verify Customer Signup Navigation",
+        "targetElement": "customer_signup_button",
         "action": "verify"
       },
       {
         "page": "home_page",
-        "name": "Verify Login Navigation Url",
-        "targetElement": "",
+        "name": "Verify Clean Survey Navigation",
+        "targetElement": "clean_survey_button",
         "action": "verify"
       },
       {
         "page": "home_page",
-        "name": "Verify Customer Search Navigation Url",
-        "targetElement": "",
-        "action": "verify"
-      },
-      {
-        "page": "home_page",
-        "name": "Verify Vehicle Survey Navigation Url",
-        "targetElement": "",
-        "action": "verify"
-      },
-      {
-        "page": "home_page",
-        "name": "Verify Site Survey Navigation Url",
-        "targetElement": "",
+        "name": "Verify Site Survey Navigation",
+        "targetElement": "site_survey_button",
         "action": "verify"
       }
     ],
