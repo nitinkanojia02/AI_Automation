@@ -311,7 +311,7 @@ def analyze_manual_test_reuse(manual_data: Dict[str, Any], workflow_context: Dic
         }:
             weak_expected_results.append({"id": case_id, "title": title, "expectedResult": expected})
 
-        if any(token in combined.lower() for token in ["home", "dashboard", "redirect", "navigate", "landing", "return to", "back"]):
+        if any(clean_text(step) for step in steps):
             reused_intent_markers.append(case_id)
 
     for signature, case_ids in seen_signatures.items():

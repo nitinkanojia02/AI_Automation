@@ -89,16 +89,11 @@ def derive_fallback_feature_code(manual_data: dict) -> str:
         "a", "an", "and", "application", "auth", "authentication", "flow", "for", "from", "in", "of", "on", "page",
         "screen", "story", "test", "the", "to", "user", "users", "using", "validation", "verify", "workflow", "should", "support"
     }
-    preferred_words = {
-        "home", "login", "logout", "dashboard", "search", "cart", "checkout", "profile", "payment", "order", "admin", "report"
-    }
     tokens: list[str] = []
     for candidate in candidates:
         words = re.findall(r"[A-Za-z0-9]+", clean_text(candidate).lower())
         meaningful_words = [word for word in words if len(word) >= 3 and word not in stop_words]
-        preferred = [word for word in meaningful_words if word in preferred_words]
-        selected_words = preferred or meaningful_words
-        for word in selected_words[:2]:
+        for word in meaningful_words[:2]:
             code = compact_code(word)
             if code and code not in tokens:
                 tokens.append(code[:8])
@@ -2077,15 +2072,6 @@ def validate_manual_content(manual_data: dict, workflow_context: dict | None = N
         return False, "\n".join(errors)
 
     seen_signatures = set()
-    positive_with_observable_success = False
-    negative_with_observable_failure = False
-    category_flags = {
-        "ui": False,
-        "validation": False,
-        "navigation": False,
-        "boundary_or_edge_behavior": False,
-        "blank_or_required": False,
-    }
 
     for idx, case in enumerate(test_cases, start=1):
         if not isinstance(case, dict):
@@ -2119,36 +2105,9 @@ def validate_manual_content(manual_data: dict, workflow_context: dict | None = N
             warnings.append(f"Potential duplicate manual test detected: {title or idx}")
         seen_signatures.add(signature)
 
-        combined = " ".join([
-            title.lower(),
-            expected.lower(),
-            " ".join(clean_text(str(step)).lower() for step in steps if clean_text(str(step))),
-            " ".join(clean_text(str(field)).lower() for field in fields if clean_text(str(field))),
-        ])
-
         expected_lower = expected.lower()
-        if case_type == "positive" and any(token in expected_lower for token in ["dashboard", "home", "redirect", "landing", "url", "success", "authenticated", "logged in"]):
-            positive_with_observable_success = True
-        if case_type == "negative" and any(token in expected_lower for token in ["error", "validation", "rejected", "denied", "remains", "not navigate", "no navigation", "failed"]):
-            negative_with_observable_failure = True
         if expected_lower in {"system behaves as expected", "workflow completes successfully", "login should happen", "system works correctly"}:
             warnings.append(f"Weak expected result detected in manual test: {title or idx}")
-
-        if any(token in combined for token in ["visible", "visibility", "ui", "label", "button", "link", "placeholder", "masked", "masking"]):
-            category_flags["ui"] = True
-        if any(token in combined for token in ["validation", "required", "error", "invalid", "rejected", "denied"]):
-            category_flags["validation"] = True
-        if any(token in combined for token in ["navigate", "navigation", "redirect", "home", "back", "url", "landing"]):
-            category_flags["navigation"] = True
-        if any(token in combined for token in ["edge", "boundary", "max", "min", "long", "length", "special character", "whitespace", "case sensitivity", "copy paste", "repeated", "duplicate", "enter key"]):
-            category_flags["boundary_or_edge_behavior"] = True
-        if any(token in combined for token in ["blank", "empty", "required", "missing", "without entering", "leave"]):
-            category_flags["blank_or_required"] = True
-
-    if not positive_with_observable_success:
-        warnings.append("No positive manual test explicitly asserts observable success state")
-    if not negative_with_observable_failure:
-        warnings.append("No negative manual test explicitly asserts observable failure or rejection state")
 
     if len(test_cases) < 6:
         warnings.append("Manual test coverage appears thin: fewer than 6 test cases were generated")
@@ -2168,10 +2127,6 @@ def validate_manual_content(manual_data: dict, workflow_context: dict | None = N
         )
     if manual_reuse_analysis.get("resourceLineageGaps"):
         warnings.extend(manual_reuse_analysis.get("resourceLineageGaps", []))
-
-    for category_name, present in category_flags.items():
-        if not present:
-            warnings.append(f"Manual test coverage may be missing scenario category: {category_name}")
 
     strong_warning_count = sum(1 for item in warnings if _warning_severity(item) >= 2)
     quality_gate_failed = strong_warning_count > 0

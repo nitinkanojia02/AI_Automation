@@ -1277,30 +1277,17 @@ def infer_story_navigation_steps(page_name: str, workflow_like: dict) -> Tuple[L
     navigation_steps: List[dict] = []
     target_page_signals: List[dict] = []
 
-    if current_page in {"login", "login_page"}:
-        home_resource_available = any(item.startswith("home_page/") for item in relevant_resources) or "home page" in combined_story
-        opens_from_person = any(token in combined_story for token in [
-            "person/profile button",
-            "person button",
-            "profile button",
-            "clicks the person/profile button",
-            "click the person/profile button",
-            "opened by clicking the person/profile button",
-            "open the login page by clicking the person/profile button",
-            "home page person/profile button",
-        ])
-        if home_resource_available and opens_from_person:
+    if current_page in {"login", "login_page"} and relevant_resources:
+        for resource_path in relevant_resources:
+            resource_name = Path(resource_path).parent.name.replace("_page", "")
+            if not resource_name or resource_name == current_page:
+                continue
             navigation_steps.append({
-                "action": "clickKnownElement",
-                "page": "home_page",
-                "element": "profile_button",
+                "action": "reuseApprovedEntryContext",
+                "page": f"{resource_name}_page",
+                "element": "",
             })
-            target_page_signals.extend([
-                {"type": "text", "value": "Username"},
-                {"type": "text", "value": "Password"},
-                {"type": "text", "value": "Login"},
-                {"type": "selector", "value": "input[type='password']"},
-            ])
+            break
 
     deduped_signals: List[dict] = []
     seen = set()
