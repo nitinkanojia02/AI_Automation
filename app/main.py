@@ -1719,7 +1719,6 @@ def validate_reviewed_keywords_against_existing_resources(keywords: list[dict], 
             continue
         lowered = name.lower()
         if lowered in seen_names:
-            warnings.append(f"Duplicate reviewed keyword name: {name}")
             continue
         seen_names.add(lowered)
 
@@ -2190,21 +2189,6 @@ def validate_keyword_grounding(workflow: dict, keywords: list[dict]) -> tuple[bo
     page_name = pages[0].get("name") if pages else "page"
     warnings: list[str] = []
 
-    common_resource_context = []
-    resources_dir = BASE_DIR / "resources"
-    if resources_dir.exists():
-        for common_resource_path in sorted(resources_dir.glob("*.resource")):
-            try:
-                common_resource_context.append(parse_resource_file(common_resource_path))
-            except Exception:
-                continue
-
-    common_keyword_names = {
-        clean_text(str(keyword.get("name", ""))).lower()
-        for resource in common_resource_context
-        for keyword in resource.get("keywords", [])
-        if clean_text(str(keyword.get("name", "")))
-    }
     approved_elements = load_approved_elements_for_workflow(workflow)
     approved_element_names = {
         clean_text(str(item.get("approvedName", "")))
@@ -2213,12 +2197,6 @@ def validate_keyword_grounding(workflow: dict, keywords: list[dict]) -> tuple[bo
     }
 
     normalized_keywords: list[dict] = []
-    reused_common_helper = False
-    validation_keywords = collect_resource_validation_keywords(common_resource_context)
-    if validation_keywords:
-        warnings.append(f"Retrieved common validation/helper context: {', '.join(validation_keywords[:8])}")
-
-    seen_keyword_names: set[str] = set()
     for keyword in keywords:
         if not isinstance(keyword, dict):
             continue
@@ -2234,25 +2212,7 @@ def validate_keyword_grounding(workflow: dict, keywords: list[dict]) -> tuple[bo
         if target_element and target_element not in approved_element_names:
             warnings.append(f"Keyword '{clean_text(str(item.get('keywordName', '')))}' references non-approved target element '{target_element}'")
 
-        normalized_name = keyword_name.lower()
-        if normalized_name:
-            if normalized_name in seen_keyword_names:
-                warnings.append(f"Reviewed keyword output includes duplicate semantic name '{keyword_name}'; later save/refine stages should merge or keep only the strongest grounded instance")
-            else:
-                seen_keyword_names.add(normalized_name)
-
-        for line in implementation:
-            lowered = clean_text(line).lower()
-            if any(helper in lowered for helper in common_keyword_names):
-                reused_common_helper = True
-            if re.match(r"^(Wait Until Element Is Visible|Click Element|Input Text|Input Password)\b", clean_text(line)):
-                warnings.append(
-                    f"Keyword '{clean_text(str(item.get('keywordName', '')))}' uses low-level step '{clean_text(line)}'; prefer common helper keywords when available"
-                )
         normalized_keywords.append(item)
-
-    if common_keyword_names and not reused_common_helper:
-        warnings.append("Generated keywords do not appear to reuse retrieved common/shared helper keywords")
 
     return len([w for w in warnings if "non-approved target element" in w]) == 0, warnings, normalized_keywords
 
