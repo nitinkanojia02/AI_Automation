@@ -227,13 +227,17 @@ def looks_like_journey_action(value: str) -> bool:
 def collect_workflow_story_lines(workflow_input: Dict[str, Any]) -> Dict[str, List[str]]:
     external = workflow_input.get("externalContext") if isinstance(workflow_input.get("externalContext"), dict) else {}
 
+    user_story = workflow_input.get("userStory") if isinstance(workflow_input.get("userStory"), str) else ""
+    acceptance = workflow_input.get("acceptanceCriteria") if isinstance(workflow_input.get("acceptanceCriteria"), list) else external.get("acceptanceCriteria")
+    validations = external.get("validationExpectations") if isinstance(external.get("validationExpectations"), list) else workflow_input.get("observedValidations")
+
     return {
-        "userStory": compact_story_lines(unique_strings(normalize_text_blocks(workflow_input.get("userStory")), limit=4), limit=4),
+        "userStory": [clean_text(user_story)] if clean_text(user_story) else [],
         "applicationContext": compact_story_lines(unique_strings(normalize_text_blocks(external.get("applicationContext")), limit=6), limit=6),
         "entryConditions": compact_story_lines(unique_strings(normalize_text_blocks(external.get("entryConditions")) or normalize_text_blocks(workflow_input.get("observedPreconditions")), limit=10), limit=10),
-        "acceptanceCriteria": compact_story_lines(unique_strings(normalize_text_blocks(workflow_input.get("acceptanceCriteria")) or normalize_text_blocks(external.get("acceptanceCriteria")), limit=10), limit=10),
+        "acceptanceCriteria": compact_story_lines(unique_strings(normalize_text_blocks(acceptance), limit=10), limit=10),
         "behaviorRules": compact_story_lines(unique_strings(normalize_text_blocks(external.get("behaviorRules")), limit=10), limit=10),
-        "validationExpectations": compact_story_lines(unique_strings(normalize_text_blocks(external.get("validationExpectations")) or normalize_text_blocks(workflow_input.get("observedValidations")), limit=10), limit=10),
+        "validationExpectations": compact_story_lines(unique_strings(normalize_text_blocks(validations), limit=10), limit=10),
         "transitionExpectations": compact_story_lines(unique_strings(normalize_text_blocks(external.get("transitionExpectations")), limit=12), limit=12),
         "reuseGuidance": compact_story_lines(unique_strings(normalize_text_blocks(external.get("pomReuseGuidance")), limit=8), limit=8),
         "approvedTestDataGuidance": compact_story_lines(unique_strings(normalize_text_blocks(external.get("approvedTestDataGuidance")), limit=8), limit=8),
@@ -507,17 +511,7 @@ def collect_automation_knowledge(workflow_slug: str, workflow_input: Dict[str, A
                 name = clean_text(item.get('name'))
                 if not name:
                     continue
-                lowered = name.lower()
-                action = 'generic'
-                if lowered.startswith('click '):
-                    action = 'click'
-                elif lowered.startswith('verify ') or lowered.startswith('validate '):
-                    action = 'verify'
-                elif lowered.startswith('open '):
-                    action = 'open'
-                elif lowered.startswith('enter ') or lowered.startswith('input '):
-                    action = 'input'
-                key = f"{page_name.lower()}::{name.lower()}::{action.lower()}"
+                key = f"{page_name.lower()}::{name.lower()}"
                 if key in seen_keyword_keys:
                     continue
                 seen_keyword_keys.add(key)
@@ -525,7 +519,7 @@ def collect_automation_knowledge(workflow_slug: str, workflow_input: Dict[str, A
                     'page': page_name,
                     'name': name,
                     'targetElement': '',
-                    'action': action,
+                    'action': '',
                 })
             continue
         for path in [
@@ -538,8 +532,7 @@ def collect_automation_knowledge(workflow_slug: str, workflow_input: Dict[str, A
                     if not isinstance(item, dict):
                         continue
                     name = clean_text(item.get('keywordName'))
-                    action = clean_text(item.get('action')).lower()
-                    key = f"{page_name.lower()}::{name.lower()}::{action.lower()}"
+                    key = f"{page_name.lower()}::{name.lower()}"
                     if not name or key in seen_keyword_keys:
                         continue
                     seen_keyword_keys.add(key)
@@ -547,7 +540,7 @@ def collect_automation_knowledge(workflow_slug: str, workflow_input: Dict[str, A
                         'page': page_name,
                         'name': name,
                         'targetElement': clean_text(item.get('targetElement')),
-                        'action': action,
+                        'action': clean_text(item.get('action')).lower(),
                     })
                 if approved_keywords:
                     break
@@ -890,16 +883,6 @@ def discover_relevant_workflow_knowledge(workflow_input: Dict[str, Any]) -> List
         for item in ensure_list(workflow_input.get('resourceFiles'))
         if clean_text(item)
     }
-    story_blob = ' '.join(unique_strings([
-        workflow_input.get('workflowName'),
-        workflow_input.get('feature'),
-        workflow_input.get('userStory'),
-        workflow_input.get('observedExpectedResult'),
-        *ensure_list(workflow_input.get('observedSteps')),
-        *ensure_list(workflow_input.get('observedValidations')),
-        *((ensure_list((workflow_input.get('externalContext') or {}).get('description'))) if isinstance(workflow_input.get('externalContext'), dict) else []),
-        *((ensure_list((workflow_input.get('externalContext') or {}).get('acceptanceCriteria'))) if isinstance(workflow_input.get('externalContext'), dict) else []),
-    ])).lower()
 
     for path in sorted(WORKFLOW_KNOWLEDGE_DIR.glob('*.json')):
         payload = safe_load_json(path)
@@ -908,38 +891,17 @@ def discover_relevant_workflow_knowledge(workflow_input: Dict[str, Any]) -> List
         workflow_slug = clean_text(payload.get('workflowSlug') or path.stem)
         if workflow_slug == current_slug:
             continue
-        score = 0
         authoritative_resources = {
             str(item).replace('\\', '/').strip()
             for item in ensure_list(((payload.get('resourceKnowledge') or {}).get('authoritativeResources')))
             if clean_text(item)
         }
-        if current_resources & authoritative_resources:
-            score += 5
-        for resource in authoritative_resources:
-            page_token = Path(resource).parent.name.replace('_page', '').replace('_', ' ')
-            if page_token and page_token in story_blob:
-                score += 3
-        for term in unique_strings([
-            payload.get('workflowName'),
-            payload.get('feature'),
-            *(((payload.get('businessContext') or {}).get('acceptanceCriteria')) if isinstance(payload.get('businessContext'), dict) else []),
-            *(((payload.get('businessContext') or {}).get('reuseGuidance')) if isinstance(payload.get('businessContext'), dict) else []),
-        ]):
-            normalized = clean_text(term).lower()
-            if normalized and normalized in story_blob:
-                score += 1
-        if workflow_slug in {
-            slugify(item)
-            for item in ensure_list(((payload.get('downstreamGuidance') or {}).get('upstreamWorkflowKnowledge')))
-        }:
-            score += 1
-        if score <= 0:
+        if not (current_resources & authoritative_resources):
             continue
         results.append({
             'workflowSlug': workflow_slug,
             'workflowName': clean_text(payload.get('workflowName')),
-            'score': score,
+            'score': len(current_resources & authoritative_resources),
             'knowledge': summarize_workflow_knowledge_for_generation(payload),
         })
 

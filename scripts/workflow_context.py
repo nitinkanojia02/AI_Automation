@@ -11,11 +11,11 @@ except ModuleNotFoundError:
     from scripts.workflow_knowledge import discover_relevant_workflow_knowledge
 
 try:
-    from scripts.artifact_reuse import collect_existing_resource_context, normalize_name_tokens
+    from scripts.artifact_reuse import collect_existing_resource_context
 except ModuleNotFoundError:
     import sys
     sys.path.append(str(Path(__file__).resolve().parent.parent))
-    from scripts.artifact_reuse import collect_existing_resource_context, normalize_name_tokens
+    from scripts.artifact_reuse import collect_existing_resource_context
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 WORKFLOW_INPUT_DIR = BASE_DIR / "workflow_inputs"
@@ -50,19 +50,15 @@ def safe_load_json(path: Path) -> Dict[str, Any] | None:
 def collect_story_text(workflow_input: Dict[str, Any]) -> str:
     chunks: List[str] = []
     for key in [
-        "description",
+        "workflowName",
+        "feature",
         "userStory",
         "observedExpectedResult",
-        "acceptanceCriteria",
-        "acceptance_criteria",
-        "generationGuidance",
     ]:
         value = workflow_input.get(key)
         if isinstance(value, str) and clean_text(value):
             chunks.append(clean_text(value))
-        elif isinstance(value, list):
-            chunks.extend(clean_text(str(item)) for item in value if clean_text(str(item)))
-    for key in ["observedPreconditions", "observedSteps", "observedValidations", "scenarioIntent", "preconditions", "steps"]:
+    for key in ["observedPreconditions", "observedSteps", "observedValidations", "acceptanceCriteria", "preconditions", "steps"]:
         value = workflow_input.get(key)
         if isinstance(value, list):
             chunks.extend(clean_text(str(item)) for item in value if clean_text(str(item)))
@@ -74,27 +70,6 @@ def collect_story_text(workflow_input: Dict[str, Any]) -> str:
         for step in workflow_input["navigationSteps"]:
             if isinstance(step, dict):
                 chunks.extend(clean_text(str(v)) for v in step.values() if clean_text(str(v)))
-    external_context = workflow_input.get("externalContext")
-    if isinstance(external_context, dict):
-        for key in [
-            "description",
-            "userStory",
-            "acceptanceCriteria",
-            "acceptance_criteria",
-            "generationGuidance",
-            "validationExpectations",
-            "behaviorRules",
-            "transitionExpectations",
-            "pomReuseGuidance",
-            "approvedTestDataGuidance",
-            "applicationContext",
-            "loginPageElements",
-        ]:
-            value = external_context.get(key)
-            if isinstance(value, str) and clean_text(value):
-                chunks.append(clean_text(value))
-            elif isinstance(value, list):
-                chunks.extend(clean_text(str(item)) for item in value if clean_text(str(item)))
     return " ".join(chunk for chunk in chunks if chunk)
 
 
@@ -155,9 +130,9 @@ def infer_workflow_reuse_context(workflow_input: Dict[str, Any]) -> Dict[str, An
         "authoritativeResourceFiles": authoritative,
         "resourceSummaries": [resource_summary(item) for item in authoritative],
         "reuseGuidance": [
-            "Infer dependencies from the workflow story and existing approved resources; do not assume direct URL access unless the story states it.",
-            "Prefer approved existing page resources for navigation, setup, and post-condition validation when the story implies those relationships.",
-            "Treat SPA state changes as potential states of an existing page resource instead of automatically creating a new unrelated page model.",
-            "Prefer reusing authoritative approved resources over duplicating ownership of controls or keywords in a new workflow.",
+            "Prefer current workflow authoritative resources and preserve approved ownership boundaries.",
+            "Reuse approved existing page resources for navigation, setup, and destination validation when already supplied by workflow lineage.",
+            "Prefer approved shared/common resources for generic browser, wait, and interaction behavior.",
+            "Avoid duplicate ownership when an approved resource already provides the capability.",
         ],
     }

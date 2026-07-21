@@ -410,45 +410,6 @@ def map_test_type(title: str, expected_result: str, raw_type: str) -> str:
     return "positive"
 
 
-def infer_interaction_intent(title: str, steps: List[str], expected_result: str) -> Dict[str, str]:
-    combined = " ".join([title or "", expected_result or "", *steps]).lower()
-
-    def has_any(*tokens: str) -> bool:
-        return any(token in combined for token in tokens)
-
-    input_method = "type"
-    if has_any("paste", "copy paste", "copy-paste", "clipboard"):
-        input_method = "paste"
-
-    submission_method = "click"
-    if has_any("press enter", "hit enter", "enter key", "keyboard submit", "submit using enter"):
-        submission_method = "keyboard_enter"
-
-    interaction_pattern = "standard"
-    if has_any("multiple rapid click", "multiple clicks", "click multiple times", "repeated click", "duplicate click", "double click"):
-        interaction_pattern = "repeat_click"
-    elif has_any("whitespace", "leading spaces", "trailing spaces", "with spaces"):
-        interaction_pattern = "whitespace"
-    elif has_any("special character", "special characters", "symbols"):
-        interaction_pattern = "special_characters"
-
-    validation_type = "generic"
-    if has_any("required", "mandatory", "empty", "blank"):
-        validation_type = "required_field"
-    elif has_any("error message", "validation message", "rejected", "denied", "failed"):
-        validation_type = "error_message"
-    elif has_any("redirect", "landing page", "destination page", "state change", "success state", "navigated"):
-        validation_type = "navigation_success"
-    elif has_any("masked", "masking", "hidden"):
-        validation_type = "masking"
-
-    return {
-        "inputMethod": input_method,
-        "submissionMethod": submission_method,
-        "interactionPattern": interaction_pattern,
-        "validationType": validation_type,
-    }
-
 
 def normalize_test_case(
     test_case: Dict[str, Any],
@@ -577,87 +538,40 @@ def _collect_text_blocks(value: Any) -> List[str]:
 
 
 def extract_story_sections(workflow_input: Dict[str, Any]) -> Dict[str, List[str]]:
-    section_names = [
-        "user story",
-        "application context",
-        "entry conditions",
-        "test credentials",
-        "approved test data guidance",
-        "page elements",
-        "screen elements",
-        "view elements",
-        "behavior rules",
-        "validation expectations",
-        "transition expectations",
-        "pom reuse guidance",
-        "acceptance criteria",
-        "generation guidance",
-        "prefer",
-    ]
-    raw_blocks: List[str] = []
-    for key in (
-        "description",
-        "userStory",
-        "observedExpectedResult",
-        "observedPreconditions",
-        "observedSteps",
-        "observedValidations",
-        "acceptanceCriteria",
-        "acceptance_criteria",
-        "generationGuidance",
-    ):
-        raw_blocks.extend(_collect_text_blocks(workflow_input.get(key)))
-    for parent_key in ("externalContext", "metadata"):
-        parent = workflow_input.get(parent_key)
-        if not isinstance(parent, dict):
-            continue
-        for key in (
-            "description",
-            "userStory",
-            "acceptanceCriteria",
-            "acceptance_criteria",
-            "generationGuidance",
-            "validationExpectations",
-            "transitionExpectations",
-            "behaviorRules",
-            "pomReuseGuidance",
-            "approvedTestDataGuidance",
-            "applicationContext",
-            "loginPageElements",
-            "entryConditions",
-            "testCredentials",
-        ):
-            raw_blocks.extend(_collect_text_blocks(parent.get(key)))
-
-    combined_text = "\n".join(block for block in raw_blocks if clean_text(block))
-    combined_text = re.sub(r"\s*\n\s*", "\n", combined_text)
-    combined_text = re.sub(r"[ \t]+", " ", combined_text).strip()
-
-    sections: Dict[str, List[str]] = {name: [] for name in section_names}
-    if not combined_text:
-        return sections
-
-    escaped_names = [re.escape(name) for name in section_names]
-    header_pattern = re.compile(rf"(?i)({'|'.join(escaped_names)})\b")
-    matches = list(header_pattern.finditer(combined_text))
-
-    for idx, match in enumerate(matches):
-        name = match.group(1).lower()
-        start = match.start()
-        end = matches[idx + 1].start() if idx + 1 < len(matches) else len(combined_text)
-        fragment = combined_text[start:end].strip(" :-\n\t")
-        if fragment:
-            sections[name].append(clean_text(fragment))
+    sections: Dict[str, List[str]] = {
+        "user story": [],
+        "application context": _collect_text_blocks(((workflow_input.get("externalContext") or {}).get("applicationContext")) if isinstance(workflow_input.get("externalContext"), dict) else []),
+        "entry conditions": _collect_text_blocks(((workflow_input.get("externalContext") or {}).get("entryConditions")) if isinstance(workflow_input.get("externalContext"), dict) else workflow_input.get("observedPreconditions")),
+        "test credentials": _collect_text_blocks(((workflow_input.get("externalContext") or {}).get("testCredentials")) if isinstance(workflow_input.get("externalContext"), dict) else []),
+        "approved test data guidance": _collect_text_blocks(((workflow_input.get("externalContext") or {}).get("approvedTestDataGuidance")) if isinstance(workflow_input.get("externalContext"), dict) else []),
+        "page elements": [],
+        "screen elements": [],
+        "view elements": [],
+        "behavior rules": _collect_text_blocks(((workflow_input.get("externalContext") or {}).get("behaviorRules")) if isinstance(workflow_input.get("externalContext"), dict) else []),
+        "validation expectations": _collect_text_blocks(((workflow_input.get("externalContext") or {}).get("validationExpectations")) if isinstance(workflow_input.get("externalContext"), dict) else workflow_input.get("observedValidations")),
+        "transition expectations": _collect_text_blocks(((workflow_input.get("externalContext") or {}).get("transitionExpectations")) if isinstance(workflow_input.get("externalContext"), dict) else []),
+        "pom reuse guidance": _collect_text_blocks(((workflow_input.get("externalContext") or {}).get("pomReuseGuidance")) if isinstance(workflow_input.get("externalContext"), dict) else []),
+        "acceptance criteria": _collect_text_blocks(workflow_input.get("acceptanceCriteria")) or _collect_text_blocks(((workflow_input.get("externalContext") or {}).get("acceptanceCriteria")) if isinstance(workflow_input.get("externalContext"), dict) else []),
+        "generation guidance": _collect_text_blocks(workflow_input.get("generationGuidance")) or _collect_text_blocks(((workflow_input.get("externalContext") or {}).get("generationGuidance")) if isinstance(workflow_input.get("externalContext"), dict) else []),
+        "prefer": [],
+    }
+    user_story = workflow_input.get("userStory")
+    if isinstance(user_story, str) and clean_text(user_story):
+        sections["user story"] = [clean_text(user_story)]
 
     deduped_sections: Dict[str, List[str]] = {}
     for name, values in sections.items():
         seen = set()
         deduped: List[str] = []
         for value in values:
-            key = value.lower()
-            if key not in seen:
-                seen.add(key)
-                deduped.append(value)
+            cleaned = clean_text(value)
+            if not cleaned:
+                continue
+            key = cleaned.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            deduped.append(cleaned)
         deduped_sections[name] = deduped
     return deduped_sections
 
@@ -790,9 +704,13 @@ def criterion_is_covered(criterion: str, test_cases: List[Dict[str, Any]]) -> bo
     criterion_key = criterion_signature(criterion)
     if not criterion_key:
         return False
+    criterion_parts = tuple(part for part in criterion_key.split() if part)
     for tc in test_cases:
         candidate_key = test_case_signature(tc)
-        if criterion_key and criterion_key in candidate_key:
+        candidate_parts = tuple(part for part in candidate_key.split() if part)
+        if criterion_key == candidate_key:
+            return True
+        if criterion_parts and len(criterion_parts) <= len(candidate_parts) and criterion_parts == candidate_parts[:len(criterion_parts)]:
             return True
     return False
 

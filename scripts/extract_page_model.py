@@ -1008,7 +1008,14 @@ def _derive_keyword_name_from_element_name(element_name: str, role: str, fallbac
     normalized_element = slugify(element_name)
     if not normalized_element:
         return clean_text(fallback_name)
-    return build_fallback_keyword_name(normalized_element, role)
+    derived_name = build_fallback_keyword_name(normalized_element, role)
+    fallback = clean_text(fallback_name)
+    if not fallback:
+        return derived_name
+    fallback_refs = re.findall(r"\$\{([A-Z0-9_]+)\}", fallback.upper())
+    if fallback_refs:
+        return derived_name
+    return fallback
 
 
 def _canonical_variable_name_for_element(element_name: str, element: dict | None, used_names: set[str] | None = None) -> str:
