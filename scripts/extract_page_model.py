@@ -1399,6 +1399,9 @@ def infer_story_navigation_steps(page_name: str, workflow_like: dict) -> Tuple[L
             "action": "reuseApprovedEntryContext",
             "page": f"{entry_page_name}_page",
             "element": "",
+            "inferredReuseContext": {
+                "authoritativeResourceFiles": relevant_resources,
+            },
         })
 
     deduped_signals: List[dict] = []
