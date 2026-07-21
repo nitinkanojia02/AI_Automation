@@ -1393,54 +1393,70 @@ def normalize_resource_keyword_headers(resource_content: str, approved_keywords:
     content = strip_markdown_fences(resource_content or "")
     if not content.strip() or "*** Keywords ***" not in content:
         return content
+
     lines = content.splitlines()
-    approved_by_canonical: dict[tuple[str, str], str] = {}
     approved_by_existing: dict[str, str] = {}
+    approved_by_target_action: dict[tuple[str, str], str] = {}
+    approved_by_target: dict[str, str] = {}
+    variable_to_target: dict[str, str] = {}
+
     for item in approved_keywords:
         if not isinstance(item, dict):
             continue
         keyword_name = clean_text(str(item.get("keywordName", "")))
         target_element = clean_text(str(item.get("targetElement", "")))
-        action = clean_text(str(item.get("action", "")))
+        action = clean_text(str(item.get("action", ""))).lower()
         canonical_name = sanitize_keyword_name(keyword_name, target_element, action)
         if keyword_name and canonical_name:
             approved_by_existing[keyword_name.lower()] = canonical_name
-        if target_element:
-            approved_by_canonical[(target_element.lower(), action.lower())] = canonical_name
-            approved_by_canonical[(target_element.lower(), "")] = canonical_name
+        if target_element and canonical_name:
+            approved_by_target_action[(target_element.lower(), action)] = canonical_name
+            approved_by_target[target_element.lower()] = canonical_name
+        implementation = item.get("implementation", [])
+        if isinstance(implementation, str):
+            implementation_lines = [implementation]
+        elif isinstance(implementation, list):
+            implementation_lines = [str(line) for line in implementation]
+        else:
+            implementation_lines = []
+        for line in implementation_lines:
+            for ref in re.findall(r"\$\{([A-Z0-9_]+)\}", line):
+                variable_to_target.setdefault(clean_text(ref).upper(), target_element)
+
     normalized_lines: list[str] = []
     in_keywords = False
     current_keyword_name = ""
     current_body: list[str] = []
+
+    def derive_action_from_body(body_lines: list[str]) -> str:
+        for body_line in body_lines:
+            stripped = clean_text(body_line)
+            if not stripped or stripped.startswith("["):
+                continue
+            step_name = re.split(r"\s{2,}|\t+", stripped, maxsplit=1)[0]
+            return clean_text(step_name).split()[0].lower() if clean_text(step_name) else ""
+        return ""
+
+    def derive_target_from_body(body_lines: list[str]) -> str:
+        for body_line in body_lines:
+            for ref in re.findall(r"\$\{([A-Z0-9_]+)\}", body_line):
+                mapped = clean_text(variable_to_target.get(clean_text(ref).upper(), ""))
+                if mapped:
+                    return mapped
+                variable_name = clean_text(ref).lower()
+                if variable_name.endswith("_button") or variable_name.endswith("_textbox") or variable_name.endswith("_dropdown") or variable_name.endswith("_link") or variable_name.endswith("_message") or variable_name.endswith("_field"):
+                    return variable_name
+        return ""
 
     def flush_block() -> None:
         nonlocal current_keyword_name, current_body
         if not current_keyword_name:
             return
         canonical_name = approved_by_existing.get(current_keyword_name.lower(), "")
-        if not canonical_name:
-            block_text = "\n".join(current_body)
-            referenced_variables = re.findall(r"\$\{([A-Z0-9_]+)\}", block_text)
-            derived_target = ""
-            if referenced_variables:
-                variable_name = clean_text(str(referenced_variables[0]))
-                if variable_name:
-                    parts = [part for part in variable_name.lower().split("_") if part]
-                    if len(parts) > 1:
-                        derived_target = "_".join(parts[:-1])
-                    else:
-                        derived_target = "_".join(parts)
-            action_hint = ""
-            if current_body:
-                first_body = clean_text(current_body[0]).lower()
-                if first_body.startswith("click "):
-                    action_hint = "click"
-                elif first_body.startswith("input "):
-                    action_hint = "input"
-                elif first_body.startswith("select "):
-                    action_hint = "select"
-            if derived_target:
-                canonical_name = approved_by_canonical.get((derived_target.lower(), action_hint), "") or approved_by_canonical.get((derived_target.lower(), ""), "") or sanitize_keyword_name(current_keyword_name, derived_target, action_hint)
+        derived_target = derive_target_from_body(current_body)
+        derived_action = derive_action_from_body(current_body)
+        if derived_target:
+            canonical_name = approved_by_target_action.get((derived_target.lower(), derived_action), "") or approved_by_target.get(derived_target.lower(), "") or sanitize_keyword_name(current_keyword_name, derived_target, derived_action)
         normalized_lines.append(canonical_name or current_keyword_name)
         normalized_lines.extend(current_body)
         current_keyword_name = ""
