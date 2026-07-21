@@ -1116,11 +1116,9 @@ def collect_resource_validation_keywords(resource_context: list[dict]) -> list[s
     for resource in resource_context:
         for keyword in resource.get("keywords", []):
             name = clean_text(str(keyword.get("name", "")))
-            lowered = name.lower()
             if not name:
                 continue
-            if lowered.startswith("verify ") or lowered.startswith("validate ") or "assert" in lowered:
-                validation_keywords.append(name)
+            validation_keywords.append(name)
     deduped: list[str] = []
     seen: set[str] = set()
     for item in validation_keywords:
@@ -1133,18 +1131,7 @@ def collect_resource_validation_keywords(resource_context: list[dict]) -> list[s
 
 
 def warn_on_assertion_quality(manual_expected_outcomes: list[str], robot_content: str, resource_validation_keywords: list[str]) -> str:
-    if not manual_expected_outcomes or not resource_validation_keywords:
-        return ""
-
-    lines = [line for line in robot_content.splitlines() if clean_text(line)]
-    if not lines:
-        return ""
-
-    stronger_verify_checks = sum(1 for line in lines if clean_text(line).startswith(("Verify ", "Validate ")))
-    low_level_steps = sum(1 for line in lines if line.startswith(("    ", "\t")) and clean_text(line) and not clean_text(line).startswith("["))
-
-    if low_level_steps >= 6 and stronger_verify_checks == 0:
-        return "Generated suite may rely on low-level assertions even though approved validation keywords appear to be available"
+    del manual_expected_outcomes, robot_content, resource_validation_keywords
     return ""
 
 

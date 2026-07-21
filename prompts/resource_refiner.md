@@ -88,7 +88,9 @@ Refinement guidance:
 - Do not create long-string or boundary-value variables unless the approved artifacts clearly require that exact reusable boundary dataset
 - Add reusable observable validation keywords for approved negative and validation scenarios when grounded in approved artifacts
 - Ensure the final resource gives downstream suite generation enough semantic support to avoid literal business data and weak same-page-only assertions
-- When the approved manual/tests/workflow imply a stronger business-visible validation class such as authenticated state, masked password behavior, visible-and-enabled controls, or visible rejection feedback, do not collapse that into a weaker generic loaded/present check; either create a grounded stronger page validation or leave the capability clearly absent rather than faking equivalence
+- When the approved manual/tests/workflow imply a stronger business-visible validation class such as authenticated state, guest state, masked password behavior, visible-and-enabled controls, exact navigation destination, or visible rejection feedback, do not collapse that into a weaker generic loaded/present/location-contains check; either create a grounded stronger page validation or leave the capability clearly absent rather than faking equivalence
+- Do not name a keyword as if it proves a business state unless the retained implementation verifies reviewed observable evidence that actually supports that state; prefer evidence-grounded naming over stronger semantic claims
+- If approved lineage provides an exact expected URL or exact destination value, preserve exact equality validation instead of weakening it to partial containment unless the approved evidence itself is partial
 - Strengthen negative validations only when visible or approved evidence supports them
 - Do not invent unsupported validation messages, unsupported business rules, unsupported page behavior, or unsupported framework/library keywords
 - Before finalizing, self-review every called keyword and keep only keywords that are valid Robot Framework/BuiltIn/SeleniumLibrary keywords or imported shared-resource keywords

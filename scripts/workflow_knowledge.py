@@ -135,42 +135,12 @@ def normalize_text_blocks(value: Any) -> List[str]:
     if isinstance(value, list):
         flattened: List[str] = []
         for item in value:
-            flattened.extend(split_story_sentences(item) if isinstance(item, str) else normalize_text_blocks(item))
+            flattened.extend(normalize_text_blocks(item))
         return unique_strings(flattened)
     if isinstance(value, str):
-        parts = [clean_text(part) for part in re.split(r"\n+", value) if clean_text(part)]
-        expanded: List[str] = []
-        for part in parts:
-            expanded.extend(split_story_sentences(part))
-        return unique_strings(expanded)
+        cleaned = clean_text(value)
+        return [cleaned] if cleaned else []
     return []
-
-
-def split_story_sentences(value: Any) -> List[str]:
-    text = str(value or "").replace("\r\n", "\n").replace("\r", "\n")
-    if not clean_text(text):
-        return []
-    text = re.sub(r"(?m)^\s*\d+\.\s+", "", text)
-    text = re.sub(r"(?m)^\s*[-*]\s+", "", text)
-    text = re.sub(r"\n{2,}", "\n", text)
-
-    parts: List[str] = []
-    for raw_line in text.split("\n"):
-        line = clean_text(raw_line.strip(" :-\t"))
-        if not line:
-            continue
-        line = re.sub(r"^\d+\.\s*", "", line)
-        line = re.sub(r"\s+\d+\.$", "", line)
-        line = clean_text(line)
-        if not line or re.fullmatch(r"\d+", line):
-            continue
-        subparts = re.split(r"(?<=[.!?])\s+(?=[A-Z])", line)
-        for part in subparts:
-            cleaned = clean_text(part.strip(" :-\t"))
-            if cleaned and not re.fullmatch(r"\d+", cleaned):
-                parts.append(cleaned)
-
-    return unique_strings(parts)
 
 
 def select_relevant_lines(values: List[str], keywords: List[str], limit: int = 12) -> List[str]:
@@ -181,23 +151,7 @@ def select_relevant_lines(values: List[str], keywords: List[str], limit: int = 1
 
 
 def compact_story_lines(values: List[str], limit: int = 12) -> List[str]:
-    compacted: List[str] = []
-    for item in unique_strings(values):
-        cleaned = clean_text(item)
-        if not cleaned:
-            continue
-        if len(cleaned) > 320 and " - " in cleaned:
-            segments = [clean_text(part) for part in cleaned.split(" - ") if clean_text(part)]
-            for segment in segments:
-                if segment and len(segment) <= 240:
-                    compacted.append(segment)
-                if len(compacted) >= limit:
-                    return unique_strings(compacted, limit=limit)
-            continue
-        compacted.append(cleaned)
-        if len(compacted) >= limit:
-            break
-    return unique_strings(compacted, limit=limit)
+    return unique_strings(values, limit=limit)
 
 
 def extract_story_urls(story_sections: Dict[str, List[str]]) -> List[str]:
@@ -211,36 +165,28 @@ def extract_story_urls(story_sections: Dict[str, List[str]]) -> List[str]:
     return unique_strings(urls, limit=10)
 
 
-def looks_like_journey_action(value: str) -> bool:
-    cleaned = clean_text(value)
-    if not cleaned:
-        return False
-    if cleaned.endswith(":"):
-        return False
-    if len(cleaned.split()) < 2:
-        return False
-    if re.fullmatch(r"https?://[^\s]+", cleaned):
-        return False
-    return True
-
-
 def collect_workflow_story_lines(workflow_input: Dict[str, Any]) -> Dict[str, List[str]]:
     external = workflow_input.get("externalContext") if isinstance(workflow_input.get("externalContext"), dict) else {}
-
     user_story = workflow_input.get("userStory") if isinstance(workflow_input.get("userStory"), str) else ""
     acceptance = workflow_input.get("acceptanceCriteria") if isinstance(workflow_input.get("acceptanceCriteria"), list) else external.get("acceptanceCriteria")
     validations = external.get("validationExpectations") if isinstance(external.get("validationExpectations"), list) else workflow_input.get("observedValidations")
+    application_context = external.get("applicationContext")
+    entry_conditions = external.get("entryConditions") if external.get("entryConditions") not in (None, [], "") else workflow_input.get("observedPreconditions")
+    behavior_rules = external.get("behaviorRules")
+    transition_expectations = external.get("transitionExpectations")
+    reuse_guidance = external.get("pomReuseGuidance")
+    approved_test_data_guidance = external.get("approvedTestDataGuidance")
 
     return {
-        "userStory": [clean_text(user_story)] if clean_text(user_story) else [],
-        "applicationContext": compact_story_lines(unique_strings(normalize_text_blocks(external.get("applicationContext")), limit=6), limit=6),
-        "entryConditions": compact_story_lines(unique_strings(normalize_text_blocks(external.get("entryConditions")) or normalize_text_blocks(workflow_input.get("observedPreconditions")), limit=10), limit=10),
-        "acceptanceCriteria": compact_story_lines(unique_strings(normalize_text_blocks(acceptance), limit=10), limit=10),
-        "behaviorRules": compact_story_lines(unique_strings(normalize_text_blocks(external.get("behaviorRules")), limit=10), limit=10),
-        "validationExpectations": compact_story_lines(unique_strings(normalize_text_blocks(validations), limit=10), limit=10),
-        "transitionExpectations": compact_story_lines(unique_strings(normalize_text_blocks(external.get("transitionExpectations")), limit=12), limit=12),
-        "reuseGuidance": compact_story_lines(unique_strings(normalize_text_blocks(external.get("pomReuseGuidance")), limit=8), limit=8),
-        "approvedTestDataGuidance": compact_story_lines(unique_strings(normalize_text_blocks(external.get("approvedTestDataGuidance")), limit=8), limit=8),
+        "userStory": unique_strings(([clean_text(user_story)] if clean_text(user_story) else []), limit=1),
+        "applicationContext": compact_story_lines(normalize_text_blocks(application_context), limit=6),
+        "entryConditions": compact_story_lines(normalize_text_blocks(entry_conditions), limit=10),
+        "acceptanceCriteria": compact_story_lines(normalize_text_blocks(acceptance), limit=10),
+        "behaviorRules": compact_story_lines(normalize_text_blocks(behavior_rules), limit=10),
+        "validationExpectations": compact_story_lines(normalize_text_blocks(validations), limit=10),
+        "transitionExpectations": compact_story_lines(normalize_text_blocks(transition_expectations), limit=12),
+        "reuseGuidance": compact_story_lines(normalize_text_blocks(reuse_guidance), limit=8),
+        "approvedTestDataGuidance": compact_story_lines(normalize_text_blocks(approved_test_data_guidance), limit=8),
     }
 
 
@@ -649,36 +595,18 @@ def build_workflow_knowledge_context(workflow_input: Dict[str, Any]) -> Dict[str
     else:
         direct_access_policy = "must_use_entry_journey" if navigation_model.get('journey') else "direct_access_allowed"
 
-    entry_journey = compact_story_lines(unique_strings(
-        [
-            item.get('action', '')
-            for item in navigation_model.get('journey', [])
-            if isinstance(item, dict) and clean_text(item.get('action', ''))
-        ],
-        limit=10,
-    ), limit=10)
+    entry_journey = [
+        {
+            'page': clean_text(item.get('page')),
+            'action': clean_text(item.get('action')),
+            'element': clean_text(item.get('element')),
+        }
+        for item in navigation_model.get('journey', [])
+        if isinstance(item, dict) and any(clean_text(item.get(field)) for field in ('page', 'action', 'element'))
+    ][:10]
 
-    unresolved_blob = ' '.join(unresolved_gaps).lower()
-    success_destination = compact_story_lines(unique_strings(
-        [
-            item for item in select_relevant_lines(
-                story_sections.get('transitionExpectations', []) + story_sections.get('validationExpectations', []) + story_sections.get('acceptanceCriteria', []),
-                [],
-                limit=8,
-            )
-            if clean_text(item).lower() not in unresolved_blob
-        ],
-        limit=8,
-    ), limit=8)
-
-    return_destinations = compact_story_lines(unique_strings(
-        select_relevant_lines(
-            story_sections.get('transitionExpectations', []) + story_sections.get('acceptanceCriteria', []) + story_sections.get('reuseGuidance', []),
-            [],
-            limit=8,
-        ),
-        limit=8,
-    ), limit=8)
+    success_destination = []
+    return_destinations = []
 
     return {
         'workflowName': clean_text(enriched_workflow_input.get('workflowName')) or workflow_slug,
@@ -802,7 +730,7 @@ def summarize_workflow_knowledge_for_generation(payload: Dict[str, Any]) -> Dict
         },
         'journeyKnowledge': {
             'directAccessPolicy': clean_text((payload.get('journeyKnowledge') or {}).get('directAccessPolicy')),
-            'entryJourney': unique_strings(ensure_list((payload.get('journeyKnowledge') or {}).get('entryJourney')), limit=8),
+            'entryJourney': compact_journey_steps((payload.get('journeyKnowledge') or {}).get('entryJourney')),
             'successDestination': unique_strings(ensure_list((payload.get('journeyKnowledge') or {}).get('successDestination')), limit=8),
             'returnDestinations': unique_strings(ensure_list((payload.get('journeyKnowledge') or {}).get('returnDestinations')), limit=8),
             'authoritativeEntryResources': unique_strings(ensure_list((payload.get('journeyKnowledge') or {}).get('authoritativeEntryResources')), limit=10),
@@ -845,7 +773,7 @@ def summarize_workflow_knowledge_for_generation(payload: Dict[str, Any]) -> Dict
                 if isinstance(item, dict) and clean_text(item.get('title'))
             ],
             'validations': unique_strings(ensure_list(manual.get('validations')), limit=10),
-            'transitions': unique_strings(ensure_list(manual.get('transitions')), limit=10),
+            'transitions': [],
         },
         'automationKnowledge': {
             'approvedKeywords': [

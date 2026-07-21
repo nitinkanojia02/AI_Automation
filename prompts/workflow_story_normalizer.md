@@ -55,6 +55,8 @@ Content rules:
 - When a page is reached indirectly through an upstream page or shared shell flow, make that entry journey explicit without inventing direct URLs or direct-open behavior
 - If expected behavior is intentionally observational or implementation-dependent, preserve that wording neutrally instead of resolving it into a hardcoded outcome
 - Preserve business-observable outcomes over implementation wording
+- Keep business intent separate from directly observed evidence when the raw input distinguishes them; do not rewrite unresolved or observational expectations as already-proven state facts
+- Preserve exact URLs and exact destination values as exact facts when they are explicitly provided; do not weaken them into partial-match wording during normalization
 - Make resource reuse guidance explicit enough that downstream generation can infer which upstream resources should be reused
 - If a shared or upstream resource may already own a control or navigation behavior, state that reuse should be preferred over duplicate ownership
 - If approved credentials or test data are given, state that they are approved for positive scenarios and should be reused consistently across manual and automation assets

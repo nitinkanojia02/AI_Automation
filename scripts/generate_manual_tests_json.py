@@ -524,7 +524,7 @@ def looks_like_acceptance_criterion(text: str) -> bool:
         return False
     if re.fullmatch(r"https?://\S+", cleaned, flags=re.IGNORECASE):
         return False
-    return len(cleaned.split()) >= 3
+    return True
 
 
 
@@ -584,7 +584,7 @@ def parse_acceptance_criteria(workflow_input: Dict[str, Any]) -> List[str]:
         if isinstance(value, list):
             raw_candidates.extend(str(x).strip() for x in value if str(x).strip())
         elif isinstance(value, str) and value.strip():
-            raw_candidates.extend(line.strip(" -\t") for line in re.split(r"\n+", value) if line.strip())
+            raw_candidates.append(value.strip())
 
     for parent_key in ("externalContext", "metadata"):
         parent = workflow_input.get(parent_key)
@@ -595,41 +595,19 @@ def parse_acceptance_criteria(workflow_input: Dict[str, Any]) -> List[str]:
             if isinstance(value, list):
                 raw_candidates.extend(str(x).strip() for x in value if str(x).strip())
             elif isinstance(value, str) and value.strip():
-                raw_candidates.extend(line.strip(" -\t") for line in re.split(r"\n+", value) if line.strip())
-
-    story_sections = extract_story_sections(workflow_input)
-    for section_value in story_sections.get("acceptance criteria", []):
-        cleaned_section = clean_text(re.sub(r"^acceptance criteria\s*", "", section_value, flags=re.IGNORECASE))
-        if cleaned_section:
-            parts = re.split(r"(?=Given\s)", cleaned_section, flags=re.IGNORECASE)
-            raw_candidates.extend(part.strip() for part in parts if part.strip())
+                raw_candidates.append(value.strip())
 
     seen = set()
     normalized: List[str] = []
-    pending_when_then = False
     for criterion in raw_candidates:
-        criterion = re.sub(r"^\d+[\.)]\s*", "", criterion).strip()
-        if "acceptance criteria" in criterion.lower():
-            parts = re.split(r"(?=Given\s)", criterion, flags=re.IGNORECASE)
-            for part in parts:
-                part = clean_text(re.sub(r"^acceptance criteria\s*", "", part, flags=re.IGNORECASE))
-                if part:
-                    raw_candidates.append(part)
+        cleaned = clean_text(criterion)
+        if not looks_like_acceptance_criterion(cleaned):
             continue
-        lowered = criterion.lower()
-        if lowered.startswith("when ") or lowered.startswith("then "):
-            pending_when_then = True
+        key = cleaned.lower()
+        if key in seen:
             continue
-        if lowered.startswith("given "):
-            pending_when_then = False
-        if pending_when_then and not lowered.startswith("given "):
-            continue
-        if not looks_like_acceptance_criterion(criterion):
-            continue
-        key = criterion.lower()
-        if key not in seen:
-            seen.add(key)
-            normalized.append(criterion)
+        seen.add(key)
+        normalized.append(cleaned)
     return normalized
 
 
@@ -704,13 +682,8 @@ def criterion_is_covered(criterion: str, test_cases: List[Dict[str, Any]]) -> bo
     criterion_key = criterion_signature(criterion)
     if not criterion_key:
         return False
-    criterion_parts = tuple(part for part in criterion_key.split() if part)
     for tc in test_cases:
-        candidate_key = test_case_signature(tc)
-        candidate_parts = tuple(part for part in candidate_key.split() if part)
-        if criterion_key == candidate_key:
-            return True
-        if criterion_parts and len(criterion_parts) <= len(candidate_parts) and criterion_parts == candidate_parts[:len(criterion_parts)]:
+        if criterion_key == test_case_signature(tc):
             return True
     return False
 
