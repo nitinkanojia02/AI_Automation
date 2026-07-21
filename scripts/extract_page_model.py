@@ -1515,7 +1515,8 @@ def perform_navigation_steps(page, navigation_steps: List[dict], wait_seconds: i
                         continue
                     if stripped.startswith("["):
                         continue
-                    if not clean_text(stripped).lower().startswith("click "):
+                    lowered = clean_text(stripped).lower()
+                    if not (lowered.startswith("click ") or lowered.startswith("click when ready")):
                         continue
                     references = re.findall(r"\$\{([A-Z0-9_]+)\}", stripped)
                     if not references:
