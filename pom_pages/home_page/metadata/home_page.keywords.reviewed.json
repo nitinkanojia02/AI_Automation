@@ -2,7 +2,7 @@
   "pageName": "home_page",
   "keywords": [
     {
-      "keywordId": "KW_001",
+      "keywordId": "HOME_KW_001",
       "keywordName": "Click Auto Person Btn Button",
       "targetElement": "person_profile_button",
       "action": "click",
@@ -13,7 +13,7 @@
       "approved": true
     },
     {
-      "keywordId": "KW_002",
+      "keywordId": "HOME_KW_002",
       "keywordName": "Click Auto Back Btn Button",
       "targetElement": "back_button",
       "action": "click",
@@ -24,7 +24,7 @@
       "approved": true
     },
     {
-      "keywordId": "KW_003",
+      "keywordId": "HOME_KW_003",
       "keywordName": "Click Auto Notification Btn Button",
       "targetElement": "notification_button",
       "action": "click",
@@ -35,7 +35,7 @@
       "approved": true
     },
     {
-      "keywordId": "KW_004",
+      "keywordId": "HOME_KW_004",
       "keywordName": "Click Auto Home Btn Button",
       "targetElement": "home_button",
       "action": "click",
@@ -46,7 +46,7 @@
       "approved": true
     },
     {
-      "keywordId": "KW_005",
+      "keywordId": "HOME_KW_005",
       "keywordName": "Click Auto Btn Customer Signup Button",
       "targetElement": "customer_signup_button",
       "action": "click",
@@ -57,7 +57,7 @@
       "approved": true
     },
     {
-      "keywordId": "KW_006",
+      "keywordId": "HOME_KW_006",
       "keywordName": "Click Auto Btn Clean Survey Button",
       "targetElement": "clean_survey_button",
       "action": "click",
@@ -68,7 +68,7 @@
       "approved": true
     },
     {
-      "keywordId": "KW_007",
+      "keywordId": "HOME_KW_007",
       "keywordName": "Click Auto Btn Site Survey Button",
       "targetElement": "site_survey_button",
       "action": "click",
@@ -79,36 +79,98 @@
       "approved": true
     },
     {
-      "keywordId": "KW_008",
+      "keywordId": "HOME_KW_008",
       "keywordName": "Verify Home Page Loaded In Guest State",
-      "targetElement": "home_button",
+      "targetElement": "",
       "action": "verify",
       "arguments": [],
       "implementation": [
-        "Wait For Element To Be Ready    ${HOME_BUTTON}",
-        "Location Should Contain    ${PAGE_URL}"
+        "Go To Url    ${PAGE_URL}",
+        "Wait Until Location Is    ${PAGE_URL}",
+        "Wait Until Element Is Visible    ${BACKGROUND_CONTENT_ELEMENT}",
+        "Wait For Element To Be Ready    ${AUTO_PERSON_BTN_BUTTON}"
       ],
       "approved": true
     },
     {
-      "keywordId": "KW_009",
-      "keywordName": "Verify All Home Navigation Buttons Are Visible And Enabled",
+      "keywordId": "HOME_KW_009",
+      "keywordName": "Verify Person Profile Button Is Visible And Enabled",
+      "targetElement": "person_profile_button",
+      "action": "verify",
+      "arguments": [],
+      "implementation": [
+        "Wait For Element To Be Ready    ${PERSON_PROFILE_BUTTON}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "HOME_KW_010",
+      "keywordName": "Verify Back Button Is Visible And Enabled",
+      "targetElement": "back_button",
+      "action": "verify",
+      "arguments": [],
+      "implementation": [
+        "Wait For Element To Be Ready    ${BACK_BUTTON}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "HOME_KW_011",
+      "keywordName": "Verify Notification Button Is Visible And Enabled",
+      "targetElement": "notification_button",
+      "action": "verify",
+      "arguments": [],
+      "implementation": [
+        "Wait For Element To Be Ready    ${NOTIFICATION_BUTTON}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "HOME_KW_012",
+      "keywordName": "Verify Home Button Is Visible And Enabled",
       "targetElement": "home_button",
       "action": "verify",
       "arguments": [],
       "implementation": [
-        "Wait For Element To Be Ready    ${HOME_BUTTON}",
-        "Wait For Element To Be Ready    ${HOME_BUTTON}",
-        "Wait For Element To Be Ready    ${HOME_BUTTON}",
-        "Wait For Element To Be Ready    ${HOME_BUTTON}",
-        "Wait For Element To Be Ready    ${HOME_BUTTON}",
-        "Wait For Element To Be Ready    ${HOME_BUTTON}",
         "Wait For Element To Be Ready    ${HOME_BUTTON}"
       ],
       "approved": true
     },
     {
-      "keywordId": "KW_010",
+      "keywordId": "HOME_KW_013",
+      "keywordName": "Verify Customer Signup Button Is Visible And Enabled",
+      "targetElement": "customer_signup_button",
+      "action": "verify",
+      "arguments": [],
+      "implementation": [
+        "Wait For Element To Be Ready    ${CUSTOMER_SIGNUP_BUTTON}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "HOME_KW_014",
+      "keywordName": "Verify Clean Survey Button Is Visible And Enabled",
+      "targetElement": "clean_survey_button",
+      "action": "verify",
+      "arguments": [],
+      "implementation": [
+        "Wait For Element To Be Ready    ${CLEAN_SURVEY_BUTTON}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "HOME_KW_015",
+      "keywordName": "Verify Site Survey Button Is Visible And Enabled",
+      "targetElement": "site_survey_button",
+      "action": "verify",
+      "arguments": [],
+      "implementation": [
+        "Wait For Element To Be Ready    ${SITE_SURVEY_BUTTON}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "HOME_KW_016",
       "keywordName": "Verify Navigation To Login Page",
       "targetElement": "person_profile_button",
       "action": "verify",
@@ -119,7 +181,7 @@
       "approved": true
     },
     {
-      "keywordId": "KW_011",
+      "keywordId": "HOME_KW_017",
       "keywordName": "Verify Navigation To Customer Search Page",
       "targetElement": "customer_signup_button",
       "action": "verify",
@@ -130,7 +192,7 @@
       "approved": true
     },
     {
-      "keywordId": "KW_012",
+      "keywordId": "HOME_KW_018",
       "keywordName": "Verify Navigation To Vehicle Survey Page",
       "targetElement": "clean_survey_button",
       "action": "verify",
@@ -141,7 +203,7 @@
       "approved": true
     },
     {
-      "keywordId": "KW_013",
+      "keywordId": "HOME_KW_019",
       "keywordName": "Verify Navigation To Site Survey Page",
       "targetElement": "site_survey_button",
       "action": "verify",
