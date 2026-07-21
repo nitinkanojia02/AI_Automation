@@ -1435,11 +1435,42 @@ def perform_navigation_steps(page, navigation_steps: List[dict], wait_seconds: i
                     normalized_page = f"{normalized_page}_page"
                 if source_page and normalized_page != source_page:
                     continue
-                for candidate in extract_keywords_from_resource_file(normalized_page):
-                    keyword_name = clean_text(str(candidate.get("name", "")))
-                    if not keyword_name.lower().startswith("click "):
+                resource_file = BASE_DIR / str(resource_path).replace("\\", "/")
+                if not resource_file.exists():
+                    continue
+                resource_text = resource_file.read_text(encoding="utf-8")
+                variable_to_element: Dict[str, str] = {}
+                in_variables = False
+                in_keywords = False
+                for line in resource_text.splitlines():
+                    stripped = line.strip()
+                    if stripped.startswith("***"):
+                        in_variables = stripped.lower() == "*** variables ***"
+                        in_keywords = stripped.lower() == "*** keywords ***"
                         continue
-                    element_name = keyword_name[6:].strip()
+                    if in_variables:
+                        match = re.match(r"^\$\{([A-Z0-9_]+)\}\s{2,}.*$", stripped)
+                        if match:
+                            variable_name = clean_text(match.group(1))
+                            if variable_name:
+                                parts = [part for part in variable_name.lower().split("_") if part]
+                                if len(parts) > 1:
+                                    variable_to_element[variable_name] = "_".join(parts[:-1])
+                                else:
+                                    variable_to_element[variable_name] = "_".join(parts)
+                        continue
+                    if not in_keywords:
+                        continue
+                    if not line.startswith(" ") and stripped:
+                        continue
+                    if not stripped or stripped.startswith("["):
+                        continue
+                    if not clean_text(stripped).lower().startswith("click "):
+                        continue
+                    references = re.findall(r"\$\{([A-Z0-9_]+)\}", stripped)
+                    if not references:
+                        continue
+                    element_name = clean_text(variable_to_element.get(clean_text(references[0]), ""))
                     if not element_name:
                         continue
                     expanded_steps.append({
