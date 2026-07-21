@@ -26,6 +26,9 @@ Refinement rules:
 - If stronger destination-state validation is not yet grounded in approved page/resource evidence, keep the scenario wording accurate and observable without inventing unsupported authenticated indicators, controls, or messages
 - Preserve meaningful positive, negative, UI, validation, navigation, and edge scenarios
 - Do not collapse broad coverage into a minimal subset
+- Treat the supplied workflow acceptance-criteria coverage map and extracted requirement units as mandatory refinement obligations: if any requirement unit is not clearly represented by at least one scenario, add or repair scenario coverage until it is explicit in title, steps, or expectedResult
+- Do not let optional exploratory edge cases displace missing mandatory acceptance-criteria scenarios
+- If multiple requirement units describe different controls, transitions, validations, or observable outcomes on the same page, keep them as distinct scenarios instead of compressing them into one generic page-state case
 - Keep field-level distinctions when they materially affect observable behavior
 - Preserve the action semantics expressed in the source artifact, such as paste, keyboard submit, repeated click, whitespace handling, masking, navigation, and validation-specific behavior
 - Prefer explicit observable expected results over vague wording

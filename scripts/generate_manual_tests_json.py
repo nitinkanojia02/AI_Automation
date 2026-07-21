@@ -347,6 +347,10 @@ Mandatory Acceptance Criteria Coverage Map:
 
 Additional generation instructions for acceptance criteria:
 - Cover the requirement units above with explicit, observable manual scenarios.
+- Treat the acceptance-criteria coverage map as mandatory scenario input, not as optional background context.
+- Ensure every requirement unit is represented by at least one explicit test case whose title, steps, or expectedResult clearly reflects that requirement.
+- Do not collapse multiple distinct requirement units into one generic scenario when those requirements describe different controls, different transitions, different validations, or different observable outcomes.
+- If several requirement units describe the same page state, preserve distinct scenarios when the user action, target control, or expected observable outcome differs.
 - Treat extracted story sections as requirement sources, not as background-only prose.
 - Preserve concrete business data and observable outcomes from the workflow wherever they are explicitly provided.
 - Turn explicit transitions, state changes, validations, and control behaviors into dedicated scenarios instead of leaving them implied inside generic success cases.
@@ -829,17 +833,21 @@ def test_case_signature(tc: Dict[str, Any]) -> str:
 
 def criterion_is_covered(criterion: str, test_cases: List[Dict[str, Any]]) -> bool:
     criterion_key = criterion_signature(criterion)
-    criterion_tokens = {token for token in criterion_key.split() if len(token) > 2}
+    criterion_tokens = [token for token in criterion_key.split() if len(token) > 2]
     if not criterion_tokens:
         return False
+
+    significant_tokens = [token for token in criterion_tokens if token not in {"page", "state", "button", "user", "view", "workflow", "screen", "control", "controls"}]
+    required_tokens = significant_tokens or criterion_tokens
+    minimum_overlap = max(2, min(len(required_tokens), 4))
 
     for tc in test_cases:
         candidate_key = test_case_signature(tc)
         candidate_tokens = set(candidate_key.split())
         if criterion_key and criterion_key in candidate_key:
             return True
-        overlap = criterion_tokens & candidate_tokens
-        if len(overlap) >= max(2, min(len(criterion_tokens), 4)):
+        overlap = set(required_tokens) & candidate_tokens
+        if len(overlap) >= minimum_overlap:
             return True
     return False
 

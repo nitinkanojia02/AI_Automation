@@ -36,6 +36,9 @@ Review emphasis:
 - Keep scenario wording faithful to what the user intended to do, not just the end state
 - Avoid flattening specialized interactions into generic 'enter data and submit' phrasing when the source artifact is more specific
 - Preserve enough semantic wording that later AI layers can infer interaction intent without brittle Python mappings
+- Treat the supplied workflow acceptance-criteria coverage map and extracted requirement units as mandatory review obligations: if any requirement unit is not clearly represented by at least one scenario, add or repair scenarios so that requirement is explicitly covered
+- Do not allow optional exploratory scenarios to displace missing mandatory acceptance-criteria scenarios
+- If multiple requirement units share a broad page-state theme but differ by control, validation, transition, or observable outcome, preserve them as distinct scenarios instead of collapsing them into one generic page-state case
 - Treat any supplied validation findings, quality-gate findings, reuse warnings, transition-coverage gaps, and resource-lineage gaps as mandatory review inputs that must be repaired when the artifact is returned
 
 Output rules:

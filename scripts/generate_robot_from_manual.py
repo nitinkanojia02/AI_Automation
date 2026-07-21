@@ -11,13 +11,11 @@ import requests
 import urllib3
 
 try:
-    from scripts.artifact_reuse import analyze_manual_test_reuse, analyze_reuse_conflicts, analyze_robot_suite_reuse
     from scripts.workflow_context import infer_workflow_reuse_context
     from scripts.workflow_knowledge import build_workflow_knowledge_context, discover_relevant_workflow_knowledge
 except ModuleNotFoundError:
     import sys
     sys.path.append(str(Path(__file__).resolve().parent.parent))
-    from scripts.artifact_reuse import analyze_manual_test_reuse, analyze_reuse_conflicts, analyze_robot_suite_reuse
     from scripts.workflow_context import infer_workflow_reuse_context
     from scripts.workflow_knowledge import build_workflow_knowledge_context, discover_relevant_workflow_knowledge
 
@@ -89,11 +87,16 @@ def derive_fallback_feature_code(manual_data: dict) -> str:
         "a", "an", "and", "application", "auth", "authentication", "flow", "for", "from", "in", "of", "on", "page",
         "screen", "story", "test", "the", "to", "user", "users", "using", "validation", "verify", "workflow", "should", "support"
     }
+    preferred_words = {
+        "home", "login", "logout", "dashboard", "search", "cart", "checkout", "profile", "payment", "order", "admin", "report"
+    }
     tokens: list[str] = []
     for candidate in candidates:
         words = re.findall(r"[A-Za-z0-9]+", clean_text(candidate).lower())
         meaningful_words = [word for word in words if len(word) >= 3 and word not in stop_words]
-        for word in meaningful_words[:2]:
+        preferred = [word for word in meaningful_words if word in preferred_words]
+        selected_words = preferred or meaningful_words
+        for word in selected_words[:2]:
             code = compact_code(word)
             if code and code not in tokens:
                 tokens.append(code[:8])
@@ -289,15 +292,6 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
     identifier_policy = derive_standard_test_identifier(prompt_manual_data)
     allowed_builtin_keywords, allowed_selenium_keywords = get_framework_keyword_catalog()
 
-    authoritative_resource_files = []
-    resource_knowledge = current_workflow_knowledge.get("resourceKnowledge") if isinstance(current_workflow_knowledge, dict) else {}
-    if isinstance(resource_knowledge, dict):
-        authoritative_resource_files = [
-            str(item).replace("\\", "/").strip()
-            for item in (resource_knowledge.get("authoritativeResources") or [])
-            if str(item).strip()
-        ]
-
     payload = {
         "manual_test": prompt_manual_data,
         "resource_context": resource_context,
@@ -312,7 +306,6 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
         "inferred_reuse_context": reuse_context,
         "current_workflow_knowledge": current_workflow_knowledge,
         "relevant_workflow_knowledge": relevant_workflow_knowledge,
-        "authoritative_resource_files": authoritative_resource_files,
         "intent_preservation_notes": [
             "Preserve manual interaction intent from steps and any interactionIntent metadata.",
             "Use interactionIntent as AI guidance, not as a hardcoded routing table.",
@@ -333,13 +326,11 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
         "- Any navigation/open-page/wait-for-page-ready keyword already belongs in the resource layer and must be reused from there.\n"
         "- Any reusable test data such as usernames, passwords, URLs, paths, expected validation text, long strings, invalid variants, SQL injection payloads, whitespace variants, and boundary values belongs in the resource layer, not in the test suite.\n"
         "- Every generated test must align with the manual test title, steps, and expectedResult; do not skip the expected validation.\n"
-        "- Prefer resource validation keywords and resource variables whenever the resource file suggests they exist or should be reused.\n"
-        "- Never downgrade a required business-visible assertion into a weaker proxy such as page presence, form presence, or URL-only checking when the manual expectedResult implies a stronger observable outcome.\n"
-        "- If the manual expectedResult requires a stronger validation than the currently imported resources can support, keep the suite thin, reuse the strongest approved evidence available, and make the missing capability visible as a gap in reasoning instead of fabricating confidence through weak assertions.\n\n"
+        "- Prefer resource validation keywords and resource variables whenever the resource file suggests they exist or should be reused.\n\n"
         "Mandatory output rules:\n"
         "- Use only the provided resource files and the shared common resource hint.\n"
         "- Always import ../resources/common_keywords.resource in the suite Settings section.\n"
-        "- Import all relevant page resources required by the workflow journey, not just the local workflow page resource. This includes the page resource files listed in manual_test.resourceFiles plus any authoritative upstream page resources identified in authoritative_resource_files, inferred_reuse_context, current_workflow_knowledge, or relevant_workflow_knowledge when those upstream resources are needed for entry, navigation, state validation, or return-path validation.\n"
+        "- Also import the page resource files listed in manual_test.resourceFiles.\n"
         "- Use provided keyword names and variable names from resource_context wherever possible.\n"
         "- Treat the final approved page resource files in resource_context as the authoritative source of truth for page variables and page keywords. Prefer those exact approved names over inferred, legacy, metadata-derived, or paraphrased alternatives.\n"
         "- Prefer existing keywords from resource_context over inventing new ones.\n"
@@ -350,21 +341,8 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
         "- current_workflow_knowledge is the concise approved-memory draft for the current workflow assembled from current workflow context plus approved artifacts already available. Use it to keep the suite aligned with the workflow's business journey, ownership boundaries, and approved test intent.\n"
         "- relevant_workflow_knowledge is approved cumulative workflow memory created from approved user story context, approved element extraction, approved manual tests, approved resource keywords, and approved automation from prior workflows. Consult it before creating navigation/setup assumptions for the current suite.\n"
         "- If relevant_workflow_knowledge shows that an upstream workflow already owns navigation, page opening, state validation, or reusable controls needed by this workflow, reuse that approved upstream knowledge and imported upstream resources instead of inventing new suite abstractions.\n"
-        "- If workflow knowledge says the target page is not directly accessed by URL and must be reached through an upstream page journey, do not bypass that journey with placeholder URLs, synthetic direct opens, or direct page landing assumptions. Reuse the upstream page-resource actions and validations that express the approved entry path.\n"
-        "- If workflow knowledge defines an approved entry journey through upstream resources, model that journey explicitly in Test Setup, Suite Setup, or the test flow itself using approved upstream resource keywords. Do not assume the target page is already open at the start of the test unless the setup clearly establishes that approved journey.\n"
-        "- If authoritative upstream resources are required for entry flow, return-path validation, or destination-state validation, the suite must actually import those resources and use their approved keywords rather than relying only on local-page checks.\n"
-        "- If workflow knowledge defines a success transition or return-state destination, the suite must validate that destination state using approved upstream/page resource keywords instead of re-validating the origin page after a successful transition.\n"
-        "- Do not treat disappearance of origin-page controls as sufficient success evidence when workflow knowledge provides a destination page/state and authoritative resource support for validating that destination.\n"
-        "- Never invent or define new keywords in shared/common resource space. Common/shared resource files are framework/user-owned reference layers and may be reused, but AI must not extend them with new convenience abstractions.\n"
-        "- If workflow knowledge or retrieved resource context already provides upstream page/resource actions needed for navigation or state transition, reuse those existing approved keywords directly instead of coining a new combined action name.\n"
-        "- Do not synthesize convenience keywords such as multi-action navigation helpers when the same flow can be expressed by existing approved upstream resource keywords in setup or test bodies.\n"
         "- Shared/common resource keywords take priority over raw SeleniumLibrary keywords for generic interactions. If a shared helper such as Open Browser Session, Close Browser Session, Open Browser To Url, Go To Url, Wait For Element To Be Ready, Click When Ready, or Input Text When Ready exists in retrieved_common_keywords, use that helper rather than direct SeleniumLibrary calls.\n"
         "- If a page keyword or page variable already exists in retrieved_page_keywords or retrieved_page_variables, preserve and reuse it instead of creating a parallel name.\n"
-        "- Enforce the reuse hierarchy strictly: prefer an approved page-resource keyword first, then an approved page-resource variable, and only fall back to a lower-level literal or raw library form when no approved reusable artifact exists in retrieved context.\n"
-        "- Never emit a literal URL, locator, credential, expected text, or reusable business value in the suite when the same value already exists behind an approved semantic resource variable in retrieved_page_variables or retrieved common resource variables.\n"
-        "- Never call a low-level generic interaction keyword with a raw locator literal when an approved semantic page variable already exists for that same locator in retrieved_page_variables.\n"
-        "- If an approved semantic page keyword already exists for the intended page action, use that page keyword instead of calling a generic wrapper directly with the page variable or a raw literal.\n"
-        "- Treat literal-value leakage as a quality defect: replace direct URLs, direct locators, direct reusable credentials, and other reusable business literals with approved semantic resource variables or approved page keywords whenever retrieved context already provides them.\n"
         "- Prefer common/shared wrapper keywords for text and password entry. If no explicit password-specific shared helper exists, use the common/shared text-entry wrapper that already exists rather than raw SeleniumLibrary Input Password.\n"
         "- Include *** Settings *** and *** Test Cases *** sections.\n"
         "- Do NOT include a *** Variables *** section in the generated .robot file.\n"
@@ -380,13 +358,12 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
         "- Do NOT include a *** Keywords *** section in the generated .robot file. The suite must not define AI-created helper keywords.\n"
         "- Do NOT define ad hoc page-open, page-ready, navigation, authentication, or wrapper keywords in the suite if the resource layer already provides page-open/navigation capability.\n"
         "- Prefer shared/common resource keywords exposed in resource_context for browser lifecycle, navigation, waiting, clicking, and text entry whenever they fit the intent. Raw SeleniumLibrary keywords in the suite should be a last resort, not the default.\n"
-        "- Use setup and teardown as part of deliberate suite architecture, not as an afterthought. When many tests share the same opening step sequence or closing step sequence, extract that shared flow into Test Setup, Suite Setup, Test Teardown, or Suite Teardown instead of repeating it in test bodies.\n"
-        "- Before finalizing the first-pass suite, compare the opening steps and closing steps across tests. If the same sequence appears repeatedly, refactor it into setup/teardown so individual tests begin closer to the business action and end without duplicated cleanup.\n"
+        "- If the resource layer provides browser/page setup or teardown keywords, use them as Test Setup, Suite Setup, Test Teardown, or Suite Teardown as appropriate.\n"
+        "- When the suite imports common/browser lifecycle helpers and the workflow has a known entry page or page URL context, include an explicit setup strategy for opening the browser and navigating to the starting page. Do not leave the suite with only teardown unless the tests are intentionally API-only, which this framework is not.\n"
         "- Respect the exact keyword signatures from the imported resource files. Never call a resource keyword without all mandatory arguments defined in its [Arguments] section.\n"
         "- When a page-specific open/navigation keyword is available and a page URL variable exists in the page resource, prefer a no-argument page keyword design or pass the required page URL variable explicitly if the keyword still requires an argument.\n"
-        "- Prefer reusable setup/teardown when approved shared resources already provide the needed behavior, but choose setup/teardown primarily by repeated suite structure rather than by keyword naming assumptions.\n"
-        "- Treat setup/teardown design as mandatory automation architecture, not optional cleanup. If many tests share the same opening sequence or closing sequence, elevate that repeated flow into Suite Setup, Test Setup, Suite Teardown, or Test Teardown instead of duplicating it inside test bodies.\n"
-        "- A professional suite should keep repeated shared mechanics out of individual test bodies unless a specific test intentionally overrides the normal path.\n"
+        "- Prefer reusable setup/teardown from shared/common resources for opening and closing browser or preparing generic page state.\n"
+        "- If the resource layer appears to provide page-open, page-ready, browser-open, browser-close, or cleanup keywords, use them intelligently in suite/test setup and teardown rather than repeating those actions inside every test. Repeated startup actions such as opening the page, opening the browser, navigating to the feature URL, or waiting for the page to be ready should be promoted into Test Setup or Suite Setup whenever that preserves test independence and intent.\n"
         "- If test data is reused across test cases, reference a variable from the resource file rather than declaring suite variables.\n"
         "- Use resource variables only for semantically meaningful reusable data such as valid credentials, one canonical invalid credential set, role-specific users, locked users, or other clearly distinct business data supported by the resource context.\n"
         "- Do not create or rely on unnecessary wrapper variables for blank, whitespace-only, padded, or trivially derived values when Robot built-ins and inline composition are sufficient.\n"
@@ -397,7 +374,6 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
         "- Any semantically meaningful credential or business-data variant required by an approved manual test, including uppercase, lowercase, mixed-case, role-specific, invalid, boundary, or other reusable edge-case data, must be referenced through a semantic page-resource variable and must never appear as a literal in the suite.\n"
         "- If an approved manual test requires reusable or semantically meaningful edge-case input and the resource context does not explicitly expose that variable yet, still structure the suite to reference a semantic page-resource variable rather than embedding a literal.\n"
         "- If the resource context contains variables such as ${PAGE_URL}, ${LOGIN_PAGE_URL}, ${VALID_USERNAME}, ${VALID_PASSWORD}, ${INVALID_USERNAME}, ${INVALID_PASSWORD}, or other approved semantic data variables, you must use those variables in the suite instead of literal values.\n"
-        "- Treat placeholder values such as literal 'None', 'null', or empty-looking string surrogates as invalid reusable business data. Do not propagate them into generated suites; reuse only grounded approved variables with real semantic values.\n"
         "- Hardcoded URLs like http://..., hardcoded credentials, and hardcoded special-character strings are not allowed in the suite when equivalent approved resource variables exist or are clearly implied by the approved manual tests and resource context.\n"
         "- Literal usernames, passwords, URLs, expected messages, and reusable edge-case strings are forbidden in the suite except for Robot built-ins such as ${EMPTY} and ${SPACE} and trivial inline composition explicitly allowed by policy.\n"
         "- For masking, visibility, error message, disabled state, enabled state, page navigation, redirection, and UI behavior expectations, include explicit assertion/verification steps that satisfy expectedResult.\n"
@@ -411,10 +387,7 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
         "- Use built-in variables correctly: ${EMPTY}, ${SPACE}, ${True}, ${False}, ${None} only when semantically correct.\n"
         "- Do not leave missing data arguments blank in a keyword call; use an explicit built-in or resource variable.\n"
         "- Each test case should have a clear final verification aligned to its expectedResult.\n"
-        "- Setup-only confidence is not enough: unless the scenario itself is explicitly only about navigation/setup, each test body must contain at least one scenario-specific verification beyond shared setup.\n"
-        "- If a manual test title or expectedResult claims a specific state or observable behavior, the suite must verify that claimed outcome explicitly using the strongest approved evidence available from reusable resources and workflow knowledge rather than substituting only route/form-presence evidence.\n"
-        "- If a manual scenario is intentionally observational or implementation-dependent, do not hardcode a concrete outcome in the suite unless approved manual wording or approved reusable resource evidence already resolves that behavior.\n"
-        "- Preserve specialized manual intent. When the scenario concerns a field property, state transition, rejection, validation, visibility, interactivity, or another observable behavior, generate an explicit verification aligned to that intent instead of only performing actions.\n"
+        "- If a manual test is about password masking, generate an explicit verification for masking behavior instead of only entering data.\n"
         "- If a manual test expects an error message, validation message, rejection, blocked transition, or failed protected action, generate an explicit verification for that result, not only a generic page-loaded check. Prefer dedicated page validation keywords from resource_context when they are supported or clearly implied.\n"
         "- For negative protected-flow scenarios, do not rely solely on a same-page-loaded check. Include at least one stronger observable assertion such as an error message check, validation message check, no-navigation check, protected-area-not-visible check, or another resource-backed visible rejection check.\n"
         "- If the approved manual expectedResult describes visible failure, validation feedback, rejection, required indication, blocked access, or another observable negative outcome, a same-page-only or URL-only assertion is insufficient unless the resource context genuinely provides no stronger supported validation.\n"
@@ -427,7 +400,7 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
         "- For negative UI assertions about an element not appearing, not remaining visible, being dismissed, or being hidden, prefer Wait Until Element Is Not Visible or an equivalent approved resource/page validation keyword. Avoid direct reliance on Page Should Not Contain Element when the user expectation is about visibility in the UI.\n"
         "- Do not add speculative negative assertions for controls, labels, or indicators that are not grounded in approved page-resource elements or approved page-resource validation keywords. If the resource context does not provide a grounded absence validation, do not invent placeholder text checks.\n"
         "- For positive UI assertions about an element appearing or becoming usable, prefer Wait Until Element Is Visible or an equivalent approved resource/page validation keyword before or as part of the assertion.\n"
-        "- Before finalizing the suite, review whether the same leading steps or trailing cleanup steps are duplicated across many tests. If so, move those repeated sequences into Test Setup, Suite Setup, Test Teardown, or Suite Teardown unless a specific test intentionally requires a different structure.\n"
+        "- Before finalizing the suite, review whether repeated opening/navigation/waiting steps are duplicated at the start of many tests. If so, move those repeated startup actions into Test Setup or Suite Setup unless a specific test intentionally requires a different startup sequence.\n"
         "- Before finalizing the suite, self-review every keyword call and remove or replace any keyword that is not part of Robot built-ins, SeleniumLibrary, or the imported resource context.\n\n"
         f"Input JSON:\n{json.dumps(payload, indent=2)}"
     )
@@ -455,14 +428,21 @@ def extract_response_text(resp: requests.Response) -> str:
     return resp.text.strip()
 
 
-def build_manual_review_prompt(manual_data: dict, workflow_context: dict | None = None) -> str:
+def build_manual_review_prompt(manual_data: dict, workflow_input: dict | None = None) -> str:
     reviewer_md = load_prompt_markdown("manual_tests_reviewer.md")
-    workflow_context = workflow_context or {}
-    manual_reuse_analysis = analyze_manual_test_reuse(manual_data, workflow_context)
+    prompt_manual_data = json.loads(json.dumps(manual_data))
+    workflow_context_source = workflow_input if isinstance(workflow_input, dict) else prompt_manual_data
+    current_workflow_knowledge = build_workflow_knowledge_context(workflow_context_source)
+    relevant_workflow_knowledge = discover_relevant_workflow_knowledge(workflow_context_source)
     payload = {
-        "manual_test": manual_data,
-        "workflow_context": workflow_context,
-        "manual_reuse_analysis": manual_reuse_analysis,
+        "manual_test": prompt_manual_data,
+        "current_workflow_knowledge": current_workflow_knowledge,
+        "relevant_workflow_knowledge": relevant_workflow_knowledge,
+        "review_focus": [
+            "Preserve approved workflow/business journey and navigation expectations.",
+            "Use workflow knowledge as approved memory for upstream reuse, ownership boundaries, and observable outcome expectations.",
+            "Do not weaken approved business data, transition evidence, or validation evidence during review."
+        ],
     }
     if reviewer_md:
         return f"{reviewer_md}\n\nInput JSON:\n{json.dumps(payload, indent=2)}"
@@ -487,7 +467,8 @@ def build_manual_review_prompt(manual_data: dict, workflow_context: dict | None 
         "- prefer breadth with low redundancy over aggressive minimization\n"
         "- preserve workflow-mandated scenarios such as explicit navigation controls, approved data usage, entry flows, transition validations, and state-change evidence before optional exploratory edge cases\n"
         "- if the manual artifact uses generic placeholders for business data, destination state, or expected transition while the source workflow provides concrete approved data or observable state evidence, refine the manual tests so that requirement-grounded lineage and observable outcomes remain explicit in title, steps, or expectedResult\n"
-        "- if workflow acceptance criteria or transition expectations mention observable destination-state evidence, state-change evidence, newly available capabilities, or context-specific outcome signals, ensure those become explicit manual test coverage rather than remaining implied inside a generic success case\n\n"
+        "- if workflow acceptance criteria or transition expectations mention observable destination-state evidence, state-change evidence, newly available capabilities, or context-specific outcome signals, ensure those become explicit manual test coverage rather than remaining implied inside a generic success case\n"
+        "- treat current_workflow_knowledge and relevant_workflow_knowledge as mandatory approved-memory context during manual review; preserve upstream reuse guidance, ownership boundaries, navigation journey, and business-visible outcomes\n\n"
         "Rules:\n"
         "- return only JSON\n"
         "- keep resourceFiles intact\n"
@@ -501,19 +482,19 @@ def build_manual_review_prompt(manual_data: dict, workflow_context: dict | None 
     )
 
 
-def build_manual_refiner_prompt(original_manual_data: dict, reviewed_manual_data: dict, workflow_context: dict | None = None) -> str:
+def build_manual_refiner_prompt(original_manual_data: dict, reviewed_manual_data: dict, workflow_input: dict | None = None) -> str:
     refiner_md = load_prompt_markdown("manual_tests_refiner.md")
-    workflow_context = workflow_context or {}
+    workflow_context_source = workflow_input if isinstance(workflow_input, dict) else reviewed_manual_data if isinstance(reviewed_manual_data, dict) else original_manual_data
     payload = {
         "original_manual": original_manual_data,
         "reviewed_manual": reviewed_manual_data,
-        "workflow_context": workflow_context,
-        "manual_reuse_analysis": analyze_manual_test_reuse(reviewed_manual_data or original_manual_data, workflow_context),
+        "current_workflow_knowledge": build_workflow_knowledge_context(workflow_context_source),
+        "relevant_workflow_knowledge": discover_relevant_workflow_knowledge(workflow_context_source),
         "refinement_focus": [
             "Preserve action intent and behavioral nuance from the source artifact.",
             "Strengthen expectedResult into observable evidence without inventing unsupported behavior.",
             "Keep scenario breadth high and avoid collapsing distinct interaction patterns into generic flows.",
-            "Preserve authoritative workflow/resource lineage and explicit destination-state coverage when available."
+            "Stay aligned with approved workflow knowledge, upstream reuse context, and business-visible outcomes."
         ],
     }
     if refiner_md:
@@ -527,7 +508,8 @@ def build_manual_refiner_prompt(original_manual_data: dict, reviewed_manual_data
         "Keep resourceFiles intact and keep testCases non-empty.\n"
         "Each test case must still contain only id, title, type, steps, expectedResult, fields.\n"
         "Remove only true duplicates that do not add distinct observable behavior.\n"
-        "If obvious category gaps remain for a form workflow, expand the suite while staying grounded in the original_manual context.\n\n"
+        "If obvious category gaps remain for a form workflow, expand the suite while staying grounded in the original_manual context.\n"
+        "Treat current_workflow_knowledge and relevant_workflow_knowledge as mandatory approved-memory context during refinement so that navigation journey, upstream reuse boundaries, approved business data, and observable outcomes remain aligned.\n\n"
         f"Input JSON:\n{json.dumps(payload, indent=2)}"
     )
 
@@ -535,6 +517,8 @@ def build_manual_refiner_prompt(original_manual_data: dict, reviewed_manual_data
 def build_review_prompt(manual_data: dict, resource_context: List[Dict], generated_robot: str) -> str:
     prompt_manual_data = json.loads(json.dumps(manual_data))
     reviewer_md = load_prompt_markdown("robot_tests_reviewer.md")
+    current_workflow_knowledge = build_workflow_knowledge_context(prompt_manual_data)
+    relevant_workflow_knowledge = discover_relevant_workflow_knowledge(prompt_manual_data)
     if isinstance(prompt_manual_data.get("fields"), list):
         prompt_manual_data["fields"] = [
             field for field in prompt_manual_data["fields"]
@@ -543,13 +527,13 @@ def build_review_prompt(manual_data: dict, resource_context: List[Dict], generat
 
     page_resources = [resource.get("file", "") for resource in resource_context if "/pom_pages/" in f"/{resource.get('file', '')}" or str(resource.get("file", "")).startswith("pom_pages/")]
     allowed_builtin_keywords, allowed_selenium_keywords = get_framework_keyword_catalog()
-    robot_reuse_analysis = analyze_robot_suite_reuse(generated_robot, resource_context)
     payload = {
         "manual_test": prompt_manual_data,
         "resource_context": resource_context,
         "inferred_reuse_context": infer_workflow_reuse_context(prompt_manual_data),
+        "current_workflow_knowledge": current_workflow_knowledge,
+        "relevant_workflow_knowledge": relevant_workflow_knowledge,
         "generated_robot": generated_robot,
-        "robot_reuse_analysis": robot_reuse_analysis,
         "resource_import_prefix": "../pom_pages/",
         "common_resource_hint": "../resources/common_keywords.resource",
         "approved_artifact_lineage": {
@@ -586,6 +570,7 @@ def build_review_prompt(manual_data: dict, resource_context: List[Dict], generat
         "- Ensure generated IDs stay concise and stable; never concatenate the full workflow or user-story title into <FEATURECODE>.\n"
         "- Preserve or repair the numbering so it is stable and aligned to the approved manual test order or id when possible.\n"
         "- The final approved page resource files are authoritative. Reuse exact approved page keyword names and exact approved page variable names from resource_context instead of paraphrasing, renaming, or reverting to metadata-derived naming.\n"
+        "- Treat current_workflow_knowledge and relevant_workflow_knowledge as mandatory approved-memory context during review and repair. Use them to preserve business journey, entry flow, upstream ownership, state-transition expectations, and approved downstream reuse boundaries.\n"
         "- Never return a suite that introduces a custom keyword name not present in imported resource_context or approved framework keyword inventories. Repair such usage by replacing it with existing upstream resource keywords.\n"
         "- Do not add extra tags such as AUT, ui, validation, security, accessibility, or feature-name tags.\n"
         "- Keep only the suite file; do not generate resource content.\n"
@@ -601,11 +586,8 @@ def build_review_prompt(manual_data: dict, resource_context: List[Dict], generat
         "- Reuse one canonical invalid username/password pair across similar negative scenarios unless the approved manual tests clearly require distinct invalid data classes.\n"
         "- Prefer common/shared resource keywords for generic browser lifecycle, page opening, navigation, waiting, clicking, and text entry when suitable. Raw SeleniumLibrary keywords in the suite should be replaced by shared/common resource keywords whenever a suitable helper exists.\n"
         "- For generic field entry, including password fields, prefer common/shared wrapper keywords over low-level SeleniumLibrary entry keywords whenever the wrapper can satisfy the intent. If the shared/common layer already exposes Input Text When Ready or an equivalent reusable text-entry helper, use it instead of direct Input Password unless a dedicated shared password helper exists and is more appropriate.\n"
-        "- Reject AI-created shared/common convenience keywords. If approved upstream resource keywords already exist for the needed navigation or action flow, compose those approved keywords directly instead of keeping a synthetic abstraction.\n"
-        "- Treat invention of shared/common helper abstractions as a framework-governance defect when retrieved resource context already contains approved reusable page/shared keywords for the same flow.\n"
-        "- Use Suite/Test Setup and Teardown intelligently when the reviewed suite shows repeated shared leading or trailing sequences across tests.\n"
-        "- Treat setup/teardown architecture as a first-class review concern. If most tests begin with the same leading steps or end with the same trailing cleanup, refactor that repeated structure into setup/teardown so individual tests focus on the behavior under test.\n"
-        "- If the reviewed suite contains teardown but still leaves the dominant shared opening sequence inside most test bodies, repair the suite so shared repeated structure is lifted into setup instead of returning a teardown-heavy but setup-weak suite.\n"
+        "- If resource keywords suggest page lifecycle operations, use Suite/Test Setup and Teardown intelligently. Repeated startup actions such as open-page, navigate, and page-ready waits should normally be lifted into setup instead of being duplicated in every test.\n"
+        "- If the reviewed suite contains Test Teardown or Suite Teardown for browser cleanup, it should normally also contain a corresponding Test Setup or Suite Setup for browser opening and initial navigation whenever the tests are UI/browser-based. Repair missing setup instead of returning a teardown-only browser suite.\n"
         "- Every test must contain explicit validation aligned to expectedResult.\n"
         "- Prefer page-resource validation keywords over generic visibility checks when the expected result mentions authentication errors, validation messages, redirect behavior, blocked login, duplicate submission prevention, or success outcomes.\n"
         "- If a test is about password masking, ensure there is an explicit masking verification.\n"
@@ -620,7 +602,7 @@ def build_review_prompt(manual_data: dict, resource_context: List[Dict], generat
         "- Treat allowed_builtin_keywords and allowed_selenium_keywords from the input JSON as the approved non-resource keyword inventory. If a keyword is not in those lists or in imported resource_context, replace it instead of returning it.\n"
         "- Self-audit the final suite for keyword existence: every called keyword must come from Robot built-ins, SeleniumLibrary, or the imported resource files.\n"
         "- Self-audit every imported resource keyword call against its required [Arguments] signature and fix any missing mandatory arguments before returning the suite.\n"
-        "- Review the final suite structurally for repeated leading or trailing step sequences. If multiple tests share the same opening flow or closing cleanup flow, refactor that repeated structure into setup/teardown unless a specific test intentionally requires a different pattern.\n"
+        "- Review the final suite for repetitive startup sequences. If multiple tests begin with the same open-page, navigate, or page-ready steps, refactor those repeated actions into Test Setup or Suite Setup unless a specific test intentionally requires a different startup flow.\n"
         "- Do not compensate for duplicated common/page keywords by creating additional duplicates; prefer the shared/common resource keyword when the intent is generic.\n\n"
         "Repair focus areas:\n"
         "- common resource import and reuse\n"
@@ -635,6 +617,8 @@ def build_review_prompt(manual_data: dict, resource_context: List[Dict], generat
 def build_validation_review_prompt(manual_data: dict, resource_context: List[Dict], generated_robot: str) -> str:
     prompt_manual_data = json.loads(json.dumps(manual_data))
     refiner_md = load_prompt_markdown("robot_tests_refiner.md")
+    current_workflow_knowledge = build_workflow_knowledge_context(prompt_manual_data)
+    relevant_workflow_knowledge = discover_relevant_workflow_knowledge(prompt_manual_data)
     if isinstance(prompt_manual_data.get("fields"), list):
         prompt_manual_data["fields"] = [
             field for field in prompt_manual_data["fields"]
@@ -644,14 +628,14 @@ def build_validation_review_prompt(manual_data: dict, resource_context: List[Dic
     page_resources = [resource.get("file", "") for resource in resource_context if "/pom_pages/" in f"/{resource.get('file', '')}" or str(resource.get("file", "")).startswith("pom_pages/")]
     allowed_builtin_keywords, allowed_selenium_keywords = get_framework_keyword_catalog()
     manual_expected_outcomes = collect_manual_expected_outcomes(prompt_manual_data)
-    robot_reuse_analysis = analyze_robot_suite_reuse(generated_robot, resource_context)
     resource_validation_keywords = collect_resource_validation_keywords(resource_context)
     payload = {
         "manual_test": prompt_manual_data,
         "resource_context": resource_context,
         "inferred_reuse_context": infer_workflow_reuse_context(prompt_manual_data),
+        "current_workflow_knowledge": current_workflow_knowledge,
+        "relevant_workflow_knowledge": relevant_workflow_knowledge,
         "generated_robot": generated_robot,
-        "robot_reuse_analysis": robot_reuse_analysis,
         "allowed_builtin_keywords": sorted(allowed_builtin_keywords),
         "allowed_selenium_keywords": sorted(allowed_selenium_keywords),
         "resource_import_prefix": "../pom_pages/",
@@ -698,11 +682,11 @@ def build_validation_review_prompt(manual_data: dict, resource_context: List[Dic
         "- Use only imported resources from manual_test.resourceFiles plus ../resources/common_keywords.resource.\n"
         "- Ensure the shared common resource is imported.\n"
         "- The final approved page resource files are authoritative. Reuse exact approved page keyword names and exact approved page variable names from resource_context instead of paraphrasing, renaming, or reverting to metadata-derived naming.\n"
+        "- Treat current_workflow_knowledge and relevant_workflow_knowledge as mandatory approved-memory context during final validation and repair. Use them to preserve approved entry flow, upstream ownership, resource reuse boundaries, state transitions, and business-visible outcomes.\n"
         "- Never return a suite that introduces a custom keyword name not present in imported resource_context or approved framework keyword inventories. Replace invented suite actions with existing upstream resource keywords or valid framework keywords only.\n"
         "- Preserve compact formatting and one blank line between test cases.\n"
-        "- Use Test Setup / Test Teardown when repeated shared leading or trailing behavior exists across tests.\n"
-        "- Treat missing reusable setup as a quality defect, not a cosmetic issue, when repeated startup behavior clearly exists across tests.\n"
-        "- A UI/browser suite must not end up teardown-only. If repeated cleanup is lifted into teardown, ensure the shared opening sequence is also evaluated for setup so the suite architecture stays balanced and professional.\n"
+        "- Use Test Setup / Test Teardown when repeated startup and cleanup behavior exists.\n"
+        "- A UI/browser suite must not end up teardown-only. If browser cleanup exists, ensure an appropriate setup exists for browser opening and initial navigation using approved shared/common helpers or approved page-open keywords.\n"
         "- Every test must end with an observable validation aligned to expectedResult.\n"
         "- Positive navigation or state-transition tests must include an observable destination-state verification when such a keyword exists in resource_context. If such a success keyword does not exist, preserve the test but do not invent unsupported keywords.\n"
         "- Negative validation or failed-transition tests must include stronger rejection assertions when supported by resource_context; do not rely only on page-ready checks unless that is the only available resource validation.\n"
@@ -981,220 +965,10 @@ def rewrite_suite_to_prefer_common_wrappers(content: str, resource_context: list
     return "\n".join(rewritten_lines) + ("\n" if content.endswith("\n") else "")
 
 
-def promote_repeated_setup_teardown(content: str) -> str:
-    lines = content.splitlines()
 
-    def split_robot_parts(all_lines: list[str]) -> tuple[list[str], list[str], list[str]]:
-        settings: list[str] = []
-        test_cases: list[str] = []
-        other: list[str] = []
-        section = None
-        for line in all_lines:
-            stripped = line.strip().lower()
-            if stripped == "*** settings ***":
-                section = "settings"
-                settings.append(line)
-                continue
-            if stripped == "*** test cases ***":
-                section = "test_cases"
-                test_cases.append(line)
-                continue
-            if stripped.startswith("***"):
-                section = "other"
-                other.append(line)
-                continue
-            if section == "settings":
-                settings.append(line)
-            elif section == "test_cases":
-                test_cases.append(line)
-            else:
-                other.append(line)
-        return settings, test_cases, other
-
-    def scan_keyword_invocation(raw_text: str) -> tuple[str, list[str]]:
-        stripped = raw_text.strip()
-        parts = [part.strip() for part in re.split(r"\s{2,}|\t+", stripped) if part.strip()]
-        if not parts:
-            return "", []
-        return parts[0], parts[1:]
-
-    def normalize_step_line(raw_line: str) -> str:
-        keyword_name, arguments = scan_keyword_invocation(raw_line)
-        if not keyword_name:
-            return ""
-        return "    " + clean_text(keyword_name) + ("    " + "    ".join(arguments) if arguments else "")
-
-    def parse_tests(test_lines: list[str]) -> tuple[list[str], list[dict]]:
-        header: list[str] = []
-        tests: list[dict] = []
-        current = None
-        seen_first_test = False
-        for line in test_lines:
-            stripped = line.strip()
-            if not seen_first_test:
-                header.append(line)
-                if stripped.lower() == "*** test cases ***":
-                    continue
-                if stripped and not line.startswith((" ", "\t")) and not stripped.startswith("***"):
-                    seen_first_test = True
-                    current = {"name": line, "body": []}
-                    tests.append(current)
-                    header.pop()
-                continue
-            if stripped and not line.startswith((" ", "\t")) and not stripped.startswith("***"):
-                current = {"name": line, "body": []}
-                tests.append(current)
-                continue
-            if current is not None:
-                current["body"].append(line)
-        return header, tests
-
-    def extract_executable_steps(test_body: list[str]) -> list[tuple[int, str]]:
-        steps: list[tuple[int, str]] = []
-        control_settings = {"[tags]", "[setup]", "[teardown]", "[documentation]", "[timeout]"}
-        for idx, line in enumerate(test_body):
-            stripped = line.strip()
-            if not stripped:
-                continue
-            if stripped.startswith("["):
-                setting_token = clean_text(stripped.split("    ")[0]).lower()
-                if setting_token in control_settings:
-                    continue
-                continue
-            if not line.startswith((" ", "\t")):
-                continue
-            parts = [part.strip() for part in re.split(r"\s{2,}|\t+", stripped) if part.strip()]
-            if not parts:
-                continue
-            keyword_name = clean_text(parts[0]).lower()
-            if keyword_name in {"...", "and"}:
-                continue
-            steps.append((idx, line))
-        return steps
-
-    def build_run_keywords_line(label: str, step_lines: list[str]) -> str:
-        normalized_steps = [normalize_step_line(step) for step in step_lines if normalize_step_line(step)]
-        if not normalized_steps:
-            return ""
-        first_parts = [part.strip() for part in re.split(r"\s{2,}|\t+", normalized_steps[0].strip()) if part.strip()]
-        base = f"{label}    {first_parts[0]}"
-        if len(first_parts) > 1:
-            base += "    " + "    ".join(first_parts[1:])
-        if len(normalized_steps) == 1:
-            return base
-        continuation = [base.replace(f"{label}    ", f"{label}    Run Keywords    ", 1)]
-        for step in normalized_steps[1:]:
-            continuation.append("...    AND    " + step.strip())
-        return "\n".join(continuation)
-
-    settings_lines, test_case_lines, other_lines = split_robot_parts(lines)
-    if not test_case_lines:
-        return content
-
-    header_lines, tests = parse_tests(test_case_lines)
-    if len(tests) < 2:
-        return content
-
-    settings_text = "\n".join(settings_lines)
-    has_test_setup = bool(re.search(r"(?im)^\s*Test Setup\s{2,}.+$", settings_text))
-    has_test_teardown = bool(re.search(r"(?im)^\s*Test Teardown\s{2,}.+$", settings_text))
-
-    prefix_counts: dict[tuple[str, ...], int] = {}
-    suffix_counts: dict[tuple[str, ...], int] = {}
-
-    for test in tests:
-        executable_steps = extract_executable_steps(test["body"])
-        step_lines = [line for _idx, line in executable_steps]
-        max_prefix = min(3, len(step_lines))
-        max_suffix = min(2, len(step_lines))
-        for length in range(max_prefix, 0, -1):
-            key = tuple(normalize_step_line(line) for line in step_lines[:length])
-            if all(key):
-                prefix_counts[key] = prefix_counts.get(key, 0) + 1
-        for length in range(max_suffix, 0, -1):
-            key = tuple(normalize_step_line(line) for line in step_lines[-length:])
-            if all(key):
-                suffix_counts[key] = suffix_counts.get(key, 0) + 1
-
-    min_shared = max(2, (len(tests) + 1) // 2)
-    chosen_prefix = max(prefix_counts, key=lambda k: (prefix_counts[k], len(k)), default=tuple())
-    chosen_suffix = max(suffix_counts, key=lambda k: (suffix_counts[k], len(k)), default=tuple())
-
-    promoted_setup = False
-    promoted_teardown = False
-
-    if chosen_prefix and prefix_counts.get(chosen_prefix, 0) >= min_shared and not has_test_setup:
-        setup_line = build_run_keywords_line("Test Setup", list(chosen_prefix))
-        if setup_line:
-            insert_index = 1 if settings_lines and settings_lines[0].strip().lower() == "*** settings ***" else 0
-            while insert_index < len(settings_lines) and not settings_lines[insert_index].strip():
-                insert_index += 1
-            settings_lines[insert_index:insert_index] = setup_line.splitlines()
-            promoted_setup = True
-            for test in tests:
-                executable_steps = extract_executable_steps(test["body"])
-                if len(executable_steps) < len(chosen_prefix):
-                    continue
-                candidate = tuple(normalize_step_line(line) for _idx, line in executable_steps[:len(chosen_prefix)])
-                if candidate != chosen_prefix:
-                    continue
-                indices_to_remove = {idx for idx, _line in executable_steps[:len(chosen_prefix)]}
-                test["body"] = [line for idx, line in enumerate(test["body"]) if idx not in indices_to_remove]
-                while test["body"] and not test["body"][0].strip():
-                    test["body"].pop(0)
-
-    if chosen_suffix and suffix_counts.get(chosen_suffix, 0) >= min_shared and not has_test_teardown:
-        teardown_line = build_run_keywords_line("Test Teardown", list(chosen_suffix))
-        if teardown_line:
-            insert_index = len(settings_lines)
-            settings_lines[insert_index:insert_index] = teardown_line.splitlines()
-            promoted_teardown = True
-            for test in tests:
-                executable_steps = extract_executable_steps(test["body"])
-                if len(executable_steps) < len(chosen_suffix):
-                    continue
-                candidate = tuple(normalize_step_line(line) for _idx, line in executable_steps[-len(chosen_suffix):])
-                if candidate != chosen_suffix:
-                    continue
-                indices_to_remove = {idx for idx, _line in executable_steps[-len(chosen_suffix):]}
-                test["body"] = [line for idx, line in enumerate(test["body"]) if idx not in indices_to_remove]
-                while test["body"] and not test["body"][-1].strip():
-                    test["body"].pop()
-
-    if not promoted_setup and not promoted_teardown:
-        return content
-
-    rebuilt_test_lines = list(header_lines)
-    for index, test in enumerate(tests):
-        if index > 0 and rebuilt_test_lines and rebuilt_test_lines[-1].strip():
-            rebuilt_test_lines.append("")
-        rebuilt_test_lines.append(test["name"])
-        rebuilt_test_lines.extend(test["body"])
-
-    rebuilt_sections = []
-    if settings_lines:
-        rebuilt_sections.extend(settings_lines)
-    if rebuilt_sections and rebuilt_sections[-1].strip():
-        rebuilt_sections.append("")
-    rebuilt_sections.extend(rebuilt_test_lines)
-    if other_lines:
-        if rebuilt_sections and rebuilt_sections[-1].strip():
-            rebuilt_sections.append("")
-        rebuilt_sections.extend(other_lines)
-
-    logger.info(
-        "Promoted repeated suite patterns into architecture helpers: setup=%s teardown=%s",
-        promoted_setup,
-        promoted_teardown,
-    )
-    return "\n".join(rebuilt_sections) + ("\n" if content.endswith("\n") else "")
-
-
-
-def validate_robot_alignment_with_resource_context(content: str, resource_context: list[dict], manual_data: dict | None = None) -> tuple[bool, str]:
+def validate_robot_alignment_with_resource_context(content: str, resource_context: list[dict]) -> tuple[bool, str]:
     errors: list[str] = []
     warnings: list[str] = []
-    manual_data = manual_data or {}
 
     approved_resource_keyword_names = {
         clean_text(str(keyword.get("name", ""))).lower()
@@ -1202,27 +976,6 @@ def validate_robot_alignment_with_resource_context(content: str, resource_contex
         for keyword in resource.get("keywords", [])
         if clean_text(str(keyword.get("name", "")))
     }
-    imported_resources = {
-        match.group(1).strip()
-        for match in re.finditer(r"(?im)^\s*Resource\s{2,}(.+?)\s*$", content)
-    }
-    current_workflow_knowledge = build_workflow_knowledge_context(manual_data)
-    relevant_workflow_knowledge = discover_relevant_workflow_knowledge(manual_data) if manual_data else []
-    authoritative_resources: set[str] = set()
-    resource_knowledge = current_workflow_knowledge.get("resourceKnowledge") if isinstance(current_workflow_knowledge, dict) else {}
-    if isinstance(resource_knowledge, dict):
-        for item in resource_knowledge.get("authoritativeResources") or []:
-            normalized = str(item).replace("\\", "/").strip()
-            if normalized:
-                authoritative_resources.add(normalized)
-    for knowledge_item in relevant_workflow_knowledge if isinstance(relevant_workflow_knowledge, list) else []:
-        knowledge_payload = knowledge_item.get("knowledge") if isinstance(knowledge_item, dict) else {}
-        rk = knowledge_payload.get("resourceKnowledge") if isinstance(knowledge_payload, dict) else {}
-        if isinstance(rk, dict):
-            for item in rk.get("authoritativeResources") or []:
-                normalized = str(item).replace("\\", "/").strip()
-                if normalized:
-                    authoritative_resources.add(normalized)
 
     suite_called_keywords: list[str] = []
     test_step_sequences: list[list[str]] = []
@@ -1305,169 +1058,6 @@ def validate_robot_alignment_with_resource_context(content: str, resource_contex
                 "Wrapper-priority violation: shared/common text-entry wrapper 'Input Text When Ready' exists, but the suite still uses direct SeleniumLibrary Input Text/Input Password calls. Shared wrapper keywords must take precedence for field entry."
             )
 
-    if approved_resource_keyword_names and suite_called_keywords:
-        allowed_non_resource = get_framework_keyword_catalog()[0] | get_framework_keyword_catalog()[1]
-        unapproved_called_keywords = [
-            name for name in suite_called_keywords
-            if name not in approved_resource_keyword_names and name not in allowed_non_resource
-        ]
-        if unapproved_called_keywords:
-            deduped_unapproved: list[str] = []
-            seen_unapproved: set[str] = set()
-            for name in unapproved_called_keywords:
-                if name in seen_unapproved:
-                    continue
-                seen_unapproved.add(name)
-                deduped_unapproved.append(name)
-            warnings.append(
-                "Generated suite appears to rely on non-approved custom keyword(s) not present in retrieved shared/page resource context. Reuse existing approved upstream/page/shared keywords instead of inventing new abstractions: "
-                + ", ".join(deduped_unapproved[:8])
-            )
-            if relevant_workflow_knowledge:
-                warnings.append(
-                    "Generated suite uses synthetic abstraction(s) where approved upstream/page resource reuse is expected from workflow knowledge and retrieved context. Replace invented convenience keywords with direct reuse of approved resource keywords."
-                )
-
-    robot_reuse_analysis = analyze_robot_suite_reuse(content, resource_context)
-    if robot_reuse_analysis.get("summary", {}).get("literalReuseOpportunityCount", 0) > 0:
-        samples = []
-        for item in (robot_reuse_analysis.get("literalReuseOpportunities") or [])[:8]:
-            literal = clean_text(item.get("literal", ""))
-            variables = item.get("approvedVariables") or []
-            if literal and variables:
-                reuse_names = ", ".join(clean_text(owner.get("name", "")) for owner in variables[:3] if clean_text(owner.get("name", "")))
-                if reuse_names:
-                    samples.append(f"'{literal}' -> {reuse_names}")
-        if samples:
-            warnings.append(
-                "Generated suite contains literal values that should reuse approved semantic resource variables instead: "
-                + "; ".join(samples)
-            )
-    if robot_reuse_analysis.get("summary", {}).get("lowLevelReuseOpportunityCount", 0) > 0:
-        warnings.append(
-            "Generated suite uses low-level or generic interactions where approved semantic variable or keyword reuse opportunities already exist in retrieved resource context. Prefer approved page/common resource reuse over literal-driven low-level calls."
-        )
-    if robot_reuse_analysis.get("missingCommonWrapperReuse"):
-        warnings.append(
-            "Generated suite bypasses available shared/common wrappers that already exist in retrieved resource context: "
-            + ", ".join(robot_reuse_analysis.get("missingCommonWrapperReuse")[:8])
-        )
-
-    approved_variable_values: dict[str, set[str]] = {}
-    for resource in resource_context:
-        for variable in resource.get("variables", []):
-            var_name = clean_text(str(variable.get("name", "")))
-            raw_value = str(variable.get("value", "") or "").strip()
-            if not var_name or not raw_value:
-                continue
-            approved_variable_values.setdefault(raw_value, set()).add(var_name)
-
-    literal_value_hits: dict[str, set[str]] = {}
-    generic_wrapper_literals: dict[str, set[str]] = {}
-    generic_wrapper_names = {
-        "go to url",
-        "click when ready",
-        "wait for element to be ready",
-        "input text when ready",
-        "input text",
-        "input password",
-        "wait until page contains element",
-    }
-
-    for raw_line in content.splitlines():
-        stripped = raw_line.strip()
-        if not raw_line.startswith((" ", "\t")) or not stripped or stripped.startswith("["):
-            continue
-        parts = [part.strip() for part in re.split(r"\s{2,}|\t+", stripped) if part.strip()]
-        if len(parts) < 2:
-            continue
-        keyword_name = clean_text(parts[0]).lower()
-        arguments = parts[1:]
-        for arg in arguments:
-            candidate = arg.strip()
-            if not candidate or candidate.startswith("${"):
-                continue
-            matched_variables = approved_variable_values.get(candidate)
-            if matched_variables:
-                literal_value_hits.setdefault(candidate, set()).update(matched_variables)
-                if keyword_name in generic_wrapper_names:
-                    generic_wrapper_literals.setdefault(keyword_name, set()).update(matched_variables)
-
-    if literal_value_hits:
-        samples: list[str] = []
-        for literal, variable_names in list(literal_value_hits.items())[:8]:
-            mapped_names = ", ".join(sorted(variable_names)[:3])
-            samples.append(f"'{literal}' -> {mapped_names}")
-        warnings.append(
-            "Generated suite leaks literal reusable values even though approved semantic resource variables already exist. Replace those literals with approved variables: "
-            + "; ".join(samples)
-        )
-
-    missing_authoritative_imports = []
-    for resource in sorted(authoritative_resources):
-        expected_import = "../pom_pages/" + resource
-        if expected_import not in imported_resources:
-            missing_authoritative_imports.append(expected_import)
-    if missing_authoritative_imports:
-        warnings.append(
-            "Generated suite is missing authoritative upstream/current page resource imports required by workflow knowledge. Import and reuse these approved resources directly: "
-            + ", ".join(missing_authoritative_imports[:8])
-        )
-
-    if re.search(r"(?im)^\s+Go To Url\s{2,}about:blank\s*$", content):
-        warnings.append(
-            "Generated suite uses placeholder direct-navigation value 'about:blank'. When workflow knowledge defines an approved journey and reusable resource variables/keywords, do not bypass that journey with placeholder direct opens."
-        )
-
-    current_navigation = current_workflow_knowledge.get("navigationModel") if isinstance(current_workflow_knowledge, dict) else {}
-    journey_text = json.dumps(current_navigation, ensure_ascii=False).lower() if current_navigation else ""
-    if "not directly accessed by url" in json.dumps(current_workflow_knowledge, ensure_ascii=False).lower() and re.search(r"(?im)^\s+Go To Url\s{2,}.+$", content):
-        warnings.append(
-            "Workflow knowledge indicates the target page is not directly accessed by URL, but the suite still performs direct URL navigation in test bodies. Reuse the approved upstream entry flow instead of bypassing the journey."
-        )
-
-    target_page_keywords = set()
-    for summary in (current_workflow_knowledge.get("resourceKnowledge") or {}).get("resourceOwnership", []) if isinstance(current_workflow_knowledge, dict) else []:
-        if not isinstance(summary, dict):
-            continue
-        for keyword_name in ensure_list(summary.get("keywords")):
-            normalized_keyword = clean_text(keyword_name).lower()
-            if normalized_keyword:
-                target_page_keywords.add(normalized_keyword)
-
-    journey_requires_upstream_entry = "not directly accessed by url" in json.dumps(current_workflow_knowledge, ensure_ascii=False).lower() if isinstance(current_workflow_knowledge, dict) else False
-    if journey_requires_upstream_entry:
-        setup_and_test_lines = []
-        for raw_line in content.splitlines():
-            if not raw_line.startswith((" ", "\t")):
-                continue
-            stripped = raw_line.strip()
-            if not stripped or stripped.startswith("["):
-                continue
-            setup_and_test_lines.append(stripped)
-        target_page_only_start = False
-        for sequence in test_step_sequences:
-            if not sequence:
-                continue
-            first_step = clean_text(sequence[0]).lower()
-            if first_step in target_page_keywords and "login form loaded" in first_step:
-                target_page_only_start = True
-                break
-        if target_page_only_start and not re.search(r"(?im)^\s*(?:Suite Setup|Test Setup)\s{2,}.+$", content):
-            warnings.append(
-                "Workflow knowledge requires an upstream entry journey before the target page becomes available, but the suite starts from target-page verification without establishing that journey in setup or test flow. Model the approved upstream journey using authoritative resource keywords."
-            )
-
-    if generic_wrapper_literals:
-        samples: list[str] = []
-        for keyword_name, variable_names in list(generic_wrapper_literals.items())[:8]:
-            mapped_names = ", ".join(sorted(variable_names)[:3])
-            samples.append(f"{keyword_name} -> {mapped_names}")
-        warnings.append(
-            "Generated suite calls low-level generic interaction keywords with literal reusable values even though approved semantic resource variables already exist. Prefer semantic variables, and prefer approved page keywords over generic wrappers when available: "
-            + "; ".join(samples)
-        )
-
     has_setup = bool(re.search(r"(?im)^\s*(?:Suite Setup|Test Setup)\s+.+$", content))
     has_teardown = bool(re.search(r"(?im)^\s*(?:Suite Teardown|Test Teardown)\s+.+$", content))
     if has_teardown and not has_setup:
@@ -1481,7 +1071,7 @@ def validate_robot_alignment_with_resource_context(content: str, resource_contex
             top_pattern = max(set(repeated_start_candidates), key=repeated_start_candidates.count)
             if repeated_start_candidates.count(top_pattern) >= max(2, len(test_step_sequences) // 2):
                 warnings.append(
-                    "Generated suite includes teardown but missed promoting the dominant repeated leading step sequence into Test Setup or Suite Setup. Promote the shared opening flow into setup when it is reused by most tests."
+                    "Generated suite includes teardown but missed promoting the repeated startup pattern into Test Setup or Suite Setup. Prefer using the repeated page-open/page-ready keyword sequence as setup when it is shared by most tests."
                 )
 
     setup_match = re.search(r"(?im)^\s*(Suite Setup|Test Setup)\s{2,}(.+)$", content)
@@ -1490,91 +1080,35 @@ def validate_robot_alignment_with_resource_context(content: str, resource_contex
         setup_keyword_name, _setup_args = scan_keyword_invocation(setup_match.group(2))
         setup_keyword_name = clean_text(setup_keyword_name).lower()
 
-    repeated_leading_sequences: dict[str, int] = {}
-    for steps in test_step_sequences:
-        max_prefix = min(3, len(steps))
-        for length in range(max_prefix, 1, -1):
-            key = " > ".join(steps[:length])
-            repeated_leading_sequences[key] = repeated_leading_sequences.get(key, 0) + 1
-            break
-    strongest_sequence = ""
-    strongest_count = 0
-    if repeated_leading_sequences:
-        strongest_sequence = max(repeated_leading_sequences, key=repeated_leading_sequences.get)
-        strongest_count = repeated_leading_sequences[strongest_sequence]
-        if strongest_count >= max(2, len(test_step_sequences) // 2):
-            if has_setup:
-                if setup_keyword_name and setup_keyword_name not in strongest_sequence:
-                    warnings.append(
-                        f"Generated suite uses setup '{setup_keyword_name}' but still repeats the dominant shared leading sequence '{strongest_sequence}' inside test bodies. Strengthen setup so the shared opening flow is fully reused."
-                    )
-            else:
-                warnings.append(
-                    f"Generated suite repeats the same leading step sequence across tests ('{strongest_sequence}') but does not use Test Setup or Suite Setup. Promote the shared sequence into setup so test bodies start closer to the business action under test."
-                )
-
-    if isinstance(current_workflow_knowledge, dict):
-        knowledge_blob = json.dumps(current_workflow_knowledge, ensure_ascii=False).lower()
-        destination_signals = [
-            clean_text(item.get("name") or item.get("signal") or item.get("label") or "").lower()
-            for item in current_workflow_knowledge.get("navigationModel", {}).get("targetSignals", [])
-            if isinstance(item, dict)
+    if has_setup and test_step_sequences:
+        opener_like_keywords = [
+            name for name in page_keyword_names
+            if any(token in name for token in ["open ", "launch ", "guest state", "page is loaded", "page loaded"])
         ]
-        if destination_signals:
-            tests_with_origin_recheck = 0
-            tests_with_url_only_assertion = 0
-            for sequence in test_step_sequences:
-                if not sequence:
-                    continue
-                lowered_steps = [step.lower() for step in sequence]
-                verification_steps = [
-                    step for step in lowered_steps
-                    if step.startswith("verify ") or step.startswith("validate ") or step.startswith("wait until ") or step.startswith("location should")
-                ]
-                if not verification_steps:
-                    continue
-                if any(any(signal and signal in step for signal in destination_signals) for step in verification_steps):
-                    continue
-                if any("page loaded" in step or "form loaded" in step for step in verification_steps):
-                    tests_with_origin_recheck += 1
-                if all("location" in step for step in verification_steps):
-                    tests_with_url_only_assertion += 1
-            if tests_with_origin_recheck:
-                warnings.append(
-                    "Workflow knowledge provides destination-state signals, but one or more generated tests still end by re-verifying an origin/intermediate page instead of using destination-state evidence from approved reusable context."
-                )
-            if tests_with_url_only_assertion:
-                warnings.append(
-                    "Workflow knowledge provides destination-state signals, but one or more generated tests still rely only on URL/location checks. Prefer reusable destination-state evidence instead of route-only assertions when approved context supports it."
-                )
-
-    manual_cases = manual_data.get("testCases") or manual_data.get("manualTests") or []
-    if isinstance(manual_cases, list) and test_step_sequences:
-        for index, case in enumerate(manual_cases):
-            if index >= len(test_step_sequences):
-                break
-            if not isinstance(case, dict):
-                continue
-            expected = clean_text(str(case.get("expectedResult") or case.get("expected") or case.get("expectedOutcome") or "")).lower()
-            title = clean_text(str(case.get("title") or "")).lower()
-            step_text = " ".join(clean_text(str(step)).lower() for step in (case.get("steps") or []) if clean_text(str(step)))
-            combined_case_text = " ".join(part for part in [title, step_text, expected] if part)
-            sequence = test_step_sequences[index]
-            lowered_steps = [step.lower() for step in sequence]
-            verification_steps = [
-                step for step in lowered_steps
-                if step.startswith("verify ") or step.startswith("validate ") or step.startswith("wait until ") or step.startswith("location should")
-            ]
-            if any(token in combined_case_text for token in ["either", "or", "one of", "alternate outcome", "fallback outcome"]) and not verification_steps:
-                warnings.append(
-                    f"Test case '{clean_text(str(case.get('id') or case.get('title') or f'#{index+1}'))}' describes more than one possible observable outcome, but the generated suite ends without any verification. Add an assertion that proves at least one approved outcome branch."
-                )
-            if strongest_sequence and strongest_count >= max(2, len(test_step_sequences) // 2):
-                sequence_lower = strongest_sequence.lower()
-                if sequence_lower and verification_steps == []:
+        repeated_opener_counts = {name: suite_keyword_counts.get(name, 0) for name in opener_like_keywords if suite_keyword_counts.get(name, 0)}
+        if repeated_opener_counts:
+            best_repeated_opener = max(repeated_opener_counts, key=repeated_opener_counts.get)
+            best_count = repeated_opener_counts[best_repeated_opener]
+            if best_count >= max(2, len(test_step_sequences) // 2):
+                if setup_keyword_name and setup_keyword_name != best_repeated_opener:
                     warnings.append(
-                        "A dominant repeated test entry sequence appears across the generated suite, but tests still repeat that sequence inline without ending in a stable verified starting state. Consider absorbing the repeated entry flow into setup only when approved reusable context clearly supports that shared start state."
+                        f"Generated suite uses setup '{setup_keyword_name}' but repeatedly invokes higher-level page startup keyword '{best_repeated_opener}' inside test bodies. Prefer the strongest reusable semantic setup abstraction instead of a lower-level opener."
                     )
+                elif not setup_keyword_name:
+                    warnings.append(
+                        "Generated suite appears to have setup configured, but the repeated highest-level page startup abstraction is still being invoked inside test bodies. Prefer moving that semantic opener into setup."
+                    )
+
+    repeated_open_keywords = {
+        name for name in page_keyword_names
+        if any(token in name for token in ["open ", "launch ", "guest state", "page is loaded", "page loaded"])
+    }
+    if not has_setup and repeated_open_keywords:
+        repeated_opener_usage = sum(suite_keyword_counts.get(name, 0) for name in repeated_open_keywords)
+        if repeated_opener_usage >= 2:
+            warnings.append(
+                "Generated suite repeatedly invokes a page-opening/page-readiness keyword inside test bodies instead of lifting it into Test Setup or Suite Setup."
+            )
 
     return len(errors) == 0, ("Warnings:\n" + "\n".join(warnings)) if warnings else ""
 
@@ -1625,24 +1159,22 @@ def warn_on_assertion_quality(manual_expected_outcomes: list[str], robot_content
     if not manual_expected_outcomes:
         return ""
 
-    manual_text = " ".join(clean_text(item).lower() for item in manual_expected_outcomes if clean_text(item))
-    if not manual_text:
+    richer_expected = any(
+        any(token in outcome.lower() for token in [
+            "error", "message", "validation", "required", "redirect", "dashboard", "home", "landing", "masked", "disabled", "enabled", "rejected", "denied"
+        ])
+        for outcome in manual_expected_outcomes
+    )
+    if not richer_expected:
         return ""
 
-    warnings: list[str] = []
-
-    same_page_checks = len(re.findall(r"(?im)\b(still on|remain on|page loaded|form loaded|location should be|location should contain)\b", robot_content))
+    same_page_checks = len(re.findall(r"(?im)\b(still on|remain on|login page loaded|verify .* page loaded|location should be|location should contain)\b", robot_content))
     stronger_verify_checks = len(re.findall(r"(?im)^\s*(Verify|Validate)\b", robot_content))
     available_validation_keywords = len(resource_validation_keywords)
-    verification_lines = re.findall(r"(?im)^\s+(?:Verify|Validate|Wait Until|Location Should|Should|Element Attribute Value Should Be|Get Element Attribute)\b.*$", robot_content)
 
     if same_page_checks >= 2 and stronger_verify_checks <= 2 and available_validation_keywords >= 1:
-        warnings.append("Generated suite may rely on weak same-page assertions even though richer approved expected outcomes and reusable validation keywords appear to be available")
-
-    if verification_lines and all("location" in line.lower() for line in verification_lines):
-        warnings.append("Generated suite appears to validate destination-state expectations using only URL/location checks")
-
-    return "\n".join(dict.fromkeys(warnings))
+        return "Generated suite may rely on weak same-page assertions even though richer approved expected outcomes and validation keywords appear to be available"
+    return ""
 
 
 def normalize_generated_robot_identifiers(content: str, identifier_policy: dict) -> str:
@@ -1819,17 +1351,8 @@ def validate_robot_content(content: str, allowed_resources: list[str]) -> tuple[
     if not has_teardown:
         warnings.append("Generated suite does not include Suite Teardown or Test Teardown; prefer reusable teardown keywords when resource context supports them")
 
-    settings_section_match = re.search(r"(?is)\*\*\*\s*settings\s*\*\*\*(.*?)(?:\n\*\*\*|\Z)", content)
-    settings_section = settings_section_match.group(1) if settings_section_match else ""
-    setup_definitions = re.findall(r"(?im)^\s*(Suite Setup|Test Setup)\s{2,}(.+)$", settings_section)
-    teardown_definitions = re.findall(r"(?im)^\s*(Suite Teardown|Test Teardown)\s{2,}(.+)$", settings_section)
-    if len(setup_definitions) > 2:
-        warnings.append("Generated suite defines too many setup entries; prefer one coherent suite/test setup strategy instead of scattered startup logic")
-    if len(teardown_definitions) > 2:
-        warnings.append("Generated suite defines too many teardown entries; prefer one coherent suite/test teardown strategy instead of scattered cleanup logic")
-
     if has_teardown and not has_setup:
-        warnings.append("Generated suite includes teardown but no setup; repair the suite so the dominant repeated leading sequence is elevated into setup when shared by the tests")
+        warnings.append("Generated suite includes teardown but no setup; repair the suite to include setup for browser opening and initial navigation using approved shared/common or page resource helpers")
 
     startup_sequences: list[list[str]] = []
     current_steps: list[str] = []
@@ -1874,7 +1397,7 @@ def validate_robot_content(content: str, allowed_resources: list[str]) -> tuple[
         ]
         if repeated_prefixes:
             warnings.append(
-                "Generated suite repeats the same leading step pattern across most tests but does not use Test Setup or Suite Setup; prefer promoting the repeated shared opening sequence into setup."
+                "Generated suite repeats the same startup pattern across most tests but does not use Test Setup or Suite Setup; prefer promoting the repeated page-open/page-ready sequence into setup."
             )
 
     if re.search(r"(?is)\*\*\*\s*settings\s*\*\*\*.*?\n\s*\n\s*(?:Test Setup|Suite Setup|Test Teardown|Suite Teardown|Resource)", content):
@@ -1940,37 +1463,35 @@ def validate_robot_content(content: str, allowed_resources: list[str]) -> tuple[
             if not common_prefix:
                 break
 
-    if len(common_prefix) >= 2:
-        repeated_prefix = " > ".join(clean_text(step) for step in common_prefix if clean_text(step))
-        if repeated_prefix:
-            warnings.append(
-                f"Generated suite repeats the same leading step flow across tests ('{repeated_prefix}'); prefer moving repeated shared entry mechanics into Test Setup or Suite Setup so test bodies focus on scenario-specific behavior."
-            )
+    repetitive_start_keywords = {
+        "open login page", "open browser to url", "go to url", "wait for page to be ready",
+        "wait until element is visible", "wait until page contains", "open browser session"
+    }
+    if len(common_prefix) >= 2 and any(clean_text(step).lower() in repetitive_start_keywords for step in common_prefix):
+        warnings.append("Generated suite repeats the same startup steps across tests; prefer moving repeated opening/navigation/wait steps into Test Setup or Suite Setup")
 
-    if all_test_steps:
-        repeated_start_sequences: dict[str, int] = {}
-        for steps in all_test_steps:
-            if not steps:
-                continue
-            normalized_steps = [clean_text(step).lower() for step in steps[:3] if clean_text(step)]
-            if not normalized_steps:
-                continue
-            for prefix_length in range(min(3, len(normalized_steps)), 0, -1):
-                prefix = " > ".join(normalized_steps[:prefix_length])
-                repeated_start_sequences[prefix] = repeated_start_sequences.get(prefix, 0) + 1
-        dominant_repeated_starts = {
-            seq: count for seq, count in repeated_start_sequences.items()
-            if count >= max(2, len(all_test_steps) // 2)
+    if has_setup and all_test_steps:
+        page_startup_keywords = {
+            clean_text(name).lower()
+            for name in resource_keyword_names
+            if any(token in clean_text(name).lower() for token in ["open ", "launch ", "guest state", "page is loaded", "page loaded"])
         }
-        if dominant_repeated_starts:
-            strongest_sequence = max(dominant_repeated_starts, key=lambda item: (dominant_repeated_starts[item], len(item)))
-            if not has_setup:
+        repeated_page_startup = {
+            name: sum(1 for steps in all_test_steps if steps and clean_text(steps[0]).lower() == name)
+            for name in page_startup_keywords
+        }
+        repeated_page_startup = {name: count for name, count in repeated_page_startup.items() if count >= max(2, len(all_test_steps) // 2)}
+        setup_lines = re.findall(r"(?im)^\s*(?:Suite Setup|Test Setup)\s{2,}(.+)$", content)
+        configured_setup_keywords = set()
+        for line in setup_lines:
+            kw_name, _args = scan_keyword_invocation(line)
+            if kw_name:
+                configured_setup_keywords.add(clean_text(kw_name).lower())
+        if repeated_page_startup:
+            strongest_startup = max(repeated_page_startup, key=repeated_page_startup.get)
+            if strongest_startup not in configured_setup_keywords:
                 warnings.append(
-                    f"Generated suite repeats the same leading step sequence across tests ('{strongest_sequence}') but does not use Test Setup or Suite Setup. Promote the shared sequence into setup so test bodies start closer to the business action under test."
-                )
-            else:
-                warnings.append(
-                    f"Generated suite has setup configured, but a dominant repeated leading step sequence ('{strongest_sequence}') still remains in test bodies. Strengthen setup so shared entry mechanics move out of the tests."
+                    f"Generated suite has setup configured but still repeats semantic page startup keyword '{strongest_startup}' at the beginning of most tests. Prefer promoting that higher-level page setup abstraction into Test Setup or Suite Setup."
                 )
 
     if not re.search(r"(?im)^AUT-[A-Z0-9]{2,8}-[A-Z0-9_]{3,20}\d{2}:\s+.+$", content):
@@ -2033,23 +1554,9 @@ def validate_robot_content(content: str, allowed_resources: list[str]) -> tuple[
     return is_valid, "\n\n".join(part for part in message_parts if part)
 
 
-def validate_manual_content(manual_data: dict, workflow_context: dict | None = None) -> tuple[bool, str]:
+def validate_manual_content(manual_data: dict) -> tuple[bool, str]:
     errors: list[str] = []
     warnings: list[str] = []
-    workflow_context = workflow_context or {}
-
-    def _warning_severity(message: str) -> int:
-        text = clean_text(message).lower()
-        if any(token in text for token in [
-            "coverage gaps",
-            "resource lineage",
-            "weak expected-result",
-            "likely duplicate scenario",
-        ]):
-            return 2
-        if "missing scenario category" in text or "coverage appears thin" in text:
-            return 1
-        return 0
 
     if not isinstance(manual_data, dict):
         return False, "Manual artifact must be a JSON object"
@@ -2060,6 +1567,15 @@ def validate_manual_content(manual_data: dict, workflow_context: dict | None = N
         return False, "\n".join(errors)
 
     seen_signatures = set()
+    positive_with_observable_success = False
+    negative_with_observable_failure = False
+    category_flags = {
+        "ui": False,
+        "validation": False,
+        "navigation": False,
+        "boundary_or_edge_behavior": False,
+        "blank_or_required": False,
+    }
 
     for idx, case in enumerate(test_cases, start=1):
         if not isinstance(case, dict):
@@ -2093,41 +1609,49 @@ def validate_manual_content(manual_data: dict, workflow_context: dict | None = N
             warnings.append(f"Potential duplicate manual test detected: {title or idx}")
         seen_signatures.add(signature)
 
+        combined = " ".join([
+            title.lower(),
+            expected.lower(),
+            " ".join(clean_text(str(step)).lower() for step in steps if clean_text(str(step))),
+            " ".join(clean_text(str(field)).lower() for field in fields if clean_text(str(field))),
+        ])
+
         expected_lower = expected.lower()
+        if case_type == "positive" and any(token in expected_lower for token in ["dashboard", "home", "redirect", "landing", "url", "success", "authenticated", "logged in"]):
+            positive_with_observable_success = True
+        if case_type == "negative" and any(token in expected_lower for token in ["error", "validation", "rejected", "denied", "remains", "not navigate", "no navigation", "failed"]):
+            negative_with_observable_failure = True
         if expected_lower in {"system behaves as expected", "workflow completes successfully", "login should happen", "system works correctly"}:
             warnings.append(f"Weak expected result detected in manual test: {title or idx}")
 
+        if any(token in combined for token in ["visible", "visibility", "ui", "label", "button", "link", "placeholder", "masked", "masking"]):
+            category_flags["ui"] = True
+        if any(token in combined for token in ["validation", "required", "error", "invalid", "rejected", "denied"]):
+            category_flags["validation"] = True
+        if any(token in combined for token in ["navigate", "navigation", "redirect", "home", "back", "url", "landing"]):
+            category_flags["navigation"] = True
+        if any(token in combined for token in ["edge", "boundary", "max", "min", "long", "length", "special character", "whitespace", "case sensitivity", "copy paste", "repeated", "duplicate", "enter key"]):
+            category_flags["boundary_or_edge_behavior"] = True
+        if any(token in combined for token in ["blank", "empty", "required", "missing", "without entering", "leave"]):
+            category_flags["blank_or_required"] = True
+
+    if not positive_with_observable_success:
+        warnings.append("No positive manual test explicitly asserts observable success state")
+    if not negative_with_observable_failure:
+        warnings.append("No negative manual test explicitly asserts observable failure or rejection state")
+
     if len(test_cases) < 6:
         warnings.append("Manual test coverage appears thin: fewer than 6 test cases were generated")
-    manual_reuse_analysis = analyze_manual_test_reuse(manual_data, workflow_context)
-    if manual_reuse_analysis.get("summary", {}).get("weakExpectedResultCount", 0) > 0:
-        warnings.append(
-            f"Manual reuse analysis found {manual_reuse_analysis['summary']['weakExpectedResultCount']} weak expected-result scenario(s) that should be made more observable"
-        )
-    if manual_reuse_analysis.get("summary", {}).get("duplicateScenarioCount", 0) > 0:
-        warnings.append(
-            f"Manual reuse analysis found {manual_reuse_analysis['summary']['duplicateScenarioCount']} likely duplicate scenario group(s)"
-        )
-    if manual_reuse_analysis.get("transitionCoverageGaps"):
-        warnings.append(
-            "Workflow knowledge suggests explicit destination/transition coverage gaps: "
-            + "; ".join(manual_reuse_analysis.get("transitionCoverageGaps", [])[:5])
-        )
-    if manual_reuse_analysis.get("resourceLineageGaps"):
-        warnings.extend(manual_reuse_analysis.get("resourceLineageGaps", []))
+    for category_name, present in category_flags.items():
+        if not present:
+            warnings.append(f"Manual test coverage may be missing scenario category: {category_name}")
 
-    strong_warning_count = sum(1 for item in warnings if _warning_severity(item) >= 2)
-    quality_gate_failed = strong_warning_count > 0
-    is_valid = len(errors) == 0 and not quality_gate_failed
+    is_valid = len(errors) == 0
     message_parts = []
     if errors:
         message_parts.append("\n".join(errors))
     if warnings:
         message_parts.append("Warnings:\n" + "\n".join(warnings))
-    if quality_gate_failed:
-        message_parts.append(
-            f"Quality gate failed: {strong_warning_count} high-severity manual reuse/observability warning(s) must be resolved before approval"
-        )
     return is_valid, "\n\n".join(part for part in message_parts if part)
 
 def derive_module_name(manual_data: dict, manual_json_path: Path) -> str:
@@ -2237,7 +1761,6 @@ def process_manual_file(config: dict, manual_json_path: Path):
     robot_content = re.sub(r"\n```$", "", robot_content)
     robot_content = normalize_generated_robot_identifiers(robot_content, identifier_policy)
     robot_content = rewrite_suite_to_prefer_common_wrappers(robot_content, resource_context)
-    robot_content = promote_repeated_setup_teardown(robot_content)
 
     review_prompt = build_review_prompt(manual_data, resource_context, robot_content)
     reviewed_robot_content = call_ai_chat(
@@ -2252,7 +1775,6 @@ def process_manual_file(config: dict, manual_json_path: Path):
     reviewed_robot_content = re.sub(r"\n```$", "", reviewed_robot_content)
     robot_content = normalize_generated_robot_identifiers(reviewed_robot_content or robot_content, identifier_policy)
     robot_content = rewrite_suite_to_prefer_common_wrappers(robot_content, resource_context)
-    robot_content = promote_repeated_setup_teardown(robot_content)
 
     validation_review_prompt = build_validation_review_prompt(manual_data, resource_context, robot_content)
     validated_robot_content = call_ai_chat(
@@ -2267,7 +1789,6 @@ def process_manual_file(config: dict, manual_json_path: Path):
     validated_robot_content = re.sub(r"\n```$", "", validated_robot_content)
     robot_content = normalize_generated_robot_identifiers(validated_robot_content or robot_content, identifier_policy)
     robot_content = rewrite_suite_to_prefer_common_wrappers(robot_content, resource_context)
-    robot_content = promote_repeated_setup_teardown(robot_content)
 
     is_valid, validation_message = validate_robot_content(robot_content, resource_files)
     if validation_message and re.search(r"unknown or unsupported keyword", validation_message, flags=re.IGNORECASE):
@@ -2293,7 +1814,6 @@ def process_manual_file(config: dict, manual_json_path: Path):
         repaired_robot_content = re.sub(r"\n```$", "", repaired_robot_content)
         robot_content = normalize_generated_robot_identifiers(repaired_robot_content or robot_content, identifier_policy)
         robot_content = rewrite_suite_to_prefer_common_wrappers(robot_content, resource_context)
-        robot_content = promote_repeated_setup_teardown(robot_content)
         is_valid, validation_message = validate_robot_content(robot_content, resource_files)
 
     if validation_message:
@@ -2305,8 +1825,6 @@ def process_manual_file(config: dict, manual_json_path: Path):
             + "Use the provided imported resource context and allowed keyword inventories as guardrails. "
             + "Reduce hallucination risk by preferring existing imported resource keywords, exact supported library keywords, and valid keyword signatures. "
             + "When a shared/common helper exists for generic waiting, clicking, navigation, or text/password entry, prefer that helper over direct SeleniumLibrary usage. "
-            + "Treat the supplied findings as mandatory repair inputs, including weak transition coverage, missing action fidelity, repeated setup opportunities, literal leakage, and weak destination-state validation when indicated by workflow knowledge and approved resources. "
-            + "Do not hardcode mappings or invent workflow-specific helper keywords. Infer repairs from the approved manual wording, workflow knowledge, reuse analysis, imported resource context, and repeated suite structure only. "
             + "Do not block the workflow. Return the best corrected Robot Framework suite possible using only valid framework-aligned keywords."
         )
         followup_robot_content = call_ai_chat(
@@ -2321,9 +1839,8 @@ def process_manual_file(config: dict, manual_json_path: Path):
         followup_robot_content = re.sub(r"\n```$", "", followup_robot_content)
         robot_content = normalize_generated_robot_identifiers(followup_robot_content or robot_content, identifier_policy)
         robot_content = rewrite_suite_to_prefer_common_wrappers(robot_content, resource_context)
-        robot_content = promote_repeated_setup_teardown(robot_content)
         is_valid, validation_message = validate_robot_content(robot_content, resource_files)
-    alignment_valid, alignment_message = validate_robot_alignment_with_resource_context(robot_content, resource_context, manual_data)
+    alignment_valid, alignment_message = validate_robot_alignment_with_resource_context(robot_content, resource_context)
     manual_expected_outcomes = collect_manual_expected_outcomes(manual_data)
     resource_validation_keywords = collect_resource_validation_keywords(resource_context)
     assertion_warning = warn_on_assertion_quality(manual_expected_outcomes, robot_content, resource_validation_keywords)

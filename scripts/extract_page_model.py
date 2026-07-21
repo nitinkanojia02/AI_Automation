@@ -13,10 +13,12 @@ from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
 try:
     from scripts.workflow_context import infer_workflow_reuse_context
+    from scripts.workflow_knowledge import build_workflow_knowledge_context, discover_relevant_workflow_knowledge
 except ModuleNotFoundError:
     import sys
     sys.path.append(str(Path(__file__).resolve().parent.parent))
     from scripts.workflow_context import infer_workflow_reuse_context
+    from scripts.workflow_knowledge import build_workflow_knowledge_context, discover_relevant_workflow_knowledge
 from playwright.sync_api import sync_playwright
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -189,7 +191,7 @@ def build_page_elements_from_review(review_data: dict) -> dict:
             })
     return {"elements": elements}
 
-def refine_page_elements_with_ai(config: dict, page_name: str, url: str, elements: List[dict], screenshot_path: Path, html_path: Path, metadata_dir: Path) -> dict | None:
+def refine_page_elements_with_ai(config: dict, page_name: str, url: str, elements: List[dict], screenshot_path: Path, html_path: Path, metadata_dir: Path, workflow_like: dict | None = None) -> dict | None:
     ai = config.get("ai", {})
     if not ai.get("enabled", False):
         return None
@@ -215,8 +217,18 @@ def refine_page_elements_with_ai(config: dict, page_name: str, url: str, element
         "url": url,
         "artifact_purpose": "approved page model for downstream resource and automation generation"
     }
+    workflow_memory = {}
+    relevant_workflow_knowledge = []
+    if isinstance(workflow_like, dict) and workflow_like:
+        try:
+            workflow_memory = build_workflow_knowledge_context(workflow_like)
+            relevant_workflow_knowledge = discover_relevant_workflow_knowledge(workflow_like)
+        except Exception as exc:
+            logger.warning("Workflow knowledge discovery failed for %s page review: %s", page_name, exc)
     reviewer_payload = {
         "workflow_context": workflow_context,
+        "current_workflow_knowledge": workflow_memory,
+        "relevant_workflow_knowledge": relevant_workflow_knowledge,
         "page_name": page_name,
         "screenshot_path": str(screenshot_path.relative_to(BASE_DIR)).replace("\\", "/") if screenshot_path.exists() else "",
         "debug_html_path": str(html_path.relative_to(BASE_DIR)).replace("\\", "/") if html_path.exists() else "",
@@ -241,6 +253,8 @@ def refine_page_elements_with_ai(config: dict, page_name: str, url: str, element
 
         refiner_payload = {
             "workflow_context": workflow_context,
+            "current_workflow_knowledge": workflow_memory,
+            "relevant_workflow_knowledge": relevant_workflow_knowledge,
             "page_name": page_name,
             "screenshot_path": reviewer_payload["screenshot_path"],
             "debug_html_path": reviewer_payload["debug_html_path"],
