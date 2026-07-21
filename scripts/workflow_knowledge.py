@@ -172,17 +172,7 @@ def split_story_sentences(value: Any) -> List[str]:
             if cleaned and not re.fullmatch(r"\d+", cleaned):
                 parts.append(cleaned)
 
-    filtered = []
-    for part in parts:
-        cleaned = clean_text(part)
-        if not cleaned:
-            continue
-        if cleaned.endswith(":") and len(cleaned.split()) <= 8:
-            continue
-        if re.fullmatch(r"[A-Za-z0-9 /_-]+", cleaned) and cleaned == cleaned.title() and len(cleaned.split()) <= 6:
-            continue
-        filtered.append(cleaned)
-    return unique_strings(filtered)
+    return unique_strings(parts)
 
 
 def select_relevant_lines(values: List[str], keywords: List[str], limit: int = 12) -> List[str]:
@@ -231,11 +221,6 @@ def looks_like_journey_action(value: str) -> bool:
     if len(cleaned.split()) < 2:
         return False
     if re.fullmatch(r"https?://[^\s]+", cleaned):
-        return False
-    lowered = cleaned.lower()
-    if re.fullmatch(r"[A-Za-z0-9 /_-]+", cleaned) and cleaned == cleaned.title() and len(cleaned.split()) <= 6:
-        return False
-    if not re.search(r"\b(click|open|launch|navigate|return|go|submit|enter|select|use|press|observe|verify)\b", lowered):
         return False
     return True
 
