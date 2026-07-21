@@ -2,19 +2,17 @@
 Resource    ../../resources/common_keywords.resource
 
 *** Variables ***
-${HOME_PAGE_URL}    http://localhost/washtabui/home
+${PAGE_URL}    http://localhost/washtabui/home
 ${HOME_PAGE_PATH}    /washtabui/home
-${EXPECTED_HOME_GUEST_STATE}    guest state
-${EXPECTED_UNAUTHENTICATED_STATE}    unauthenticated
-${EXPECTED_NO_LOGGED_IN_USER_INDICATOR}    logged-in user name button not visible
 ${LOGIN_PAGE_IDENTIFIER}    login
 ${CUSTOMER_SEARCH_PAGE_IDENTIFIER}    customer-search
 ${VEHICLE_SURVEY_PAGE_IDENTIFIER}    vehicle-survey
 ${SURVEY_PAGE_IDENTIFIER}    survey
-${EXPECTED_LOGIN_DESTINATION}    Login page or Login view
-${EXPECTED_CUSTOMER_SEARCH_DESTINATION}    customer-search page
-${EXPECTED_VEHICLE_SURVEY_DESTINATION}    vehicle-survey page
-${EXPECTED_SURVEY_DESTINATION}    survey page
+${LOGIN_VIEW_NAME}    Login page or Login view
+${CUSTOMER_SEARCH_PAGE_NAME}    customer-search page
+${VEHICLE_SURVEY_PAGE_NAME}    vehicle-survey page
+${SURVEY_PAGE_NAME}    survey page
+${GUEST_STATE_NAME}    guest state
 ${PERSON_PROFILE_BUTTON}    id=auto_person_btn
 ${BACK_BUTTON}    id=auto_back_btn
 ${NOTIFICATION_BUTTON}    id=auto_notification_btn
@@ -24,13 +22,19 @@ ${CLEAN_SURVEY_BUTTON}    id=auto_btn_CleanSurvey
 ${SITE_SURVEY_BUTTON}    id=auto_btn_SiteSurvey
 
 *** Keywords ***
-Open Home Page In Guest State
-    [Documentation]    Open the Home page in guest state.
-    Open Browser To Url    ${HOME_PAGE_URL}
-    Verify Home Guest State Loaded
+Open Home Page
+    [Documentation]    Open the Home page and verify the guest state is loaded.
+    Open Browser To Url    ${PAGE_URL}
+    Verify Home Page Guest State Loaded
 
-Verify Home Guest State Controls Visible
-    [Documentation]    Verify all approved guest-state controls are visible.
+Verify Home Page Guest State Loaded
+    [Documentation]    Verify the Home page is loaded in guest state.
+    ${current_url}=    Get Location
+    Should Contain    ${current_url}    ${HOME_PAGE_PATH}
+    Verify Guest State Controls Visible And Enabled
+
+Verify Guest State Controls Visible And Enabled
+    [Documentation]    Verify approved guest-state controls are visible and enabled.
     Wait For Element To Be Ready    ${PERSON_PROFILE_BUTTON}
     Wait For Element To Be Ready    ${BACK_BUTTON}
     Wait For Element To Be Ready    ${NOTIFICATION_BUTTON}
@@ -38,23 +42,6 @@ Verify Home Guest State Controls Visible
     Wait For Element To Be Ready    ${CUSTOMER_SIGNUP_BUTTON}
     Wait For Element To Be Ready    ${CLEAN_SURVEY_BUTTON}
     Wait For Element To Be Ready    ${SITE_SURVEY_BUTTON}
-
-Verify Home Guest State Controls Enabled
-    [Documentation]    Verify all approved guest-state controls are enabled.
-    Wait Until Element Is Enabled    ${PERSON_PROFILE_BUTTON}
-    Wait Until Element Is Enabled    ${BACK_BUTTON}
-    Wait Until Element Is Enabled    ${NOTIFICATION_BUTTON}
-    Wait Until Element Is Enabled    ${HOME_BUTTON}
-    Wait Until Element Is Enabled    ${CUSTOMER_SIGNUP_BUTTON}
-    Wait Until Element Is Enabled    ${CLEAN_SURVEY_BUTTON}
-    Wait Until Element Is Enabled    ${SITE_SURVEY_BUTTON}
-
-Verify Home Guest State Loaded
-    [Documentation]    Verify the Home page is loaded in guest state.
-    ${current_url}=    Get Location
-    Should Contain    ${current_url}    ${HOME_PAGE_PATH}
-    Verify Home Guest State Controls Visible
-    Verify Home Guest State Controls Enabled
 
 Verify Login Page Opened
     [Documentation]    Verify navigation to the Login page or Login view.
@@ -77,8 +64,8 @@ Verify Survey Page Opened
     Should Contain    ${current_url}    ${SURVEY_PAGE_IDENTIFIER}
 
 Verify Home Page Remains In Guest State
-    [Documentation]    Verify the application returns to the Home page guest state.
-    Verify Home Guest State Loaded
+    [Documentation]    Verify the application remains in Home guest state.
+    Verify Home Page Guest State Loaded
 
 Click Person Profile Button
     [Documentation]    Click the Person/Profile button.

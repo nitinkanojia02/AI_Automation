@@ -80,26 +80,12 @@
     },
     {
       "keywordId": "KW_008",
-      "keywordName": "Verify Home Page Guest State Loaded",
+      "keywordName": "Verify Home Guest State Loaded",
       "targetElement": "",
       "action": "verify",
       "arguments": [],
       "implementation": [
-        "Wait For Element To Be Ready    ${BACKGROUND_CONTENT_ELEMENT}",
-        "Wait For Element To Be Ready    ${AUTO_PERSON_BTN_BUTTON}",
-        "Wait For Element To Be Ready    ${AUTO_BACK_BTN_BUTTON}",
-        "Wait For Element To Be Ready    ${AUTO_NOTIFICATION_BTN_BUTTON}",
-        "Wait For Element To Be Ready    ${AUTO_HOME_BTN_BUTTON}"
-      ],
-      "approved": true
-    },
-    {
-      "keywordId": "KW_009",
-      "keywordName": "Verify Guest State Controls Visible And Enabled",
-      "targetElement": "",
-      "action": "verify",
-      "arguments": [],
-      "implementation": [
+        "Wait Until Element Is Visible    ${BACKGROUND_CONTENT_ELEMENT}",
         "Wait For Element To Be Ready    ${AUTO_PERSON_BTN_BUTTON}",
         "Wait For Element To Be Ready    ${AUTO_BACK_BTN_BUTTON}",
         "Wait For Element To Be Ready    ${AUTO_NOTIFICATION_BTN_BUTTON}",
@@ -107,18 +93,6 @@
         "Wait For Element To Be Ready    ${AUTO_BTN_CUSTOMER_SIGNUP_BUTTON}",
         "Wait For Element To Be Ready    ${AUTO_BTN_CLEAN_SURVEY_BUTTON}",
         "Wait For Element To Be Ready    ${AUTO_BTN_SITE_SURVEY_BUTTON}"
-      ],
-      "approved": true
-    },
-    {
-      "keywordId": "KW_010",
-      "keywordName": "Open Home Page",
-      "targetElement": "",
-      "action": "generic",
-      "arguments": [],
-      "implementation": [
-        "Open Browser To Url    ${PAGE_URL}",
-        "Verify Home Page Guest State Loaded"
       ],
       "approved": true
     }
