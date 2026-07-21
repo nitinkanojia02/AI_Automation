@@ -172,28 +172,16 @@ def split_story_sentences(value: Any) -> List[str]:
             if cleaned and not re.fullmatch(r"\d+", cleaned):
                 parts.append(cleaned)
 
-    noise_prefixes = (
-        "as a ",
-        "i want ",
-        "so that ",
-        "this workflow validates",
-        "the workflow begins",
-        "the user is ",
-        "the home page is ",
-        "washtab is ",
-    )
     filtered = []
     for part in parts:
-        lowered = part.lower()
-        if lowered in {
-            "user story", "application context", "entry conditions", "workflow scope", "primary navigation journey",
-            "approved test data", "page / component elements", "business rules", "validation expectations",
-            "transition expectations", "resource reuse guidance", "downstream automation guidance", "acceptance criteria"
-        }:
+        cleaned = clean_text(part)
+        if not cleaned:
             continue
-        if any(lowered.startswith(prefix) for prefix in noise_prefixes):
+        if cleaned.endswith(":") and len(cleaned.split()) <= 8:
             continue
-        filtered.append(part)
+        if re.fullmatch(r"[A-Za-z0-9 /_-]+", cleaned) and cleaned == cleaned.title() and len(cleaned.split()) <= 6:
+            continue
+        filtered.append(cleaned)
     return unique_strings(filtered)
 
 
@@ -245,10 +233,7 @@ def looks_like_journey_action(value: str) -> bool:
     if re.fullmatch(r"https?://[^\s]+", cleaned):
         return False
     lowered = cleaned.lower()
-    if lowered.startswith((
-        "as a ", "i want ", "so that ", "this workflow validates", "the workflow begins",
-        "the user is ", "washtab is ", "the guest state is ", "the home page is "
-    )):
+    if re.fullmatch(r"[A-Za-z0-9 /_-]+", cleaned) and cleaned == cleaned.title() and len(cleaned.split()) <= 6:
         return False
     if not re.search(r"\b(click|open|launch|navigate|return|go|submit|enter|select|use|press|observe|verify)\b", lowered):
         return False
