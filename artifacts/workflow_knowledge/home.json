@@ -6,7 +6,7 @@
   "applicationCode": "WT",
   "testIdentifierPrefix": "HOME",
   "status": "approved_artifact_memory",
-  "generatedAt": "2026-07-21T12:03:17.136490+00:00",
+  "generatedAt": "2026-07-21T12:23:35.388709+00:00",
   "businessContext": {
     "userStory": [
       "Home Feature - Guest State",
@@ -205,7 +205,7 @@
         "resourceFile": "pom_pages/home_page/home_page.resource",
         "type": "page",
         "variableNames": [
-          "EXPECTED_HOME_URL",
+          "PAGE_URL",
           "EXPECTED_LOGIN_URL",
           "EXPECTED_CUSTOMER_SEARCH_URL_FRAGMENT",
           "EXPECTED_VEHICLE_SURVEY_URL_FRAGMENT",
@@ -257,7 +257,7 @@
       {
         "resource": "pom_pages/home_page/home_page.resource",
         "variables": [
-          "EXPECTED_HOME_URL",
+          "PAGE_URL",
           "EXPECTED_LOGIN_URL",
           "EXPECTED_CUSTOMER_SEARCH_URL_FRAGMENT",
           "EXPECTED_VEHICLE_SURVEY_URL_FRAGMENT",
@@ -290,12 +290,12 @@
     "reuseSignals": {
       "duplicateVariables": [
         {
-          "candidateName": "EXPECTED_HOME_URL",
+          "candidateName": "PAGE_URL",
           "locator": "http://localhost/washtabui/home",
           "existingOwners": [
             {
               "resource": "pom_pages/home_page/home_page.resource",
-              "name": "EXPECTED_HOME_URL"
+              "name": "PAGE_URL"
             }
           ]
         },
@@ -311,7 +311,7 @@
         },
         {
           "candidateName": "EXPECTED_CUSTOMER_SEARCH_URL_FRAGMENT",
-          "locator": "/customer-search",
+          "locator": "customer-search",
           "existingOwners": [
             {
               "resource": "pom_pages/home_page/home_page.resource",
@@ -687,10 +687,10 @@
       ],
       "variableReuseCandidates": [
         {
-          "candidateName": "EXPECTED_HOME_URL",
+          "candidateName": "PAGE_URL",
           "reuseFrom": {
             "resource": "pom_pages/home_page/home_page.resource",
-            "name": "EXPECTED_HOME_URL"
+            "name": "PAGE_URL"
           },
           "reason": "Same locator already exists in approved resource context."
         },
@@ -892,10 +892,10 @@
       "ownershipConflicts": [
         {
           "type": "shared_locator_semantic_overlap",
-          "candidateName": "EXPECTED_HOME_URL",
+          "candidateName": "PAGE_URL",
           "existingOwner": {
             "resource": "pom_pages/home_page/home_page.resource",
-            "name": "EXPECTED_HOME_URL"
+            "name": "PAGE_URL"
           },
           "locator": "http://localhost/washtabui/home"
         },
@@ -915,7 +915,7 @@
             "resource": "pom_pages/home_page/home_page.resource",
             "name": "EXPECTED_CUSTOMER_SEARCH_URL_FRAGMENT"
           },
-          "locator": "/customer-search"
+          "locator": "customer-search"
         },
         {
           "type": "shared_locator_semantic_overlap",
@@ -1062,56 +1062,56 @@
     "approvedScenarios": [
       {
         "id": "HOME_TC_001",
-        "title": "Verify guest user can directly access Home page using the approved entry URL",
+        "title": "Verify guest user can directly access the Home page using the approved entry URL",
         "type": "positive",
-        "expectedResult": "The application loads successfully at http://localhost/washtabui/home and displays the Home page in guest state without prompting for authentication."
+        "expectedResult": "The application loads the Home page successfully in guest state without requiring authentication, and the browser URL remains http://localhost/washtabui/home."
       },
       {
-        "id": "HOME_TC_009",
-        "title": "Verify clicking the Person/Profile button navigates guest user to the login page URL",
+        "id": "HOME_TC_003",
+        "title": "Verify all approved Home page navigation controls are enabled and interactive in guest state",
         "type": "positive",
-        "expectedResult": "The application transitions from the Home page to the Login page and the browser URL equals /washtabui/login?data=undefined."
+        "expectedResult": "All approved Home page navigation buttons are enabled, interactive, and available for guest-state navigation."
+      },
+      {
+        "id": "HOME_TC_004",
+        "title": "Verify Person/Profile button navigates guest user to the login page URL",
+        "type": "positive",
+        "expectedResult": "The application transitions from the Home page to the login page and the browser URL equals /washtabui/login?data=undefined."
+      },
+      {
+        "id": "HOME_TC_006",
+        "title": "Verify Customer signup button navigates guest user to the customer-search workflow entry URL",
+        "type": "positive",
+        "expectedResult": "The application transitions from the Home page to the customer-search workflow entry page and the resulting URL contains customer-search."
+      },
+      {
+        "id": "HOME_TC_008",
+        "title": "Verify Clean survey button navigates guest user to the vehicle-survey workflow entry URL",
+        "type": "positive",
+        "expectedResult": "The application transitions from the Home page to the vehicle-survey workflow entry page and the resulting URL contains vehicle-survey."
       },
       {
         "id": "HOME_TC_010",
-        "title": "Verify clicking the Customer signup button navigates guest user to customer-search workflow entry",
+        "title": "Verify Site survey button navigates guest user to the survey workflow entry URL",
         "type": "positive",
-        "expectedResult": "The application transitions from the Home page to the customer-search workflow entry page and the browser URL contains /customer-search."
-      },
-      {
-        "id": "HOME_TC_011",
-        "title": "Verify clicking the Clean survey button navigates guest user to vehicle-survey workflow entry",
-        "type": "positive",
-        "expectedResult": "The application transitions from the Home page to the vehicle-survey workflow entry page and the browser URL contains vehicle-survey."
-      },
-      {
-        "id": "HOME_TC_012",
-        "title": "Verify clicking the Site survey button navigates guest user to survey workflow entry",
-        "type": "positive",
-        "expectedResult": "The application transitions from the Home page to the survey workflow entry page and the browser URL contains survey?data."
-      },
-      {
-        "id": "HOME_TC_018",
-        "title": "Verify all approved Home page navigation controls are enabled together after page load",
-        "type": "positive",
-        "expectedResult": "All approved Home page buttons accept interaction and none of the controls appear disabled, blocked, or non-clickable."
+        "expectedResult": "The application transitions from the Home page to the survey workflow entry page and the resulting URL contains survey?data."
       }
     ],
     "validations": [
-      "The application loads successfully at http://localhost/washtabui/home and displays the Home page in guest state without prompting for authentication.",
-      "The application transitions from the Home page to the Login page and the browser URL equals /washtabui/login?data=undefined.",
-      "The application transitions from the Home page to the customer-search workflow entry page and the browser URL contains /customer-search.",
-      "The application transitions from the Home page to the vehicle-survey workflow entry page and the browser URL contains vehicle-survey.",
-      "The application transitions from the Home page to the survey workflow entry page and the browser URL contains survey?data.",
-      "All approved Home page buttons accept interaction and none of the controls appear disabled, blocked, or non-clickable."
+      "The application loads the Home page successfully in guest state without requiring authentication, and the browser URL remains http://localhost/washtabui/home.",
+      "All approved Home page navigation buttons are enabled, interactive, and available for guest-state navigation.",
+      "The application transitions from the Home page to the login page and the browser URL equals /washtabui/login?data=undefined.",
+      "The application transitions from the Home page to the customer-search workflow entry page and the resulting URL contains customer-search.",
+      "The application transitions from the Home page to the vehicle-survey workflow entry page and the resulting URL contains vehicle-survey.",
+      "The application transitions from the Home page to the survey workflow entry page and the resulting URL contains survey?data."
     ],
     "transitions": [
-      "The application loads successfully at http://localhost/washtabui/home and displays the Home page in guest state without prompting for authentication.",
-      "The application transitions from the Home page to the Login page and the browser URL equals /washtabui/login?data=undefined.",
-      "The application transitions from the Home page to the customer-search workflow entry page and the browser URL contains /customer-search.",
-      "The application transitions from the Home page to the vehicle-survey workflow entry page and the browser URL contains vehicle-survey.",
-      "The application transitions from the Home page to the survey workflow entry page and the browser URL contains survey?data.",
-      "All approved Home page buttons accept interaction and none of the controls appear disabled, blocked, or non-clickable."
+      "The application loads the Home page successfully in guest state without requiring authentication, and the browser URL remains http://localhost/washtabui/home.",
+      "All approved Home page navigation buttons are enabled, interactive, and available for guest-state navigation.",
+      "The application transitions from the Home page to the login page and the browser URL equals /washtabui/login?data=undefined.",
+      "The application transitions from the Home page to the customer-search workflow entry page and the resulting URL contains customer-search.",
+      "The application transitions from the Home page to the vehicle-survey workflow entry page and the resulting URL contains vehicle-survey.",
+      "The application transitions from the Home page to the survey workflow entry page and the resulting URL contains survey?data."
     ]
   },
   "automationKnowledge": {
@@ -1161,35 +1161,54 @@
       {
         "page": "home_page",
         "name": "Verify Home Page Loaded In Guest State",
-        "targetElement": "",
-        "action": "verify"
-      },
-      {
-        "page": "home_page",
-        "name": "Verify Person Profile Navigation",
         "targetElement": "person_profile_button",
         "action": "verify"
       },
       {
         "page": "home_page",
-        "name": "Verify Customer Signup Navigation",
+        "name": "Verify Person Profile Navigation Redirect",
+        "targetElement": "person_profile_button",
+        "action": "verify"
+      },
+      {
+        "page": "home_page",
+        "name": "Verify Customer Signup Navigation Redirect",
         "targetElement": "customer_signup_button",
         "action": "verify"
       },
       {
         "page": "home_page",
-        "name": "Verify Clean Survey Navigation",
+        "name": "Verify Clean Survey Navigation Redirect",
         "targetElement": "clean_survey_button",
         "action": "verify"
       },
       {
         "page": "home_page",
-        "name": "Verify Site Survey Navigation",
+        "name": "Verify Site Survey Navigation Redirect",
         "targetElement": "site_survey_button",
         "action": "verify"
       }
     ],
-    "approvedTests": [],
+    "approvedTests": [
+      {
+        "name": "AUT-WT-HOME01: Verify guest user can directly access the Home page using the approved entry URL"
+      },
+      {
+        "name": "AUT-WT-HOME02: Verify all approved Home page navigation controls are enabled and interactive in guest state"
+      },
+      {
+        "name": "AUT-WT-HOME03: Verify Person/Profile button navigates guest user to the login page URL"
+      },
+      {
+        "name": "AUT-WT-HOME04: Verify Customer signup button navigates guest user to the customer-search workflow entry URL"
+      },
+      {
+        "name": "AUT-WT-HOME05: Verify Clean survey button navigates guest user to the vehicle-survey workflow entry URL"
+      },
+      {
+        "name": "AUT-WT-HOME06: Verify Site survey button navigates guest user to the survey workflow entry URL"
+      }
+    ],
     "wrapperExpectations": [
       "Reuse approved shared/common wrapper keywords before low-level SeleniumLibrary actions.",
       "Do not invent suite-level custom keywords; compose from approved upstream resource knowledge."

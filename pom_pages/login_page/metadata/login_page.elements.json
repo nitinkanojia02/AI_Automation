@@ -1,0 +1,201 @@
+[
+  {
+    "tag": "input",
+    "text": "User Name",
+    "attributes": {
+      "class": "native-input sc-ion-input-md",
+      "id": "ion-input-0",
+      "autocapitalize": "off",
+      "autocomplete": "off",
+      "autocorrect": "off",
+      "autofocus": "",
+      "name": "ion-input-0",
+      "placeholder": "User Name",
+      "spellcheck": "false",
+      "type": "text",
+      "style": ""
+    },
+    "label": "",
+    "visibility": {
+      "is_visible": true,
+      "is_in_viewport": true,
+      "is_covered": false,
+      "has_visible_descendant": false,
+      "width": 250,
+      "height": 24,
+      "x": 863,
+      "y": 458.453125
+    },
+    "shadow": null
+  },
+  {
+    "tag": "input",
+    "text": "Password",
+    "attributes": {
+      "class": "native-input sc-ion-input-md",
+      "id": "ion-input-1",
+      "autocapitalize": "off",
+      "autocomplete": "off",
+      "autocorrect": "off",
+      "name": "ion-input-1",
+      "placeholder": "Password",
+      "spellcheck": "false",
+      "type": "password",
+      "style": ""
+    },
+    "label": "",
+    "visibility": {
+      "is_visible": true,
+      "is_in_viewport": true,
+      "is_covered": false,
+      "has_visible_descendant": false,
+      "width": 250,
+      "height": 24,
+      "x": 863,
+      "y": 525.34375
+    },
+    "shadow": null
+  },
+  {
+    "tag": "ion-button",
+    "text": "auto_back_btn",
+    "attributes": {
+      "_ngcontent-ng-c4233052030": "",
+      "id": "auto_back_btn",
+      "color": "light",
+      "class": "header-icon-btn ion-color ion-color-light md button button-solid ion-activatable ion-focusable hydrated"
+    },
+    "label": "",
+    "visibility": {
+      "is_visible": true,
+      "is_in_viewport": true,
+      "is_covered": false,
+      "has_visible_descendant": false,
+      "width": 45,
+      "height": 45,
+      "x": 1785,
+      "y": 23
+    },
+    "shadow": {
+      "has_shadow_root": true,
+      "has_native_control": true,
+      "text": "",
+      "icon_aria_label": "",
+      "aria_label": "",
+      "tag": "button",
+      "type": "button",
+      "disabled": false,
+      "placeholder": ""
+    }
+  },
+  {
+    "tag": "ion-button",
+    "text": "auto_home_btn",
+    "attributes": {
+      "_ngcontent-ng-c4233052030": "",
+      "id": "auto_home_btn",
+      "color": "light",
+      "class": "header-icon-btn ion-color ion-color-light md button button-solid ion-activatable ion-focusable hydrated"
+    },
+    "label": "",
+    "visibility": {
+      "is_visible": true,
+      "is_in_viewport": true,
+      "is_covered": false,
+      "has_visible_descendant": false,
+      "width": 45,
+      "height": 45,
+      "x": 1845,
+      "y": 23
+    },
+    "shadow": {
+      "has_shadow_root": true,
+      "has_native_control": true,
+      "text": "",
+      "icon_aria_label": "",
+      "aria_label": "",
+      "tag": "button",
+      "type": "button",
+      "disabled": false,
+      "placeholder": ""
+    }
+  },
+  {
+    "tag": "ion-input",
+    "text": "password",
+    "attributes": {
+      "_ngcontent-ng-c4233052030": "",
+      "type": "password",
+      "id": "password",
+      "clearonedit": "true",
+      "autocomplete": "off",
+      "class": "login-class ng-untouched ng-pristine ng-valid ion-untouched ion-pristine ion-valid sc-ion-input-md-h sc-ion-input-md-s md input-label-placement-start in-item hydrated",
+      "style": "-webkit-text-security: disc;"
+    },
+    "label": "",
+    "visibility": {
+      "is_visible": true,
+      "is_in_viewport": true,
+      "is_covered": false,
+      "has_visible_descendant": true,
+      "width": 250,
+      "height": 44,
+      "x": 863,
+      "y": 515.34375
+    },
+    "shadow": null
+  },
+  {
+    "tag": "ion-button",
+    "text": "[BTN_LOGIN]",
+    "attributes": {
+      "_ngcontent-ng-c4233052030": "",
+      "text": "Login",
+      "shape": "round",
+      "class": "ion-button-style md button button-round button-solid ion-activatable ion-focusable hydrated"
+    },
+    "label": "",
+    "visibility": {
+      "is_visible": true,
+      "is_in_viewport": true,
+      "is_covered": false,
+      "has_visible_descendant": false,
+      "width": 1134,
+      "height": 36,
+      "x": 393,
+      "y": 584.734375
+    },
+    "shadow": {
+      "has_shadow_root": true,
+      "has_native_control": true,
+      "text": "",
+      "icon_aria_label": "",
+      "aria_label": "",
+      "tag": "button",
+      "type": "button",
+      "disabled": false,
+      "placeholder": ""
+    }
+  },
+  {
+    "tag": "div",
+    "text": "background-content",
+    "attributes": {
+      "id": "background-content",
+      "part": "background",
+      "data-shadow-host-tag": "ion-content"
+    },
+    "label": "",
+    "visibility": {
+      "is_visible": true,
+      "is_in_viewport": true,
+      "is_covered": false,
+      "has_visible_descendant": false,
+      "width": 1920,
+      "height": 1080,
+      "x": 0,
+      "y": 0
+    },
+    "shadow": null
+  }
+]
