@@ -7,180 +7,220 @@
     "home_page/home_page.resource"
   ],
   "preconditions": [
-    "Launch the application at http://localhost/washtabui/home",
-    "User is unauthenticated and has not signed in",
-    "Application is running in guest state on the shared Home page SPA view"
+    "Application is launched and accessible.",
+    "User is not authenticated and is operating in guest state.",
+    "User navigates directly to http://localhost/washtabui/home.",
+    "Home page load completes successfully before interaction begins."
   ],
   "testCases": [
     {
       "id": "HOME_TC_001",
-      "title": "Verify Home page loads successfully in guest state from the approved application URL",
+      "title": "Verify guest user can directly access the Home page using the approved entry URL",
       "type": "Positive",
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Open a browser session",
-        "Navigate to http://localhost/washtabui/home",
-        "Wait for the Home page guest state to finish loading"
+        "Launch the application in a new browser session.",
+        "Navigate directly to http://localhost/washtabui/home.",
+        "Wait for the Home page to finish loading."
       ],
-      "expectedResult": "The Home page loads successfully in guest state at the approved URL while the user remains unauthenticated and the shared Home page shell is visible."
+      "expectedResult": "The application loads successfully at http://localhost/washtabui/home and displays the Home page in guest state without requiring authentication or redirecting to another page."
     },
     {
       "id": "HOME_TC_002",
-      "title": "Verify guest-state controls and shared Home shell controls are visible and enabled on initial Home page load",
+      "title": "Verify Person/Profile button is visible and enabled on the Home page in guest state",
       "type": "Positive",
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Launch the application at http://localhost/washtabui/home while unauthenticated",
-        "Observe the Home page guest state after load completion",
-        "Verify the Person/Profile button, Back button, Notification button, Home button, Customer signup button, Clean survey button, and Site survey button are visible",
-        "Verify each approved button is enabled and clickable"
+        "Navigate directly to http://localhost/washtabui/home in guest state.",
+        "Observe the Person/Profile button on the Home page.",
+        "Check that the button is visible and enabled before interaction."
       ],
-      "expectedResult": "All approved guest-state controls and shared Home shell controls are visible, enabled, and actionable in the Home page guest state."
+      "expectedResult": "The Person/Profile button is visible, enabled, and interactive on the Home page while the user remains in guest state."
     },
     {
       "id": "HOME_TC_003",
-      "title": "Verify Person/Profile button navigates from Home guest state to the Login page or Login view",
+      "title": "Verify Back button is visible and enabled on the Home page in guest state",
       "type": "Positive",
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Launch the application at http://localhost/washtabui/home while unauthenticated",
-        "Verify the Home page guest state is displayed",
-        "Click the Person/Profile button once"
+        "Navigate directly to http://localhost/washtabui/home in guest state.",
+        "Observe the Back button on the Home page.",
+        "Check that the button is visible and enabled before interaction."
       ],
-      "expectedResult": "The application transitions from the Home page guest state to the Login page or Login view while navigation clearly originates from the Home page."
+      "expectedResult": "The Back button is visible, enabled, and interactive on the Home page while the user remains in guest state."
     },
     {
       "id": "HOME_TC_004",
-      "title": "Verify Customer signup button navigates from Home guest state to the customer-search page",
+      "title": "Verify Notification button is visible and enabled on the Home page in guest state",
       "type": "Positive",
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Launch the application at http://localhost/washtabui/home while unauthenticated",
-        "Verify the Home page guest state is displayed",
-        "Click the Customer signup button once"
+        "Navigate directly to http://localhost/washtabui/home in guest state.",
+        "Observe the Notification button on the Home page.",
+        "Check that the button is visible and enabled before interaction."
       ],
-      "expectedResult": "The customer-search page opens from the Home page guest state and the user remains unauthenticated throughout the transition."
+      "expectedResult": "The Notification button is visible, enabled, and interactive on the Home page while the user remains in guest state."
     },
     {
       "id": "HOME_TC_005",
-      "title": "Verify Clean survey button navigates from Home guest state to the vehicle-survey page",
+      "title": "Verify Home button is visible and enabled on the Home page in guest state",
       "type": "Positive",
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Launch the application at http://localhost/washtabui/home while unauthenticated",
-        "Verify the Home page guest state is displayed",
-        "Click the Clean survey button once"
+        "Navigate directly to http://localhost/washtabui/home in guest state.",
+        "Observe the Home button on the Home page.",
+        "Check that the button is visible and enabled before interaction."
       ],
-      "expectedResult": "The vehicle-survey page opens from the Home page guest state and the user remains unauthenticated throughout the transition."
+      "expectedResult": "The Home button is visible, enabled, and interactive on the Home page while the user remains in guest state."
     },
     {
       "id": "HOME_TC_006",
-      "title": "Verify Site survey button navigates from Home guest state to the survey page",
+      "title": "Verify Customer signup button is visible and enabled on the Home page in guest state",
       "type": "Positive",
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Launch the application at http://localhost/washtabui/home while unauthenticated",
-        "Verify the Home page guest state is displayed",
-        "Click the Site survey button once"
+        "Navigate directly to http://localhost/washtabui/home in guest state.",
+        "Observe the Customer signup button on the Home page.",
+        "Check that the button is visible and enabled before interaction."
       ],
-      "expectedResult": "The survey page opens from the Home page guest state and the user remains unauthenticated throughout the transition."
+      "expectedResult": "The Customer signup button is visible, enabled, and interactive on the Home page while the user remains in guest state."
+    },
+    {
+      "id": "HOME_TC_007",
+      "title": "Verify Clean survey button is visible and enabled on the Home page in guest state",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Navigate directly to http://localhost/washtabui/home in guest state.",
+        "Observe the Clean survey button on the Home page.",
+        "Check that the button is visible and enabled before interaction."
+      ],
+      "expectedResult": "The Clean survey button is visible, enabled, and interactive on the Home page while the user remains in guest state."
+    },
+    {
+      "id": "HOME_TC_008",
+      "title": "Verify Site survey button is visible and enabled on the Home page in guest state",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Navigate directly to http://localhost/washtabui/home in guest state.",
+        "Observe the Site survey button on the Home page.",
+        "Check that the button is visible and enabled before interaction."
+      ],
+      "expectedResult": "The Site survey button is visible, enabled, and interactive on the Home page while the user remains in guest state."
     },
     {
       "id": "HOME_TC_009",
-      "title": "Verify Home button remains visible and enabled in guest state",
+      "title": "Verify clicking the Person/Profile button navigates guest user to the login URL",
       "type": "Positive",
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Launch the application at http://localhost/washtabui/home while unauthenticated",
-        "Locate the Home button on the shared Home shell",
-        "Verify the Home button is visible and enabled"
+        "Navigate directly to http://localhost/washtabui/home in guest state.",
+        "Click the Person/Profile button once.",
+        "Observe the browser URL after navigation completes."
       ],
-      "expectedResult": "The Home button is displayed in the Home page guest state and is enabled for interaction."
-    },
-    {
-      "id": "HOME_TC_010",
-      "title": "Verify Back button remains visible and enabled in guest state",
-      "type": "Positive",
-      "priority": "Medium",
-      "preconditions": [],
-      "steps": [
-        "Launch the application at http://localhost/washtabui/home while unauthenticated",
-        "Locate the Back button on the shared Home shell",
-        "Verify the Back button is visible and enabled"
-      ],
-      "expectedResult": "The Back button is displayed in the Home page guest state and is enabled for interaction."
+      "expectedResult": "The application navigates from the Home page to the login page and the browser URL equals /washtabui/login?data=undefined."
     },
     {
       "id": "HOME_TC_011",
-      "title": "Verify Notification button remains visible and enabled in guest state",
+      "title": "Verify clicking the Customer signup button navigates guest user to customer-search page",
       "type": "Positive",
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Launch the application at http://localhost/washtabui/home while unauthenticated",
-        "Locate the Notification button on the shared Home shell",
-        "Verify the Notification button is visible and enabled"
+        "Navigate directly to http://localhost/washtabui/home in guest state.",
+        "Click the Customer signup button once.",
+        "Observe the browser URL after navigation completes."
       ],
-      "expectedResult": "The Notification button is displayed in the Home page guest state and is enabled for interaction."
-    },
-    {
-      "id": "HOME_TC_012",
-      "title": "Verify navigation back to Home guest state after opening the Login view from the Person/Profile button",
-      "type": "Positive",
-      "priority": "Medium",
-      "preconditions": [],
-      "steps": [
-        "Launch the application at http://localhost/washtabui/home while unauthenticated",
-        "Click the Person/Profile button to open the Login page or Login view",
-        "Use browser back navigation or approved application return navigation to return to Home"
-      ],
-      "expectedResult": "The application returns to the Home page guest state and approved guest-state controls are visible again without authenticating the user."
+      "expectedResult": "The application navigates from the Home page to the customer-search page and the browser URL contains /customer-search."
     },
     {
       "id": "HOME_TC_013",
-      "title": "Verify navigation back to Home guest state after opening the customer-search page",
+      "title": "Verify clicking the Clean survey button navigates guest user to vehicle-survey page",
       "type": "Positive",
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Launch the application at http://localhost/washtabui/home while unauthenticated",
-        "Click the Customer signup button",
-        "Return to the Home page using browser back navigation or approved application navigation"
+        "Navigate directly to http://localhost/washtabui/home in guest state.",
+        "Click the Clean survey button once.",
+        "Observe the browser URL after navigation completes."
       ],
-      "expectedResult": "The application returns to the Home page guest state with approved guest-state controls visible and the user still unauthenticated."
-    },
-    {
-      "id": "HOME_TC_014",
-      "title": "Verify navigation back to Home guest state after opening the vehicle-survey page",
-      "type": "Positive",
-      "priority": "Medium",
-      "preconditions": [],
-      "steps": [
-        "Launch the application at http://localhost/washtabui/home while unauthenticated",
-        "Click the Clean survey button",
-        "Return to the Home page using browser back navigation or approved application navigation"
-      ],
-      "expectedResult": "The application returns to the Home page guest state with approved guest-state controls visible and the user still unauthenticated."
+      "expectedResult": "The application navigates from the Home page to the vehicle-survey page and the browser URL contains vehicle-survey."
     },
     {
       "id": "HOME_TC_015",
-      "title": "Verify navigation back to Home guest state after opening the survey page",
+      "title": "Verify clicking the Site survey button navigates guest user to survey page",
       "type": "Positive",
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Launch the application at http://localhost/washtabui/home while unauthenticated",
-        "Click the Site survey button",
-        "Return to the Home page using browser back navigation or approved application navigation"
+        "Navigate directly to http://localhost/washtabui/home in guest state.",
+        "Click the Site survey button once.",
+        "Observe the browser URL after navigation completes."
       ],
-      "expectedResult": "The application returns to the Home page guest state with approved guest-state controls visible and the user still unauthenticated."
+      "expectedResult": "The application navigates from the Home page to the survey page and the browser URL contains survey?data."
+    },
+    {
+      "id": "HOME_TC_018",
+      "title": "Verify all approved Home page navigation controls are enabled and interactive before user interaction",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Navigate directly to http://localhost/washtabui/home in guest state.",
+        "Inspect the Person/Profile, Back, Notification, Home, Customer signup, Clean survey, and Site survey buttons.",
+        "Attempt focus and click readiness checks without leaving the page."
+      ],
+      "expectedResult": "All approved Home page navigation buttons are enabled, focusable, and interactive before any workflow navigation occurs."
+    },
+    {
+      "id": "HOME_TC_025",
+      "title": "Verify Home button remains interactive and does not redirect away from the Home page unexpectedly",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Navigate directly to http://localhost/washtabui/home in guest state.",
+        "Click the Home button once.",
+        "Observe the browser URL and rendered page state."
+      ],
+      "expectedResult": "The Home button remains interactive and the user stays on or returns to the Home page at http://localhost/washtabui/home without entering an invalid navigation state."
+    },
+    {
+      "id": "HOME_TC_026",
+      "title": "Verify Back button interaction from initial Home page state does not break the guest Home workflow",
+      "type": "Edge",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Open a fresh browser session.",
+        "Navigate directly to http://localhost/washtabui/home.",
+        "Click the Back button on the Home page.",
+        "Observe the resulting browser state."
+      ],
+      "expectedResult": "The application handles the Back button interaction gracefully without displaying an application error or broken page state."
+    },
+    {
+      "id": "HOME_TC_027",
+      "title": "Verify Notification button interaction is accepted while user remains in guest-accessible workflow state",
+      "type": "Edge",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Navigate directly to http://localhost/washtabui/home in guest state.",
+        "Click the Notification button once.",
+        "Observe the application response and page stability."
+      ],
+      "expectedResult": "The Notification button is interactive and the application remains stable without rendering a broken page or unexpected authentication failure."
     }
   ]
 }

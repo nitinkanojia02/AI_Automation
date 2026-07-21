@@ -80,49 +80,74 @@
     },
     {
       "keywordId": "KW_008",
-      "keywordName": "Verify Home Guest State Loaded",
-      "targetElement": "",
+      "keywordName": "Verify Home Page Loaded In Guest State",
+      "targetElement": "home_button",
       "action": "verify",
       "arguments": [],
       "implementation": [
-        "Wait Until Element Is Visible    ${BACKGROUND_CONTENT_ELEMENT}",
-        "    Wait For Element To Be Ready    ${AUTO_PERSON_BTN_BUTTON}",
-        "    Wait For Element To Be Ready    ${AUTO_BACK_BTN_BUTTON}",
-        "    Wait For Element To Be Ready    ${AUTO_NOTIFICATION_BTN_BUTTON}",
-        "    Wait For Element To Be Ready    ${AUTO_HOME_BTN_BUTTON}",
-        "    Wait For Element To Be Ready    ${AUTO_BTN_CUSTOMER_SIGNUP_BUTTON}",
-        "    Wait For Element To Be Ready    ${AUTO_BTN_CLEAN_SURVEY_BUTTON}",
-        "    Wait For Element To Be Ready    ${AUTO_BTN_SITE_SURVEY_BUTTON}"
+        "Wait For Element To Be Ready    ${HOME_BUTTON}",
+        "Location Should Contain    ${PAGE_URL}"
       ],
       "approved": true
     },
     {
       "keywordId": "KW_009",
-      "keywordName": "Verify Guest State Controls Are Enabled",
-      "targetElement": "",
+      "keywordName": "Verify All Home Navigation Buttons Are Visible And Enabled",
+      "targetElement": "home_button",
       "action": "verify",
       "arguments": [],
       "implementation": [
-        "Element Should Be Enabled    ${AUTO_PERSON_BTN_BUTTON}",
-        "    Element Should Be Enabled    ${AUTO_BACK_BTN_BUTTON}",
-        "    Element Should Be Enabled    ${AUTO_NOTIFICATION_BTN_BUTTON}",
-        "    Element Should Be Enabled    ${AUTO_HOME_BTN_BUTTON}",
-        "    Element Should Be Enabled    ${AUTO_BTN_CUSTOMER_SIGNUP_BUTTON}",
-        "    Element Should Be Enabled    ${AUTO_BTN_CLEAN_SURVEY_BUTTON}",
-        "    Element Should Be Enabled    ${AUTO_BTN_SITE_SURVEY_BUTTON}"
+        "Wait For Element To Be Ready    ${HOME_BUTTON}",
+        "Wait For Element To Be Ready    ${HOME_BUTTON}",
+        "Wait For Element To Be Ready    ${HOME_BUTTON}",
+        "Wait For Element To Be Ready    ${HOME_BUTTON}",
+        "Wait For Element To Be Ready    ${HOME_BUTTON}",
+        "Wait For Element To Be Ready    ${HOME_BUTTON}",
+        "Wait For Element To Be Ready    ${HOME_BUTTON}"
       ],
       "approved": true
     },
     {
       "keywordId": "KW_010",
-      "keywordName": "Open Home Page In Guest State",
-      "targetElement": "",
-      "action": "generic",
+      "keywordName": "Verify Navigation To Login Page",
+      "targetElement": "person_profile_button",
+      "action": "verify",
       "arguments": [],
       "implementation": [
-        "Open Browser To Url    ${HOME_GUEST_STATE_URL}",
-        "    Verify Home Guest State Loaded",
-        "    Verify Guest State Controls Are Enabled"
+        "Wait Until Location Contains    ${EXPECTED_LOGIN_URL}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_011",
+      "keywordName": "Verify Navigation To Customer Search Page",
+      "targetElement": "customer_signup_button",
+      "action": "verify",
+      "arguments": [],
+      "implementation": [
+        "Wait Until Location Contains    ${EXPECTED_CUSTOMER_SEARCH_URL_FRAGMENT}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_012",
+      "keywordName": "Verify Navigation To Vehicle Survey Page",
+      "targetElement": "clean_survey_button",
+      "action": "verify",
+      "arguments": [],
+      "implementation": [
+        "Wait Until Location Contains    ${EXPECTED_VEHICLE_SURVEY_URL_FRAGMENT}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_013",
+      "keywordName": "Verify Navigation To Site Survey Page",
+      "targetElement": "site_survey_button",
+      "action": "verify",
+      "arguments": [],
+      "implementation": [
+        "Wait Until Location Contains    ${EXPECTED_SITE_SURVEY_URL_FRAGMENT}"
       ],
       "approved": true
     }
