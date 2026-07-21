@@ -22,12 +22,8 @@ Open Home Page
     Verify Home Page Loaded In Guest State
 
 Verify Home Page Loaded In Guest State
-    [Documentation]    Verify the Home page is loaded in guest state.
-    Wait Until Location Is    ${PAGE_URL}
-    Wait For Element To Be Ready    ${PERSON_PROFILE_BUTTON}
-
-Verify All Home Navigation Buttons Are Visible And Enabled
-    [Documentation]    Verify all approved Home page navigation buttons are visible and enabled.
+    [Documentation]    Verify the Home page is loaded in guest state and primary navigation controls are interactive.
+    Wait Until Location Contains    ${PAGE_URL}
     Verify Person Profile Button Is Visible And Enabled
     Verify Back Button Is Visible And Enabled
     Verify Notification Button Is Visible And Enabled
@@ -35,6 +31,10 @@ Verify All Home Navigation Buttons Are Visible And Enabled
     Verify Customer Signup Button Is Visible And Enabled
     Verify Clean Survey Button Is Visible And Enabled
     Verify Site Survey Button Is Visible And Enabled
+
+Verify All Home Navigation Buttons Are Visible And Enabled
+    [Documentation]    Verify all approved Home page navigation buttons are visible and enabled.
+    Verify Home Page Loaded In Guest State
 
 Verify Person Profile Button Is Visible And Enabled
     [Documentation]    Verify the Person/Profile button is visible and enabled.

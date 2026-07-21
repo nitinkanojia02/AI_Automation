@@ -15,17 +15,16 @@
   "testCases": [
     {
       "id": "HOME_TC_001",
-      "title": "Verify guest user can directly access the Home page URL and Home page loads successfully",
+      "title": "Verify guest user can directly access the Home page using the approved entry URL",
       "type": "Positive",
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Launch the application in a browser session.",
+        "Launch the application in a new browser session.",
         "Navigate directly to http://localhost/washtabui/home.",
-        "Wait for the Home page to complete loading.",
-        "Observe the displayed page state without authenticating."
+        "Wait for the Home page to finish loading."
       ],
-      "expectedResult": "The application loads successfully at http://localhost/washtabui/home and displays the Home page in guest state without redirecting to authentication or showing access denial."
+      "expectedResult": "The application loads the Home page successfully in guest state without requiring authentication and the browser URL remains http://localhost/washtabui/home."
     },
     {
       "id": "HOME_TC_002",
@@ -34,12 +33,10 @@
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Navigate to http://localhost/washtabui/home as a guest user.",
-        "Wait for the Home page to load completely.",
-        "Locate the Person/Profile button.",
-        "Observe the visibility and enabled state of the Person/Profile button."
+        "Navigate directly to http://localhost/washtabui/home.",
+        "Observe the Person/Profile button on the Home page."
       ],
-      "expectedResult": "The Person/Profile button is visible, enabled, and available for interaction on the Home page in guest state."
+      "expectedResult": "The Person/Profile button is visible, enabled, and interactive before user interaction begins."
     },
     {
       "id": "HOME_TC_003",
@@ -48,12 +45,10 @@
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Navigate to http://localhost/washtabui/home as a guest user.",
-        "Wait for the Home page to load completely.",
-        "Locate the Back button.",
-        "Observe the visibility and enabled state of the Back button."
+        "Navigate directly to http://localhost/washtabui/home.",
+        "Observe the Back button on the Home page."
       ],
-      "expectedResult": "The Back button is visible, enabled, and available for interaction on the Home page in guest state."
+      "expectedResult": "The Back button is visible, enabled, and interactive before user interaction begins."
     },
     {
       "id": "HOME_TC_004",
@@ -62,12 +57,10 @@
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Navigate to http://localhost/washtabui/home as a guest user.",
-        "Wait for the Home page to load completely.",
-        "Locate the Notification button.",
-        "Observe the visibility and enabled state of the Notification button."
+        "Navigate directly to http://localhost/washtabui/home.",
+        "Observe the Notification button on the Home page."
       ],
-      "expectedResult": "The Notification button is visible, enabled, and available for interaction on the Home page in guest state."
+      "expectedResult": "The Notification button is visible, enabled, and interactive before user interaction begins."
     },
     {
       "id": "HOME_TC_005",
@@ -76,12 +69,10 @@
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Navigate to http://localhost/washtabui/home as a guest user.",
-        "Wait for the Home page to load completely.",
-        "Locate the Home button.",
-        "Observe the visibility and enabled state of the Home button."
+        "Navigate directly to http://localhost/washtabui/home.",
+        "Observe the Home button on the Home page."
       ],
-      "expectedResult": "The Home button is visible, enabled, and available for interaction on the Home page in guest state."
+      "expectedResult": "The Home button is visible, enabled, and interactive before user interaction begins."
     },
     {
       "id": "HOME_TC_006",
@@ -90,12 +81,10 @@
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Navigate to http://localhost/washtabui/home as a guest user.",
-        "Wait for the Home page to load completely.",
-        "Locate the Customer signup button.",
-        "Observe the visibility and enabled state of the Customer signup button."
+        "Navigate directly to http://localhost/washtabui/home.",
+        "Observe the Customer signup button on the Home page."
       ],
-      "expectedResult": "The Customer signup button is visible, enabled, and available for interaction on the Home page in guest state."
+      "expectedResult": "The Customer signup button is visible, enabled, and interactive before user interaction begins."
     },
     {
       "id": "HOME_TC_007",
@@ -104,12 +93,10 @@
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Navigate to http://localhost/washtabui/home as a guest user.",
-        "Wait for the Home page to load completely.",
-        "Locate the Clean survey button.",
-        "Observe the visibility and enabled state of the Clean survey button."
+        "Navigate directly to http://localhost/washtabui/home.",
+        "Observe the Clean survey button on the Home page."
       ],
-      "expectedResult": "The Clean survey button is visible, enabled, and available for interaction on the Home page in guest state."
+      "expectedResult": "The Clean survey button is visible, enabled, and interactive before user interaction begins."
     },
     {
       "id": "HOME_TC_008",
@@ -118,68 +105,58 @@
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Navigate to http://localhost/washtabui/home as a guest user.",
-        "Wait for the Home page to load completely.",
-        "Locate the Site survey button.",
-        "Observe the visibility and enabled state of the Site survey button."
+        "Navigate directly to http://localhost/washtabui/home.",
+        "Observe the Site survey button on the Home page."
       ],
-      "expectedResult": "The Site survey button is visible, enabled, and available for interaction on the Home page in guest state."
+      "expectedResult": "The Site survey button is visible, enabled, and interactive before user interaction begins."
     },
     {
       "id": "HOME_TC_009",
-      "title": "Verify clicking the Person/Profile button navigates the guest user to the login page URL",
+      "title": "Verify selecting the Person/Profile button navigates the guest user to the login page URL",
       "type": "Positive",
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Navigate to http://localhost/washtabui/home as a guest user.",
-        "Wait for the Home page controls to become interactive.",
-        "Click the Person/Profile button once.",
-        "Observe the resulting browser URL."
+        "Navigate directly to http://localhost/washtabui/home.",
+        "Click the Person/Profile button once."
       ],
-      "expectedResult": "The application transitions from the Home page to the login page and the resulting URL is exactly /washtabui/login?data=undefined."
+      "expectedResult": "The application transitions from the Home page to the login page and the browser URL equals /washtabui/login?data=undefined."
+    },
+    {
+      "id": "HOME_TC_010",
+      "title": "Verify selecting the Customer signup button navigates the guest user to the customer-search workflow entry URL",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Navigate directly to http://localhost/washtabui/home.",
+        "Click the Customer signup button once."
+      ],
+      "expectedResult": "The application transitions from the Home page to the customer-search workflow and the resulting URL contains /customer-search."
     },
     {
       "id": "HOME_TC_011",
-      "title": "Verify clicking the Customer signup button navigates the guest user to the customer-search workflow entry page",
+      "title": "Verify selecting the Clean survey button navigates the guest user to the vehicle-survey workflow entry URL",
       "type": "Positive",
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Navigate to http://localhost/washtabui/home as a guest user.",
-        "Wait for the Home page controls to become interactive.",
-        "Click the Customer signup button once.",
-        "Observe the resulting browser URL."
+        "Navigate directly to http://localhost/washtabui/home.",
+        "Click the Clean survey button once."
       ],
-      "expectedResult": "The application transitions from the Home page to the customer-search workflow entry page and the resulting URL contains /customer-search."
+      "expectedResult": "The application transitions from the Home page to the vehicle-survey workflow and the resulting URL contains vehicle-survey."
     },
     {
-      "id": "HOME_TC_013",
-      "title": "Verify clicking the Clean survey button navigates the guest user to the vehicle-survey workflow entry page",
+      "id": "HOME_TC_012",
+      "title": "Verify selecting the Site survey button navigates the guest user to the survey workflow entry URL",
       "type": "Positive",
       "priority": "Medium",
       "preconditions": [],
       "steps": [
-        "Navigate to http://localhost/washtabui/home as a guest user.",
-        "Wait for the Home page controls to become interactive.",
-        "Click the Clean survey button once.",
-        "Observe the resulting browser URL."
+        "Navigate directly to http://localhost/washtabui/home.",
+        "Click the Site survey button once."
       ],
-      "expectedResult": "The application transitions from the Home page to the vehicle-survey workflow entry page and the resulting URL contains vehicle-survey."
-    },
-    {
-      "id": "HOME_TC_015",
-      "title": "Verify clicking the Site survey button navigates the guest user to the survey workflow entry page",
-      "type": "Positive",
-      "priority": "Medium",
-      "preconditions": [],
-      "steps": [
-        "Navigate to http://localhost/washtabui/home as a guest user.",
-        "Wait for the Home page controls to become interactive.",
-        "Click the Site survey button once.",
-        "Observe the resulting browser URL."
-      ],
-      "expectedResult": "The application transitions from the Home page to the survey workflow entry page and the resulting URL contains survey?data."
+      "expectedResult": "The application transitions from the Home page to the survey workflow and the resulting URL contains survey?data."
     }
   ]
 }
