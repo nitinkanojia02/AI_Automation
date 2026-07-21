@@ -189,6 +189,53 @@ def select_relevant_lines(values: List[str], keywords: List[str], limit: int = 1
     return unique_strings(values, limit=limit)
 
 
+def compact_story_lines(values: List[str], limit: int = 12) -> List[str]:
+    compacted: List[str] = []
+    for item in unique_strings(values):
+        cleaned = clean_text(item)
+        if not cleaned:
+            continue
+        if len(cleaned) > 320 and " - " in cleaned:
+            segments = [clean_text(part) for part in cleaned.split(" - ") if clean_text(part)]
+            for segment in segments:
+                if segment and len(segment) <= 240:
+                    compacted.append(segment)
+                if len(compacted) >= limit:
+                    return unique_strings(compacted, limit=limit)
+            continue
+        compacted.append(cleaned)
+        if len(compacted) >= limit:
+            break
+    return unique_strings(compacted, limit=limit)
+
+
+def extract_story_urls(story_sections: Dict[str, List[str]]) -> List[str]:
+    urls: List[str] = []
+    for section_values in story_sections.values():
+        for item in ensure_list(section_values):
+            for match in re.findall(r"https?://[^\s)]+", str(item or "")):
+                cleaned = clean_text(match)
+                if cleaned:
+                    urls.append(cleaned)
+    return unique_strings(urls, limit=10)
+
+
+def looks_like_journey_action(value: str) -> bool:
+    cleaned = clean_text(value)
+    if not cleaned:
+        return False
+    lowered = cleaned.lower()
+    if lowered.startswith("as a ") or lowered.startswith("i want ") or lowered.startswith("so that "):
+        return False
+    if lowered.startswith("this workflow") or lowered.startswith("workflow scope"):
+        return False
+    if lowered in {"user story", "application context", "entry conditions", "workflow scope", "primary navigation journey", "approved test data", "page / component elements", "business rules", "validation expectations", "transition expectations", "resource reuse guidance", "downstream automation guidance", "acceptance criteria"}:
+        return False
+    if cleaned.endswith(":"):
+        return False
+    return len(cleaned.split()) >= 3
+
+
 def collect_workflow_story_lines(workflow_input: Dict[str, Any]) -> Dict[str, List[str]]:
     external = workflow_input.get("externalContext") if isinstance(workflow_input.get("externalContext"), dict) else {}
     story_blob = unique_strings([
@@ -208,23 +255,23 @@ def collect_workflow_story_lines(workflow_input: Dict[str, Any]) -> Dict[str, Li
         limit=20,
     )
     return {
-        "userStory": story_lines[:12],
-        "applicationContext": select_relevant_lines(story_lines + normalize_text_blocks(external.get("applicationContext")), ["application", "spa", "landing", "state", "page", "url"], limit=10),
-        "entryConditions": unique_strings(
+        "userStory": compact_story_lines(story_lines, limit=12),
+        "applicationContext": compact_story_lines(select_relevant_lines(story_lines + normalize_text_blocks(external.get("applicationContext")), ["application", "spa", "landing", "state", "page", "url"], limit=10), limit=10),
+        "entryConditions": compact_story_lines(unique_strings(
             normalize_text_blocks(external.get("entryConditions"))
             + normalize_text_blocks(workflow_input.get("observedPreconditions")),
             limit=10,
-        ),
-        "acceptanceCriteria": acceptance,
-        "behaviorRules": unique_strings(
+        ), limit=10),
+        "acceptanceCriteria": compact_story_lines(acceptance, limit=20),
+        "behaviorRules": compact_story_lines(unique_strings(
             normalize_text_blocks(external.get("behaviorRules"))
             + select_relevant_lines(story_lines, ["should", "must", "only", "required", "masked", "authenticate", "remain", "return"], limit=12),
             limit=14,
-        ),
-        "validationExpectations": validation_expectations,
-        "transitionExpectations": unique_strings(normalize_text_blocks(external.get("transitionExpectations")), limit=12),
-        "reuseGuidance": unique_strings(normalize_text_blocks(external.get("pomReuseGuidance")), limit=12),
-        "approvedTestDataGuidance": unique_strings(normalize_text_blocks(external.get("approvedTestDataGuidance")), limit=12),
+        ), limit=14),
+        "validationExpectations": compact_story_lines(validation_expectations, limit=20),
+        "transitionExpectations": compact_story_lines(unique_strings(normalize_text_blocks(external.get("transitionExpectations")), limit=12), limit=12),
+        "reuseGuidance": compact_story_lines(unique_strings(normalize_text_blocks(external.get("pomReuseGuidance")), limit=12), limit=12),
+        "approvedTestDataGuidance": compact_story_lines(unique_strings(normalize_text_blocks(external.get("approvedTestDataGuidance")), limit=12), limit=12),
     }
 
 
@@ -254,6 +301,12 @@ def derive_navigation_model(workflow_input: Dict[str, Any], story_sections: Dict
     if not inferred_target_url:
         inferred_target_url = clean_text(target_page.get("url"))
 
+    story_urls = extract_story_urls(story_sections)
+    if not inferred_entry_url and story_urls:
+        inferred_entry_url = story_urls[0]
+    if not inferred_target_url and story_urls:
+        inferred_target_url = story_urls[0]
+
     journey: List[Dict[str, str]] = []
     for step in ensure_list(workflow_input.get("navigationSteps")):
         if not isinstance(step, dict):
@@ -270,8 +323,13 @@ def derive_navigation_model(workflow_input: Dict[str, Any], story_sections: Dict
         })
 
     if not journey:
-        candidate_lines = story_sections.get("acceptanceCriteria", []) + story_sections.get("reuseGuidance", []) + story_sections.get("transitionExpectations", [])
+        candidate_lines = compact_story_lines(
+            story_sections.get("acceptanceCriteria", []) + story_sections.get("reuseGuidance", []) + story_sections.get("transitionExpectations", []),
+            limit=16,
+        )
         for line in candidate_lines:
+            if not looks_like_journey_action(line):
+                continue
             page_name = inferred_target_name or inferred_entry_name
             lowered = line.lower()
             if inferred_target_name and inferred_target_name.lower() in lowered:
@@ -559,7 +617,7 @@ def build_workflow_knowledge_context(workflow_input: Dict[str, Any]) -> Dict[str
 
     direct_access_policy = "must_use_entry_journey" if navigation_model.get('journey') else "direct_access_allowed"
 
-    entry_journey = unique_strings(
+    entry_journey = compact_story_lines(unique_strings(
         [
             item.get('action', '')
             for item in navigation_model.get('journey', [])
@@ -571,25 +629,25 @@ def build_workflow_knowledge_context(workflow_input: Dict[str, Any]) -> Dict[str
             limit=10,
         ),
         limit=10,
-    )
+    ), limit=10)
 
-    success_destination = unique_strings(
+    success_destination = compact_story_lines(unique_strings(
         select_relevant_lines(
             story_sections.get('transitionExpectations', []) + story_sections.get('validationExpectations', []) + story_sections.get('acceptanceCriteria', []),
             [],
             limit=8,
         ),
         limit=8,
-    )
+    ), limit=8)
 
-    return_destinations = unique_strings(
+    return_destinations = compact_story_lines(unique_strings(
         select_relevant_lines(
             story_sections.get('transitionExpectations', []) + story_sections.get('acceptanceCriteria', []) + story_sections.get('reuseGuidance', []),
             [],
             limit=8,
         ),
         limit=8,
-    )
+    ), limit=8)
 
     return {
         'workflowName': clean_text(enriched_workflow_input.get('workflowName')) or workflow_slug,

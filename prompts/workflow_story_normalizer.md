@@ -51,6 +51,7 @@ Content rules:
 - Prefer action-oriented and state-oriented statements over copied story prose when describing navigation, transitions, and validations
 - Keep each navigation or transition fact self-contained and executable in meaning; avoid broken sentence fragments, half-bullets, or clauses that require adjacent lines to make sense
 - Keep navigation journeys as ordered business actions and page/state transitions, not as repeated narrative/story prose
+- Preserve approved direct URLs and explicit entry URLs exactly when they are provided in the input; do not drop them during normalization
 - When a page is reached indirectly through an upstream page or shared shell flow, make that entry journey explicit without inventing direct URLs or direct-open behavior
 - If expected behavior is intentionally observational or implementation-dependent, preserve that wording neutrally instead of resolving it into a hardcoded outcome
 - Preserve business-observable outcomes over implementation wording

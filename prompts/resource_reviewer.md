@@ -49,7 +49,9 @@ Framework expectations:
 - Flag noisy derived variables when built-ins or inline composition would be sufficient
 - Flag duplicate variable ownership, duplicate keyword capability, and overlapping ownership when the same locator or same normalized keyword behavior already exists in approved resource context
 - Flag reviewed-to-final naming instability when the draft resource reintroduces extraction-era aliases, technical DOM-id aliases, or inconsistent variable names for controls that already have cleaner approved semantic names in reviewed artifacts
+- Flag reviewed-keyword implementation drift when approved reviewed keywords still reference stale alias variables while the same retained controls already have clearer approved semantic variable names
 - Flag placeholder data quality issues such as page-url variables serialized as literal "None" when direct URL access is absent or optional; prefer null/omitted semantics instead of fake reusable values
+- Flag loss of an approved direct page URL when upstream workflow context or approved lineage clearly provides that page URL
 - Flag divergence between approved reviewed-keyword variable naming and final resource naming when both artifacts are describing the same retained page controls or same approved page capability
 
 Flag as a major quality issue if:

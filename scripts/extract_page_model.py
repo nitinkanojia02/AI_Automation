@@ -960,6 +960,15 @@ def load_reviewed_keyword_artifact(page_name: str, metadata_dir: Path) -> dict:
     return {}
 
 
+def normalize_placeholder_page_url(value: str) -> str:
+    cleaned = clean_text(value)
+    if not cleaned:
+        return ""
+    if cleaned.lower() in {"none", "null", "n/a", "na"}:
+        return ""
+    return cleaned
+
+
 def _normalize_keyword_implementation_lines(lines: object) -> List[str]:
     if isinstance(lines, str):
         raw_lines = lines.splitlines()
@@ -1003,6 +1012,7 @@ def normalize_reviewed_keyword_block(keyword: dict) -> str:
 def generate_resource(url: str, elements: List[dict], page_name: str = "", metadata_dir: Path | None = None) -> str:
     used_names, variables = set(), []
     fallback_keyword_blocks: List[dict] = []
+    normalized_page_url = normalize_placeholder_page_url(url)
 
     for item in elements:
         if isinstance(item, dict) and {"name", "type", "locator"}.issubset(item.keys()):
@@ -1038,6 +1048,8 @@ def generate_resource(url: str, elements: List[dict], page_name: str = "", metad
 Resource    ../../resources/common_keywords.resource"""
 
     variables_block = "*** Variables ***"
+    if normalized_page_url:
+        variables_block += f"\n${{PAGE_URL}}    {normalized_page_url}"
     if variables:
         variables_block += "\n" + "\n".join(variables)
 
@@ -1062,6 +1074,15 @@ Resource    ../../resources/common_keywords.resource"""
             logger.info(
                 "Fallback element-derived keyword names differ from reviewed approved names for %s; reviewed names were preferred during resource generation.",
                 page_name,
+            )
+
+        reviewed_keyword_text = "\n".join(reviewed_keywords)
+        legacy_alias_refs = sorted(set(re.findall(r"\$\{(AUTO_[A-Z0-9_]+)\}", reviewed_keyword_text)))
+        if legacy_alias_refs:
+            logger.warning(
+                "Reviewed approved keyword implementations for %s still reference legacy alias variables instead of canonical semantic variables: %s",
+                page_name,
+                ", ".join(legacy_alias_refs[:10]),
             )
 
     return f"{settings_block}\n\n{variables_block}\n\n{keywords_block}\n"
