@@ -1156,11 +1156,15 @@ def warn_on_assertion_quality(manual_expected_outcomes: list[str], robot_content
     if not manual_expected_outcomes or not resource_validation_keywords:
         return ""
 
-    same_page_checks = len(re.findall(r"(?im)\b(location should be|location should contain)\b", robot_content))
-    stronger_verify_checks = len(re.findall(r"(?im)^\s*(Verify|Validate)\b", robot_content))
+    lines = [line for line in robot_content.splitlines() if clean_text(line)]
+    if not lines:
+        return ""
 
-    if same_page_checks >= 2 and stronger_verify_checks <= 2:
-        return "Generated suite may rely on weak same-page assertions even though approved validation keywords appear to be available"
+    stronger_verify_checks = sum(1 for line in lines if clean_text(line).startswith(("Verify ", "Validate ")))
+    low_level_steps = sum(1 for line in lines if line.startswith(("    ", "\t")) and clean_text(line) and not clean_text(line).startswith("["))
+
+    if low_level_steps >= 6 and stronger_verify_checks == 0:
+        return "Generated suite may rely on low-level assertions even though approved validation keywords appear to be available"
     return ""
 
 
