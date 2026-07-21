@@ -6,7 +6,7 @@
   "applicationCode": "WT",
   "testIdentifierPrefix": "HOME",
   "status": "approved_artifact_memory",
-  "generatedAt": "2026-07-21T07:36:02.029868+00:00",
+  "generatedAt": "2026-07-21T07:50:48.696467+00:00",
   "businessContext": {
     "userStory": [
       "Home Feature - Guest State",
@@ -207,15 +207,16 @@
         "variableNames": [
           "PAGE_URL",
           "HOME_PAGE_PATH",
+          "EXPECTED_HOME_STATE",
+          "EXPECTED_UNAUTHENTICATED_STATE",
           "LOGIN_PAGE_IDENTIFIER",
+          "EXPECTED_LOGIN_DESTINATION",
           "CUSTOMER_SEARCH_PAGE_IDENTIFIER",
+          "EXPECTED_CUSTOMER_SEARCH_DESTINATION",
           "VEHICLE_SURVEY_PAGE_IDENTIFIER",
+          "EXPECTED_VEHICLE_SURVEY_DESTINATION",
           "SURVEY_PAGE_IDENTIFIER",
-          "HOME_GUEST_STATE_NAME",
-          "LOGIN_VIEW_NAME",
-          "CUSTOMER_SEARCH_PAGE_NAME",
-          "VEHICLE_SURVEY_PAGE_NAME",
-          "SURVEY_PAGE_NAME",
+          "EXPECTED_SURVEY_DESTINATION",
           "PERSON_PROFILE_BUTTON",
           "BACK_BUTTON",
           "NOTIFICATION_BUTTON",
@@ -225,15 +226,16 @@
           "SITE_SURVEY_BUTTON"
         ],
         "keywordNames": [
-          "Open Home Page",
-          "Verify Home Guest State Loaded",
-          "Verify Guest State Controls Visible And Enabled",
+          "Open Home Page In Guest State",
+          "Verify Home Page Loaded In Guest State",
+          "Verify Guest State Controls Are Visible",
+          "Verify Guest State Controls Are Enabled",
           "Verify Login Page Opened",
           "Verify Customer Search Page Opened",
           "Verify Vehicle Survey Page Opened",
           "Verify Survey Page Opened",
           "Verify Home Page Remains In Guest State",
-          "Click Person Profile Button",
+          "Click Person Button",
           "Click Back Button",
           "Click Notification Button",
           "Click Home Button",
@@ -267,15 +269,16 @@
         "variables": [
           "PAGE_URL",
           "HOME_PAGE_PATH",
+          "EXPECTED_HOME_STATE",
+          "EXPECTED_UNAUTHENTICATED_STATE",
           "LOGIN_PAGE_IDENTIFIER",
+          "EXPECTED_LOGIN_DESTINATION",
           "CUSTOMER_SEARCH_PAGE_IDENTIFIER",
+          "EXPECTED_CUSTOMER_SEARCH_DESTINATION",
           "VEHICLE_SURVEY_PAGE_IDENTIFIER",
+          "EXPECTED_VEHICLE_SURVEY_DESTINATION",
           "SURVEY_PAGE_IDENTIFIER",
-          "HOME_GUEST_STATE_NAME",
-          "LOGIN_VIEW_NAME",
-          "CUSTOMER_SEARCH_PAGE_NAME",
-          "VEHICLE_SURVEY_PAGE_NAME",
-          "SURVEY_PAGE_NAME",
+          "EXPECTED_SURVEY_DESTINATION",
           "PERSON_PROFILE_BUTTON",
           "BACK_BUTTON",
           "NOTIFICATION_BUTTON",
@@ -285,15 +288,16 @@
           "SITE_SURVEY_BUTTON"
         ],
         "keywords": [
-          "Open Home Page",
-          "Verify Home Guest State Loaded",
-          "Verify Guest State Controls Visible And Enabled",
+          "Open Home Page In Guest State",
+          "Verify Home Page Loaded In Guest State",
+          "Verify Guest State Controls Are Visible",
+          "Verify Guest State Controls Are Enabled",
           "Verify Login Page Opened",
           "Verify Customer Search Page Opened",
           "Verify Vehicle Survey Page Opened",
           "Verify Survey Page Opened",
           "Verify Home Page Remains In Guest State",
-          "Click Person Profile Button",
+          "Click Person Button",
           "Click Back Button",
           "Click Notification Button",
           "Click Home Button",
@@ -326,12 +330,42 @@
           ]
         },
         {
+          "candidateName": "EXPECTED_HOME_STATE",
+          "locator": "guest state",
+          "existingOwners": [
+            {
+              "resource": "pom_pages/home_page/home_page.resource",
+              "name": "EXPECTED_HOME_STATE"
+            }
+          ]
+        },
+        {
+          "candidateName": "EXPECTED_UNAUTHENTICATED_STATE",
+          "locator": "unauthenticated",
+          "existingOwners": [
+            {
+              "resource": "pom_pages/home_page/home_page.resource",
+              "name": "EXPECTED_UNAUTHENTICATED_STATE"
+            }
+          ]
+        },
+        {
           "candidateName": "LOGIN_PAGE_IDENTIFIER",
           "locator": "login",
           "existingOwners": [
             {
               "resource": "pom_pages/home_page/home_page.resource",
               "name": "LOGIN_PAGE_IDENTIFIER"
+            }
+          ]
+        },
+        {
+          "candidateName": "EXPECTED_LOGIN_DESTINATION",
+          "locator": "login page or login view",
+          "existingOwners": [
+            {
+              "resource": "pom_pages/home_page/home_page.resource",
+              "name": "EXPECTED_LOGIN_DESTINATION"
             }
           ]
         },
@@ -346,12 +380,32 @@
           ]
         },
         {
+          "candidateName": "EXPECTED_CUSTOMER_SEARCH_DESTINATION",
+          "locator": "customer-search page",
+          "existingOwners": [
+            {
+              "resource": "pom_pages/home_page/home_page.resource",
+              "name": "EXPECTED_CUSTOMER_SEARCH_DESTINATION"
+            }
+          ]
+        },
+        {
           "candidateName": "VEHICLE_SURVEY_PAGE_IDENTIFIER",
           "locator": "vehicle-survey",
           "existingOwners": [
             {
               "resource": "pom_pages/home_page/home_page.resource",
               "name": "VEHICLE_SURVEY_PAGE_IDENTIFIER"
+            }
+          ]
+        },
+        {
+          "candidateName": "EXPECTED_VEHICLE_SURVEY_DESTINATION",
+          "locator": "vehicle-survey page",
+          "existingOwners": [
+            {
+              "resource": "pom_pages/home_page/home_page.resource",
+              "name": "EXPECTED_VEHICLE_SURVEY_DESTINATION"
             }
           ]
         },
@@ -366,52 +420,12 @@
           ]
         },
         {
-          "candidateName": "HOME_GUEST_STATE_NAME",
-          "locator": "home page guest state",
-          "existingOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "HOME_GUEST_STATE_NAME"
-            }
-          ]
-        },
-        {
-          "candidateName": "LOGIN_VIEW_NAME",
-          "locator": "login page or login view",
-          "existingOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "LOGIN_VIEW_NAME"
-            }
-          ]
-        },
-        {
-          "candidateName": "CUSTOMER_SEARCH_PAGE_NAME",
-          "locator": "customer-search page",
-          "existingOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "CUSTOMER_SEARCH_PAGE_NAME"
-            }
-          ]
-        },
-        {
-          "candidateName": "VEHICLE_SURVEY_PAGE_NAME",
-          "locator": "vehicle-survey page",
-          "existingOwners": [
-            {
-              "resource": "pom_pages/home_page/home_page.resource",
-              "name": "VEHICLE_SURVEY_PAGE_NAME"
-            }
-          ]
-        },
-        {
-          "candidateName": "SURVEY_PAGE_NAME",
+          "candidateName": "EXPECTED_SURVEY_DESTINATION",
           "locator": "survey page",
           "existingOwners": [
             {
               "resource": "pom_pages/home_page/home_page.resource",
-              "name": "SURVEY_PAGE_NAME"
+              "name": "EXPECTED_SURVEY_DESTINATION"
             }
           ]
         },
@@ -488,65 +502,86 @@
       ],
       "duplicateKeywords": [
         {
-          "candidateName": "Open Home Page",
+          "candidateName": "Open Home Page In Guest State",
           "sameNameOwners": [
             {
               "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Open Home Page"
+              "name": "Open Home Page In Guest State"
             }
           ],
           "sameBodyOwners": [
             {
               "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Open Home Page"
+              "name": "Open Home Page In Guest State"
             }
           ],
           "sameSignatureOwners": [
             {
               "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Open Home Page"
+              "name": "Open Home Page In Guest State"
             }
           ]
         },
         {
-          "candidateName": "Verify Home Guest State Loaded",
+          "candidateName": "Verify Home Page Loaded In Guest State",
           "sameNameOwners": [
             {
               "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify Home Guest State Loaded"
+              "name": "Verify Home Page Loaded In Guest State"
             }
           ],
           "sameBodyOwners": [
             {
               "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify Home Guest State Loaded"
+              "name": "Verify Home Page Loaded In Guest State"
             }
           ],
           "sameSignatureOwners": [
             {
               "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify Home Guest State Loaded"
+              "name": "Verify Home Page Loaded In Guest State"
             }
           ]
         },
         {
-          "candidateName": "Verify Guest State Controls Visible And Enabled",
+          "candidateName": "Verify Guest State Controls Are Visible",
           "sameNameOwners": [
             {
               "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify Guest State Controls Visible And Enabled"
+              "name": "Verify Guest State Controls Are Visible"
             }
           ],
           "sameBodyOwners": [
             {
               "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify Guest State Controls Visible And Enabled"
+              "name": "Verify Guest State Controls Are Visible"
             }
           ],
           "sameSignatureOwners": [
             {
               "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Verify Guest State Controls Visible And Enabled"
+              "name": "Verify Guest State Controls Are Visible"
+            }
+          ]
+        },
+        {
+          "candidateName": "Verify Guest State Controls Are Enabled",
+          "sameNameOwners": [
+            {
+              "resource": "pom_pages/home_page/home_page.resource",
+              "name": "Verify Guest State Controls Are Enabled"
+            }
+          ],
+          "sameBodyOwners": [
+            {
+              "resource": "pom_pages/home_page/home_page.resource",
+              "name": "Verify Guest State Controls Are Enabled"
+            }
+          ],
+          "sameSignatureOwners": [
+            {
+              "resource": "pom_pages/home_page/home_page.resource",
+              "name": "Verify Guest State Controls Are Enabled"
             }
           ]
         },
@@ -656,23 +691,23 @@
           ]
         },
         {
-          "candidateName": "Click Person Profile Button",
+          "candidateName": "Click Person Button",
           "sameNameOwners": [
             {
               "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Click Person Profile Button"
+              "name": "Click Person Button"
             }
           ],
           "sameBodyOwners": [
             {
               "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Click Person Profile Button"
+              "name": "Click Person Button"
             }
           ],
           "sameSignatureOwners": [
             {
               "resource": "pom_pages/home_page/home_page.resource",
-              "name": "Click Person Profile Button"
+              "name": "Click Person Button"
             }
           ]
         },
@@ -821,10 +856,34 @@
           "reason": "Same locator already exists in approved resource context."
         },
         {
+          "candidateName": "EXPECTED_HOME_STATE",
+          "reuseFrom": {
+            "resource": "pom_pages/home_page/home_page.resource",
+            "name": "EXPECTED_HOME_STATE"
+          },
+          "reason": "Same locator already exists in approved resource context."
+        },
+        {
+          "candidateName": "EXPECTED_UNAUTHENTICATED_STATE",
+          "reuseFrom": {
+            "resource": "pom_pages/home_page/home_page.resource",
+            "name": "EXPECTED_UNAUTHENTICATED_STATE"
+          },
+          "reason": "Same locator already exists in approved resource context."
+        },
+        {
           "candidateName": "LOGIN_PAGE_IDENTIFIER",
           "reuseFrom": {
             "resource": "pom_pages/home_page/home_page.resource",
             "name": "LOGIN_PAGE_IDENTIFIER"
+          },
+          "reason": "Same locator already exists in approved resource context."
+        },
+        {
+          "candidateName": "EXPECTED_LOGIN_DESTINATION",
+          "reuseFrom": {
+            "resource": "pom_pages/home_page/home_page.resource",
+            "name": "EXPECTED_LOGIN_DESTINATION"
           },
           "reason": "Same locator already exists in approved resource context."
         },
@@ -837,10 +896,26 @@
           "reason": "Same locator already exists in approved resource context."
         },
         {
+          "candidateName": "EXPECTED_CUSTOMER_SEARCH_DESTINATION",
+          "reuseFrom": {
+            "resource": "pom_pages/home_page/home_page.resource",
+            "name": "EXPECTED_CUSTOMER_SEARCH_DESTINATION"
+          },
+          "reason": "Same locator already exists in approved resource context."
+        },
+        {
           "candidateName": "VEHICLE_SURVEY_PAGE_IDENTIFIER",
           "reuseFrom": {
             "resource": "pom_pages/home_page/home_page.resource",
             "name": "VEHICLE_SURVEY_PAGE_IDENTIFIER"
+          },
+          "reason": "Same locator already exists in approved resource context."
+        },
+        {
+          "candidateName": "EXPECTED_VEHICLE_SURVEY_DESTINATION",
+          "reuseFrom": {
+            "resource": "pom_pages/home_page/home_page.resource",
+            "name": "EXPECTED_VEHICLE_SURVEY_DESTINATION"
           },
           "reason": "Same locator already exists in approved resource context."
         },
@@ -853,42 +928,10 @@
           "reason": "Same locator already exists in approved resource context."
         },
         {
-          "candidateName": "HOME_GUEST_STATE_NAME",
+          "candidateName": "EXPECTED_SURVEY_DESTINATION",
           "reuseFrom": {
             "resource": "pom_pages/home_page/home_page.resource",
-            "name": "HOME_GUEST_STATE_NAME"
-          },
-          "reason": "Same locator already exists in approved resource context."
-        },
-        {
-          "candidateName": "LOGIN_VIEW_NAME",
-          "reuseFrom": {
-            "resource": "pom_pages/home_page/home_page.resource",
-            "name": "LOGIN_VIEW_NAME"
-          },
-          "reason": "Same locator already exists in approved resource context."
-        },
-        {
-          "candidateName": "CUSTOMER_SEARCH_PAGE_NAME",
-          "reuseFrom": {
-            "resource": "pom_pages/home_page/home_page.resource",
-            "name": "CUSTOMER_SEARCH_PAGE_NAME"
-          },
-          "reason": "Same locator already exists in approved resource context."
-        },
-        {
-          "candidateName": "VEHICLE_SURVEY_PAGE_NAME",
-          "reuseFrom": {
-            "resource": "pom_pages/home_page/home_page.resource",
-            "name": "VEHICLE_SURVEY_PAGE_NAME"
-          },
-          "reason": "Same locator already exists in approved resource context."
-        },
-        {
-          "candidateName": "SURVEY_PAGE_NAME",
-          "reuseFrom": {
-            "resource": "pom_pages/home_page/home_page.resource",
-            "name": "SURVEY_PAGE_NAME"
+            "name": "EXPECTED_SURVEY_DESTINATION"
           },
           "reason": "Same locator already exists in approved resource context."
         },
@@ -951,26 +994,34 @@
       ],
       "keywordReuseCandidates": [
         {
-          "candidateName": "Open Home Page",
+          "candidateName": "Open Home Page In Guest State",
           "reuseFrom": {
             "resource": "pom_pages/home_page/home_page.resource",
-            "name": "Open Home Page"
+            "name": "Open Home Page In Guest State"
           },
           "reason": "Same keyword name, normalized implementation, or semantic signature already exists in approved resource context."
         },
         {
-          "candidateName": "Verify Home Guest State Loaded",
+          "candidateName": "Verify Home Page Loaded In Guest State",
           "reuseFrom": {
             "resource": "pom_pages/home_page/home_page.resource",
-            "name": "Verify Home Guest State Loaded"
+            "name": "Verify Home Page Loaded In Guest State"
           },
           "reason": "Same keyword name, normalized implementation, or semantic signature already exists in approved resource context."
         },
         {
-          "candidateName": "Verify Guest State Controls Visible And Enabled",
+          "candidateName": "Verify Guest State Controls Are Visible",
           "reuseFrom": {
             "resource": "pom_pages/home_page/home_page.resource",
-            "name": "Verify Guest State Controls Visible And Enabled"
+            "name": "Verify Guest State Controls Are Visible"
+          },
+          "reason": "Same keyword name, normalized implementation, or semantic signature already exists in approved resource context."
+        },
+        {
+          "candidateName": "Verify Guest State Controls Are Enabled",
+          "reuseFrom": {
+            "resource": "pom_pages/home_page/home_page.resource",
+            "name": "Verify Guest State Controls Are Enabled"
           },
           "reason": "Same keyword name, normalized implementation, or semantic signature already exists in approved resource context."
         },
@@ -1015,10 +1066,10 @@
           "reason": "Same keyword name, normalized implementation, or semantic signature already exists in approved resource context."
         },
         {
-          "candidateName": "Click Person Profile Button",
+          "candidateName": "Click Person Button",
           "reuseFrom": {
             "resource": "pom_pages/home_page/home_page.resource",
-            "name": "Click Person Profile Button"
+            "name": "Click Person Button"
           },
           "reason": "Same keyword name, normalized implementation, or semantic signature already exists in approved resource context."
         },
@@ -1092,12 +1143,39 @@
         },
         {
           "type": "shared_locator_semantic_overlap",
+          "candidateName": "EXPECTED_HOME_STATE",
+          "existingOwner": {
+            "resource": "pom_pages/home_page/home_page.resource",
+            "name": "EXPECTED_HOME_STATE"
+          },
+          "locator": "guest state"
+        },
+        {
+          "type": "shared_locator_semantic_overlap",
+          "candidateName": "EXPECTED_UNAUTHENTICATED_STATE",
+          "existingOwner": {
+            "resource": "pom_pages/home_page/home_page.resource",
+            "name": "EXPECTED_UNAUTHENTICATED_STATE"
+          },
+          "locator": "unauthenticated"
+        },
+        {
+          "type": "shared_locator_semantic_overlap",
           "candidateName": "LOGIN_PAGE_IDENTIFIER",
           "existingOwner": {
             "resource": "pom_pages/home_page/home_page.resource",
             "name": "LOGIN_PAGE_IDENTIFIER"
           },
           "locator": "login"
+        },
+        {
+          "type": "shared_locator_semantic_overlap",
+          "candidateName": "EXPECTED_LOGIN_DESTINATION",
+          "existingOwner": {
+            "resource": "pom_pages/home_page/home_page.resource",
+            "name": "EXPECTED_LOGIN_DESTINATION"
+          },
+          "locator": "login page or login view"
         },
         {
           "type": "shared_locator_semantic_overlap",
@@ -1110,12 +1188,30 @@
         },
         {
           "type": "shared_locator_semantic_overlap",
+          "candidateName": "EXPECTED_CUSTOMER_SEARCH_DESTINATION",
+          "existingOwner": {
+            "resource": "pom_pages/home_page/home_page.resource",
+            "name": "EXPECTED_CUSTOMER_SEARCH_DESTINATION"
+          },
+          "locator": "customer-search page"
+        },
+        {
+          "type": "shared_locator_semantic_overlap",
           "candidateName": "VEHICLE_SURVEY_PAGE_IDENTIFIER",
           "existingOwner": {
             "resource": "pom_pages/home_page/home_page.resource",
             "name": "VEHICLE_SURVEY_PAGE_IDENTIFIER"
           },
           "locator": "vehicle-survey"
+        },
+        {
+          "type": "shared_locator_semantic_overlap",
+          "candidateName": "EXPECTED_VEHICLE_SURVEY_DESTINATION",
+          "existingOwner": {
+            "resource": "pom_pages/home_page/home_page.resource",
+            "name": "EXPECTED_VEHICLE_SURVEY_DESTINATION"
+          },
+          "locator": "vehicle-survey page"
         },
         {
           "type": "shared_locator_semantic_overlap",
@@ -1128,46 +1224,10 @@
         },
         {
           "type": "shared_locator_semantic_overlap",
-          "candidateName": "HOME_GUEST_STATE_NAME",
+          "candidateName": "EXPECTED_SURVEY_DESTINATION",
           "existingOwner": {
             "resource": "pom_pages/home_page/home_page.resource",
-            "name": "HOME_GUEST_STATE_NAME"
-          },
-          "locator": "home page guest state"
-        },
-        {
-          "type": "shared_locator_semantic_overlap",
-          "candidateName": "LOGIN_VIEW_NAME",
-          "existingOwner": {
-            "resource": "pom_pages/home_page/home_page.resource",
-            "name": "LOGIN_VIEW_NAME"
-          },
-          "locator": "login page or login view"
-        },
-        {
-          "type": "shared_locator_semantic_overlap",
-          "candidateName": "CUSTOMER_SEARCH_PAGE_NAME",
-          "existingOwner": {
-            "resource": "pom_pages/home_page/home_page.resource",
-            "name": "CUSTOMER_SEARCH_PAGE_NAME"
-          },
-          "locator": "customer-search page"
-        },
-        {
-          "type": "shared_locator_semantic_overlap",
-          "candidateName": "VEHICLE_SURVEY_PAGE_NAME",
-          "existingOwner": {
-            "resource": "pom_pages/home_page/home_page.resource",
-            "name": "VEHICLE_SURVEY_PAGE_NAME"
-          },
-          "locator": "vehicle-survey page"
-        },
-        {
-          "type": "shared_locator_semantic_overlap",
-          "candidateName": "SURVEY_PAGE_NAME",
-          "existingOwner": {
-            "resource": "pom_pages/home_page/home_page.resource",
-            "name": "SURVEY_PAGE_NAME"
+            "name": "EXPECTED_SURVEY_DESTINATION"
           },
           "locator": "survey page"
         },
@@ -1238,13 +1298,13 @@
       "canonicalResourceCandidates": [
         {
           "resource": "pom_pages/home_page/home_page.resource",
-          "support": 18
+          "support": 19
         }
       ],
       "summary": {
-        "duplicateVariableCount": 18,
-        "duplicateKeywordCount": 15,
-        "ownershipConflictCount": 18
+        "duplicateVariableCount": 19,
+        "duplicateKeywordCount": 16,
+        "ownershipConflictCount": 19
       }
     }
   },
@@ -1300,141 +1360,191 @@
         "id": "HOME_TC_001",
         "title": "Verify Home page loads successfully in guest state for an unauthenticated user",
         "type": "positive",
-        "expectedResult": "The shared Home page loads successfully in guest state while the user remains unauthenticated, and guest-accessible controls are displayed without any authenticated user indicators."
+        "expectedResult": "The Home page loads successfully in guest state while the user remains unauthenticated and the shared Home page shell is visible."
       },
       {
         "id": "HOME_TC_002",
         "title": "Verify guest-state Home controls are visible and enabled on initial page load",
         "type": "positive",
-        "expectedResult": "All approved guest-state controls and shared Home shell controls are visible, enabled, focusable, and actionable from the Home page guest state."
+        "expectedResult": "The Person/Profile button, Back button, Notification button, Home button, Customer signup button, Clean survey button, and Site survey button are visible, enabled, focusable, and actionable in guest state."
       },
       {
         "id": "HOME_TC_003",
-        "title": "Verify navigation from Person/Profile button opens the Login page or Login view",
+        "title": "Verify navigation from Person/Profile button opens the Login page or Login view from Home guest state",
         "type": "positive",
-        "expectedResult": "Selecting the Person/Profile button transitions the application from the Home guest state to the Login page or Login view while preserving unauthenticated status."
+        "expectedResult": "Selecting the Person/Profile button transitions the application from Home guest state to the Login page or Login view while preserving unauthenticated state."
       },
       {
         "id": "HOME_TC_004",
         "title": "Verify navigation from Customer signup button opens the customer-search page",
         "type": "positive",
-        "expectedResult": "Selecting the Customer signup button transitions the application from the Home guest state to the customer-search page without authenticating the user."
+        "expectedResult": "The application navigates from the Home guest state to the customer-search page without authenticating the user."
       },
       {
         "id": "HOME_TC_005",
         "title": "Verify navigation from Clean survey button opens the vehicle-survey page",
         "type": "positive",
-        "expectedResult": "Selecting the Clean survey button transitions the application from the Home guest state to the vehicle-survey page without changing the unauthenticated session state."
+        "expectedResult": "The application navigates from the Home guest state to the vehicle-survey page while the user remains unauthenticated."
       },
       {
         "id": "HOME_TC_006",
         "title": "Verify navigation from Site survey button opens the survey page",
         "type": "positive",
-        "expectedResult": "Selecting the Site survey button transitions the application from the Home guest state to the survey page while the user remains unauthenticated."
+        "expectedResult": "The application navigates from the Home guest state to the survey page while the user remains unauthenticated."
       },
       {
         "id": "HOME_TC_009",
-        "title": "Verify returning to the Home page preserves guest-state behavior after opening the Login view",
+        "title": "Verify navigation back to Home guest state after opening Login view from Person/Profile button",
         "type": "positive",
-        "expectedResult": "The application returns to the shared Home page in guest state, approved guest controls remain visible and enabled, and the user is still unauthenticated."
+        "expectedResult": "The application returns to the Home page guest state and the approved guest-state controls remain visible and enabled without authenticating the user."
+      },
+      {
+        "id": "HOME_TC_010",
+        "title": "Verify navigation back to Home guest state after opening customer-search page",
+        "type": "positive",
+        "expectedResult": "The Home page guest state reloads successfully and the user remains unauthenticated with guest-state controls available."
+      },
+      {
+        "id": "HOME_TC_011",
+        "title": "Verify navigation back to Home guest state after opening vehicle-survey page",
+        "type": "positive",
+        "expectedResult": "The Home page guest state is restored and all approved guest-state controls remain visible and enabled."
+      },
+      {
+        "id": "HOME_TC_012",
+        "title": "Verify navigation back to Home guest state after opening survey page",
+        "type": "positive",
+        "expectedResult": "The Home page guest state reappears correctly and the session remains unauthenticated."
+      },
+      {
+        "id": "HOME_TC_013",
+        "title": "Verify Home button remains visible and enabled throughout guest-state navigation",
+        "type": "positive",
+        "expectedResult": "The Home button remains visible and enabled across guest-state navigation flows and continues to behave as a shared Home shell control."
       },
       {
         "id": "HOME_TC_014",
-        "title": "Verify Home button remains visible and enabled in guest state",
+        "title": "Verify Back button is visible and enabled in Home guest state",
         "type": "positive",
-        "expectedResult": "The Home button is visible and enabled in guest state and selecting it keeps the application on the Home page guest state without authentication changes."
+        "expectedResult": "The Back button is visible and enabled in guest state and the application does not expose authenticated-only functionality after interaction."
       },
       {
         "id": "HOME_TC_015",
-        "title": "Verify Notification button remains visible and enabled in guest state",
+        "title": "Verify Notification button is visible and enabled in Home guest state",
         "type": "positive",
-        "expectedResult": "The Notification button is visible and enabled in guest state, and clicking it does not expose authenticated-only capabilities or change the unauthenticated session state."
+        "expectedResult": "The Notification button is visible and enabled in guest state and no authenticated-only state becomes available after interaction."
       },
       {
         "id": "HOME_TC_016",
-        "title": "Verify Back button remains visible and enabled in guest state",
-        "type": "positive",
-        "expectedResult": "The Back button is visible and enabled in guest state and does not expose authenticated-only content or cause unauthorized navigation."
+        "title": "Verify Home page remains in guest state after repeated navigation between guest-accessible pages",
+        "type": "edge",
+        "expectedResult": "Each navigation transition completes successfully and the Home page consistently returns in guest state without exposing authenticated-only controls or a logged-in user name button."
       }
     ],
     "validations": [
-      "The shared Home page loads successfully in guest state while the user remains unauthenticated, and guest-accessible controls are displayed without any authenticated user indicators.",
-      "All approved guest-state controls and shared Home shell controls are visible, enabled, focusable, and actionable from the Home page guest state.",
-      "Selecting the Person/Profile button transitions the application from the Home guest state to the Login page or Login view while preserving unauthenticated status.",
-      "Selecting the Customer signup button transitions the application from the Home guest state to the customer-search page without authenticating the user.",
-      "Selecting the Clean survey button transitions the application from the Home guest state to the vehicle-survey page without changing the unauthenticated session state.",
-      "Selecting the Site survey button transitions the application from the Home guest state to the survey page while the user remains unauthenticated.",
-      "The application returns to the shared Home page in guest state, approved guest controls remain visible and enabled, and the user is still unauthenticated.",
-      "The Home button is visible and enabled in guest state and selecting it keeps the application on the Home page guest state without authentication changes.",
-      "The Notification button is visible and enabled in guest state, and clicking it does not expose authenticated-only capabilities or change the unauthenticated session state.",
-      "The Back button is visible and enabled in guest state and does not expose authenticated-only content or cause unauthorized navigation."
+      "The Home page loads successfully in guest state while the user remains unauthenticated and the shared Home page shell is visible.",
+      "The Person/Profile button, Back button, Notification button, Home button, Customer signup button, Clean survey button, and Site survey button are visible, enabled, focusable, and actionable in guest state.",
+      "Selecting the Person/Profile button transitions the application from Home guest state to the Login page or Login view while preserving unauthenticated state.",
+      "The application navigates from the Home guest state to the customer-search page without authenticating the user.",
+      "The application navigates from the Home guest state to the vehicle-survey page while the user remains unauthenticated.",
+      "The application navigates from the Home guest state to the survey page while the user remains unauthenticated.",
+      "The application returns to the Home page guest state and the approved guest-state controls remain visible and enabled without authenticating the user.",
+      "The Home page guest state reloads successfully and the user remains unauthenticated with guest-state controls available.",
+      "The Home page guest state is restored and all approved guest-state controls remain visible and enabled.",
+      "The Home page guest state reappears correctly and the session remains unauthenticated.",
+      "The Home button remains visible and enabled across guest-state navigation flows and continues to behave as a shared Home shell control.",
+      "The Back button is visible and enabled in guest state and the application does not expose authenticated-only functionality after interaction.",
+      "The Notification button is visible and enabled in guest state and no authenticated-only state becomes available after interaction.",
+      "Each navigation transition completes successfully and the Home page consistently returns in guest state without exposing authenticated-only controls or a logged-in user name button."
     ],
     "transitions": [
-      "The shared Home page loads successfully in guest state while the user remains unauthenticated, and guest-accessible controls are displayed without any authenticated user indicators.",
-      "All approved guest-state controls and shared Home shell controls are visible, enabled, focusable, and actionable from the Home page guest state.",
-      "Selecting the Person/Profile button transitions the application from the Home guest state to the Login page or Login view while preserving unauthenticated status.",
-      "Selecting the Customer signup button transitions the application from the Home guest state to the customer-search page without authenticating the user.",
-      "Selecting the Clean survey button transitions the application from the Home guest state to the vehicle-survey page without changing the unauthenticated session state.",
-      "Selecting the Site survey button transitions the application from the Home guest state to the survey page while the user remains unauthenticated.",
-      "The application returns to the shared Home page in guest state, approved guest controls remain visible and enabled, and the user is still unauthenticated.",
-      "The Home button is visible and enabled in guest state and selecting it keeps the application on the Home page guest state without authentication changes.",
-      "The Notification button is visible and enabled in guest state, and clicking it does not expose authenticated-only capabilities or change the unauthenticated session state.",
-      "The Back button is visible and enabled in guest state and does not expose authenticated-only content or cause unauthorized navigation."
+      "The Home page loads successfully in guest state while the user remains unauthenticated and the shared Home page shell is visible.",
+      "The Person/Profile button, Back button, Notification button, Home button, Customer signup button, Clean survey button, and Site survey button are visible, enabled, focusable, and actionable in guest state.",
+      "Selecting the Person/Profile button transitions the application from Home guest state to the Login page or Login view while preserving unauthenticated state.",
+      "The application navigates from the Home guest state to the customer-search page without authenticating the user.",
+      "The application navigates from the Home guest state to the vehicle-survey page while the user remains unauthenticated.",
+      "The application navigates from the Home guest state to the survey page while the user remains unauthenticated.",
+      "The application returns to the Home page guest state and the approved guest-state controls remain visible and enabled without authenticating the user.",
+      "The Home page guest state reloads successfully and the user remains unauthenticated with guest-state controls available.",
+      "The Home page guest state is restored and all approved guest-state controls remain visible and enabled.",
+      "The Home page guest state reappears correctly and the session remains unauthenticated.",
+      "The Home button remains visible and enabled across guest-state navigation flows and continues to behave as a shared Home shell control.",
+      "The Back button is visible and enabled in guest state and the application does not expose authenticated-only functionality after interaction.",
+      "The Notification button is visible and enabled in guest state and no authenticated-only state becomes available after interaction.",
+      "Each navigation transition completes successfully and the Home page consistently returns in guest state without exposing authenticated-only controls or a logged-in user name button."
     ]
   },
   "automationKnowledge": {
     "approvedKeywords": [
       {
         "page": "home_page",
-        "name": "Click Person Button",
+        "name": "Click Auto Person Btn Button",
         "targetElement": "person_profile_button",
         "action": "click"
       },
       {
         "page": "home_page",
-        "name": "Click Back Button",
+        "name": "Click Auto Back Btn Button",
         "targetElement": "back_button",
         "action": "click"
       },
       {
         "page": "home_page",
-        "name": "Click Notification Button",
+        "name": "Click Auto Notification Btn Button",
         "targetElement": "notification_button",
         "action": "click"
       },
       {
         "page": "home_page",
-        "name": "Click Home Button",
+        "name": "Click Auto Home Btn Button",
         "targetElement": "home_button",
         "action": "click"
       },
       {
         "page": "home_page",
-        "name": "Click Customer Signup Button",
+        "name": "Click Auto Btn Customer Signup Button",
         "targetElement": "customer_signup_button",
         "action": "click"
       },
       {
         "page": "home_page",
-        "name": "Click Clean Survey Button",
+        "name": "Click Auto Btn Clean Survey Button",
         "targetElement": "clean_survey_button",
         "action": "click"
       },
       {
         "page": "home_page",
-        "name": "Click Site Survey Button",
+        "name": "Click Auto Btn Site Survey Button",
         "targetElement": "site_survey_button",
         "action": "click"
       },
       {
         "page": "home_page",
-        "name": "Verify Home Page Guest State Loaded",
+        "name": "Background Content",
+        "targetElement": "",
+        "action": "generic"
+      },
+      {
+        "page": "home_page",
+        "name": "Open Home Page In Guest State",
+        "targetElement": "",
+        "action": "generic"
+      },
+      {
+        "page": "home_page",
+        "name": "Verify Guest State Controls Are Visible",
         "targetElement": "",
         "action": "verify"
       },
       {
         "page": "home_page",
         "name": "Verify Guest State Controls Are Enabled",
+        "targetElement": "",
+        "action": "verify"
+      },
+      {
+        "page": "home_page",
+        "name": "Verify Home Page Loaded In Guest State",
         "targetElement": "",
         "action": "verify"
       }
@@ -1447,7 +1557,7 @@
         "name": "AUT-WT-HOME02: Verify guest-state Home controls are visible and enabled on initial page load"
       },
       {
-        "name": "AUT-WT-HOME03: Verify navigation from Person/Profile button opens the Login page or Login view"
+        "name": "AUT-WT-HOME03: Verify navigation from Person/Profile button opens the Login page or Login view from Home guest state"
       },
       {
         "name": "AUT-WT-HOME04: Verify navigation from Customer signup button opens the customer-search page"
@@ -1459,16 +1569,28 @@
         "name": "AUT-WT-HOME06: Verify navigation from Site survey button opens the survey page"
       },
       {
-        "name": "AUT-WT-HOME07: Verify returning to the Home page preserves guest-state behavior after opening the Login view"
+        "name": "AUT-WT-HOME07: Verify navigation back to Home guest state after opening Login view from Person/Profile button"
       },
       {
-        "name": "AUT-WT-HOME08: Verify Home button remains visible and enabled in guest state"
+        "name": "AUT-WT-HOME08: Verify navigation back to Home guest state after opening customer-search page"
       },
       {
-        "name": "AUT-WT-HOME09: Verify Notification button remains visible and enabled in guest state"
+        "name": "AUT-WT-HOME09: Verify navigation back to Home guest state after opening vehicle-survey page"
       },
       {
-        "name": "AUT-WT-HOME10: Verify Back button remains visible and enabled in guest state"
+        "name": "AUT-WT-HOME10: Verify navigation back to Home guest state after opening survey page"
+      },
+      {
+        "name": "AUT-WT-HOME11: Verify Home button remains visible and enabled throughout guest-state navigation"
+      },
+      {
+        "name": "AUT-WT-HOME12: Verify Back button is visible and enabled in Home guest state"
+      },
+      {
+        "name": "AUT-WT-HOME13: Verify Notification button is visible and enabled in Home guest state"
+      },
+      {
+        "name": "AUT-WT-HOME14: Verify Home page remains in guest state after repeated navigation between guest-accessible pages"
       }
     ],
     "wrapperExpectations": [

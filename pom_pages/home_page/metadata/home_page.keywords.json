@@ -3,7 +3,7 @@
   "keywords": [
     {
       "keywordId": "KW_001",
-      "keywordName": "Click Person Button",
+      "keywordName": "Click Auto Person Btn Button",
       "targetElement": "person_profile_button",
       "action": "click",
       "arguments": [],
@@ -14,7 +14,7 @@
     },
     {
       "keywordId": "KW_002",
-      "keywordName": "Click Back Button",
+      "keywordName": "Click Auto Back Btn Button",
       "targetElement": "back_button",
       "action": "click",
       "arguments": [],
@@ -25,7 +25,7 @@
     },
     {
       "keywordId": "KW_003",
-      "keywordName": "Click Notification Button",
+      "keywordName": "Click Auto Notification Btn Button",
       "targetElement": "notification_button",
       "action": "click",
       "arguments": [],
@@ -36,7 +36,7 @@
     },
     {
       "keywordId": "KW_004",
-      "keywordName": "Click Home Button",
+      "keywordName": "Click Auto Home Btn Button",
       "targetElement": "home_button",
       "action": "click",
       "arguments": [],
@@ -47,7 +47,7 @@
     },
     {
       "keywordId": "KW_005",
-      "keywordName": "Click Customer Signup Button",
+      "keywordName": "Click Auto Btn Customer Signup Button",
       "targetElement": "customer_signup_button",
       "action": "click",
       "arguments": [],
@@ -58,7 +58,7 @@
     },
     {
       "keywordId": "KW_006",
-      "keywordName": "Click Clean Survey Button",
+      "keywordName": "Click Auto Btn Clean Survey Button",
       "targetElement": "clean_survey_button",
       "action": "click",
       "arguments": [],
@@ -69,7 +69,7 @@
     },
     {
       "keywordId": "KW_007",
-      "keywordName": "Click Site Survey Button",
+      "keywordName": "Click Auto Btn Site Survey Button",
       "targetElement": "site_survey_button",
       "action": "click",
       "arguments": [],
@@ -80,24 +80,47 @@
     },
     {
       "keywordId": "KW_008",
-      "keywordName": "Verify Home Page Guest State Loaded",
+      "keywordName": "Background Content",
       "targetElement": "",
-      "action": "verify",
+      "action": "generic",
       "arguments": [],
       "implementation": [
-        "Wait Until Element Is Visible    ${BACKGROUND_CONTENT_ELEMENT}",
-        "    Wait For Element To Be Ready    ${AUTO_PERSON_BTN_BUTTON}",
-        "    Wait For Element To Be Ready    ${AUTO_BACK_BTN_BUTTON}",
-        "    Wait For Element To Be Ready    ${AUTO_NOTIFICATION_BTN_BUTTON}",
-        "    Wait For Element To Be Ready    ${AUTO_HOME_BTN_BUTTON}",
-        "    Wait For Element To Be Ready    ${AUTO_BTN_CUSTOMER_SIGNUP_BUTTON}",
-        "    Wait For Element To Be Ready    ${AUTO_BTN_CLEAN_SURVEY_BUTTON}",
-        "    Wait For Element To Be Ready    ${AUTO_BTN_SITE_SURVEY_BUTTON}"
+        "Wait For Element To Be Ready    ${BACKGROUND_CONTENT_ELEMENT}",
+        "    Click Element    ${BACKGROUND_CONTENT_ELEMENT}"
       ],
       "approved": true
     },
     {
       "keywordId": "KW_009",
+      "keywordName": "Open Home Page In Guest State",
+      "targetElement": "",
+      "action": "generic",
+      "arguments": [],
+      "implementation": [
+        "Open Browser To Url    ${HOME_PAGE_GUEST_STATE_URL}",
+        "    Wait For Element To Be Ready    ${BACKGROUND_CONTENT_ELEMENT}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_010",
+      "keywordName": "Verify Guest State Controls Are Visible",
+      "targetElement": "",
+      "action": "verify",
+      "arguments": [],
+      "implementation": [
+        "Wait Until Element Is Visible    ${AUTO_PERSON_BTN_BUTTON}",
+        "    Wait Until Element Is Visible    ${AUTO_BACK_BTN_BUTTON}",
+        "    Wait Until Element Is Visible    ${AUTO_NOTIFICATION_BTN_BUTTON}",
+        "    Wait Until Element Is Visible    ${AUTO_HOME_BTN_BUTTON}",
+        "    Wait Until Element Is Visible    ${AUTO_BTN_CUSTOMER_SIGNUP_BUTTON}",
+        "    Wait Until Element Is Visible    ${AUTO_BTN_CLEAN_SURVEY_BUTTON}",
+        "    Wait Until Element Is Visible    ${AUTO_BTN_SITE_SURVEY_BUTTON}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_011",
       "keywordName": "Verify Guest State Controls Are Enabled",
       "targetElement": "",
       "action": "verify",
@@ -110,6 +133,19 @@
         "    Wait Until Element Is Enabled    ${AUTO_BTN_CUSTOMER_SIGNUP_BUTTON}",
         "    Wait Until Element Is Enabled    ${AUTO_BTN_CLEAN_SURVEY_BUTTON}",
         "    Wait Until Element Is Enabled    ${AUTO_BTN_SITE_SURVEY_BUTTON}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_012",
+      "keywordName": "Verify Home Page Loaded In Guest State",
+      "targetElement": "",
+      "action": "verify",
+      "arguments": [],
+      "implementation": [
+        "Wait For Element To Be Ready    ${BACKGROUND_CONTENT_ELEMENT}",
+        "    Verify Guest State Controls Are Visible",
+        "    Verify Guest State Controls Are Enabled"
       ],
       "approved": true
     }
