@@ -8,11 +8,11 @@ ${LOGIN_PAGE_IDENTIFIER}    login
 ${CUSTOMER_SEARCH_PAGE_IDENTIFIER}    customer-search
 ${VEHICLE_SURVEY_PAGE_IDENTIFIER}    vehicle-survey
 ${SURVEY_PAGE_IDENTIFIER}    survey
+${HOME_GUEST_STATE_NAME}    Home page guest state
 ${LOGIN_VIEW_NAME}    Login page or Login view
 ${CUSTOMER_SEARCH_PAGE_NAME}    customer-search page
 ${VEHICLE_SURVEY_PAGE_NAME}    vehicle-survey page
 ${SURVEY_PAGE_NAME}    survey page
-${GUEST_STATE_NAME}    guest state
 ${PERSON_PROFILE_BUTTON}    id=auto_person_btn
 ${BACK_BUTTON}    id=auto_back_btn
 ${NOTIFICATION_BUTTON}    id=auto_notification_btn
@@ -25,10 +25,10 @@ ${SITE_SURVEY_BUTTON}    id=auto_btn_SiteSurvey
 Open Home Page
     [Documentation]    Open the Home page and verify the guest state is loaded.
     Open Browser To Url    ${PAGE_URL}
-    Verify Home Page Guest State Loaded
+    Verify Home Guest State Loaded
 
-Verify Home Page Guest State Loaded
-    [Documentation]    Verify the Home page is loaded in guest state.
+Verify Home Guest State Loaded
+    [Documentation]    Verify the Home page is loaded in guest state and approved guest controls are ready for interaction.
     ${current_url}=    Get Location
     Should Contain    ${current_url}    ${HOME_PAGE_PATH}
     Verify Guest State Controls Visible And Enabled
@@ -64,8 +64,8 @@ Verify Survey Page Opened
     Should Contain    ${current_url}    ${SURVEY_PAGE_IDENTIFIER}
 
 Verify Home Page Remains In Guest State
-    [Documentation]    Verify the application remains in Home guest state.
-    Verify Home Page Guest State Loaded
+    [Documentation]    Verify the application remains on the Home page in guest state.
+    Verify Home Guest State Loaded
 
 Click Person Profile Button
     [Documentation]    Click the Person/Profile button.
