@@ -1029,7 +1029,7 @@ def process_workflow_file(config: Dict[str, Any], input_path: Path) -> None:
         prompt=build_manual_review_prompt(generated, workflow_context),
     )
     final_json = normalize_manual_test(reviewed or generated, workflow_input)
-    is_valid, validation_message = validate_manual_content(final_json, workflow_context)
+    is_valid, validation_message = validate_manual_content(final_json)
     if validation_message:
         refinement_prompt = build_manual_refiner_prompt(generated, final_json, workflow_context)
         refined = call_devex_ai(
@@ -1038,7 +1038,7 @@ def process_workflow_file(config: Dict[str, Any], input_path: Path) -> None:
             prompt=refinement_prompt,
         )
         final_json = normalize_manual_test(refined or final_json, workflow_input)
-        is_valid, validation_message = validate_manual_content(final_json, workflow_context)
+        is_valid, validation_message = validate_manual_content(final_json)
     if not is_valid:
         raise ValueError(f"Generated invalid manual content for {input_path.name}: {validation_message}")
     if validation_message:
