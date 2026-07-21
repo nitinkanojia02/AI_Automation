@@ -1569,22 +1569,12 @@ def validate_robot_alignment_with_resource_context(content: str, resource_contex
                 warnings.append(
                     f"Test case '{clean_text(str(case.get('id') or case.get('title') or f'#{index+1}'))}' describes more than one possible observable outcome, but the generated suite ends without any verification. Add an assertion that proves at least one approved outcome branch."
                 )
-            field_property_signals = ["mask", "masked", "type=", "placeholder", "readonly", "read only", "disabled", "enabled", "hidden", "visible"]
-            expects_field_property = any(token in combined_case_text for token in field_property_signals)
-            has_field_property_verification = any(
-                any(token in step for token in ["attribute", "enabled", "disabled", "visible", "not visible", "interactable", "mask", "placeholder", "readonly", "hidden"]) for step in verification_steps
-            )
-            if expects_field_property and not has_field_property_verification:
-                warnings.append(
-                    f"Test case '{clean_text(str(case.get('id') or case.get('title') or f'#{index+1}'))}' expects a field or control property/state validation, but the generated suite does not contain an explicit property-oriented verification. Preserve the observable property assertion instead of reducing it to generic readiness or page presence only."
-                )
             if strongest_sequence and strongest_count >= max(2, len(test_step_sequences) // 2):
                 sequence_lower = strongest_sequence.lower()
-                if all(token in knowledge_blob for token in ["must be opened through the home page person/profile button", "home page", "login page"]):
-                    if all(token in sequence_lower for token in ["click person profile button", "verify login page opened"]):
-                        warnings.append(
-                            "Workflow knowledge and repeated suite structure both indicate that the dominant shared entry journey reaches the Login page from Home, but the current setup does not fully absorb that repeated entry flow. Prefer a setup that leaves each test at the Login page when most tests begin there."
-                        )
+                if sequence_lower and verification_steps == []:
+                    warnings.append(
+                        "A dominant repeated test entry sequence appears across the generated suite, but tests still repeat that sequence inline without ending in a stable verified starting state. Consider absorbing the repeated entry flow into setup only when approved reusable context clearly supports that shared start state."
+                    )
 
     return len(errors) == 0, ("Warnings:\n" + "\n".join(warnings)) if warnings else ""
 
@@ -2051,12 +2041,10 @@ def validate_manual_content(manual_data: dict, workflow_context: dict | None = N
     def _warning_severity(message: str) -> int:
         text = clean_text(message).lower()
         if any(token in text for token in [
-            "destination/transition coverage gaps",
+            "coverage gaps",
             "resource lineage",
             "weak expected-result",
             "likely duplicate scenario",
-            "no positive manual test explicitly asserts observable success state",
-            "no negative manual test explicitly asserts observable failure or rejection state",
         ]):
             return 2
         if "missing scenario category" in text or "coverage appears thin" in text:

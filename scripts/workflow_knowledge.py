@@ -186,15 +186,7 @@ def split_story_sentences(value: Any) -> List[str]:
 def select_relevant_lines(values: List[str], keywords: List[str], limit: int = 12) -> List[str]:
     if not values:
         return []
-    selected: List[str] = []
-    lowered_keywords = [clean_text(item).lower() for item in keywords if clean_text(item)]
-    for line in values:
-        lowered = line.lower()
-        if any(keyword in lowered for keyword in lowered_keywords):
-            selected.append(line)
-    if not selected:
-        selected = values[:limit]
-    return unique_strings(selected, limit=limit)
+    return unique_strings(values, limit=limit)
 
 
 def collect_workflow_story_lines(workflow_input: Dict[str, Any]) -> Dict[str, List[str]]:
@@ -565,10 +557,7 @@ def build_workflow_knowledge_context(workflow_input: Dict[str, Any]) -> Dict[str
         'generationRule': 'Downstream generation must consume approved workflow knowledge plus approved resource context before creating new artifacts.',
     }
 
-    direct_access_policy = "must_use_entry_journey" if any(
-        "not directly accessed by url" in item.lower() or "must be opened" in item.lower()
-        for item in story_sections.get('applicationContext', []) + story_sections.get('behaviorRules', []) + story_sections.get('reuseGuidance', [])
-    ) else "direct_access_allowed"
+    direct_access_policy = "must_use_entry_journey" if navigation_model.get('journey') else "direct_access_allowed"
 
     entry_journey = unique_strings(
         [
@@ -578,7 +567,7 @@ def build_workflow_knowledge_context(workflow_input: Dict[str, Any]) -> Dict[str
         ]
         + select_relevant_lines(
             story_sections.get('acceptanceCriteria', []) + story_sections.get('reuseGuidance', []) + story_sections.get('entryConditions', []),
-            ["open", "click", "navigate", "return", "login page", "home page", "entry"],
+            [],
             limit=10,
         ),
         limit=10,
@@ -587,7 +576,7 @@ def build_workflow_knowledge_context(workflow_input: Dict[str, Any]) -> Dict[str
     success_destination = unique_strings(
         select_relevant_lines(
             story_sections.get('transitionExpectations', []) + story_sections.get('validationExpectations', []) + story_sections.get('acceptanceCriteria', []),
-            ["authenticated", "return to", "home page", "redirect", "destination", "visible after successful", "logged in"],
+            [],
             limit=8,
         ),
         limit=8,
@@ -596,7 +585,7 @@ def build_workflow_knowledge_context(workflow_input: Dict[str, Any]) -> Dict[str
     return_destinations = unique_strings(
         select_relevant_lines(
             story_sections.get('transitionExpectations', []) + story_sections.get('acceptanceCriteria', []) + story_sections.get('reuseGuidance', []),
-            ["back button", "home button", "return to", "guest state", "unauthenticated", "home page"],
+            [],
             limit=8,
         ),
         limit=8,

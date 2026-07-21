@@ -408,15 +408,6 @@ def analyze_keyword_artifact_reuse(keywords: List[Dict[str, Any]], page_name: st
         r"^(Click Element|Input Text|Input Password|Wait Until Element Is Visible|Wait Until Page Contains Element|Click When Ready|Input Text When Ready|Input Password When Ready)\b",
         flags=re.IGNORECASE,
     )
-    meaningful_action_tokens = {
-        "enter", "input", "click", "tap", "select", "choose", "open", "submit", "verify", "validate",
-        "confirm", "search", "filter", "toggle", "check", "uncheck", "navigate", "login", "logout",
-    }
-    semantic_object_tokens = {
-        "username", "user", "password", "login", "button", "textbox", "field", "message", "link",
-        "checkbox", "radio", "dropdown", "menu", "page", "dialog", "popup", "error", "success",
-        "banner", "tab", "section", "home", "back", "submit",
-    }
     for keyword in keywords:
         if not isinstance(keyword, dict):
             continue
@@ -429,14 +420,13 @@ def analyze_keyword_artifact_reuse(keywords: List[Dict[str, Any]], page_name: st
         name_tokens = set(normalize_name_tokens(keyword_name).split()) if keyword_name else set()
         implementation_uses_helpers = any(helper_pattern.match(line) for line in normalized_lines)
         references_page_variable = any("${" in line for line in normalized_lines)
-        has_semantic_name = bool(name_tokens & meaningful_action_tokens) and bool(name_tokens & semantic_object_tokens)
 
-        if len(normalized_lines) <= 2 and implementation_uses_helpers and not (references_page_variable and has_semantic_name):
+        if len(normalized_lines) <= 2 and implementation_uses_helpers and not references_page_variable:
             low_value_wrapper_keywords.append({
                 "keywordName": keyword_name,
                 "reason": "Keyword is a thin low-level wrapper and may not provide enough reusable page-level abstraction.",
             })
-        if common_keyword_names and implementation_uses_helpers and not (references_page_variable and has_semantic_name):
+        if common_keyword_names and implementation_uses_helpers and not references_page_variable:
             common_reuse_opportunities.append({
                 "keywordName": keyword_name,
                 "reason": "Implementation uses low-level steps even though shared/common helpers exist in approved resource context.",
