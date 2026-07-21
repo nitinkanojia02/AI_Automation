@@ -232,21 +232,23 @@ def looks_like_journey_action(value: str) -> bool:
 
 def collect_workflow_story_lines(workflow_input: Dict[str, Any]) -> Dict[str, List[str]]:
     external = workflow_input.get("externalContext") if isinstance(workflow_input.get("externalContext"), dict) else {}
-    story_lines = unique_strings(normalize_text_blocks(workflow_input.get("userStory")), limit=12)
-    acceptance = unique_strings(
-        normalize_text_blocks(workflow_input.get("acceptanceCriteria"))
-        + normalize_text_blocks(external.get("acceptanceCriteria")),
-        limit=20,
-    )
-    validation_expectations = unique_strings(
-        normalize_text_blocks(external.get("validationExpectations")),
-        limit=20,
-    )
-    entry_conditions = compact_story_lines(unique_strings(
-        normalize_text_blocks(external.get("entryConditions"))
-        + normalize_text_blocks(workflow_input.get("observedPreconditions")),
-        limit=10,
-    ), limit=10)
+
+    structured_story = normalize_text_blocks(workflow_input.get("userStory"))
+    observed_steps = normalize_text_blocks(workflow_input.get("observedSteps"))
+    story_lines = unique_strings(structured_story or observed_steps, limit=12)
+
+    structured_acceptance = normalize_text_blocks(workflow_input.get("acceptanceCriteria"))
+    external_acceptance = normalize_text_blocks(external.get("acceptanceCriteria"))
+    acceptance = unique_strings(structured_acceptance or external_acceptance, limit=20)
+
+    structured_validation = normalize_text_blocks(external.get("validationExpectations"))
+    observed_validation = normalize_text_blocks(workflow_input.get("observedValidations"))
+    validation_expectations = unique_strings(structured_validation or observed_validation, limit=20)
+
+    structured_entry = normalize_text_blocks(external.get("entryConditions"))
+    observed_entry = normalize_text_blocks(workflow_input.get("observedPreconditions"))
+    entry_conditions = compact_story_lines(unique_strings(structured_entry or observed_entry, limit=10), limit=10)
+
     transition_expectations = compact_story_lines(unique_strings(
         normalize_text_blocks(external.get("transitionExpectations")),
         limit=12,
