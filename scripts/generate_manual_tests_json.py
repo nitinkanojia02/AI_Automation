@@ -837,9 +837,9 @@ def criterion_is_covered(criterion: str, test_cases: List[Dict[str, Any]]) -> bo
     if not criterion_tokens:
         return False
 
-    stop_tokens = {"page", "state", "button", "buttons", "user", "view", "workflow", "screen", "control", "controls", "should", "when", "then", "given", "from", "into", "with", "that"}
+    stop_tokens = {"page", "state", "button", "buttons", "user", "view", "workflow", "screen", "control", "controls", "should", "when", "then", "given", "from", "into", "with", "that", "must", "will", "able", "remain", "still"}
     significant_tokens = [token for token in criterion_tokens if token not in stop_tokens]
-    required_tokens = significant_tokens or criterion_tokens
+    required_tokens = list(dict.fromkeys(significant_tokens or criterion_tokens))
 
     for tc in test_cases:
         candidate_key = test_case_signature(tc)
@@ -854,10 +854,10 @@ def criterion_is_covered(criterion: str, test_cases: List[Dict[str, Any]]) -> bo
             if overlap_ratio >= 1.0:
                 return True
         elif len(required_tokens) <= 6:
-            if overlap_ratio >= 0.6 and len(overlap) >= 2:
+            if overlap_ratio >= 0.75 and len(overlap) >= 3:
                 return True
         else:
-            if overlap_ratio >= 0.5 and len(overlap) >= 3:
+            if overlap_ratio >= 0.6 and len(overlap) >= 4:
                 return True
     return False
 

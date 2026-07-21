@@ -87,15 +87,11 @@ def derive_fallback_feature_code(manual_data: dict) -> str:
         "a", "an", "and", "application", "auth", "authentication", "flow", "for", "from", "in", "of", "on", "page",
         "screen", "story", "test", "the", "to", "user", "users", "using", "validation", "verify", "workflow", "should", "support"
     }
-    preferred_words = {
-        "home", "login", "logout", "dashboard", "search", "cart", "checkout", "profile", "payment", "order", "admin", "report"
-    }
     tokens: list[str] = []
     for candidate in candidates:
         words = re.findall(r"[A-Za-z0-9]+", clean_text(candidate).lower())
         meaningful_words = [word for word in words if len(word) >= 3 and word not in stop_words]
-        preferred = [word for word in meaningful_words if word in preferred_words]
-        selected_words = preferred or meaningful_words
+        selected_words = meaningful_words
         for word in selected_words[:2]:
             code = compact_code(word)
             if code and code not in tokens:
