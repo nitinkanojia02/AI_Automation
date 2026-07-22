@@ -219,6 +219,7 @@ def build_and_validate_execution_plan(
             "mcpContext": resolved_mcp_context,
             "mcpAdapter": mcp_service.resolve_execution_adapter(resolved_mcp_context),
             "mcpDispatch": mcp_service.build_execution_dispatch(resolved_mcp_context),
+            "mcpExecution": mcp_service.resolve_execution_mode(resolved_mcp_context),
         },
     )
     if isinstance(target_signals, list):

@@ -108,6 +108,14 @@ class WorkflowPlanValidator:
                 if adapter_provenance is not None and not isinstance(adapter_provenance, dict):
                     errors.append("mcp.adapter.provenance must be an object when provided")
             dispatch = mcp.get("dispatch", {})
+            execution_mode = mcp.get("execution", {})
+            if execution_mode is not None and not isinstance(execution_mode, dict):
+                errors.append("mcp.execution must be an object when provided")
+            elif isinstance(execution_mode, dict) and execution_mode:
+                if not str(execution_mode.get("dispatchMode", "")).strip():
+                    errors.append("mcp.execution.dispatchMode is required when execution is provided")
+                if not str(execution_mode.get("executionMode", "")).strip():
+                    errors.append("mcp.execution.executionMode is required when execution is provided")
             if dispatch is not None and not isinstance(dispatch, dict):
                 errors.append("mcp.dispatch must be an object when provided")
             elif isinstance(dispatch, dict) and dispatch:
@@ -121,6 +129,11 @@ class WorkflowPlanValidator:
                     errors.append("mcp.dispatch.dispatchMode is required when dispatch is provided")
                 if not str(dispatch.get("executionMode", "")).strip():
                     errors.append("mcp.dispatch.executionMode is required when dispatch is provided")
+                if isinstance(execution_mode, dict) and execution_mode:
+                    if dispatch.get("dispatchMode") != execution_mode.get("dispatchMode"):
+                        errors.append("mcp.dispatch.dispatchMode must match mcp.execution.dispatchMode when both are provided")
+                    if dispatch.get("executionMode") != execution_mode.get("executionMode"):
+                        errors.append("mcp.dispatch.executionMode must match mcp.execution.executionMode when both are provided")
                 for dispatch_name, dispatch_adapter in (("selectedAdapter", selected_adapter), ("fallbackAdapter", fallback_adapter)):
                     if isinstance(dispatch_adapter, dict):
                         if not isinstance(dispatch_adapter.get("enabled", False), bool):

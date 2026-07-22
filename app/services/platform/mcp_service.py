@@ -100,13 +100,20 @@ class McpService:
         adapter["selectionMode"] = "feature_flag_runtime_context" if bool(context.get("enabled", False)) else "feature_disabled"
         return adapter
 
+    def resolve_execution_mode(self, runtime_context: dict[str, Any] | None = None) -> dict[str, str]:
+        context = runtime_context if isinstance(runtime_context, dict) else self.build_runtime_context()
+        mcp_enabled = bool(context.get("enabled", False))
+        return {
+            "dispatchMode": "selected_or_fallback" if mcp_enabled else "fallback_only",
+            "executionMode": "non_blocking_adapter_selection" if mcp_enabled else "current_runtime_only",
+        }
+
     def build_execution_dispatch(self, runtime_context: dict[str, Any] | None = None) -> dict[str, Any]:
         context = runtime_context if isinstance(runtime_context, dict) else self.build_runtime_context()
         adapter = self.resolve_execution_adapter(context)
-        mcp_enabled = bool(context.get("enabled", False))
+        execution_mode = self.resolve_execution_mode(context)
         return {
             "selectedAdapter": dict(adapter),
             "fallbackAdapter": dict(FALLBACK_RUNTIME_ADAPTER),
-            "dispatchMode": "selected_or_fallback" if mcp_enabled else "fallback_only",
-            "executionMode": "non_blocking_adapter_selection" if mcp_enabled else "current_runtime_only",
+            **execution_mode,
         }
