@@ -23,6 +23,7 @@ from app.repositories.execution_plan_repository import ExecutionPlanRepository
 from app.repositories.knowledge_repository import KnowledgeRepository
 from app.repositories.page_state_repository import PageStateRepository
 from app.repositories.resource_repository import ResourceRepository
+from app.repositories.mcp_repository import McpRepository
 from app.repositories.workflow_repository import WorkflowRepository
 from app.services.agents.resource_reuse_agent import ResourceReuseAgent
 from app.services.agents.workflow_planning_agent import WorkflowPlanningAgent
@@ -121,7 +122,8 @@ resource_reuse_agent = ResourceReuseAgent(resource_repository)
 workflow_planning_agent = WorkflowPlanningAgent(page_state_service)
 workflow_plan_validator = WorkflowPlanValidator()
 rag_context_service = RagContextService(knowledge_repository, platform_logger)
-mcp_service = McpService(FEATURE_FLAGS.enable_mcp)
+mcp_repository = McpRepository(BASE_DIR)
+mcp_service = McpService(FEATURE_FLAGS.enable_mcp, mcp_repository)
 
 
 def build_runtime_workflow_context(
@@ -167,6 +169,7 @@ def build_runtime_workflow_context(
             provider=runtime_context["mcpContext"].get("provider", ""),
             transport=runtime_context["mcpContext"].get("transport", ""),
             capability_scope=runtime_context["mcpContext"].get("capabilityScope", []),
+            provenance=runtime_context["mcpContext"].get("provenance", {}),
         )
 
     return contract, runtime_context
