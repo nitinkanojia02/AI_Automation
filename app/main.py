@@ -18,6 +18,12 @@ from starlette.datastructures import FormData
 from fastapi.templating import Jinja2Templates
 from starlette.status import HTTP_303_SEE_OTHER
 
+from app.config.feature_flags import FEATURE_FLAGS
+from app.repositories.workflow_repository import WorkflowRepository
+from app.services.platform.logger import PlatformLogger
+from app.services.workflows.workflow_contract_builder import WorkflowContractBuilder
+from app.services.workflows.workflow_contract_validator import WorkflowContractValidator
+
 from scripts.generate_manual_tests_json import (
     build_prompt as build_manual_prompt,
     call_devex_ai,
@@ -94,6 +100,8 @@ CONFIG_PATH = BASE_DIR / "config" / "page_model_config.json"
 app = FastAPI(title="WashTab Automation MVP")
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 logger = logging.getLogger(__name__)
+platform_logger = PlatformLogger(__name__)
+workflow_repository = WorkflowRepository(WORKFLOW_DIR)
 
 # -------------------------------------------------------------------
 # Generic helpers
@@ -4312,6 +4320,20 @@ async def save_workflow(
 
     target = WORKFLOW_DIR / f"{target_slug}.json"
     write_json(target, payload)
+
+    if FEATURE_FLAGS.enable_workflow_contracts:
+        contract = WorkflowContractBuilder.build(payload)
+        contract_errors = WorkflowContractValidator.validate(contract)
+        if contract_errors:
+            raise HTTPException(status_code=400, detail="Workflow contract validation failed: " + "; ".join(contract_errors))
+        workflow_repository.save_contract(target_slug, contract)
+        platform_logger.info(
+            "workflow_contract_saved",
+            workflow_slug=target_slug,
+            workflow_id=contract.workflow_id,
+            page_name=contract.page.name,
+            source_type=contract.source_type,
+        )
 
     normalized_page_name = clean_text(page_name)
     normalized_resource = normalize_resource_file_path(normalized_page_name, resource_file)
