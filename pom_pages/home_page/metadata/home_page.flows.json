@@ -17,6 +17,57 @@
           "element": "person_profile_button"
         }
       ]
+    },
+    {
+      "flowId": "home_page.entry_to_customer_signup",
+      "name": "Approved entry flow from home_page to customer signup entry",
+      "entryPage": {
+        "name": "home_page"
+      },
+      "targetPage": {
+        "name": "customer_signup_entry"
+      },
+      "steps": [
+        {
+          "action": "clickKnownElement",
+          "page": "home_page",
+          "element": "customer_signup_button"
+        }
+      ]
+    },
+    {
+      "flowId": "home_page.entry_to_clean_survey",
+      "name": "Approved entry flow from home_page to clean survey entry",
+      "entryPage": {
+        "name": "home_page"
+      },
+      "targetPage": {
+        "name": "clean_survey_entry"
+      },
+      "steps": [
+        {
+          "action": "clickKnownElement",
+          "page": "home_page",
+          "element": "clean_survey_button"
+        }
+      ]
+    },
+    {
+      "flowId": "home_page.entry_to_site_survey",
+      "name": "Approved entry flow from home_page to site survey entry",
+      "entryPage": {
+        "name": "home_page"
+      },
+      "targetPage": {
+        "name": "site_survey_entry"
+      },
+      "steps": [
+        {
+          "action": "clickKnownElement",
+          "page": "home_page",
+          "element": "site_survey_button"
+        }
+      ]
     }
   ]
 }

@@ -1,0 +1,68 @@
+{
+  "pageName": "login_page",
+  "flows": [
+    {
+      "flowId": "login_page.return_to_home_via_home_button",
+      "name": "Approved navigation flow from login_page to home_page via home button",
+      "entryPage": {
+        "name": "login_page"
+      },
+      "targetPage": {
+        "name": "home_page"
+      },
+      "steps": [
+        {
+          "action": "clickKnownElement",
+          "page": "login_page",
+          "element": "home_button"
+        }
+      ]
+    },
+    {
+      "flowId": "login_page.return_to_home_via_back_button",
+      "name": "Approved navigation flow from login_page to home_page via back button",
+      "entryPage": {
+        "name": "login_page"
+      },
+      "targetPage": {
+        "name": "home_page"
+      },
+      "steps": [
+        {
+          "action": "clickKnownElement",
+          "page": "login_page",
+          "element": "back_button"
+        }
+      ]
+    },
+    {
+      "flowId": "login_page.submit_credentials",
+      "name": "Approved credential submission flow on login_page",
+      "entryPage": {
+        "name": "login_page"
+      },
+      "targetPage": {
+        "name": "login_submission_result"
+      },
+      "steps": [
+        {
+          "action": "inputKnownElement",
+          "page": "login_page",
+          "element": "username_field",
+          "value": "${username}"
+        },
+        {
+          "action": "inputKnownElement",
+          "page": "login_page",
+          "element": "password_field",
+          "value": "${password}"
+        },
+        {
+          "action": "clickKnownElement",
+          "page": "login_page",
+          "element": "login_button"
+        }
+      ]
+    }
+  ]
+}
