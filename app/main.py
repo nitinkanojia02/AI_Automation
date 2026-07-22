@@ -4038,6 +4038,16 @@ async def save_workflow(
         if FEATURE_FLAGS.enable_rag:
             payload["ragContext"] = rag_context_service.build_context(target_slug, contract)
             write_json(target, payload)
+            rag_provenance = payload["ragContext"].get("provenance", {}) if isinstance(payload["ragContext"], dict) else {}
+            platform_logger.info(
+                "rag_context_attached",
+                workflow_slug=target_slug,
+                attach_stage="workflow_save",
+                source_preference=rag_provenance.get("sourcePreference", []),
+                canonical_freshness=rag_provenance.get("canonicalFreshness", {}),
+                resource_bundle_count=rag_provenance.get("resourceBundleCount", 0),
+                workflow_knowledge_present=rag_provenance.get("workflowKnowledgePresent", False),
+            )
         platform_logger.info(
             "workflow_contract_saved",
             workflow_slug=target_slug,
@@ -4119,6 +4129,16 @@ def run_page_review_extraction(request: Request, workflow_name: str):
         contract.reuse_policy.resource_files = resource_files
         if FEATURE_FLAGS.enable_rag:
             extraction_context["ragContext"] = rag_context_service.build_context(workflow_name, contract)
+            rag_provenance = extraction_context["ragContext"].get("provenance", {}) if isinstance(extraction_context["ragContext"], dict) else {}
+            platform_logger.info(
+                "rag_context_attached",
+                workflow_slug=workflow_name,
+                attach_stage="page_extraction",
+                source_preference=rag_provenance.get("sourcePreference", []),
+                canonical_freshness=rag_provenance.get("canonicalFreshness", {}),
+                resource_bundle_count=rag_provenance.get("resourceBundleCount", 0),
+                workflow_knowledge_present=rag_provenance.get("workflowKnowledgePresent", False),
+            )
         try:
             extraction_context["navigationSteps"] = resource_reuse_agent.resolve_navigation_steps(contract) or extraction_context["navigationSteps"]
         except ValueError as exc:

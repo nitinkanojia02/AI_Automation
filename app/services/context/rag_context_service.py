@@ -8,6 +8,12 @@ from app.services.platform.logger import PlatformLogger
 
 
 class RagContextService:
+    CANONICAL_SOURCE_ORDER = [
+        "contract",
+        "workflow",
+        "resourceBundles",
+        "workflowKnowledge",
+    ]
     MAX_VARIABLES_PER_RESOURCE = 25
     MAX_KEYWORDS_PER_RESOURCE = 25
     MAX_FLOWS_PER_RESOURCE = 25
@@ -96,6 +102,32 @@ class RagContextService:
                 normalized[key] = item
         return normalized
 
+    @staticmethod
+    def _workflow_identity(value: dict[str, Any]) -> tuple[str, str, str]:
+        return (
+            str(value.get("workflowId", "")).strip(),
+            str(value.get("workflowName", "")).strip(),
+            str(value.get("feature", "")).strip(),
+        )
+
+    @staticmethod
+    def _contract_identity(value: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], list[Any], list[Any]]:
+        return (
+            value.get("page", {}) if isinstance(value.get("page", {}), dict) else {},
+            value.get("entryPage", {}) if isinstance(value.get("entryPage", {}), dict) else {},
+            value.get("targetPage", {}) if isinstance(value.get("targetPage", {}), dict) else {},
+            value.get("navigationSteps", []) if isinstance(value.get("navigationSteps", []), list) else [],
+            value.get("targetSignals", []) if isinstance(value.get("targetSignals", []), list) else [],
+        )
+
+    @staticmethod
+    def _resolve_freshness_source(contract_present: bool, workflow_present: bool) -> str:
+        if contract_present:
+            return "contract"
+        if workflow_present:
+            return "workflow"
+        return "none"
+
     def build_context(self, workflow_slug: str, contract: WorkflowContract | None = None) -> dict[str, Any]:
         bundle = self.knowledge_repository.build_retrieval_bundle(workflow_slug, contract)
         workflow = bundle.get("workflow", {}) if isinstance(bundle.get("workflow", {}), dict) else {}
@@ -170,20 +202,43 @@ class RagContextService:
             ]
             if normalized_signal
         ], self.MAX_TARGET_SIGNALS)
+        canonical_workflow = {
+            "workflowId": self._first_non_empty(contract_artifact.get("workflow_id", ""), workflow.get("workflowId", ""), default=""),
+            "workflowName": self._first_non_empty(contract_artifact.get("workflow_name", ""), workflow.get("workflowName", ""), workflow_slug, default=workflow_slug),
+            "feature": self._first_non_empty(contract_artifact.get("feature", ""), workflow.get("feature", ""), default=""),
+            "resourceFiles": resource_files,
+        }
+        canonical_contract = {
+            "page": self._normalize_page_reference(self._first_non_empty(contract_artifact.get("page", {}), workflow_page, default={})),
+            "entryPage": self._normalize_page_reference(self._first_non_empty(contract_artifact.get("entry_page", {}), workflow.get("entryPage", {}), default={})),
+            "targetPage": self._normalize_page_reference(self._first_non_empty(contract_artifact.get("target_page", {}), workflow.get("targetPage", {}), default={})),
+            "navigationSteps": navigation_steps,
+            "targetSignals": target_signals,
+        }
+        contract_present = bool(contract_artifact)
+        workflow_present = bool(workflow)
+        workflow_identity_aligned = self._workflow_identity(canonical_workflow) == self._workflow_identity({
+            "workflowId": str(workflow.get("workflowId", "")).strip(),
+            "workflowName": str(workflow.get("workflowName", "")).strip(),
+            "feature": str(workflow.get("feature", "")).strip(),
+        }) if workflow_present else not contract_present
+        contract_shape_aligned = self._contract_identity(canonical_contract) == self._contract_identity({
+            "page": self._normalize_page_reference(workflow_page),
+            "entryPage": self._normalize_page_reference(workflow.get("entryPage", {})),
+            "targetPage": self._normalize_page_reference(workflow.get("targetPage", {})),
+            "navigationSteps": [
+                item for item in [self._normalize_navigation_step(step) for step in workflow.get("navigationSteps", [])]
+                if item
+            ] if isinstance(workflow.get("navigationSteps", []), list) else [],
+            "targetSignals": [
+                item for item in [self._normalize_target_signal(signal) for signal in workflow.get("targetPageSignals", [])]
+                if item
+            ] if isinstance(workflow.get("targetPageSignals", []), list) else [],
+        }) if workflow_present else not contract_present
+        freshness_source = self._resolve_freshness_source(contract_present, workflow_present)
         canonical_context = {
-            "workflow": {
-                "workflowId": self._first_non_empty(contract_artifact.get("workflow_id", ""), workflow.get("workflowId", ""), default=""),
-                "workflowName": self._first_non_empty(contract_artifact.get("workflow_name", ""), workflow.get("workflowName", ""), workflow_slug, default=workflow_slug),
-                "feature": self._first_non_empty(contract_artifact.get("feature", ""), workflow.get("feature", ""), default=""),
-                "resourceFiles": resource_files,
-            },
-            "contract": {
-                "page": self._normalize_page_reference(self._first_non_empty(contract_artifact.get("page", {}), workflow_page, default={})),
-                "entryPage": self._normalize_page_reference(self._first_non_empty(contract_artifact.get("entry_page", {}), workflow.get("entryPage", {}), default={})),
-                "targetPage": self._normalize_page_reference(self._first_non_empty(contract_artifact.get("target_page", {}), workflow.get("targetPage", {}), default={})),
-                "navigationSteps": navigation_steps,
-                "targetSignals": target_signals,
-            },
+            "workflow": canonical_workflow,
+            "contract": canonical_contract,
             "resources": retrieved_resources,
             "workflowKnowledge": {
                 "resourceKnowledge": self._normalize_workflow_knowledge(workflow_knowledge.get("resourceKnowledge", {})),
@@ -192,12 +247,14 @@ class RagContextService:
                 "provenance": self._normalize_workflow_knowledge(workflow_knowledge.get("provenance", {})),
             },
             "provenance": {
-                "sourcePreference": [
-                    "contract",
-                    "workflow",
-                    "resourceBundles",
-                    "workflowKnowledge",
-                ],
+                "sourcePreference": list(self.CANONICAL_SOURCE_ORDER),
+                "canonicalFreshness": {
+                    "selectedSource": freshness_source,
+                    "contractPresent": contract_present,
+                    "workflowPresent": workflow_present,
+                    "workflowIdentityAligned": workflow_identity_aligned,
+                    "contractShapeAligned": contract_shape_aligned,
+                },
                 "resourceBundleCount": len(retrieved_resources),
                 "workflowKnowledgePresent": bool(workflow_knowledge),
                 "limits": {
@@ -215,7 +272,10 @@ class RagContextService:
             resource_bundle_count=len(retrieved_resources),
             resource_file_count=len(resource_files),
             workflow_knowledge_present=bool(workflow_knowledge),
-            contract_present=bool(contract_artifact),
-            workflow_present=bool(workflow),
+            contract_present=contract_present,
+            workflow_present=workflow_present,
+            canonical_source=freshness_source,
+            workflow_identity_aligned=workflow_identity_aligned,
+            contract_shape_aligned=contract_shape_aligned,
         )
         return canonical_context
