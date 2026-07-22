@@ -24,6 +24,7 @@ from app.repositories.resource_repository import ResourceRepository
 from app.repositories.workflow_repository import WorkflowRepository
 from app.services.agents.resource_reuse_agent import ResourceReuseAgent
 from app.services.agents.workflow_planning_agent import WorkflowPlanningAgent
+from app.services.agents.workflow_plan_validator import WorkflowPlanValidator
 from app.services.context.rag_context_service import RagContextService
 from app.services.platform.logger import PlatformLogger
 from app.services.workflows.workflow_contract_builder import WorkflowContractBuilder
@@ -104,6 +105,7 @@ resource_repository = ResourceRepository(BASE_DIR)
 knowledge_repository = KnowledgeRepository(BASE_DIR, resource_repository)
 resource_reuse_agent = ResourceReuseAgent(resource_repository)
 workflow_planning_agent = WorkflowPlanningAgent()
+workflow_plan_validator = WorkflowPlanValidator()
 rag_context_service = RagContextService(knowledge_repository, platform_logger)
 
 
@@ -4085,6 +4087,9 @@ async def save_workflow(
                 payload.get("navigationSteps", []) if isinstance(payload.get("navigationSteps"), list) else [],
                 payload.get("ragContext", {}) if isinstance(payload.get("ragContext"), dict) else {},
             )
+            plan_errors = workflow_plan_validator.validate(payload["executionPlan"])
+            if plan_errors:
+                raise HTTPException(status_code=400, detail="Execution plan validation failed: " + "; ".join(plan_errors))
             write_json(target, payload)
             platform_logger.info(
                 "execution_plan_attached",
@@ -4203,6 +4208,11 @@ def run_page_review_extraction(request: Request, workflow_name: str):
                 extraction_context.get("navigationSteps", []) if isinstance(extraction_context.get("navigationSteps"), list) else [],
                 extraction_context.get("ragContext", {}) if isinstance(extraction_context.get("ragContext"), dict) else {},
             )
+            plan_errors = workflow_plan_validator.validate(extraction_context["executionPlan"])
+            if plan_errors:
+                raise HTTPException(status_code=400, detail="Execution plan validation failed: " + "; ".join(plan_errors))
+            extraction_context["navigationSteps"] = ((extraction_context.get("executionPlan", {}) or {}).get("execution", {}) or {}).get("navigationSteps", extraction_context.get("navigationSteps", []))
+            extraction_context["targetPageSignals"] = ((extraction_context.get("executionPlan", {}) or {}).get("execution", {}) or {}).get("targetSignals", extraction_context.get("targetPageSignals", []))
             platform_logger.info(
                 "execution_plan_attached",
                 workflow_slug=workflow_name,
