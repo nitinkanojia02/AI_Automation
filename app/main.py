@@ -261,6 +261,12 @@ def resolve_execution_plan(
 ):
     runtime_navigation_steps = [dict(item) for item in (navigation_steps or []) if isinstance(item, dict)]
     runtime_target_signals = [dict(item) for item in (target_signals or []) if isinstance(item, dict)]
+    runtime_page_state = page_state_service.build_state_descriptor(contract) if FEATURE_FLAGS.enable_state_merge else {}
+    runtime_page_state_snapshot = (
+        (runtime_page_state.get("metadata", {}) or {}).get("sourceSnapshot", {})
+        if isinstance(runtime_page_state.get("metadata", {}), dict)
+        else {}
+    ) if isinstance(runtime_page_state, dict) else {}
 
     persisted_plan = execution_plan_repository.load_plan(workflow_slug) if FEATURE_FLAGS.enable_execution_plan_persistence else None
     if persisted_plan is not None:
@@ -294,7 +300,16 @@ def resolve_execution_plan(
                 persisted_target_signals = [
                     dict(item) for item in (persisted_execution.get("targetSignals", []) or []) if isinstance(item, dict)
                 ]
-                if persisted_navigation_steps == runtime_navigation_steps and persisted_target_signals == runtime_target_signals:
+                persisted_page_context = persisted_plan.get("pageContext", {}) if isinstance(persisted_plan.get("pageContext", {}), dict) else {}
+                persisted_page_state = persisted_page_context.get("pageState", {}) if isinstance(persisted_page_context.get("pageState", {}), dict) else {}
+                persisted_page_state_snapshot = (
+                    (persisted_page_state.get("metadata", {}) or {}).get("sourceSnapshot", {})
+                    if isinstance(persisted_page_state.get("metadata", {}), dict)
+                    else {}
+                ) if isinstance(persisted_page_state, dict) else {}
+                page_state_aligned = (not runtime_page_state and not persisted_page_state) or (persisted_page_state == runtime_page_state)
+                page_state_snapshot_aligned = (not runtime_page_state_snapshot and not persisted_page_state_snapshot) or (persisted_page_state_snapshot == runtime_page_state_snapshot)
+                if persisted_navigation_steps == runtime_navigation_steps and persisted_target_signals == runtime_target_signals and page_state_aligned and page_state_snapshot_aligned:
                     platform_logger.info(
                         "execution_plan_reused",
                         workflow_slug=workflow_slug,
@@ -304,6 +319,7 @@ def resolve_execution_plan(
                         target_signal_source=persisted_provenance.get("targetSignalSource", ""),
                         rag_attached=persisted_provenance.get("ragAttached", False),
                         source_snapshot=persisted_source_snapshot,
+                        page_state_snapshot=persisted_page_state_snapshot,
                         mcp_adapter=((persisted_plan.get("mcp", {}) or {}).get("adapter", {}) if isinstance(persisted_plan.get("mcp", {}), dict) else {}),
                         mcp_dispatch=((persisted_plan.get("mcp", {}) or {}).get("dispatch", {}) if isinstance(persisted_plan.get("mcp", {}), dict) else {}),
                         persisted=True,
@@ -318,6 +334,10 @@ def resolve_execution_plan(
                     runtime_step_count=len(runtime_navigation_steps),
                     persisted_target_signal_count=len(persisted_target_signals),
                     runtime_target_signal_count=len(runtime_target_signals),
+                    page_state_aligned=page_state_aligned,
+                    page_state_snapshot_aligned=page_state_snapshot_aligned,
+                    persisted_page_state_snapshot=persisted_page_state_snapshot,
+                    runtime_page_state_snapshot=runtime_page_state_snapshot,
                     source_snapshot=persisted_source_snapshot,
                     freshness=freshness,
                 )
