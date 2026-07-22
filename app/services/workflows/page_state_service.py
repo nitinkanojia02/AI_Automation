@@ -148,3 +148,26 @@ class PageStateService:
             )
 
         return descriptor
+
+    def are_plan_states_aligned(self, persisted_plan: dict[str, Any] | None, runtime_page_state: dict[str, Any] | None) -> dict[str, Any]:
+        normalized_runtime_page_state = dict(runtime_page_state) if isinstance(runtime_page_state, dict) else {}
+        persisted_page_context = persisted_plan.get("pageContext", {}) if isinstance((persisted_plan or {}).get("pageContext", {}), dict) else {}
+        persisted_page_state = persisted_page_context.get("pageState", {}) if isinstance(persisted_page_context.get("pageState", {}), dict) else {}
+        runtime_page_state_snapshot = self._get_source_snapshot(normalized_runtime_page_state)
+        persisted_page_state_snapshot = self._get_source_snapshot(persisted_page_state)
+        page_state_aligned = (not normalized_runtime_page_state and not persisted_page_state) or (persisted_page_state == normalized_runtime_page_state)
+        page_state_snapshot_aligned = (not runtime_page_state_snapshot and not persisted_page_state_snapshot) or (persisted_page_state_snapshot == runtime_page_state_snapshot)
+        return {
+            "persistedPageState": persisted_page_state,
+            "persistedPageStateSnapshot": persisted_page_state_snapshot,
+            "runtimePageStateSnapshot": runtime_page_state_snapshot,
+            "pageStateAligned": page_state_aligned,
+            "pageStateSnapshotAligned": page_state_snapshot_aligned,
+        }
+
+    @staticmethod
+    def _get_source_snapshot(page_state: dict[str, Any] | None) -> dict[str, Any]:
+        if not isinstance(page_state, dict):
+            return {}
+        metadata = page_state.get("metadata", {}) if isinstance(page_state.get("metadata", {}), dict) else {}
+        return metadata.get("sourceSnapshot", {}) if isinstance(metadata.get("sourceSnapshot", {}), dict) else {}

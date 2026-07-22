@@ -267,11 +267,6 @@ def resolve_execution_plan(
     runtime_navigation_steps = [dict(item) for item in (navigation_steps or []) if isinstance(item, dict)]
     runtime_target_signals = [dict(item) for item in (target_signals or []) if isinstance(item, dict)]
     runtime_page_state = page_state_service.build_state_descriptor(contract) if FEATURE_FLAGS.enable_state_merge else {}
-    runtime_page_state_snapshot = (
-        (runtime_page_state.get("metadata", {}) or {}).get("sourceSnapshot", {})
-        if isinstance(runtime_page_state.get("metadata", {}), dict)
-        else {}
-    ) if isinstance(runtime_page_state, dict) else {}
     runtime_mcp_context = mcp_context if isinstance(mcp_context, dict) else (mcp_service.build_runtime_context() if FEATURE_FLAGS.enable_mcp else {})
     runtime_mcp_provenance = runtime_mcp_context.get("provenance", {}) if isinstance(runtime_mcp_context.get("provenance", {}), dict) else {}
 
@@ -307,17 +302,16 @@ def resolve_execution_plan(
                 persisted_target_signals = [
                     dict(item) for item in (persisted_execution.get("targetSignals", []) or []) if isinstance(item, dict)
                 ]
-                persisted_page_context = persisted_plan.get("pageContext", {}) if isinstance(persisted_plan.get("pageContext", {}), dict) else {}
-                persisted_page_state = persisted_page_context.get("pageState", {}) if isinstance(persisted_page_context.get("pageState", {}), dict) else {}
-                persisted_page_state_snapshot = (
-                    (persisted_page_state.get("metadata", {}) or {}).get("sourceSnapshot", {})
-                    if isinstance(persisted_page_state.get("metadata", {}), dict)
-                    else {}
-                ) if isinstance(persisted_page_state, dict) else {}
+                page_state_alignment = page_state_service.are_plan_states_aligned(
+                    persisted_plan=persisted_plan,
+                    runtime_page_state=runtime_page_state,
+                )
+                persisted_page_state_snapshot = page_state_alignment.get("persistedPageStateSnapshot", {}) if isinstance(page_state_alignment.get("persistedPageStateSnapshot", {}), dict) else {}
+                runtime_page_state_snapshot = page_state_alignment.get("runtimePageStateSnapshot", {}) if isinstance(page_state_alignment.get("runtimePageStateSnapshot", {}), dict) else {}
                 persisted_mcp = persisted_plan.get("mcp", {}) if isinstance(persisted_plan.get("mcp", {}), dict) else {}
                 persisted_mcp_provenance = persisted_mcp.get("provenance", {}) if isinstance(persisted_mcp.get("provenance", {}), dict) else {}
-                page_state_aligned = (not runtime_page_state and not persisted_page_state) or (persisted_page_state == runtime_page_state)
-                page_state_snapshot_aligned = (not runtime_page_state_snapshot and not persisted_page_state_snapshot) or (persisted_page_state_snapshot == runtime_page_state_snapshot)
+                page_state_aligned = bool(page_state_alignment.get("pageStateAligned", False))
+                page_state_snapshot_aligned = bool(page_state_alignment.get("pageStateSnapshotAligned", False))
                 mcp_provenance_aligned = (not runtime_mcp_provenance and not persisted_mcp_provenance) or (persisted_mcp_provenance == runtime_mcp_provenance)
                 if persisted_navigation_steps == runtime_navigation_steps and persisted_target_signals == runtime_target_signals and page_state_aligned and page_state_snapshot_aligned and mcp_provenance_aligned:
                     platform_logger.info(
