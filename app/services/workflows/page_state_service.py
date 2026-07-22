@@ -20,11 +20,28 @@ class PageStateService:
         if not page_name:
             return {}
 
-        state_payload = self.page_state_repository.load_state_artifact(page_name)
-        artifact_errors = self.page_state_repository.validate_descriptor_payload(state_payload) if state_payload else ["missing state artifact"]
+        state_variants_payload = self.page_state_repository.load_state_variants(page_name)
+        variants = state_variants_payload.get("variants", []) if isinstance(state_variants_payload.get("variants", []), list) else []
+        selected_variant = {}
+        contract_state_id = str(contract.page_state or contract.page.state or "").strip()
+        contract_signal_set = [dict(item) for item in (contract.target_signals or []) if isinstance(item, dict)]
+        for item in variants:
+            if not isinstance(item, dict):
+                continue
+            if contract_state_id and str(item.get("state_id", "")).strip() == contract_state_id:
+                selected_variant = dict(item)
+                break
+            item_signals = [dict(signal) for signal in item.get("signals", []) if isinstance(signal, dict)] if isinstance(item.get("signals", []), list) else []
+            if item_signals == contract_signal_set:
+                selected_variant = dict(item)
+                break
+        if not selected_variant and variants:
+            selected_variant = dict(variants[0]) if isinstance(variants[0], dict) else {}
+
+        artifact_errors = self.page_state_repository.validate_descriptor_payload(selected_variant) if selected_variant else ["missing state artifact"]
         artifact_snapshot = self.page_state_repository.get_state_source_snapshot(page_name, "artifact")
         contract_snapshot = self.page_state_repository.get_state_source_snapshot(page_name, "contract_fallback")
-        artifact_descriptor = self.page_state_repository.build_descriptor(page_name, state_payload if not artifact_errors else {}).to_dict()
+        artifact_descriptor = self.page_state_repository.build_descriptor(page_name, selected_variant if not artifact_errors else {}).to_dict()
         fallback_descriptor = self.page_state_repository.build_descriptor(page_name, {
             "stateId": str(contract.page_state or contract.page.state or "").strip(),
             "stateType": str(contract.page_state or contract.page.state or "").strip(),
@@ -53,12 +70,26 @@ class PageStateService:
         descriptor_metadata["normalizedSourceType"] = source_snapshot.get("normalizedSourceType", "")
         descriptor_metadata["fallbackUsed"] = bool(artifact_errors)
         descriptor_metadata["sourceSnapshot"] = source_snapshot
+        descriptor_metadata["stateVariants"] = [dict(item) for item in variants if isinstance(item, dict)]
         if artifact_errors:
             descriptor_metadata["artifactValidationErrors"] = artifact_errors
         descriptor["metadata"] = descriptor_metadata
 
         descriptor_errors = self.page_state_repository.validate_descriptor_payload(descriptor)
-        persisted_descriptor = self.page_state_repository.load_state_artifact(page_name) if self.persist_descriptors else {}
+        persisted_variants_payload = self.page_state_repository.load_state_variants(page_name) if self.persist_descriptors else {"page_name": page_name, "variants": []}
+        persisted_variants = persisted_variants_payload.get("variants", []) if isinstance(persisted_variants_payload.get("variants", []), list) else []
+        persisted_descriptor = {}
+        for item in persisted_variants:
+            if not isinstance(item, dict):
+                continue
+            persisted_state_id = str(item.get("state_id", "")).strip()
+            descriptor_state_id = str(descriptor.get("state_id", "")).strip()
+            if descriptor_state_id and persisted_state_id == descriptor_state_id:
+                persisted_descriptor = dict(item)
+                break
+            if item == descriptor:
+                persisted_descriptor = dict(item)
+                break
         persisted_descriptor_errors = self.page_state_repository.validate_descriptor_payload(persisted_descriptor) if persisted_descriptor else ["missing persisted descriptor"]
         persisted_snapshot = ((persisted_descriptor.get("metadata", {}) if isinstance(persisted_descriptor.get("metadata", {}), dict) else {}).get("sourceSnapshot", {})) if persisted_descriptor else {}
         if self.persist_descriptors and not descriptor_errors:
@@ -71,13 +102,31 @@ class PageStateService:
                     persisted=True,
                 )
                 return persisted_descriptor
-            self.page_state_repository.save_state_artifact(page_name, descriptor)
+            updated_variants: list[dict[str, Any]] = []
+            replaced = False
+            descriptor_state_id = str(descriptor.get("state_id", "")).strip()
+            for item in persisted_variants:
+                if not isinstance(item, dict):
+                    continue
+                item_state_id = str(item.get("state_id", "")).strip()
+                if descriptor_state_id and item_state_id == descriptor_state_id:
+                    updated_variants.append(descriptor)
+                    replaced = True
+                else:
+                    updated_variants.append(dict(item))
+            if not replaced:
+                updated_variants.append(descriptor)
+            self.page_state_repository.save_state_variants(page_name, {
+                "page_name": page_name,
+                "variants": updated_variants,
+            })
             self.logger.info(
                 "page_state_persisted",
                 page_name=page_name,
                 state_source=state_source,
                 source_snapshot=source_snapshot,
                 persisted=True,
+                variant_count=len(updated_variants),
             )
         elif descriptor_errors:
             descriptor_metadata["descriptorValidationErrors"] = descriptor_errors

@@ -11,6 +11,7 @@ class PageStateRepository:
     REQUIRED_ARTIFACT_KEYS = ("stateId", "stateType", "sourceArtifacts", "signals", "metadata")
     PERSISTED_DESCRIPTOR_KEYS = ("page_name", "state_id", "state_type", "source_artifacts", "signals", "metadata")
     NORMALIZED_DESCRIPTOR_KEYS = ("page_name", "state_id", "state_type", "source_artifacts", "signals", "metadata")
+    VARIANT_COLLECTION_KEYS = ("page_name", "variants")
     STATE_SOURCE_METADATA_KEYS = ("stateSource", "artifactPath", "normalizedSourceType", "fallbackUsed")
 
     def __init__(self, pom_dir: Path):
@@ -29,10 +30,27 @@ class PageStateRepository:
             return {}
         return self.normalize_state_artifact(page_name, payload if isinstance(payload, dict) else {})
 
+    def load_state_variants(self, page_name: str) -> dict[str, Any]:
+        path = self.get_state_artifact_path(page_name)
+        if not path.exists():
+            return {"page_name": str(page_name).strip(), "variants": []}
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            return {"page_name": str(page_name).strip(), "variants": []}
+        return self.normalize_state_variants(page_name, payload if isinstance(payload, dict) else {})
+
     def save_state_artifact(self, page_name: str, payload: dict[str, Any]) -> Path:
         path = self.get_state_artifact_path(page_name)
         path.parent.mkdir(parents=True, exist_ok=True)
         normalized_payload = self.normalize_state_artifact(page_name, payload if isinstance(payload, dict) else {})
+        path.write_text(json.dumps(normalized_payload, indent=2, ensure_ascii=False), encoding="utf-8")
+        return path
+
+    def save_state_variants(self, page_name: str, payload: dict[str, Any]) -> Path:
+        path = self.get_state_artifact_path(page_name)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        normalized_payload = self.normalize_state_variants(page_name, payload if isinstance(payload, dict) else {})
         path.write_text(json.dumps(normalized_payload, indent=2, ensure_ascii=False), encoding="utf-8")
         return path
 
@@ -124,6 +142,27 @@ class PageStateRepository:
             errors.append("page state descriptor page_name is required")
         return errors
 
+    def validate_variant_collection_payload(self, payload: dict[str, Any]) -> list[str]:
+        errors: list[str] = []
+        if not isinstance(payload, dict):
+            return ["page state variant collection must be an object"]
+        for key in self.VARIANT_COLLECTION_KEYS:
+            if key not in payload:
+                errors.append(f"page state variant collection missing required key: {key}")
+        if not str(payload.get("page_name", "")).strip():
+            errors.append("page state variant collection page_name is required")
+        variants = payload.get("variants", [])
+        if not isinstance(variants, list):
+            errors.append("page state variant collection variants must be a list")
+            return errors
+        for index, item in enumerate(variants):
+            if not isinstance(item, dict):
+                errors.append(f"page state variant collection variants[{index}] must be an object")
+                continue
+            descriptor_errors = self.validate_descriptor_payload(item)
+            errors.extend([f"variants[{index}]: {error}" for error in descriptor_errors])
+        return errors
+
     def validate_state_artifact(self, payload: dict[str, Any]) -> list[str]:
         errors: list[str] = []
         if not isinstance(payload, dict):
@@ -138,6 +177,31 @@ class PageStateRepository:
         if "metadata" in payload and not isinstance(payload.get("metadata"), dict):
             errors.append("page state artifact metadata must be an object")
         return errors
+
+    def normalize_state_variants(self, page_name: str, payload: dict[str, Any]) -> dict[str, Any]:
+        collection_payload = payload if isinstance(payload, dict) else {}
+        collection_errors = self.validate_variant_collection_payload(collection_payload) if collection_payload else ["missing variant collection payload"]
+        if not collection_errors:
+            normalized_variants = []
+            for item in collection_payload.get("variants", []):
+                normalized_item = self.normalize_state_artifact(page_name, item if isinstance(item, dict) else {})
+                if normalized_item:
+                    normalized_variants.append(normalized_item)
+            return {
+                "page_name": str(collection_payload.get("page_name", page_name)).strip(),
+                "variants": normalized_variants,
+            }
+
+        normalized_single = self.normalize_state_artifact(page_name, collection_payload)
+        if normalized_single:
+            return {
+                "page_name": str(normalized_single.get("page_name", page_name)).strip(),
+                "variants": [normalized_single],
+            }
+        return {
+            "page_name": str(page_name).strip(),
+            "variants": [],
+        }
 
     def build_descriptor(self, page_name: str, state_payload: dict[str, Any] | None = None) -> PageStateDescriptor:
         payload = self.normalize_state_artifact(page_name, state_payload if isinstance(state_payload, dict) else {})
