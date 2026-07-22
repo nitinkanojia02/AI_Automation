@@ -29,6 +29,7 @@ from app.services.agents.workflow_planning_agent import WorkflowPlanningAgent
 from app.services.agents.workflow_plan_validator import WorkflowPlanValidator
 from app.services.context.rag_context_service import RagContextService
 from app.services.platform.logger import PlatformLogger
+from app.services.platform.mcp_service import McpService
 from app.services.workflows.page_state_merge_service import PageStateMergeService
 from app.services.workflows.page_state_service import PageStateService
 from app.services.workflows.workflow_contract_builder import WorkflowContractBuilder
@@ -120,6 +121,7 @@ resource_reuse_agent = ResourceReuseAgent(resource_repository)
 workflow_planning_agent = WorkflowPlanningAgent(page_state_service)
 workflow_plan_validator = WorkflowPlanValidator()
 rag_context_service = RagContextService(knowledge_repository, platform_logger)
+mcp_service = McpService(FEATURE_FLAGS.enable_mcp)
 
 
 def build_runtime_workflow_context(
@@ -153,6 +155,18 @@ def build_runtime_workflow_context(
             canonical_freshness=rag_provenance.get("canonicalFreshness", {}),
             resource_bundle_count=rag_provenance.get("resourceBundleCount", 0),
             workflow_knowledge_present=rag_provenance.get("workflowKnowledgePresent", False),
+        )
+
+    if FEATURE_FLAGS.enable_mcp:
+        runtime_context["mcpContext"] = mcp_service.build_runtime_context()
+        platform_logger.info(
+            "mcp_context_attached",
+            workflow_slug=workflow_slug,
+            attach_stage=attach_stage,
+            enabled=runtime_context["mcpContext"].get("enabled", False),
+            provider=runtime_context["mcpContext"].get("provider", ""),
+            transport=runtime_context["mcpContext"].get("transport", ""),
+            capability_scope=runtime_context["mcpContext"].get("capabilityScope", []),
         )
 
     return contract, runtime_context
@@ -196,6 +210,7 @@ def build_and_validate_execution_plan(
             "navigationSource": "runtime" if navigation_steps else "contract",
             "targetSignalSource": "runtime" if target_signals else "contract",
             "sourceSnapshot": source_snapshot,
+            "mcpContext": mcp_service.build_runtime_context() if FEATURE_FLAGS.enable_mcp else {},
         },
     )
     if isinstance(target_signals, list):

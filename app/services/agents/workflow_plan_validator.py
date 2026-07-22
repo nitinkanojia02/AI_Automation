@@ -84,6 +84,10 @@ class WorkflowPlanValidator:
         if rag is not None and not isinstance(rag, dict):
             errors.append("rag must be an object when provided")
 
+        mcp = plan.get("mcp", {})
+        if mcp is not None and not isinstance(mcp, dict):
+            errors.append("mcp must be an object when provided")
+
         provenance = plan.get("provenance", {})
         if provenance is not None and not isinstance(provenance, dict):
             errors.append("provenance must be an object when provided")
