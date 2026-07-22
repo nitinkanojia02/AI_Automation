@@ -102,7 +102,7 @@ workflow_repository = WorkflowRepository(WORKFLOW_DIR)
 resource_repository = ResourceRepository(BASE_DIR)
 knowledge_repository = KnowledgeRepository(BASE_DIR, resource_repository)
 resource_reuse_agent = ResourceReuseAgent(resource_repository)
-rag_context_service = RagContextService(knowledge_repository)
+rag_context_service = RagContextService(knowledge_repository, platform_logger)
 
 # -------------------------------------------------------------------
 # Generic helpers
