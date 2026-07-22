@@ -55,9 +55,10 @@ class McpService:
 
     def build_execution_adapter(self, runtime_context: dict[str, Any] | None = None) -> dict[str, Any]:
         context = runtime_context if isinstance(runtime_context, dict) else self.build_runtime_context()
+        adapter_type = "mcp_runtime_context" if bool(context.get("enabled", False)) else "default_runtime"
         return {
             "enabled": bool(context.get("enabled", False)),
-            "adapterType": "mcp_runtime_context",
+            "adapterType": adapter_type,
             "provider": str(context.get("provider", "")).strip(),
             "transport": str(context.get("transport", "")).strip(),
             "endpoint": str(context.get("endpoint", "")).strip(),
@@ -74,3 +75,17 @@ class McpService:
         adapter = self.build_execution_adapter(context)
         adapter["selectionMode"] = "feature_flag_runtime_context"
         return adapter
+
+    def build_execution_dispatch(self, runtime_context: dict[str, Any] | None = None) -> dict[str, Any]:
+        context = runtime_context if isinstance(runtime_context, dict) else self.build_runtime_context()
+        adapter = self.resolve_execution_adapter(context)
+        return {
+            "selectedAdapter": dict(adapter),
+            "fallbackAdapter": {
+                "enabled": True,
+                "adapterType": "default_runtime",
+                "selectionMode": "deterministic_fallback",
+            },
+            "dispatchMode": "selected_or_fallback",
+            "executionMode": "non_blocking_adapter_selection",
+        }

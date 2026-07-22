@@ -218,6 +218,20 @@ def build_and_validate_execution_plan(
             "sourceSnapshot": source_snapshot,
             "mcpContext": resolved_mcp_context,
             "mcpAdapter": mcp_service.resolve_execution_adapter(resolved_mcp_context) if FEATURE_FLAGS.enable_mcp else {},
+            "mcpDispatch": mcp_service.build_execution_dispatch(resolved_mcp_context) if FEATURE_FLAGS.enable_mcp else {
+                "selectedAdapter": {
+                    "enabled": False,
+                    "adapterType": "default_runtime",
+                    "selectionMode": "feature_disabled",
+                },
+                "fallbackAdapter": {
+                    "enabled": True,
+                    "adapterType": "default_runtime",
+                    "selectionMode": "deterministic_fallback",
+                },
+                "dispatchMode": "fallback_only",
+                "executionMode": "current_runtime_only",
+            },
         },
     )
     if isinstance(target_signals, list):
@@ -243,6 +257,7 @@ def build_and_validate_execution_plan(
         rag_attached=plan_provenance.get("ragAttached", False),
         source_snapshot=plan_provenance.get("sourceSnapshot", {}),
         mcp_adapter=((plan.get("mcp", {}) or {}).get("adapter", {}) if isinstance(plan.get("mcp", {}), dict) else {}),
+        mcp_dispatch=((plan.get("mcp", {}) or {}).get("dispatch", {}) if isinstance(plan.get("mcp", {}), dict) else {}),
         persisted=FEATURE_FLAGS.enable_execution_plan_persistence,
     )
     return plan
@@ -303,6 +318,7 @@ def resolve_execution_plan(
                         rag_attached=persisted_provenance.get("ragAttached", False),
                         source_snapshot=persisted_source_snapshot,
                         mcp_adapter=((persisted_plan.get("mcp", {}) or {}).get("adapter", {}) if isinstance(persisted_plan.get("mcp", {}), dict) else {}),
+                        mcp_dispatch=((persisted_plan.get("mcp", {}) or {}).get("dispatch", {}) if isinstance(persisted_plan.get("mcp", {}), dict) else {}),
                         persisted=True,
                         freshness=freshness,
                     )
