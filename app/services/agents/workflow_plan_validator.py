@@ -34,6 +34,12 @@ class WorkflowPlanValidator:
             elif isinstance(page_state, dict) and page_state:
                 if not str(page_state.get("page_name", "")).strip():
                     errors.append("pageContext.pageState.page_name is required when pageState is provided")
+                if not isinstance(page_state.get("source_artifacts", []), list):
+                    errors.append("pageContext.pageState.source_artifacts must be a list when pageState is provided")
+                if not isinstance(page_state.get("signals", []), list):
+                    errors.append("pageContext.pageState.signals must be a list when pageState is provided")
+                if not isinstance(page_state.get("metadata", {}), dict):
+                    errors.append("pageContext.pageState.metadata must be an object when pageState is provided")
 
         execution = plan.get("execution", {})
         if not isinstance(execution, dict):

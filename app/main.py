@@ -29,6 +29,7 @@ from app.services.agents.workflow_planning_agent import WorkflowPlanningAgent
 from app.services.agents.workflow_plan_validator import WorkflowPlanValidator
 from app.services.context.rag_context_service import RagContextService
 from app.services.platform.logger import PlatformLogger
+from app.services.workflows.page_state_merge_service import PageStateMergeService
 from app.services.workflows.page_state_service import PageStateService
 from app.services.workflows.workflow_contract_builder import WorkflowContractBuilder
 from app.services.workflows.workflow_contract_validator import WorkflowContractValidator
@@ -106,7 +107,8 @@ platform_logger = PlatformLogger(__name__)
 workflow_repository = WorkflowRepository(WORKFLOW_DIR)
 execution_plan_repository = ExecutionPlanRepository(WORKFLOW_DIR)
 page_state_repository = PageStateRepository(POM_DIR)
-page_state_service = PageStateService(page_state_repository)
+page_state_merge_service = PageStateMergeService()
+page_state_service = PageStateService(page_state_repository, page_state_merge_service)
 resource_repository = ResourceRepository(BASE_DIR)
 knowledge_repository = KnowledgeRepository(BASE_DIR, resource_repository)
 resource_reuse_agent = ResourceReuseAgent(resource_repository)
