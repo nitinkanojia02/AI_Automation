@@ -745,6 +745,51 @@ def build_workflow_payload(
 # Extraction handling
 # -------------------------------------------------------------------
 
+def normalize_navigation_action(action: str) -> str:
+    normalized = clean_text(action)
+    aliases = {
+        "waitforurlcontains": "waitForUrlContains",
+        "wait_for_url_contains": "waitForUrlContains",
+        "waitforelementvisible": "waitForElementVisible",
+        "wait_for_element_visible": "waitForElementVisible",
+        "inputknownelement": "inputKnownElement",
+        "input_known_element": "inputKnownElement",
+        "clickknownelement": "clickKnownElement",
+        "click_known_element": "clickKnownElement",
+        "reuseapprovedentrycontext": "reuseApprovedEntryContext",
+        "reuse_approved_entry_context": "reuseApprovedEntryContext",
+    }
+    return aliases.get(normalized.lower(), normalized)
+
+
+def normalize_navigation_steps(steps: list[dict] | None) -> list[dict]:
+    normalized_steps: list[dict] = []
+    for step in steps or []:
+        if not isinstance(step, dict):
+            continue
+        item = dict(step)
+        item["action"] = normalize_navigation_action(str(item.get("action", "")))
+        normalized_steps.append(item)
+    return normalized_steps
+
+
+def normalize_target_page_signals(signals: list[dict] | None) -> list[dict]:
+    normalized_signals: list[dict] = []
+    signal_aliases = {
+        "element_visible": "knownElement",
+        "known_element": "knownElement",
+        "url_contains": "urlContains",
+    }
+    for signal in signals or []:
+        if not isinstance(signal, dict):
+            continue
+        item = dict(signal)
+        signal_type = clean_text(str(item.get("type", "")))
+        item["type"] = signal_aliases.get(signal_type.lower(), signal_type)
+        normalized_signals.append(item)
+    return normalized_signals
+
+
 def run_page_extraction(page_name: str, page_url: str, extraction_context: dict | None = None):
     script_path = BASE_DIR / "scripts" / "extract_page_model.py"
     if not script_path.exists():
@@ -758,9 +803,9 @@ def run_page_extraction(page_name: str, page_url: str, extraction_context: dict 
     ]
 
     extraction_context = extraction_context or {}
-    navigation_steps = extraction_context.get("navigationSteps", []) if isinstance(extraction_context, dict) else []
+    navigation_steps = normalize_navigation_steps(extraction_context.get("navigationSteps", []) if isinstance(extraction_context, dict) else [])
     entry_page = extraction_context.get("entryPage", {}) if isinstance(extraction_context, dict) else {}
-    target_page_signals = extraction_context.get("targetPageSignals", []) if isinstance(extraction_context, dict) else []
+    target_page_signals = normalize_target_page_signals(extraction_context.get("targetPageSignals", []) if isinstance(extraction_context, dict) else [])
 
     if not navigation_steps and isinstance(extraction_context, dict):
         try:

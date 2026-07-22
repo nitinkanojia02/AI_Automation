@@ -1597,9 +1597,9 @@ def perform_navigation_steps(page, navigation_steps: List[dict], wait_seconds: i
         action = clean_text(str(step.get("action", "")))
         source_page = clean_text(str(step.get("page", "")))
         element_name = clean_text(str(step.get("element", "")))
-        if action != "clickKnownElement":
-            raise ValueError(f"Unsupported navigation action '{action}' in step {index}. MVP supports only clickKnownElement and reuseApprovedEntryContext.")
-        locator = resolve_known_element_locator(source_page, element_name)
+        locator = ""
+        if action in {"clickKnownElement", "inputKnownElement", "waitForElementVisible"}:
+            locator = resolve_known_element_locator(source_page, element_name)
         debug_entry = {
             "step": index,
             "action": action,
@@ -1608,21 +1608,66 @@ def perform_navigation_steps(page, navigation_steps: List[dict], wait_seconds: i
             "locator": locator,
         }
         logger.info("Navigation step %s: %s -> %s.%s using locator %s", index, action, source_page, element_name, locator)
-        target = page.locator(locator).first
-        try:
-            debug_entry["count"] = target.count()
-        except Exception:
-            debug_entry["count"] = -1
-        try:
-            debug_entry["visible_before_click"] = target.is_visible(timeout=3000)
-        except Exception:
-            debug_entry["visible_before_click"] = False
-        target.click(timeout=30000)
-        debug_entry["clicked"] = True
-        page.wait_for_timeout(max(wait_seconds, 1) * 1000)
-        debug_entry["url_after_click"] = page.url
-        if navigation_debug is not None:
-            navigation_debug.append(debug_entry)
+
+        if action == "clickKnownElement":
+            target = page.locator(locator).first
+            try:
+                debug_entry["count"] = target.count()
+            except Exception:
+                debug_entry["count"] = -1
+            try:
+                debug_entry["visible_before_click"] = target.is_visible(timeout=3000)
+            except Exception:
+                debug_entry["visible_before_click"] = False
+            target.click(timeout=30000)
+            debug_entry["clicked"] = True
+            page.wait_for_timeout(max(wait_seconds, 1) * 1000)
+            debug_entry["url_after_click"] = page.url
+            if navigation_debug is not None:
+                navigation_debug.append(debug_entry)
+            continue
+
+        if action == "inputKnownElement":
+            value = str(step.get("value", ""))
+            target = page.locator(locator).first
+            try:
+                debug_entry["count"] = target.count()
+            except Exception:
+                debug_entry["count"] = -1
+            try:
+                debug_entry["visible_before_input"] = target.is_visible(timeout=3000)
+            except Exception:
+                debug_entry["visible_before_input"] = False
+            target.fill(value, timeout=30000)
+            debug_entry["input_applied"] = True
+            debug_entry["value_length"] = len(value)
+            page.wait_for_timeout(500)
+            debug_entry["url_after_input"] = page.url
+            if navigation_debug is not None:
+                navigation_debug.append(debug_entry)
+            continue
+
+        if action == "waitForUrlContains":
+            expected_fragment = clean_text(str(step.get("value", "")))
+            if not expected_fragment:
+                raise ValueError(f"Navigation step {index} waitForUrlContains requires a value.")
+            page.wait_for_url(re.compile(re.escape(expected_fragment), re.IGNORECASE), timeout=max(wait_seconds, 1) * 1000 * 6)
+            debug_entry["waited_for_url_contains"] = expected_fragment
+            debug_entry["url_after_wait"] = page.url
+            if navigation_debug is not None:
+                navigation_debug.append(debug_entry)
+            continue
+
+        if action == "waitForElementVisible":
+            target = page.locator(locator).first
+            target.wait_for(state="visible", timeout=max(wait_seconds, 1) * 1000 * 6)
+            debug_entry["element_visible"] = True
+            debug_entry["url_after_wait"] = page.url
+            if navigation_debug is not None:
+                navigation_debug.append(debug_entry)
+            continue
+
+        raise ValueError(f"Unsupported navigation action '{action}' in step {index}. Supported actions: clickKnownElement, inputKnownElement, waitForUrlContains, waitForElementVisible, reuseApprovedEntryContext.")
 
 
 def write_signal_timeout_debug(page, metadata_dir: Path, page_name: str):
@@ -1660,7 +1705,13 @@ def wait_for_target_page_signals(page, target_page_signals: List[dict], wait_sec
         remaining = []
         for signal in pending:
             signal_type = clean_text(str(signal.get("type", "")))
-            if signal_type == "knownElement":
+            normalized_type = {
+                "knownelement": "knownElement",
+                "element_visible": "knownElement",
+                "url_contains": "urlContains",
+                "urlcontains": "urlContains",
+            }.get(signal_type.lower(), signal_type)
+            if normalized_type == "knownElement":
                 try:
                     locator = resolve_known_element_locator(str(signal.get("page", "")), str(signal.get("element", "")))
                     if page.locator(locator).first.is_visible(timeout=500):
@@ -1670,7 +1721,7 @@ def wait_for_target_page_signals(page, target_page_signals: List[dict], wait_sec
                 remaining.append(signal)
                 continue
             value = clean_text(str(signal.get("value", "")))
-            if signal_type == "text":
+            if normalized_type == "text":
                 try:
                     if value and page.get_by_text(value, exact=False).first.is_visible(timeout=500):
                         continue
@@ -1678,7 +1729,7 @@ def wait_for_target_page_signals(page, target_page_signals: List[dict], wait_sec
                     pass
                 remaining.append(signal)
                 continue
-            if signal_type == "selector":
+            if normalized_type == "selector":
                 try:
                     if value and page.locator(value).first.is_visible(timeout=500):
                         continue
@@ -1686,7 +1737,7 @@ def wait_for_target_page_signals(page, target_page_signals: List[dict], wait_sec
                     pass
                 remaining.append(signal)
                 continue
-            if signal_type == "title":
+            if normalized_type == "title":
                 try:
                     if value and value.lower() in page.title().lower():
                         continue
@@ -1694,7 +1745,7 @@ def wait_for_target_page_signals(page, target_page_signals: List[dict], wait_sec
                     pass
                 remaining.append(signal)
                 continue
-            if signal_type == "urlContains":
+            if normalized_type == "urlContains":
                 if value and value.lower() in page.url.lower():
                     continue
                 remaining.append(signal)
