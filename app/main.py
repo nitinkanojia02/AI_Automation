@@ -112,6 +112,7 @@ page_state_service = PageStateService(
     page_state_repository,
     page_state_merge_service,
     persist_descriptors=FEATURE_FLAGS.enable_state_merge,
+    logger=platform_logger,
 )
 resource_repository = ResourceRepository(BASE_DIR)
 knowledge_repository = KnowledgeRepository(BASE_DIR, resource_repository)

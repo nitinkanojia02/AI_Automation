@@ -40,6 +40,10 @@ class WorkflowPlanValidator:
                     errors.append("pageContext.pageState.signals must be a list when pageState is provided")
                 if not isinstance(page_state.get("metadata", {}), dict):
                     errors.append("pageContext.pageState.metadata must be an object when pageState is provided")
+                elif isinstance(page_state.get("metadata", {}), dict):
+                    source_snapshot = page_state.get("metadata", {}).get("sourceSnapshot", {})
+                    if source_snapshot is not None and not isinstance(source_snapshot, dict):
+                        errors.append("pageContext.pageState.metadata.sourceSnapshot must be an object when provided")
 
         execution = plan.get("execution", {})
         if not isinstance(execution, dict):

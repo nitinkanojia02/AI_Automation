@@ -11,6 +11,7 @@ class PageStateRepository:
     REQUIRED_ARTIFACT_KEYS = ("stateId", "stateType", "sourceArtifacts", "signals", "metadata")
     PERSISTED_DESCRIPTOR_KEYS = ("page_name", "state_id", "state_type", "source_artifacts", "signals", "metadata")
     NORMALIZED_DESCRIPTOR_KEYS = ("page_name", "state_id", "state_type", "source_artifacts", "signals", "metadata")
+    STATE_SOURCE_METADATA_KEYS = ("stateSource", "artifactPath", "normalizedSourceType", "fallbackUsed")
 
     def __init__(self, pom_dir: Path):
         self.pom_dir = pom_dir
@@ -34,6 +35,29 @@ class PageStateRepository:
         normalized_payload = self.normalize_state_artifact(page_name, payload if isinstance(payload, dict) else {})
         path.write_text(json.dumps(normalized_payload, indent=2, ensure_ascii=False), encoding="utf-8")
         return path
+
+    def get_state_freshness_context(self, page_name: str) -> dict[str, Any]:
+        path = self.get_state_artifact_path(page_name)
+        return {
+            "artifactPath": str(path),
+            "artifactExists": path.exists(),
+            "artifactMtime": path.stat().st_mtime if path.exists() else None,
+        }
+
+    def get_state_source_snapshot(self, page_name: str, source_type: str = "") -> dict[str, Any]:
+        freshness = self.get_state_freshness_context(page_name)
+        return {
+            "pageName": str(page_name).strip(),
+            "artifactPath": freshness.get("artifactPath"),
+            "artifactExists": freshness.get("artifactExists"),
+            "artifactMtime": freshness.get("artifactMtime"),
+            "normalizedSourceType": str(source_type).strip(),
+        }
+
+    def snapshot_matches(self, page_name: str, persisted_snapshot: dict[str, Any] | None, source_type: str = "") -> bool:
+        if not isinstance(persisted_snapshot, dict):
+            return False
+        return persisted_snapshot == self.get_state_source_snapshot(page_name, source_type)
 
     def normalize_state_artifact(self, page_name: str, payload: dict[str, Any]) -> dict[str, Any]:
         artifact_payload = payload if isinstance(payload, dict) else {}
