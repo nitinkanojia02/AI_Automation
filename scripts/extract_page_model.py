@@ -1560,6 +1560,9 @@ def process_page(playwright, config: dict, page_entry: Dict[str, str]):
         navigation_steps = page_entry.get("navigation_steps", []) if isinstance(page_entry.get("navigation_steps"), list) else []
         target_page_signals = page_entry.get("target_page_signals", []) if isinstance(page_entry.get("target_page_signals"), list) else []
         runtime_payload = normalize_execution_runtime_payload(page_entry)
+        runtime_payload_errors = validate_execution_runtime_payload(runtime_payload)
+        if runtime_payload_errors:
+            raise ValueError("Execution runtime payload validation failed: " + "; ".join(runtime_payload_errors))
         execution_runtime = runtime_payload.get("execution_runtime", {}) if isinstance(runtime_payload.get("execution_runtime", {}), dict) else {}
         page_state = runtime_payload.get("page_state", {}) if isinstance(runtime_payload.get("page_state", {}), dict) else {}
         mcp_execution = runtime_payload.get("mcp_execution", {}) if isinstance(runtime_payload.get("mcp_execution", {}), dict) else {}
@@ -1738,6 +1741,34 @@ def normalize_execution_runtime_payload(page_entry: dict) -> dict:
         "mcp_adapter": normalized_mcp.get("adapter", {}) if isinstance(normalized_mcp.get("adapter", {}), dict) else {},
         "mcp_enabled": bool(normalized_mcp.get("enabled", False)),
     }
+
+
+def validate_execution_runtime_payload(runtime_payload: dict) -> list[str]:
+    if not isinstance(runtime_payload, dict):
+        return ["Runtime payload must be a dictionary."]
+
+    errors: list[str] = []
+    execution_runtime = runtime_payload.get("execution_runtime", {}) if isinstance(runtime_payload.get("execution_runtime", {}), dict) else {}
+    page_state = runtime_payload.get("page_state", {}) if isinstance(runtime_payload.get("page_state", {}), dict) else {}
+    mcp = runtime_payload.get("mcp", {}) if isinstance(runtime_payload.get("mcp", {}), dict) else {}
+
+    if execution_runtime and not page_state:
+        errors.append("Execution runtime includes data but page state is missing or invalid.")
+
+    if mcp:
+        execution = mcp.get("execution", {}) if isinstance(mcp.get("execution", {}), dict) else {}
+        dispatch = mcp.get("dispatch", {}) if isinstance(mcp.get("dispatch", {}), dict) else {}
+        adapter = mcp.get("adapter", {}) if isinstance(mcp.get("adapter", {}), dict) else {}
+        enabled = bool(mcp.get("enabled", False))
+
+        if enabled and not execution:
+            errors.append("MCP runtime is enabled but execution metadata is missing.")
+        if enabled and not dispatch:
+            errors.append("MCP runtime is enabled but dispatch metadata is missing.")
+        if enabled and not adapter:
+            errors.append("MCP runtime is enabled but adapter metadata is missing.")
+
+    return errors
 
 
 def build_navigation_page_config(config: dict, page_name: str, entry_url: str, navigation_payload: dict) -> dict:
