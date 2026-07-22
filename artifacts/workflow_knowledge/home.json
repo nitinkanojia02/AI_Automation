@@ -6,7 +6,7 @@
   "applicationCode": "WT",
   "testIdentifierPrefix": "HOME",
   "status": "approved_artifact_memory",
-  "generatedAt": "2026-07-22T09:45:24.207485+00:00",
+  "generatedAt": "2026-07-22T10:35:42.907955+00:00",
   "businessContext": {
     "userStory": [
       "As a guest user, I want to access the Home page and use the available navigation actions, so that I can navigate to login, customer signup, clean survey, and site survey workflows."
@@ -160,6 +160,7 @@
         "type": "page",
         "variableNames": [
           "PAGE_URL",
+          "EXPECTED_HOME_URL",
           "EXPECTED_LOGIN_URL",
           "EXPECTED_CUSTOMER_SEARCH_URL_FRAGMENT",
           "EXPECTED_VEHICLE_SURVEY_URL_FRAGMENT",
@@ -181,11 +182,17 @@
           "Click Clean Survey Button",
           "Click Site Survey Button",
           "Verify Home Page Loaded In Guest State",
-          "Verify All Home Navigation Controls Are Enabled",
-          "Verify Person Profile Navigation Redirect",
-          "Verify Customer Signup Navigation Redirect",
-          "Verify Clean Survey Navigation Redirect",
-          "Verify Site Survey Navigation Redirect"
+          "Verify Person Profile Button Visible And Enabled",
+          "Verify Back Button Visible And Enabled",
+          "Verify Notification Button Visible And Enabled",
+          "Verify Home Button Visible And Enabled",
+          "Verify Customer Signup Button Visible And Enabled",
+          "Verify Clean Survey Button Visible And Enabled",
+          "Verify Site Survey Button Visible And Enabled",
+          "Verify Navigation To Login Page",
+          "Verify Navigation To Customer Search Page",
+          "Verify Navigation To Vehicle Survey Page",
+          "Verify Navigation To Site Survey Page"
         ]
       },
       {
@@ -212,6 +219,7 @@
         "resource": "pom_pages/home_page/home_page.resource",
         "variables": [
           "PAGE_URL",
+          "EXPECTED_HOME_URL",
           "EXPECTED_LOGIN_URL",
           "EXPECTED_CUSTOMER_SEARCH_URL_FRAGMENT",
           "EXPECTED_VEHICLE_SURVEY_URL_FRAGMENT",
@@ -233,11 +241,17 @@
           "Click Clean Survey Button",
           "Click Site Survey Button",
           "Verify Home Page Loaded In Guest State",
-          "Verify All Home Navigation Controls Are Enabled",
-          "Verify Person Profile Navigation Redirect",
-          "Verify Customer Signup Navigation Redirect",
-          "Verify Clean Survey Navigation Redirect",
-          "Verify Site Survey Navigation Redirect"
+          "Verify Person Profile Button Visible And Enabled",
+          "Verify Back Button Visible And Enabled",
+          "Verify Notification Button Visible And Enabled",
+          "Verify Home Button Visible And Enabled",
+          "Verify Customer Signup Button Visible And Enabled",
+          "Verify Clean Survey Button Visible And Enabled",
+          "Verify Site Survey Button Visible And Enabled",
+          "Verify Navigation To Login Page",
+          "Verify Navigation To Customer Search Page",
+          "Verify Navigation To Vehicle Survey Page",
+          "Verify Navigation To Site Survey Page"
         ]
       }
     ],
@@ -302,109 +316,137 @@
         "id": "HOME_TC_001",
         "title": "Verify Home page loads successfully in guest state using the approved entry URL",
         "type": "positive",
-        "expectedResult": "The application loads the Home page successfully at http://localhost/washtabui/home in guest state without requiring authentication and the approved navigation controls are displayed."
+        "expectedResult": "The application loads the Home page successfully at http://localhost/washtabui/home in guest state without redirecting to a login page or requesting authentication."
       },
       {
         "id": "HOME_TC_002",
-        "title": "Verify Person/Profile button is visible and enabled on the Home page in guest state",
+        "title": "Verify Person/Profile button is visible and enabled on the guest Home page",
         "type": "positive",
-        "expectedResult": "The Person/Profile button is visible, enabled, and interactive on the Home page while the user remains in guest state."
+        "expectedResult": "The Person/Profile button is visible, enabled, and available for interaction on the Home page in guest state."
       },
       {
         "id": "HOME_TC_003",
-        "title": "Verify Back button is visible and enabled on the Home page in guest state",
+        "title": "Verify Back button is visible and enabled on the guest Home page",
         "type": "positive",
-        "expectedResult": "The Back button is visible, enabled, and interactive on the Home page while the user remains in guest state."
+        "expectedResult": "The Back button is visible, enabled, and available for interaction on the Home page in guest state."
       },
       {
         "id": "HOME_TC_004",
-        "title": "Verify Notification button is visible and enabled on the Home page in guest state",
+        "title": "Verify Notification button is visible and enabled on the guest Home page",
         "type": "positive",
-        "expectedResult": "The Notification button is visible, enabled, and interactive on the Home page while the user remains in guest state."
+        "expectedResult": "The Notification button is visible, enabled, and available for interaction on the Home page in guest state."
       },
       {
         "id": "HOME_TC_005",
-        "title": "Verify Home button is visible and enabled on the Home page in guest state",
+        "title": "Verify Home button is visible and enabled on the guest Home page",
         "type": "positive",
-        "expectedResult": "The Home button is visible, enabled, and interactive on the Home page while the user remains in guest state."
+        "expectedResult": "The Home button is visible, enabled, and available for interaction on the Home page in guest state."
       },
       {
         "id": "HOME_TC_006",
-        "title": "Verify Customer signup button is visible and enabled on the Home page in guest state",
+        "title": "Verify Customer signup button is visible and enabled on the guest Home page",
         "type": "positive",
-        "expectedResult": "The Customer signup button is visible, enabled, and interactive on the Home page while the user remains in guest state."
+        "expectedResult": "The Customer signup button is visible, enabled, and available for interaction on the Home page in guest state."
       },
       {
         "id": "HOME_TC_007",
-        "title": "Verify Clean survey button is visible and enabled on the Home page in guest state",
+        "title": "Verify Clean survey button is visible and enabled on the guest Home page",
         "type": "positive",
-        "expectedResult": "The Clean survey button is visible, enabled, and interactive on the Home page while the user remains in guest state."
+        "expectedResult": "The Clean survey button is visible, enabled, and available for interaction on the Home page in guest state."
       },
       {
         "id": "HOME_TC_008",
-        "title": "Verify Site survey button is visible and enabled on the Home page in guest state",
+        "title": "Verify Site survey button is visible and enabled on the guest Home page",
         "type": "positive",
-        "expectedResult": "The Site survey button is visible, enabled, and interactive on the Home page while the user remains in guest state."
+        "expectedResult": "The Site survey button is visible, enabled, and available for interaction on the Home page in guest state."
       },
       {
         "id": "HOME_TC_009",
-        "title": "Verify navigation to login page from the Person/Profile button",
+        "title": "Verify Person/Profile button navigates guest user to the login page URL",
         "type": "positive",
-        "expectedResult": "The application navigates away from the Home page to the login page and the resulting URL equals /washtabui/login?data=undefined."
+        "expectedResult": "The application transitions from the Home page to the login page and the browser URL equals /washtabui/login?data=undefined."
+      },
+      {
+        "id": "HOME_TC_010",
+        "title": "Verify guest user can return to the Home page after navigating to the login page",
+        "type": "positive",
+        "expectedResult": "The user returns to the Home page in guest state and the browser URL returns to http://localhost/washtabui/home."
       },
       {
         "id": "HOME_TC_011",
-        "title": "Verify navigation to customer-search workflow from the Customer signup button",
+        "title": "Verify Customer signup button navigates guest user to the customer-search workflow",
         "type": "positive",
-        "expectedResult": "The application navigates away from the Home page to a destination URL containing customer-search."
+        "expectedResult": "The application transitions from the Home page to the customer-search workflow and the resulting URL contains customer-search."
       },
       {
         "id": "HOME_TC_012",
-        "title": "Verify navigation to vehicle-survey workflow from the Clean survey button",
+        "title": "Verify Clean survey button navigates guest user to the vehicle-survey workflow",
         "type": "positive",
-        "expectedResult": "The application navigates away from the Home page to a destination URL containing vehicle-survey."
+        "expectedResult": "The application transitions from the Home page to the vehicle-survey workflow and the resulting URL contains vehicle-survey."
       },
       {
         "id": "HOME_TC_013",
-        "title": "Verify navigation to survey workflow from the Site survey button",
+        "title": "Verify Site survey button navigates guest user to the survey workflow",
         "type": "positive",
-        "expectedResult": "The application navigates away from the Home page to a destination URL containing survey?data."
+        "expectedResult": "The application transitions from the Home page to the survey workflow and the resulting URL contains survey?data."
+      },
+      {
+        "id": "HOME_TC_014",
+        "title": "Verify Home button remains interactive when selected from the Home page",
+        "type": "positive",
+        "expectedResult": "The Home button remains interactive and the application stays on the Home page with the URL still showing http://localhost/washtabui/home."
+      },
+      {
+        "id": "HOME_TC_015",
+        "title": "Verify all primary guest navigation controls are simultaneously visible before interaction",
+        "type": "positive",
+        "expectedResult": "All approved Home page navigation controls are displayed together on the Home page and available for guest user interaction."
+      },
+      {
+        "id": "HOME_TC_017",
+        "title": "Verify guest user remains on the Home page if login navigation does not complete successfully",
+        "type": "negative",
+        "expectedResult": "If navigation does not reach /washtabui/login?data=undefined, the application remains on the Home page or does not complete the expected transition."
+      },
+      {
+        "id": "HOME_TC_018",
+        "title": "Verify guest user remains on the Home page if customer-search navigation does not complete successfully",
+        "type": "negative",
+        "expectedResult": "If the resulting URL does not contain customer-search, the application does not complete the expected transition and the user remains on or returns to the Home page state."
       },
       {
         "id": "HOME_TC_019",
-        "title": "Verify Home button interaction does not break guest-state Home page accessibility",
-        "type": "positive",
-        "expectedResult": "The application remains accessible in guest state and the user stays on or returns to the Home page with the approved navigation controls still visible and enabled."
+        "title": "Verify guest user remains on the Home page if vehicle-survey navigation does not complete successfully",
+        "type": "negative",
+        "expectedResult": "If the resulting URL does not contain vehicle-survey, the application does not complete the expected transition and the user remains on or returns to the Home page state."
       },
       {
         "id": "HOME_TC_020",
-        "title": "Verify Back button interaction does not remove access to the Home page in guest state",
-        "type": "edge",
-        "expectedResult": "The application does not enter an error state and the user either remains on the Home page or returns to the previous accessible browser location without unauthorized navigation."
-      },
-      {
-        "id": "HOME_TC_021",
-        "title": "Verify Notification button interaction is accessible from the Home page in guest state",
-        "type": "positive",
-        "expectedResult": "The Notification button accepts interaction without breaking the Home page session and the application remains responsive in guest state."
+        "title": "Verify guest user remains on the Home page if survey navigation does not complete successfully",
+        "type": "negative",
+        "expectedResult": "If the resulting URL does not contain survey?data, the application does not complete the expected transition and the user remains on or returns to the Home page state."
       }
     ],
     "validations": [
-      "The application loads the Home page successfully at http://localhost/washtabui/home in guest state without requiring authentication and the approved navigation controls are displayed.",
-      "The Person/Profile button is visible, enabled, and interactive on the Home page while the user remains in guest state.",
-      "The Back button is visible, enabled, and interactive on the Home page while the user remains in guest state.",
-      "The Notification button is visible, enabled, and interactive on the Home page while the user remains in guest state.",
-      "The Home button is visible, enabled, and interactive on the Home page while the user remains in guest state.",
-      "The Customer signup button is visible, enabled, and interactive on the Home page while the user remains in guest state.",
-      "The Clean survey button is visible, enabled, and interactive on the Home page while the user remains in guest state.",
-      "The Site survey button is visible, enabled, and interactive on the Home page while the user remains in guest state.",
-      "The application navigates away from the Home page to the login page and the resulting URL equals /washtabui/login?data=undefined.",
-      "The application navigates away from the Home page to a destination URL containing customer-search.",
-      "The application navigates away from the Home page to a destination URL containing vehicle-survey.",
-      "The application navigates away from the Home page to a destination URL containing survey?data.",
-      "The application remains accessible in guest state and the user stays on or returns to the Home page with the approved navigation controls still visible and enabled.",
-      "The application does not enter an error state and the user either remains on the Home page or returns to the previous accessible browser location without unauthorized navigation.",
-      "The Notification button accepts interaction without breaking the Home page session and the application remains responsive in guest state."
+      "The application loads the Home page successfully at http://localhost/washtabui/home in guest state without redirecting to a login page or requesting authentication.",
+      "The Person/Profile button is visible, enabled, and available for interaction on the Home page in guest state.",
+      "The Back button is visible, enabled, and available for interaction on the Home page in guest state.",
+      "The Notification button is visible, enabled, and available for interaction on the Home page in guest state.",
+      "The Home button is visible, enabled, and available for interaction on the Home page in guest state.",
+      "The Customer signup button is visible, enabled, and available for interaction on the Home page in guest state.",
+      "The Clean survey button is visible, enabled, and available for interaction on the Home page in guest state.",
+      "The Site survey button is visible, enabled, and available for interaction on the Home page in guest state.",
+      "The application transitions from the Home page to the login page and the browser URL equals /washtabui/login?data=undefined.",
+      "The user returns to the Home page in guest state and the browser URL returns to http://localhost/washtabui/home.",
+      "The application transitions from the Home page to the customer-search workflow and the resulting URL contains customer-search.",
+      "The application transitions from the Home page to the vehicle-survey workflow and the resulting URL contains vehicle-survey.",
+      "The application transitions from the Home page to the survey workflow and the resulting URL contains survey?data.",
+      "The Home button remains interactive and the application stays on the Home page with the URL still showing http://localhost/washtabui/home.",
+      "All approved Home page navigation controls are displayed together on the Home page and available for guest user interaction.",
+      "If navigation does not reach /washtabui/login?data=undefined, the application remains on the Home page or does not complete the expected transition.",
+      "If the resulting URL does not contain customer-search, the application does not complete the expected transition and the user remains on or returns to the Home page state.",
+      "If the resulting URL does not contain vehicle-survey, the application does not complete the expected transition and the user remains on or returns to the Home page state.",
+      "If the resulting URL does not contain survey?data, the application does not complete the expected transition and the user remains on or returns to the Home page state."
     ],
     "transitions": []
   },
@@ -460,51 +502,90 @@
       },
       {
         "page": "home_page",
-        "name": "Verify All Home Navigation Controls Are Enabled",
+        "name": "Verify Person Profile Button Visible And Enabled",
         "targetElement": "",
         "action": ""
       },
       {
         "page": "home_page",
-        "name": "Verify Person Profile Navigation Redirect",
+        "name": "Verify Back Button Visible And Enabled",
         "targetElement": "",
         "action": ""
       },
       {
         "page": "home_page",
-        "name": "Verify Customer Signup Navigation Redirect",
+        "name": "Verify Notification Button Visible And Enabled",
         "targetElement": "",
         "action": ""
       },
       {
         "page": "home_page",
-        "name": "Verify Clean Survey Navigation Redirect",
+        "name": "Verify Home Button Visible And Enabled",
         "targetElement": "",
         "action": ""
       },
       {
         "page": "home_page",
-        "name": "Verify Site Survey Navigation Redirect",
+        "name": "Verify Customer Signup Button Visible And Enabled",
+        "targetElement": "",
+        "action": ""
+      },
+      {
+        "page": "home_page",
+        "name": "Verify Clean Survey Button Visible And Enabled",
+        "targetElement": "",
+        "action": ""
+      },
+      {
+        "page": "home_page",
+        "name": "Verify Site Survey Button Visible And Enabled",
+        "targetElement": "",
+        "action": ""
+      },
+      {
+        "page": "home_page",
+        "name": "Verify Navigation To Login Page",
+        "targetElement": "",
+        "action": ""
+      },
+      {
+        "page": "home_page",
+        "name": "Verify Navigation To Customer Search Page",
+        "targetElement": "",
+        "action": ""
+      },
+      {
+        "page": "home_page",
+        "name": "Verify Navigation To Vehicle Survey Page",
+        "targetElement": "",
+        "action": ""
+      },
+      {
+        "page": "home_page",
+        "name": "Verify Navigation To Site Survey Page",
         "targetElement": "",
         "action": ""
       }
     ],
     "approvedTests": [
       "AUT-WT-HOME01: Verify Home page loads successfully in guest state using the approved entry URL",
-      "AUT-WT-HOME02: Verify Person/Profile button is visible and enabled on the Home page in guest state",
-      "AUT-WT-HOME03: Verify Back button is visible and enabled on the Home page in guest state",
-      "AUT-WT-HOME04: Verify Notification button is visible and enabled on the Home page in guest state",
-      "AUT-WT-HOME05: Verify Home button is visible and enabled on the Home page in guest state",
-      "AUT-WT-HOME06: Verify Customer signup button is visible and enabled on the Home page in guest state",
-      "AUT-WT-HOME07: Verify Clean survey button is visible and enabled on the Home page in guest state",
-      "AUT-WT-HOME08: Verify Site survey button is visible and enabled on the Home page in guest state",
-      "AUT-WT-HOME09: Verify navigation to login page from the Person/Profile button",
-      "AUT-WT-HOME10: Verify navigation to customer-search workflow from the Customer signup button",
-      "AUT-WT-HOME11: Verify navigation to vehicle-survey workflow from the Clean survey button",
-      "AUT-WT-HOME12: Verify navigation to survey workflow from the Site survey button",
-      "AUT-WT-HOME13: Verify Home button interaction does not break guest-state Home page accessibility",
-      "AUT-WT-HOME14: Verify Back button interaction does not remove access to the Home page in guest state",
-      "AUT-WT-HOME15: Verify Notification button interaction is accessible from the Home page in guest state"
+      "AUT-WT-HOME02: Verify Person/Profile button is visible and enabled on the guest Home page",
+      "AUT-WT-HOME03: Verify Back button is visible and enabled on the guest Home page",
+      "AUT-WT-HOME04: Verify Notification button is visible and enabled on the guest Home page",
+      "AUT-WT-HOME05: Verify Home button is visible and enabled on the guest Home page",
+      "AUT-WT-HOME06: Verify Customer signup button is visible and enabled on the guest Home page",
+      "AUT-WT-HOME07: Verify Clean survey button is visible and enabled on the guest Home page",
+      "AUT-WT-HOME08: Verify Site survey button is visible and enabled on the guest Home page",
+      "AUT-WT-HOME09: Verify Person/Profile button navigates guest user to the login page URL",
+      "AUT-WT-HOME10: Verify guest user can return to the Home page after navigating to the login page",
+      "AUT-WT-HOME11: Verify Customer signup button navigates guest user to the customer-search workflow",
+      "AUT-WT-HOME12: Verify Clean survey button navigates guest user to the vehicle-survey workflow",
+      "AUT-WT-HOME13: Verify Site survey button navigates guest user to the survey workflow",
+      "AUT-WT-HOME14: Verify all primary guest navigation controls are simultaneously visible before interaction",
+      "AUT-WT-HOME15: Verify guest user remains on the Home page if login navigation does not complete successfully",
+      "AUT-WT-HOME16: Verify guest user remains on the Home page if customer-search navigation does not complete successfully",
+      "AUT-WT-HOME17: Verify guest user remains on the Home page if vehicle-survey navigation does not complete successfully",
+      "AUT-WT-HOME18: Verify guest user remains on the Home page if survey navigation does not complete successfully"
     ],
     "wrapperExpectations": [
       "Reuse approved shared/common wrapper keywords before low-level SeleniumLibrary actions.",
@@ -523,141 +604,26 @@
     ],
     "generationRule": "Downstream generation must consume approved workflow knowledge plus approved resource context before creating new artifacts."
   },
-  "reusableFlows": [
-    {
-      "flowId": "home_page.entry_via_person_profile_button",
-      "entryPage": {
-        "name": "home_page",
-        "url": "http://localhost/washtabui/home",
-        "state": ""
-      },
-      "targetPage": {
-        "name": "login_page",
-        "url": "/washtabui/login?data=undefined"
-      },
-      "steps": [
-        {
-          "action": "clickKnownElement",
-          "page": "home_page",
-          "element": "person_profile_button"
-        }
-      ],
-      "targetSignals": [
-        {
-          "type": "urlEquals",
-          "value": "/washtabui/login?data=undefined"
-        }
-      ],
-      "resourceFiles": [
-        "home_page/home_page.resource"
-      ]
-    },
-    {
-      "flowId": "home_page.entry_via_customer_signup_button",
-      "entryPage": {
-        "name": "home_page",
-        "url": "http://localhost/washtabui/home",
-        "state": ""
-      },
-      "targetPage": {
-        "name": "customer_search_page",
-        "url": "customer-search"
-      },
-      "steps": [
-        {
-          "action": "clickKnownElement",
-          "page": "home_page",
-          "element": "customer_signup_button"
-        }
-      ],
-      "targetSignals": [
-        {
-          "type": "urlContains",
-          "value": "customer-search"
-        }
-      ],
-      "resourceFiles": [
-        "home_page/home_page.resource"
-      ]
-    },
-    {
-      "flowId": "home_page.entry_via_clean_survey_button",
-      "entryPage": {
-        "name": "home_page",
-        "url": "http://localhost/washtabui/home",
-        "state": ""
-      },
-      "targetPage": {
-        "name": "vehicle_survey_page",
-        "url": "vehicle-survey"
-      },
-      "steps": [
-        {
-          "action": "clickKnownElement",
-          "page": "home_page",
-          "element": "clean_survey_button"
-        }
-      ],
-      "targetSignals": [
-        {
-          "type": "urlContains",
-          "value": "vehicle-survey"
-        }
-      ],
-      "resourceFiles": [
-        "home_page/home_page.resource"
-      ]
-    },
-    {
-      "flowId": "home_page.entry_via_site_survey_button",
-      "entryPage": {
-        "name": "home_page",
-        "url": "http://localhost/washtabui/home",
-        "state": ""
-      },
-      "targetPage": {
-        "name": "survey_page",
-        "url": "survey?data"
-      },
-      "steps": [
-        {
-          "action": "clickKnownElement",
-          "page": "home_page",
-          "element": "site_survey_button"
-        }
-      ],
-      "targetSignals": [
-        {
-          "type": "urlContains",
-          "value": "survey?data"
-        }
-      ],
-      "resourceFiles": [
-        "home_page/home_page.resource"
-      ]
-    }
-  ],
+  "reusableFlows": [],
   "unresolvedGaps": [
-    "Element name is technical and derived from DOM id instead of business intent.",
-    "Element name exposes implementation details instead of user-facing intent.",
-    "Element name is DOM-centric and not business-readable.",
-    "Element name is technical and redundant.",
-    "Element name is difficult to read and tightly coupled to implementation naming.",
-    "Element name is implementation-centric rather than workflow-centric.",
-    "Element name is implementation-centric rather than business-readable.",
-    "Locator xpath=//a is overly generic and likely to match multiple links, creating unstable automation behavior.",
-    "This link appears to be the internal anchor rendered inside the Home button shadow DOM and duplicates the Home button control already captured.",
-    "Background content container is layout-only and does not provide meaningful workflow interaction or validation value.",
-    "No explicit page-state indicator or guest-state identifier element is captured beyond navigation controls and URL validation."
+    "Element name is derived from the raw DOM id and is not business-meaningful for downstream automation assets.",
+    "Element name is overly technical and exposes implementation detail instead of business intent.",
+    "Element name uses raw DOM terminology instead of user-facing semantics.",
+    "Element name is implementation-centric and weak for reusable keyword generation.",
+    "Element name is inconsistent, lower-quality, and difficult to reuse semantically.",
+    "Element name is tied to DOM naming conventions rather than workflow intent.",
+    "Element name is technical and inconsistent with business-readable automation naming standards.",
+    "Locator xpath=//a is extremely generic and likely to match multiple links, making the element brittle and unsafe for automation reuse.",
+    "This anchor element appears to represent the same Home navigation control already modeled by auto_home_btn_button.",
+    "Background container is decorative/layout-only and provides little reusable automation value.",
+    "Underlying native control is rendered as an anchor element rather than a standard button.",
+    "The page model does not include any explicit guest-state indicator, page heading, or page-state validation element to support stronger observable Home page verification beyond URL and control visibility."
   ],
   "provenance": {
     "workflowInput": "workflow_inputs/home.json",
     "approvedManualTests": "manual_tests/home/home.json",
     "approvedResourceFiles": [
       "home_page/home_page.resource"
-    ],
-    "reusableFlowArtifacts": [
-      "pom_pages/home_page/metadata/home_page.flows.json"
     ]
   }
 }

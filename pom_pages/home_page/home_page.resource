@@ -3,6 +3,7 @@ Resource    ../../resources/common_keywords.resource
 
 *** Variables ***
 ${PAGE_URL}    http://localhost/washtabui/home
+${EXPECTED_HOME_URL}    http://localhost/washtabui/home
 ${EXPECTED_LOGIN_URL}    /washtabui/login?data=undefined
 ${EXPECTED_CUSTOMER_SEARCH_URL_FRAGMENT}    customer-search
 ${EXPECTED_VEHICLE_SURVEY_URL_FRAGMENT}    vehicle-survey
@@ -45,32 +46,57 @@ Click Site Survey Button
     Click When Ready    ${SITE_SURVEY_BUTTON}
 
 Verify Home Page Loaded In Guest State
-    [Documentation]    Verify the Home page is loaded in guest state and all approved navigation controls are visible and enabled.
-    Location Should Be    ${PAGE_URL}
-    Verify All Home Navigation Controls Are Enabled
+    [Documentation]    Verify the Home page loads in guest state and all approved navigation controls are visible and enabled.
+    Go To Url    ${PAGE_URL}
+    Verify Person Profile Button Visible And Enabled
+    Verify Back Button Visible And Enabled
+    Verify Notification Button Visible And Enabled
+    Verify Home Button Visible And Enabled
+    Verify Customer Signup Button Visible And Enabled
+    Verify Clean Survey Button Visible And Enabled
+    Verify Site Survey Button Visible And Enabled
+    Location Should Be    ${EXPECTED_HOME_URL}
 
-Verify All Home Navigation Controls Are Enabled
-    [Documentation]    Verify all approved Home page navigation controls are enabled and interactive.
+Verify Person Profile Button Visible And Enabled
+    [Documentation]    Verify the Person/Profile button is visible and enabled.
     Wait For Element To Be Ready    ${PERSON_PROFILE_BUTTON}
+
+Verify Back Button Visible And Enabled
+    [Documentation]    Verify the Back button is visible and enabled.
     Wait For Element To Be Ready    ${BACK_BUTTON}
+
+Verify Notification Button Visible And Enabled
+    [Documentation]    Verify the Notification button is visible and enabled.
     Wait For Element To Be Ready    ${NOTIFICATION_BUTTON}
+
+Verify Home Button Visible And Enabled
+    [Documentation]    Verify the Home button is visible and enabled.
     Wait For Element To Be Ready    ${HOME_BUTTON}
+
+Verify Customer Signup Button Visible And Enabled
+    [Documentation]    Verify the Customer signup button is visible and enabled.
     Wait For Element To Be Ready    ${CUSTOMER_SIGNUP_BUTTON}
+
+Verify Clean Survey Button Visible And Enabled
+    [Documentation]    Verify the Clean survey button is visible and enabled.
     Wait For Element To Be Ready    ${CLEAN_SURVEY_BUTTON}
+
+Verify Site Survey Button Visible And Enabled
+    [Documentation]    Verify the Site survey button is visible and enabled.
     Wait For Element To Be Ready    ${SITE_SURVEY_BUTTON}
 
-Verify Person Profile Navigation Redirect
+Verify Navigation To Login Page
     [Documentation]    Verify navigation to the login page URL.
-    Wait Until Location Is    ${EXPECTED_LOGIN_URL}
+    Location Should Be    ${EXPECTED_LOGIN_URL}
 
-Verify Customer Signup Navigation Redirect
-    [Documentation]    Verify navigation to the customer-search workflow entry URL.
-    Wait Until Location Contains    ${EXPECTED_CUSTOMER_SEARCH_URL_FRAGMENT}
+Verify Navigation To Customer Search Page
+    [Documentation]    Verify navigation to the customer-search workflow URL.
+    Location Should Contain    ${EXPECTED_CUSTOMER_SEARCH_URL_FRAGMENT}
 
-Verify Clean Survey Navigation Redirect
-    [Documentation]    Verify navigation to the vehicle-survey workflow entry URL.
-    Wait Until Location Contains    ${EXPECTED_VEHICLE_SURVEY_URL_FRAGMENT}
+Verify Navigation To Vehicle Survey Page
+    [Documentation]    Verify navigation to the vehicle-survey workflow URL.
+    Location Should Contain    ${EXPECTED_VEHICLE_SURVEY_URL_FRAGMENT}
 
-Verify Site Survey Navigation Redirect
-    [Documentation]    Verify navigation to the survey workflow entry URL.
-    Wait Until Location Contains    ${EXPECTED_SITE_SURVEY_URL_FRAGMENT}
+Verify Navigation To Site Survey Page
+    [Documentation]    Verify navigation to the survey workflow URL.
+    Location Should Contain    ${EXPECTED_SITE_SURVEY_URL_FRAGMENT}
