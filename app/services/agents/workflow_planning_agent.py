@@ -1,0 +1,58 @@
+from __future__ import annotations
+
+from typing import Any
+
+from app.domain.workflow_contract import WorkflowContract
+
+
+class WorkflowPlanningAgent:
+    def build_plan(
+        self,
+        contract: WorkflowContract,
+        navigation_steps: list[dict[str, Any]] | None = None,
+        rag_context: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        normalized_navigation_steps = [
+            dict(step)
+            for step in (navigation_steps or contract.navigation_steps or [])
+            if isinstance(step, dict)
+        ]
+        normalized_target_signals = [
+            dict(signal)
+            for signal in (contract.target_signals or [])
+            if isinstance(signal, dict)
+        ]
+
+        normalized_resource_files: list[str] = []
+        for item in contract.reuse_policy.resource_files or []:
+            value = str(item).strip()
+            if value and value not in normalized_resource_files:
+                normalized_resource_files.append(value)
+
+        rag_payload = rag_context if isinstance(rag_context, dict) else {}
+        rag_provenance = rag_payload.get("provenance", {}) if isinstance(rag_payload.get("provenance"), dict) else {}
+
+        return {
+            "workflow": {
+                "workflowId": contract.workflow_id,
+                "workflowName": contract.workflow_name,
+                "feature": contract.feature,
+                "sourceType": contract.source_type,
+            },
+            "pageContext": {
+                "page": contract.page.to_dict(),
+                "entryPage": contract.entry_page.to_dict() if contract.entry_page else {},
+                "targetPage": contract.target_page.to_dict() if contract.target_page else {},
+            },
+            "execution": {
+                "navigationSteps": normalized_navigation_steps,
+                "targetSignals": normalized_target_signals,
+                "stepCount": len(normalized_navigation_steps),
+            },
+            "resources": {
+                "resourceFiles": normalized_resource_files,
+            },
+            "rag": {
+                "provenance": rag_provenance,
+            },
+        }
