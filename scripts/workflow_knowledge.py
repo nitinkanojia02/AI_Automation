@@ -560,12 +560,12 @@ def collect_unresolved_gaps_for_workflow(workflow_input: Dict[str, Any]) -> List
 
 
 def build_workflow_knowledge_context(workflow_input: Dict[str, Any]) -> Dict[str, Any]:
-    from scripts.workflow_context import infer_workflow_reuse_context
+    from scripts.workflow_context import build_workflow_resource_context
 
     workflow_name = clean_text(workflow_input.get('workflowName')) or clean_text(workflow_input.get('feature')) or 'workflow'
     workflow_slug = slugify(workflow_name)
     enriched_workflow_input = dict(workflow_input)
-    enriched_workflow_input['inferredReuseContext'] = infer_workflow_reuse_context(enriched_workflow_input)
+    enriched_workflow_input['resourceContext'] = build_workflow_resource_context(enriched_workflow_input)
     story_sections = collect_workflow_story_lines(enriched_workflow_input)
     approved_elements = load_approved_elements_for_workflow(enriched_workflow_input)
     resource_knowledge = collect_resource_knowledge(enriched_workflow_input)

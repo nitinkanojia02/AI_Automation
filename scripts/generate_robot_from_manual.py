@@ -11,12 +11,10 @@ import requests
 import urllib3
 
 try:
-    from scripts.workflow_context import infer_workflow_reuse_context
     from scripts.workflow_knowledge import build_workflow_knowledge_context, discover_relevant_workflow_knowledge
 except ModuleNotFoundError:
     import sys
     sys.path.append(str(Path(__file__).resolve().parent.parent))
-    from scripts.workflow_context import infer_workflow_reuse_context
     from scripts.workflow_knowledge import build_workflow_knowledge_context, discover_relevant_workflow_knowledge
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -235,7 +233,6 @@ def parse_resource_file(resource_path: Path) -> Dict:
 def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
     prompt_manual_data = json.loads(json.dumps(manual_data))
     current_workflow_knowledge = build_workflow_knowledge_context(prompt_manual_data)
-    reuse_context = infer_workflow_reuse_context(prompt_manual_data)
     relevant_workflow_knowledge = discover_relevant_workflow_knowledge(prompt_manual_data)
     if isinstance(prompt_manual_data.get("fields"), list):
         prompt_manual_data["fields"] = [
@@ -279,17 +276,8 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
         "resource_import_prefix": "../pom_pages/",
         "common_resource_hint": "../resources/common_keywords.resource",
         "identifier_policy": identifier_policy,
-        "inferred_reuse_context": reuse_context,
         "current_workflow_knowledge": current_workflow_knowledge,
         "relevant_workflow_knowledge": relevant_workflow_knowledge,
-        "intent_preservation_notes": [
-            "Preserve manual interaction intent from steps and any interactionIntent metadata.",
-            "Use interactionIntent as AI guidance, not as a hardcoded routing table.",
-            "If interactionIntent.inputMethod is paste, preserve paste-like behavior instead of generic typing when feasible.",
-            "If interactionIntent.submissionMethod is keyboard_enter, preserve Enter-key submission behavior.",
-            "If interactionIntent.interactionPattern is repeat_click, preserve repeated click behavior and validate duplicate-prevention outcome when supported.",
-            "If interactionIntent.interactionPattern is whitespace or special_characters, preserve those exact input semantics in the generated suite."
-        ]
     }
 
     return (
@@ -507,24 +495,17 @@ def build_review_prompt(manual_data: dict, resource_context: List[Dict], generat
     payload = {
         "manual_test": prompt_manual_data,
         "resource_context": resource_context,
-        "inferred_reuse_context": infer_workflow_reuse_context(prompt_manual_data),
         "current_workflow_knowledge": current_workflow_knowledge,
         "relevant_workflow_knowledge": relevant_workflow_knowledge,
         "generated_robot": generated_robot,
         "resource_import_prefix": "../pom_pages/",
         "common_resource_hint": "../resources/common_keywords.resource",
         "approved_artifact_lineage": {
-            "resource_context_role": "Approved page/common resources are the semantic source of truth for suite keyword and variable reuse.",
             "page_resources": page_resources,
             "suite_target": "tests/<workflow>_tests.robot",
         },
-        "intent_review_focus": [
-            "Confirm that copy-paste, Enter-key submit, repeated-click, whitespace, and special-character scenarios were not collapsed into generic flows.",
-            "Preserve approved resource keyword names and approved resource variable names whenever feasible.",
-            "Prefer page-resource or common-resource abstractions over raw low-level suite steps when reusable.",
-            "Keep the suite thin and move reusable semantics into page/common resource usage rather than low-level chaining.",
-            "Ensure negative scenarios contain observable evidence-backed assertions beyond simply staying on the same page when supported by the resource context."
-        ]
+        "allowed_builtin_keywords": sorted(allowed_builtin_keywords),
+        "allowed_selenium_keywords": sorted(allowed_selenium_keywords),
     }
 
     if reviewer_md:
@@ -609,7 +590,6 @@ def build_validation_review_prompt(manual_data: dict, resource_context: List[Dic
     payload = {
         "manual_test": prompt_manual_data,
         "resource_context": resource_context,
-        "inferred_reuse_context": infer_workflow_reuse_context(prompt_manual_data),
         "current_workflow_knowledge": current_workflow_knowledge,
         "relevant_workflow_knowledge": relevant_workflow_knowledge,
         "generated_robot": generated_robot,
@@ -618,25 +598,12 @@ def build_validation_review_prompt(manual_data: dict, resource_context: List[Dic
         "resource_import_prefix": "../pom_pages/",
         "common_resource_hint": "../resources/common_keywords.resource",
         "approved_artifact_lineage": {
-            "resource_context_role": "Approved page/common resources are the semantic source of truth for suite refinement.",
             "page_resources": page_resources,
             "suite_target": "tests/<workflow>_tests.robot",
         },
-        "intent_review_focus": [
-            "Preserve manual interaction intent from interactionIntent metadata and step wording.",
-            "Preserve approved resource keyword names and approved resource variable names whenever feasible.",
-            "Strengthen negative assertions using only evidence-backed resource keywords and observable outcomes.",
-            "Reduce low-level suite leakage when equivalent reusable page/common keywords exist.",
-            "Keep the suite thin and rely on page/common resource semantics instead of low-level orchestration where possible."
-        ],
         "assertion_guidance": {
             "manual_expected_outcomes": manual_expected_outcomes,
             "resource_validation_keywords": resource_validation_keywords,
-            "policy": [
-                "Prefer visible, observable, evidence-backed assertions when supported by approved manual expected outcomes and approved resource validations.",
-                "Do not invent unsupported validation messages or unsupported business behavior.",
-                "For negative scenarios, prefer stronger validation evidence over only checking that the user stayed on the same page when stronger approved evidence exists."
-            ]
         }
     }
 
@@ -834,33 +801,10 @@ def validate_resource_content(content: str, common_resource_context: List[Dict] 
         key = ref_name.upper()
         variable_ref_counts[key] = variable_ref_counts.get(key, 0) + 1
 
-    seen_semantic_roots: dict[str, str] = {}
-    trivial_markers = ("LONG", "WITH_SPACES", "SPACE_", "SPACES_", "PADDED", "TRIMMED", "LOWERCASE", "UPPERCASE", "MIXEDCASE")
-    for var_name, var_value in variable_names:
+    for var_name, _var_value in variable_names:
         upper_name = var_name.upper()
-        normalized_value = var_value.strip()
-        if "WITH_SPACES" in upper_name and " " not in normalized_value:
-            warnings.append(f"Variable ${{{var_name}}} implies spaces but its value does not contain spaces")
-        if "SPACE_" in upper_name and "${SPACE}" not in normalized_value and " " not in normalized_value:
-            warnings.append(f"Variable ${{{var_name}}} implies a space-oriented value but its value does not contain spaces")
-        if "BLANK" in upper_name and "${EMPTY}" not in normalized_value and normalized_value != "":
-            warnings.append(f"Variable ${{{var_name}}} implies a blank value but is not blank/${{EMPTY}}")
-        if "LONG" in upper_name and len(normalized_value.replace("${SPACE}", " ")) < 16:
-            warnings.append(f"Variable ${{{var_name}}} implies a long value but appears short")
-        if any(marker in upper_name for marker in trivial_markers):
-            warnings.append(
-                f"Variable ${{{var_name}}} appears to be a trivially derived data variant; prefer canonical variables plus built-ins/inline composition unless this exact dataset is explicitly required"
-            )
         if variable_ref_counts.get(upper_name, 0) <= 1:
             warnings.append(f"Variable ${{{var_name}}} appears unused outside its own definition; remove low-value unused variables")
-        semantic_root = re.sub(r"_(ALT|LONG|WITH_SPACES|SPACE|SPACES|PADDED|TRIMMED|LOWERCASE|UPPERCASE|MIXEDCASE|TEXT|VALUE|INPUT|DATA|STRING|MESSAGE|TEXTBOX)+$", "", upper_name)
-        existing = seen_semantic_roots.get(semantic_root)
-        if existing and existing != upper_name:
-            warnings.append(
-                f"Variables ${{{existing}}} and ${{{var_name}}} may represent duplicate or overly similar semantic intents; prefer one canonical variable unless distinct approved semantics require both"
-            )
-        else:
-            seen_semantic_roots[semantic_root] = upper_name
 
     is_valid = len(errors) == 0
     message_parts = []
@@ -901,46 +845,6 @@ def build_keyword_signature_map(allowed_resources: list[str]) -> dict[str, dict]
     common_resource_path = BASE_DIR / "resources" / "common_keywords.resource"
     add_keywords_from_resource(common_resource_path)
     return signature_map
-
-
-def rewrite_suite_to_prefer_common_wrappers(content: str, resource_context: list[dict]) -> str:
-    common_keyword_names = {
-        clean_text(str(keyword.get("name", ""))).lower()
-        for resource in resource_context
-        if resource.get("type") == "common"
-        for keyword in resource.get("keywords", [])
-        if clean_text(str(keyword.get("name", "")))
-    }
-    if "input text when ready" not in common_keyword_names:
-        return content
-
-    rewritten_lines: list[str] = []
-    replacements = 0
-
-    for raw_line in content.splitlines():
-        line = raw_line
-        stripped = raw_line.strip()
-        if raw_line.startswith((" ", "\t")) and stripped and not stripped.startswith("["):
-            parts = [part.strip() for part in re.split(r"\s{2,}|\t+", stripped) if part.strip()]
-            if parts:
-                keyword_name = clean_text(parts[0]).lower()
-                arguments = parts[1:]
-                if keyword_name == "input password" and len(arguments) >= 2:
-                    indent = re.match(r"^\s*", raw_line).group(0)
-                    line = indent + "Input Text When Ready    " + "    ".join(arguments)
-                    replacements += 1
-                elif keyword_name == "input text" and len(arguments) >= 2:
-                    locator = arguments[0]
-                    if isinstance(locator, str) and locator.strip().startswith("${"):
-                        indent = re.match(r"^\s*", raw_line).group(0)
-                        line = indent + "Input Text When Ready    " + "    ".join(arguments)
-                        replacements += 1
-        rewritten_lines.append(line)
-
-    if replacements:
-        logger.info("Rewrote %s low-level text/password entry step(s) to shared wrapper usage", replacements)
-    return "\n".join(rewritten_lines) + ("\n" if content.endswith("\n") else "")
-
 
 
 def validate_robot_alignment_with_resource_context(content: str, resource_context: list[dict]) -> tuple[bool, str]:
@@ -1146,14 +1050,6 @@ def normalize_generated_robot_identifiers(content: str, identifier_policy: dict)
     sequence = 1
     pending_tag_for_current_test = False
 
-    def detect_scenario_tag(tag_line: str) -> str:
-        parts = [part.strip() for part in re.split(r"\s{2,}|\t+", tag_line) if part.strip()]
-        for part in parts:
-            normalized = clean_text(part).lower()
-            if normalized in {"positive", "negative", "edge", "smoke", "regression"}:
-                return normalized
-        return "positive"
-
     def is_test_case_header(raw_line: str) -> bool:
         stripped_line = raw_line.strip()
         if not stripped_line or raw_line.startswith((" ", "\t")):
@@ -1187,14 +1083,13 @@ def normalize_generated_robot_identifiers(content: str, identifier_policy: dict)
             lower_stripped = stripped.lower()
             if stripped.startswith("["):
                 if lower_stripped.startswith("[tags]"):
-                    scenario_tag = detect_scenario_tag(stripped)
-                    normalized_lines.append(f"    [Tags]    {current_test_id}    {scenario_tag}")
+                    normalized_lines.append(f"    [Tags]    {current_test_id}")
                     pending_tag_for_current_test = False
                     continue
                 normalized_lines.append(line)
                 continue
 
-            normalized_lines.append(f"    [Tags]    {current_test_id}    positive")
+            normalized_lines.append(f"    [Tags]    {current_test_id}")
             pending_tag_for_current_test = False
 
         if current_test_id and line.startswith((" ", "\t")) and stripped and not stripped.startswith("[") and compact_code(stripped) == compact_code(str(identifier_policy.get("feature_code", ""))):
@@ -1421,11 +1316,7 @@ def validate_robot_content(content: str, allowed_resources: list[str]) -> tuple[
             if not common_prefix:
                 break
 
-    repetitive_start_keywords = {
-        "open login page", "open browser to url", "go to url", "wait for page to be ready",
-        "wait until element is visible", "wait until page contains", "open browser session"
-    }
-    if len(common_prefix) >= 2 and any(clean_text(step).lower() in repetitive_start_keywords for step in common_prefix):
+    if len(common_prefix) >= 2:
         warnings.append("Generated suite repeats the same startup steps across tests; prefer moving repeated opening/navigation/wait steps into Test Setup or Suite Setup")
 
     if has_setup and all_test_steps:
@@ -1602,7 +1493,6 @@ def process_manual_file(config: dict, manual_json_path: Path):
     ai = config["ai"]
 
     manual_data = load_json(manual_json_path)
-    manual_data["inferredReuseContext"] = infer_workflow_reuse_context(manual_data)
 
     excluded_modules = set(gc.get("excluded_modules", []))
     excluded_files = set(gc.get("excluded_manual_files", []))
@@ -1617,16 +1507,6 @@ def process_manual_file(config: dict, manual_json_path: Path):
     resource_files = [str(x).replace("\\", "/").strip() for x in resource_files if str(x).strip()]
     if not resource_files:
         raise ValueError(f"{manual_json_path.name}: 'resourceFiles' must contain valid entries")
-
-    inferred_reuse = manual_data.get("inferredReuseContext") or {}
-    upstream_resource_files = []
-    if isinstance(inferred_reuse, dict):
-        upstream_resource_files = inferred_reuse.get("authoritativeResourceFiles") or inferred_reuse.get("inferredRelevantResourceFiles") or inferred_reuse.get("resourceFiles") or []
-    if isinstance(upstream_resource_files, list):
-        for rel_path in upstream_resource_files:
-            normalized = str(rel_path).replace("\\", "/").strip()
-            if normalized and normalized not in resource_files:
-                resource_files.append(normalized)
 
     module_name = derive_module_name(manual_data, manual_json_path)
     tests_output_dir = BASE_DIR / config["robot_tests_output_dir"]
@@ -1675,7 +1555,6 @@ def process_manual_file(config: dict, manual_json_path: Path):
     robot_content = re.sub(r"^```[a-zA-Z0-9_-]*\s*\n", "", robot_content)
     robot_content = re.sub(r"\n```$", "", robot_content)
     robot_content = normalize_generated_robot_identifiers(robot_content, identifier_policy)
-    robot_content = rewrite_suite_to_prefer_common_wrappers(robot_content, resource_context)
 
     review_prompt = build_review_prompt(manual_data, resource_context, robot_content)
     reviewed_robot_content = call_ai_chat(
@@ -1689,7 +1568,6 @@ def process_manual_file(config: dict, manual_json_path: Path):
     reviewed_robot_content = re.sub(r"^```[a-zA-Z0-9_-]*\s*\n", "", reviewed_robot_content)
     reviewed_robot_content = re.sub(r"\n```$", "", reviewed_robot_content)
     robot_content = normalize_generated_robot_identifiers(reviewed_robot_content or robot_content, identifier_policy)
-    robot_content = rewrite_suite_to_prefer_common_wrappers(robot_content, resource_context)
 
     validation_review_prompt = build_validation_review_prompt(manual_data, resource_context, robot_content)
     validated_robot_content = call_ai_chat(
@@ -1703,7 +1581,6 @@ def process_manual_file(config: dict, manual_json_path: Path):
     validated_robot_content = re.sub(r"^```[a-zA-Z0-9_-]*\s*\n", "", validated_robot_content)
     validated_robot_content = re.sub(r"\n```$", "", validated_robot_content)
     robot_content = normalize_generated_robot_identifiers(validated_robot_content or robot_content, identifier_policy)
-    robot_content = rewrite_suite_to_prefer_common_wrappers(robot_content, resource_context)
 
     is_valid, validation_message = validate_robot_content(robot_content, resource_files)
     if validation_message and re.search(r"unknown or unsupported keyword", validation_message, flags=re.IGNORECASE):
@@ -1728,7 +1605,6 @@ def process_manual_file(config: dict, manual_json_path: Path):
         repaired_robot_content = re.sub(r"^```[a-zA-Z0-9_-]*\s*\n", "", repaired_robot_content)
         repaired_robot_content = re.sub(r"\n```$", "", repaired_robot_content)
         robot_content = normalize_generated_robot_identifiers(repaired_robot_content or robot_content, identifier_policy)
-        robot_content = rewrite_suite_to_prefer_common_wrappers(robot_content, resource_context)
         is_valid, validation_message = validate_robot_content(robot_content, resource_files)
 
     if validation_message:
@@ -1753,7 +1629,6 @@ def process_manual_file(config: dict, manual_json_path: Path):
         followup_robot_content = re.sub(r"^```[a-zA-Z0-9_-]*\s*\n", "", followup_robot_content)
         followup_robot_content = re.sub(r"\n```$", "", followup_robot_content)
         robot_content = normalize_generated_robot_identifiers(followup_robot_content or robot_content, identifier_policy)
-        robot_content = rewrite_suite_to_prefer_common_wrappers(robot_content, resource_context)
         is_valid, validation_message = validate_robot_content(robot_content, resource_files)
     alignment_valid, alignment_message = validate_robot_alignment_with_resource_context(robot_content, resource_context)
     manual_expected_outcomes = collect_manual_expected_outcomes(manual_data)

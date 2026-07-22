@@ -8,13 +8,13 @@ from typing import Any, Dict, List, Optional
 
 try:
     from scripts.generate_robot_from_manual import build_manual_refiner_prompt, build_manual_review_prompt, validate_manual_content
-    from scripts.workflow_context import infer_workflow_reuse_context
+    from scripts.workflow_context import build_workflow_resource_context
     from scripts.workflow_knowledge import build_workflow_knowledge_context, discover_relevant_workflow_knowledge
 except ModuleNotFoundError:
     import sys
     sys.path.append(str(Path(__file__).resolve().parent.parent))
     from scripts.generate_robot_from_manual import build_manual_refiner_prompt, build_manual_review_prompt, validate_manual_content
-    from scripts.workflow_context import infer_workflow_reuse_context
+    from scripts.workflow_context import build_workflow_resource_context
     from scripts.workflow_knowledge import build_workflow_knowledge_context, discover_relevant_workflow_knowledge
 
 import requests
@@ -193,7 +193,7 @@ def build_compact_story_context(workflow_input: Dict[str, Any], max_chars: int =
 
 def build_prompt(workflow_input: Dict[str, Any]) -> str:
     current_workflow_knowledge = build_workflow_knowledge_context(workflow_input)
-    reuse_context = infer_workflow_reuse_context(workflow_input)
+    reuse_context = build_workflow_resource_context(workflow_input)
     relevant_workflow_knowledge = discover_relevant_workflow_knowledge(workflow_input)
     requirement_units = extract_requirement_units(workflow_input)
     mandatory_scenarios = []
@@ -699,12 +699,12 @@ def normalize_manual_test(generated: Dict[str, Any], workflow_input: Dict[str, A
     if not isinstance(resource_files, list) or not resource_files:
         resource_files = workflow_input.get("resourceFiles", [])
 
-    inferred_reuse = workflow_input.get("inferredReuseContext") or infer_workflow_reuse_context(workflow_input)
-    if isinstance(inferred_reuse, dict):
-        authoritative_files = inferred_reuse.get("authoritativeResourceFiles") or inferred_reuse.get("inferredRelevantResourceFiles") or []
-        if isinstance(authoritative_files, list):
+    resource_context = workflow_input.get("resourceContext") or build_workflow_resource_context(workflow_input)
+    if isinstance(resource_context, dict):
+        context_files = resource_context.get("resourceFiles") or []
+        if isinstance(context_files, list):
             existing = {str(x).replace("\\", "/").strip() for x in resource_files if str(x).strip()}
-            for rel_path in authoritative_files:
+            for rel_path in context_files:
                 normalized_path = str(rel_path).replace("\\", "/").strip()
                 if normalized_path and normalized_path not in existing:
                     resource_files.append(normalized_path)
@@ -820,7 +820,7 @@ def normalize_manual_test(generated: Dict[str, Any], workflow_input: Dict[str, A
 
 def process_workflow_file(config: Dict[str, Any], input_path: Path) -> None:
     workflow_input = load_json(input_path)
-    workflow_input["inferredReuseContext"] = infer_workflow_reuse_context(workflow_input)
+    workflow_input["resourceContext"] = build_workflow_resource_context(workflow_input)
     gc = config["generation_control"]
     ai_cfg = config["ai"]
 
@@ -848,7 +848,7 @@ def process_workflow_file(config: Dict[str, Any], input_path: Path) -> None:
         raise RuntimeError("Missing ai.endpoint or AI token.")
 
     workflow_context = {
-        "reuse_context": workflow_input.get("inferredReuseContext") or infer_workflow_reuse_context(workflow_input),
+        "resource_context": workflow_input.get("resourceContext") or build_workflow_resource_context(workflow_input),
         "current_workflow_knowledge": build_workflow_knowledge_context(workflow_input),
         "relevant_workflow_knowledge": discover_relevant_workflow_knowledge(workflow_input),
     }
