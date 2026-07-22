@@ -2914,6 +2914,9 @@ def generate_manual_tests_for_workflow(workflow_name: str) -> dict:
 
     workflow_with_elements = json.loads(json.dumps(workflow_input))
     workflow_with_elements["approvedElements"] = approved_elements
+    if FEATURE_FLAGS.enable_rag:
+        workflow_slug = derive_workflow_artifact_slug(workflow_input, workflow_name)
+        workflow_with_elements["ragContext"] = rag_context_service.build_context(workflow_slug)
 
     config = validate_manual_config(load_manual_config())
     ai_cfg = config["ai"]
@@ -3451,6 +3454,9 @@ def generate_automation_for_workflow(workflow_name: str) -> str:
         raise HTTPException(status_code=400, detail="Automation AI endpoint/token missing in configuration.")
 
     manual_data = load_robot_ai_json(manual_path)
+    if FEATURE_FLAGS.enable_rag:
+        workflow_slug = derive_workflow_artifact_slug(load_workflow_or_404(workflow_name), workflow_name)
+        manual_data["ragContext"] = rag_context_service.build_context(workflow_slug)
     resource_files = manual_data.get("resourceFiles", [])
     if not isinstance(resource_files, list) or not resource_files:
         raise HTTPException(status_code=400, detail="Manual tests do not contain valid resourceFiles.")

@@ -192,6 +192,7 @@ def build_compact_story_context(workflow_input: Dict[str, Any], max_chars: int =
 
 
 def build_prompt(workflow_input: Dict[str, Any]) -> str:
+    rag_context = workflow_input.get("ragContext", {}) if isinstance(workflow_input.get("ragContext"), dict) else {}
     current_workflow_knowledge = build_workflow_knowledge_context(workflow_input)
     reuse_context = build_workflow_resource_context(workflow_input)
     relevant_workflow_knowledge = discover_relevant_workflow_knowledge(workflow_input)
@@ -369,6 +370,9 @@ Current Workflow Knowledge Draft:
 
 Relevant Approved Workflow Knowledge Artifacts:
 {pretty_json(relevant_workflow_knowledge)}
+
+Canonical Retrieved RAG Context:
+{pretty_json(rag_context)}
 """.strip()
 
 

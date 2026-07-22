@@ -232,6 +232,7 @@ def parse_resource_file(resource_path: Path) -> Dict:
 
 def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
     prompt_manual_data = json.loads(json.dumps(manual_data))
+    rag_context = prompt_manual_data.get("ragContext", {}) if isinstance(prompt_manual_data.get("ragContext"), dict) else {}
     current_workflow_knowledge = build_workflow_knowledge_context(prompt_manual_data)
     relevant_workflow_knowledge = discover_relevant_workflow_knowledge(prompt_manual_data)
     if isinstance(prompt_manual_data.get("fields"), list):
@@ -278,6 +279,7 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
         "identifier_policy": identifier_policy,
         "current_workflow_knowledge": current_workflow_knowledge,
         "relevant_workflow_knowledge": relevant_workflow_knowledge,
+        "rag_context": rag_context,
     }
 
     return (
@@ -301,7 +303,7 @@ def build_prompt(manual_data: dict, resource_context: List[Dict]) -> str:
         "- Never invent or define new custom keywords in the generated test suite. User-created/custom wrapper intelligence belongs to approved upstream resource files, not to AI-generated suite code.\n"
         "- If a needed behavior is not already available through imported resource_context or approved framework keywords, compose the test only from existing approved keywords; do not create a new abstraction name.\n"
         "- Treat resource_context as including both page-specific resources and shared/common resources. Use common/shared keywords for generic browser lifecycle, navigation, waiting, clicking, and text entry behaviors, and avoid duplicating them in suite logic.\n"
-        "- Treat retrieved_common_keywords, retrieved_page_keywords, retrieved_page_variables, current_workflow_knowledge, and relevant_workflow_knowledge as RAG-like retrieved context. Reuse them explicitly instead of free-form invention.\n"
+        "- Treat retrieved_common_keywords, retrieved_page_keywords, retrieved_page_variables, current_workflow_knowledge, relevant_workflow_knowledge, and rag_context as retrieved context. Reuse them explicitly instead of free-form invention.\n"
         "- current_workflow_knowledge is the concise approved-memory draft for the current workflow assembled from current workflow context plus approved artifacts already available. Use it to keep the suite aligned with the workflow's business journey, ownership boundaries, and approved test intent.\n"
         "- relevant_workflow_knowledge is approved cumulative workflow memory created from approved user story context, approved element extraction, approved manual tests, approved resource keywords, and approved automation from prior workflows. Consult it before creating navigation/setup assumptions for the current suite.\n"
         "- If relevant_workflow_knowledge shows that an upstream workflow already owns navigation, page opening, state validation, or reusable controls needed by this workflow, reuse that approved upstream knowledge and imported upstream resources instead of inventing new suite abstractions.\n"
