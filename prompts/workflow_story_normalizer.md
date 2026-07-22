@@ -35,6 +35,9 @@ Within those headings, prefer the following structural conventions whenever the 
 - In Application Context, explicitly include canonical page identity fields only when the raw input provides them directly or when the workflow clearly depends on them:
   - Canonical page name: `<page_name>`
   - Canonical page state: `<state_id>`
+- Prefer framework-style canonical identifiers when the raw input already supports them or when they can be stated without changing business meaning:
+  - use stable page identifiers such as `home_page`, `login_page`
+  - use stable state identifiers such as `guest`, `authenticated`
 - Do not invent canonical page identity fields when they are not provided and are not necessary to distinguish meaningful workflow variants.
 - In Transition Expectations, explicitly state branch reset behavior when multiple navigation branches start from the same entry page/state.
 - In Transition Expectations or Approved Test Data, explicitly distinguish target match mode facts when supported by the input:
@@ -42,6 +45,8 @@ Within those headings, prefer the following structural conventions whenever the 
   - URL contains fragment
 - When some controls are in scope only for visibility/enabled validation and not for transition execution, state that explicitly instead of implying they are navigation branches.
 - When the workflow is an upstream/bootstrap page with no prior reusable entry context, state that it establishes the canonical entry context for downstream workflow reuse.
+- When the workflow reuses an already-established upstream entry context, state that it reuses that canonical entry context and establishes only the new downstream journey owned by this workflow.
+- When a workflow has one main success/authentication journey plus secondary return or negative branches, keep that distinction explicit instead of flattening all branches into equivalent navigation paths.
 
 Content rules:
 - Preserve only approved, relevant, high-signal information
@@ -58,6 +63,10 @@ Content rules:
 - Preserve positive, negative, validation, navigation, and state-transition expectations when supported by input
 - Acceptance Criteria must be atomic, testable, and observable
 - Keep navigation facts precise: distinguish entry page, target page, success destination, and failure/return destination whenever the input supports that distinction
+- When the workflow starts from an upstream page and reaches an intermediate page before returning to a destination page/state, keep all three roles explicit:
+  - entry page/state
+  - intermediate page
+  - success destination page/state
 - Do not duplicate the same statement across multiple sections unless needed for clarity
 - Prefer compact factual statements over narrative prose dumps; this story is a downstream generation artifact, not a long-form requirements document
 - Prefer action-oriented and state-oriented statements over copied story prose when describing navigation, transitions, and validations
@@ -72,6 +81,7 @@ Content rules:
 - Make resource reuse guidance explicit enough that downstream generation can infer which upstream resources should be reused
 - If a shared or upstream resource may already own a control or navigation behavior, state that reuse should be preferred over duplicate ownership
 - If approved credentials or test data are given, state that they are approved for positive scenarios and should be reused consistently across manual and automation assets
+- If a workflow includes observational or implementation-dependent negative scenarios such as whitespace handling, preserve them as observational validation and do not rewrite them into assumed outcomes
 - If the workflow depends on a previous workflow or page, make that dependency explicit
 - If the workflow is the first landing/bootstrap page, state clearly that no upstream reusable entry context is required and that the workflow establishes the canonical entry context for downstream reuse
 - Include page-state facts only when the raw input explicitly states a page state or when a meaningful workflow/state variant must be distinguished for execution clarity
@@ -95,8 +105,8 @@ Section expectations:
 - Business Rules: capture the governing behavioral rules explicitly supported by the input.
 - Validation Expectations: list observable validations that should be checked.
 - Transition Expectations: describe expected page/application/state transitions for success and failure. For workflows with multiple independent branches, explicitly state branch reset behavior when supported by the input.
-- Resource Reuse Guidance: explicitly state which upstream/shared resources should be reused if known and when duplicate ownership should be avoided. For bootstrap workflows, state that the workflow establishes the canonical upstream entry context for downstream reuse.
-- Downstream Automation Guidance: include concise framework-relevant guidance for manual/resource/automation generation, approved test data reuse expectations, ownership boundaries, and independent branch handling when relevant.
+- Resource Reuse Guidance: explicitly state which upstream/shared resources should be reused if known and when duplicate ownership should be avoided. For bootstrap workflows, state that the workflow establishes the canonical upstream entry context for downstream reuse. For downstream workflows, state that the workflow reuses the upstream canonical entry context and establishes its own local journey and validations.
+- Downstream Automation Guidance: include concise framework-relevant guidance for manual/resource/automation generation, approved test data reuse expectations, ownership boundaries, and independent branch handling when relevant. Preserve distinctions between primary success journeys, negative branches, and secondary return-path validations when the input supports them.
 - Acceptance Criteria: write atomic Given/When/Then criteria covering happy path, negative path, validations, navigation behavior, and important edge cases when supported by the input.
 
 Quality gate before finalizing:
