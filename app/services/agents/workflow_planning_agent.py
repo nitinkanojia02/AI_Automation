@@ -3,9 +3,13 @@ from __future__ import annotations
 from typing import Any
 
 from app.domain.workflow_contract import WorkflowContract
+from app.services.workflows.page_state_service import PageStateService
 
 
 class WorkflowPlanningAgent:
+    def __init__(self, page_state_service: PageStateService | None = None):
+        self.page_state_service = page_state_service
+
     def build_plan(
         self,
         contract: WorkflowContract,
@@ -44,6 +48,8 @@ class WorkflowPlanningAgent:
             "sourceSnapshot": source_snapshot,
         }
 
+        page_state = self.page_state_service.build_state_descriptor(contract) if self.page_state_service else {}
+
         return {
             "workflow": {
                 "workflowId": contract.workflow_id,
@@ -55,6 +61,7 @@ class WorkflowPlanningAgent:
                 "page": contract.page.to_dict(),
                 "entryPage": contract.entry_page.to_dict() if contract.entry_page else {},
                 "targetPage": contract.target_page.to_dict() if contract.target_page else {},
+                "pageState": page_state,
             },
             "execution": {
                 "navigationSteps": normalized_navigation_steps,

@@ -28,6 +28,12 @@ class WorkflowPlanValidator:
                 errors.append("pageContext.page must be an object")
             elif not str(page.get("name", "")).strip():
                 errors.append("pageContext.page.name is required")
+            page_state = page_context.get("pageState", {})
+            if page_state is not None and not isinstance(page_state, dict):
+                errors.append("pageContext.pageState must be an object when provided")
+            elif isinstance(page_state, dict) and page_state:
+                if not str(page_state.get("page_name", "")).strip():
+                    errors.append("pageContext.pageState.page_name is required when pageState is provided")
 
         execution = plan.get("execution", {})
         if not isinstance(execution, dict):

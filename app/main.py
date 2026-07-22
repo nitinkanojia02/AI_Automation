@@ -21,6 +21,7 @@ from starlette.status import HTTP_303_SEE_OTHER
 from app.config.feature_flags import FEATURE_FLAGS
 from app.repositories.execution_plan_repository import ExecutionPlanRepository
 from app.repositories.knowledge_repository import KnowledgeRepository
+from app.repositories.page_state_repository import PageStateRepository
 from app.repositories.resource_repository import ResourceRepository
 from app.repositories.workflow_repository import WorkflowRepository
 from app.services.agents.resource_reuse_agent import ResourceReuseAgent
@@ -28,6 +29,7 @@ from app.services.agents.workflow_planning_agent import WorkflowPlanningAgent
 from app.services.agents.workflow_plan_validator import WorkflowPlanValidator
 from app.services.context.rag_context_service import RagContextService
 from app.services.platform.logger import PlatformLogger
+from app.services.workflows.page_state_service import PageStateService
 from app.services.workflows.workflow_contract_builder import WorkflowContractBuilder
 from app.services.workflows.workflow_contract_validator import WorkflowContractValidator
 
@@ -103,10 +105,12 @@ logger = logging.getLogger(__name__)
 platform_logger = PlatformLogger(__name__)
 workflow_repository = WorkflowRepository(WORKFLOW_DIR)
 execution_plan_repository = ExecutionPlanRepository(WORKFLOW_DIR)
+page_state_repository = PageStateRepository(POM_DIR)
+page_state_service = PageStateService(page_state_repository)
 resource_repository = ResourceRepository(BASE_DIR)
 knowledge_repository = KnowledgeRepository(BASE_DIR, resource_repository)
 resource_reuse_agent = ResourceReuseAgent(resource_repository)
-workflow_planning_agent = WorkflowPlanningAgent()
+workflow_planning_agent = WorkflowPlanningAgent(page_state_service)
 workflow_plan_validator = WorkflowPlanValidator()
 rag_context_service = RagContextService(knowledge_repository, platform_logger)
 
