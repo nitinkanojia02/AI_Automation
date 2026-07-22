@@ -135,8 +135,18 @@ def build_runtime_workflow_context(
     if not FEATURE_FLAGS.enable_workflow_contracts:
         return None, dict(workflow_payload)
 
-    ensure_workflow_contract_artifact(workflow_slug, workflow_payload)
     runtime_context = dict(workflow_payload)
+    derived_context = _derive_structured_workflow_context(runtime_context)
+    for key in ("entryPage", "targetPage", "navigationSteps", "targetPageSignals"):
+        current_value = runtime_context.get(key)
+        if key in ("navigationSteps", "targetPageSignals"):
+            if not isinstance(current_value, list) or not current_value:
+                runtime_context[key] = derived_context.get(key, [])
+        else:
+            if not isinstance(current_value, dict) or not current_value:
+                runtime_context[key] = derived_context.get(key, {})
+
+    ensure_workflow_contract_artifact(workflow_slug, runtime_context)
     merged_resource_files: list[str] = []
     for item in (resource_files if isinstance(resource_files, list) else workflow_payload.get("resourceFiles", [])) or []:
         normalized = clean_text(str(item)).replace("\\", "/")
@@ -1079,6 +1089,156 @@ def normalize_target_page_signals(signals: list[dict] | None) -> list[dict]:
             continue
         normalized_signals.append(dict(signal))
     return normalized_signals
+
+
+def _extract_story_lines(value) -> list[str]:
+    lines: list[str] = []
+    if isinstance(value, list):
+        for item in value:
+            lines.extend(_extract_story_lines(item))
+        return lines
+    if isinstance(value, str):
+        cleaned = clean_text(value)
+        if cleaned:
+            lines.append(cleaned)
+    return lines
+
+
+_URL_PATTERN = re.compile(r"https?://[^\s)]+", re.IGNORECASE)
+
+
+def _extract_urls_from_text_blocks(values: list[str]) -> list[str]:
+    urls: list[str] = []
+    for value in values:
+        for match in _URL_PATTERN.findall(str(value or "")):
+            cleaned = clean_text(match)
+            if cleaned and cleaned not in urls:
+                urls.append(cleaned)
+    return urls
+
+
+def _derive_structured_workflow_context(workflow: dict) -> dict:
+    normalized_workflow = dict(workflow) if isinstance(workflow, dict) else {}
+    if not normalized_workflow:
+        return {}
+
+    pages = normalized_workflow.get("pages", []) if isinstance(normalized_workflow.get("pages"), list) else []
+    first_page = pages[0] if pages and isinstance(pages[0], dict) else {}
+    external = normalized_workflow.get("externalContext", {}) if isinstance(normalized_workflow.get("externalContext"), dict) else {}
+    test_data = normalized_workflow.get("testData", {}) if isinstance(normalized_workflow.get("testData"), dict) else {}
+
+    application_context_lines = _extract_story_lines(external.get("applicationContext", []))
+    entry_condition_lines = _extract_story_lines(external.get("entryConditions", []))
+    transition_lines = _extract_story_lines(external.get("transitionExpectations", []))
+    validation_lines = _extract_story_lines(external.get("validationExpectations", []))
+    observed_step_lines = _extract_story_lines(normalized_workflow.get("observedSteps", []))
+    observed_validation_lines = _extract_story_lines(normalized_workflow.get("observedValidations", []))
+    all_story_lines = application_context_lines + entry_condition_lines + transition_lines + validation_lines + observed_step_lines + observed_validation_lines
+
+    entry_page = normalized_workflow.get("entryPage") if isinstance(normalized_workflow.get("entryPage"), dict) else {}
+    if not entry_page:
+        entry_url = normalize_url_value(str(test_data.get("entryUrl", "")))
+        if not entry_url:
+            extracted_urls = _extract_urls_from_text_blocks(application_context_lines + entry_condition_lines + observed_step_lines)
+            entry_url = extracted_urls[0] if extracted_urls else normalize_url_value(str(first_page.get("url", "")))
+        entry_state = clean_text(str(first_page.get("state", "")))
+        if not entry_state:
+            state_candidates = [line for line in application_context_lines + entry_condition_lines if clean_text(line)]
+            for line in state_candidates:
+                lowered = line.lower()
+                if "state" in lowered:
+                    entry_state = clean_text(line.split(":", 1)[-1] if ":" in line else line)
+                    break
+        entry_name = clean_text(str(first_page.get("name", "")))
+        if entry_name or entry_url or entry_state:
+            entry_page = {"name": entry_name, "url": entry_url, "state": entry_state}
+
+    target_page = normalized_workflow.get("targetPage") if isinstance(normalized_workflow.get("targetPage"), dict) else {}
+    navigation_steps = normalize_navigation_steps(normalized_workflow.get("navigationSteps", []))
+    target_page_signals = normalize_target_page_signals(normalized_workflow.get("targetPageSignals", []))
+
+    if not target_page_signals:
+        test_data_values = []
+        if isinstance(test_data, dict):
+            test_data_values.extend([clean_text(str(value)) for value in test_data.values() if clean_text(str(value))])
+        test_data_values.extend(_extract_urls_from_text_blocks(all_story_lines))
+        for value in test_data_values:
+            signal_type = "urlContains" if "/" in value or "?" in value else "pageName"
+            target_page_signals.append({"type": signal_type, "value": value})
+
+    if not navigation_steps:
+        workflow_slug = clean_text(str(normalized_workflow.get("workflowName", ""))) or clean_text(str(normalized_workflow.get("feature", "")))
+        workflow_knowledge_payload = knowledge_repository.load_workflow_knowledge_artifact(slugify(workflow_slug)) if workflow_slug else {}
+        reusable_flow_artifacts = workflow_knowledge_payload.get("reusableFlows", []) if isinstance(workflow_knowledge_payload.get("reusableFlows", []), list) else []
+        for flow in reusable_flow_artifacts:
+            if not isinstance(flow, dict):
+                continue
+            flow_id = clean_text(str(flow.get("flowId", "")))
+            if flow_id:
+                navigation_steps.append({"action": "reuseApprovedEntryContext", "flowId": flow_id})
+        bundle_resources = resource_repository.load_bundles(normalized_workflow.get("resourceFiles", []))
+        for bundle in bundle_resources:
+            page_name = clean_text(str(bundle.get("pageName", "")))
+            reusable_flows = bundle.get("reusableFlows", []) if isinstance(bundle.get("reusableFlows", []), list) else []
+            for flow in reusable_flows:
+                if not isinstance(flow, dict):
+                    continue
+                flow_target = flow.get("targetPage", {}) if isinstance(flow.get("targetPage", {}), dict) else {}
+                flow_entry = flow.get("entryPage", {}) if isinstance(flow.get("entryPage", {}), dict) else {}
+                target_name = clean_text(str(flow_target.get("name", "")))
+                target_url = clean_text(str(flow_target.get("url", "")))
+                if not target_name and not target_url:
+                    continue
+                target_markers = [marker.lower() for marker in [target_name, target_url] if marker]
+                if not target_markers:
+                    continue
+                if not any(marker and any(marker in line.lower() for line in all_story_lines) for marker in target_markers):
+                    continue
+                flow_id = clean_text(str(flow.get("flowId", "")))
+                if not flow_id:
+                    continue
+                navigation_steps.append({"action": "reuseApprovedEntryContext", "flowId": flow_id})
+                signal_value = target_url or target_name
+                if signal_value:
+                    signal_type = "urlContains" if "/" in signal_value or "?" in signal_value else "pageName"
+                    target_page_signals.append({"type": signal_type, "value": signal_value})
+                if not target_page:
+                    target_page = {
+                        "name": target_name,
+                        "url": target_url,
+                        "state": clean_text(str(flow_target.get("state", ""))),
+                    }
+                if not entry_page:
+                    entry_page = {
+                        "name": clean_text(str(flow_entry.get("name", page_name))),
+                        "url": clean_text(str(flow_entry.get("url", ""))),
+                        "state": clean_text(str(flow_entry.get("state", ""))),
+                    }
+
+    deduped_steps: list[dict] = []
+    seen_steps: set[str] = set()
+    for step in navigation_steps:
+        marker = json.dumps(step, sort_keys=True, ensure_ascii=False)
+        if marker in seen_steps:
+            continue
+        seen_steps.add(marker)
+        deduped_steps.append(step)
+
+    deduped_signals: list[dict] = []
+    seen_signals: set[str] = set()
+    for signal in target_page_signals:
+        marker = json.dumps(signal, sort_keys=True, ensure_ascii=False)
+        if marker in seen_signals:
+            continue
+        seen_signals.add(marker)
+        deduped_signals.append(signal)
+
+    return {
+        "entryPage": entry_page,
+        "targetPage": target_page,
+        "navigationSteps": deduped_steps,
+        "targetPageSignals": deduped_signals,
+    }
 
 
 def run_page_extraction(page_name: str, page_url: str, extraction_context: dict | None = None):

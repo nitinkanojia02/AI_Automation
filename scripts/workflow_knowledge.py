@@ -559,6 +559,53 @@ def collect_unresolved_gaps_for_workflow(workflow_input: Dict[str, Any]) -> List
     return unique_strings(gaps, limit=20)
 
 
+def derive_reusable_flows(workflow_input: Dict[str, Any], navigation_model: Dict[str, Any], resource_knowledge: Dict[str, Any]) -> List[Dict[str, Any]]:
+    resource_files = [str(item).replace('\\', '/').strip() for item in ensure_list(workflow_input.get('resourceFiles')) if clean_text(item)]
+    entry_point = navigation_model.get('entryPoint') if isinstance(navigation_model.get('entryPoint'), dict) else {}
+    target_signals = [item for item in ensure_list(navigation_model.get('targetSignals')) if isinstance(item, dict)]
+    flows: List[Dict[str, Any]] = []
+    for resource_file in resource_files:
+        page_name = Path(resource_file).stem.strip()
+        if not page_name:
+            continue
+        resource_path = POM_DIR / resource_file
+        if not resource_path.exists():
+            continue
+        keyword_names = [item.get('name', '') for item in extract_keywords_from_resource(read_text(resource_path))]
+        for keyword_name in keyword_names:
+            normalized_keyword = clean_text(keyword_name)
+            if not normalized_keyword.lower().startswith('click '):
+                continue
+            flow_id = f"{page_name}.entry_via_{slugify(normalized_keyword.replace('Click ', '', 1))}"
+            flow_steps = [{
+                'action': 'clickKnownElement',
+                'page': page_name,
+                'element': slugify(normalized_keyword.replace('Click ', '', 1)),
+            }]
+            flow_target_signals = target_signals[:]
+            flows.append({
+                'flowId': flow_id,
+                'entryPage': {
+                    'name': clean_text(entry_point.get('name')) or page_name,
+                    'url': clean_text(entry_point.get('url')),
+                    'state': clean_text(entry_point.get('state')),
+                },
+                'targetPage': navigation_model.get('target', {}) if isinstance(navigation_model.get('target'), dict) else {},
+                'steps': flow_steps,
+                'targetSignals': flow_target_signals,
+                'resourceFiles': resource_knowledge.get('authoritativeResources', []),
+            })
+    deduped: List[Dict[str, Any]] = []
+    seen: set[str] = set()
+    for flow in flows:
+        marker = clean_text(flow.get('flowId'))
+        if not marker or marker in seen:
+            continue
+        seen.add(marker)
+        deduped.append(flow)
+    return deduped[:25]
+
+
 def build_workflow_knowledge_context(workflow_input: Dict[str, Any]) -> Dict[str, Any]:
     from scripts.workflow_context import build_workflow_resource_context
 
@@ -587,6 +634,7 @@ def build_workflow_knowledge_context(workflow_input: Dict[str, Any]) -> Dict[str
         ],
         'generationRule': 'Downstream generation must consume approved workflow knowledge plus approved resource context before creating new artifacts.',
     }
+    reusable_flows = derive_reusable_flows(enriched_workflow_input, navigation_model, resource_knowledge)
 
     entry_url = clean_text(((navigation_model.get('entryPoint') or {}).get('url')))
     target_url = clean_text(((navigation_model.get('target') or {}).get('url')))
@@ -644,6 +692,7 @@ def build_workflow_knowledge_context(workflow_input: Dict[str, Any]) -> Dict[str
         'manualCoverage': {},
         'automationKnowledge': {},
         'downstreamGuidance': downstream_guidance,
+        'reusableFlows': reusable_flows,
         'unresolvedGaps': unresolved_gaps,
         'provenance': {
             'workflowInput': '',
