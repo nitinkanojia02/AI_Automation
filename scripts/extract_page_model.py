@@ -12,12 +12,10 @@ import urllib3
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
 try:
-    from scripts.workflow_context import infer_workflow_reuse_context
     from scripts.workflow_knowledge import build_workflow_knowledge_context, discover_relevant_workflow_knowledge
 except ModuleNotFoundError:
     import sys
     sys.path.append(str(Path(__file__).resolve().parent.parent))
-    from scripts.workflow_context import infer_workflow_reuse_context
     from scripts.workflow_knowledge import build_workflow_knowledge_context, discover_relevant_workflow_knowledge
 from playwright.sync_api import sync_playwright
 
@@ -89,15 +87,6 @@ def resolve_entry_url(workflow_like: dict) -> str:
     story_url = first_url_in_text(build_story_text(workflow_like))
     if story_url:
         return story_url
-
-    try:
-        inferred = infer_workflow_reuse_context(workflow_like)
-    except Exception:
-        inferred = {}
-    for candidate in inferred.get("discoveredUrls", []):
-        resolved = clean_text(str(candidate))
-        if resolved:
-            return resolved
 
     return "http://localhost/"
 
@@ -325,10 +314,7 @@ def validate_config(config: dict) -> dict:
     return config
 
 def is_meaningless_label(text: str) -> bool:
-    return slugify(text) in {
-        "input", "button", "link", "textbox", "password",
-        "select", "dropdown", "element", "ion_input", "ion_button"
-    }
+    return not bool(slugify(text))
 
 def infer_role(item: dict) -> str:
     tag = (item.get("tag") or "").lower()
@@ -360,8 +346,6 @@ def infer_role(item: dict) -> str:
 def infer_label(item: dict) -> str:
     attrs = item.get("attributes", {}) or {}
     shadow = item.get("shadow", {}) or {}
-    tag = (item.get("tag") or "").lower()
-    locator_hint = build_best_locator(item).lower()
 
     primary_candidates = [
         item.get("label", ""),
@@ -383,31 +367,19 @@ def infer_label(item: dict) -> str:
     raw_label = ""
     for c in primary_candidates:
         c = clean_text(c)
-        if c and not is_meaningless_label(c):
+        if c:
             raw_label = c
             break
 
     if not raw_label:
         for c in shadow_candidates:
             c = clean_text(c)
-            if c and not is_meaningless_label(c):
+            if c:
                 raw_label = c
                 break
 
     raw_label = raw_label or clean_text(item.get("tag", "element")) or "element"
     normalized = slugify(raw_label)
-
-    normalized = re.sub(r"^(btn|button)_", "", normalized)
-    normalized = re.sub(r"_(outline|icon)$", "", normalized)
-    if normalized in {"person", "profile", "user"}:
-        normalized = "profile"
-
-    button_like = tag in {"button", "ion-button", "ion-fab-button", "app-main-button"}
-    button_like = button_like or "btn_" in locator_hint or "button" in locator_hint or attrs.get("tappable") is not None
-
-    if button_like and normalized and not normalized.endswith("button"):
-        normalized = f"{normalized}_button"
-
     return normalized or "element"
 
 def best_identity(item: dict) -> Tuple[str, str, str, str, str]:
@@ -421,12 +393,7 @@ def best_identity(item: dict) -> Tuple[str, str, str, str, str]:
     )
 
 def make_var_name(label: str, role: str, used_names: set) -> str:
-    base = slugify(label)
-    if is_meaningless_label(base):
-        base = role
-    if not base.endswith(role):
-        base = f"{base}_{role}"
-
+    base = slugify(label) or slugify(role) or "ELEMENT"
     name = base.upper()
     i = 2
     while name in used_names:
@@ -547,10 +514,6 @@ def should_skip_item(item: dict) -> bool:
             len(text) >= 3
             or len(label) >= 3
             or role_attr in {"heading", "link", "img", "button"}
-            or "forgot" in text.lower()
-            or "title" in css_class.lower()
-            or "header" in css_class.lower()
-            or "link" in css_class.lower()
             or tag == "svg"
         )
     )
@@ -824,21 +787,9 @@ def collect_elements(page) -> List[dict]:
         }
       };
 
-      const isRelevantFabButton = (el) => {
-        if (!el || (el.tagName || '').toLowerCase() !== 'ion-fab-button') return true;
-        const iconLabel = (el.querySelector('ion-icon[aria-label]')?.getAttribute('aria-label') || '').trim().toLowerCase();
-        const hostText = getText(el).trim().toLowerCase();
-        const label = iconLabel || hostText;
-        return ['home', 'arrow back', 'back', 'notifications', 'person', 'profile', 'user'].includes(label);
-      };
-
       collectFromRoot(document);
 
       return nodes
-        .filter(el => {
-          if (!isRelevantFabButton(el)) return false;
-          return true;
-        })
         .map(el => {
           const attrs = {};
           for (const a of el.attributes) attrs[a.name] = a.value;
@@ -1382,75 +1333,19 @@ def get_page_resource_variables(page_name: str) -> List[dict]:
 def resolve_known_element_locator(page_name: str, element_name: str) -> str:
     normalized_page = slugify(page_name)
     normalized_element = slugify(element_name)
-    element_tokens = {token for token in re.split(r"[_\s]+", normalized_element) if token}
-
-    best_locator = ""
-    best_score = -1
     for item in get_page_resource_variables(normalized_page):
         variable_name = clean_text(str(item.get("name", "")))
         locator = clean_text(str(item.get("value", "")))
-        slug_name = slugify(variable_name)
         if not locator:
             continue
-        if slug_name == normalized_element:
+        if slugify(variable_name) == normalized_element:
             return locator
-        score = 0
-        variable_tokens = {token for token in re.split(r"[_\s]+", slug_name) if token}
-        overlap = len(element_tokens & variable_tokens)
-        if overlap:
-            score += overlap
-        if normalized_element and normalized_element in slug_name:
-            score += 2
-        if score > best_score:
-            best_score = score
-            best_locator = locator
-    if best_locator and best_score > 0:
-        return best_locator
     raise ValueError(f"Known element '{element_name}' was not found in resource variables for page '{page_name}'.")
 
 
 def infer_story_navigation_steps(page_name: str, workflow_like: dict) -> Tuple[List[dict], List[dict]]:
-    if not isinstance(workflow_like, dict):
-        return [], []
-
-    current_page = slugify(page_name)
-    reuse_context = workflow_like.get("inferred_reuse_context") if isinstance(workflow_like.get("inferred_reuse_context"), dict) else {}
-    relevant_resources = [str(item).replace("\\", "/").strip() for item in reuse_context.get("authoritativeResourceFiles", []) if str(item).strip()]
-    if not relevant_resources:
-        explicit_resources = workflow_like.get("resourceFiles", []) if isinstance(workflow_like.get("resourceFiles"), list) else []
-        relevant_resources = [str(item).replace("\\", "/").strip() for item in explicit_resources if str(item).strip()]
-
-    navigation_steps: List[dict] = []
-    target_page_signals: List[dict] = []
-
-    entry_page_payload = workflow_like.get("entryPage") if isinstance(workflow_like.get("entryPage"), dict) else {}
-    target_page_payload = workflow_like.get("targetPage") if isinstance(workflow_like.get("targetPage"), dict) else {}
-    entry_page_name = slugify(clean_text(str(entry_page_payload.get("name", ""))))
-    target_page_name = slugify(clean_text(str(target_page_payload.get("name", ""))))
-
-    if not target_page_name:
-        target_page_name = current_page
-
-    if relevant_resources and entry_page_name and target_page_name and entry_page_name != target_page_name and current_page == target_page_name:
-        source_page_name = entry_page_name if entry_page_name.endswith("_page") else f"{entry_page_name}_page"
-        navigation_steps.append({
-            "action": "reuseApprovedEntryContext",
-            "page": source_page_name,
-            "element": "",
-            "inferredReuseContext": {
-                "authoritativeResourceFiles": relevant_resources,
-            },
-        })
-
-    deduped_signals: List[dict] = []
-    seen = set()
-    for signal in target_page_signals:
-        key = json.dumps(signal, sort_keys=True)
-        if key not in seen:
-            seen.add(key)
-            deduped_signals.append(signal)
-
-    return navigation_steps, deduped_signals
+    del page_name, workflow_like
+    return [], []
 
 
 def perform_navigation_steps(page, navigation_steps: List[dict], wait_seconds: int, navigation_debug: List[dict] | None = None):
@@ -1825,14 +1720,10 @@ def build_navigation_page_config(config: dict, page_name: str, entry_url: str, n
         "page_name": page_name,
         "url": entry_url,
         "navigation_steps": [
-            {
-                **step,
-                "inferredReuseContext": infer_workflow_reuse_context(workflow_like_payload),
-            } if isinstance(step, dict) else step
+            dict(step) if isinstance(step, dict) else step
             for step in navigation_payload.get("navigationSteps", [])
         ],
         "target_page_signals": navigation_payload.get("targetPageSignals", []),
-        "inferred_reuse_context": infer_workflow_reuse_context(workflow_like_payload),
     }
     single_config["pages"] = [page_entry]
     return single_config

@@ -55,13 +55,6 @@ from scripts.generate_robot_from_manual import (
     validate_robot_alignment_with_resource_context,
     validate_robot_content,
 )
-try:
-    from scripts.workflow_context import infer_workflow_reuse_context
-except ModuleNotFoundError:
-    import sys as _sys
-    _sys.path.append(str(BASE_DIR))
-    from scripts.workflow_context import infer_workflow_reuse_context
-
 BASE_DIR = Path(__file__).resolve().parent.parent
 WORKFLOW_DIR = BASE_DIR / "workflow_inputs"
 MANUAL_DIR = BASE_DIR / "manual_tests"
@@ -784,28 +777,6 @@ def run_page_extraction(page_name: str, page_url: str, extraction_context: dict 
     entry_page = extraction_context.get("entryPage", {}) if isinstance(extraction_context, dict) else {}
     target_page_signals = normalize_target_page_signals(extraction_context.get("targetPageSignals", []) if isinstance(extraction_context, dict) else [])
 
-    if not navigation_steps and isinstance(extraction_context, dict):
-        try:
-            from scripts.extract_page_model import infer_story_navigation_steps as _infer_story_navigation_steps
-        except ModuleNotFoundError:
-            import sys as _sys
-            _sys.path.append(str(BASE_DIR))
-            from scripts.extract_page_model import infer_story_navigation_steps as _infer_story_navigation_steps
-        inferred_steps, inferred_signals = _infer_story_navigation_steps(page_name, extraction_context)
-        if inferred_steps:
-            navigation_steps = inferred_steps
-            if not target_page_signals:
-                target_page_signals = inferred_signals
-            extraction_context = dict(extraction_context)
-            extraction_context["navigationSteps"] = navigation_steps
-            extraction_context["targetPageSignals"] = target_page_signals
-            if not isinstance(entry_page, dict) or not normalize_url_value(str(entry_page.get("url", ""))):
-                extraction_context["entryPage"] = {
-                    "name": clean_text(str((entry_page or {}).get("name", "") if isinstance(entry_page, dict) else "")),
-                    "url": clean_text(str(extraction_context.get("pageUrl") or extraction_context.get("url") or "")),
-                }
-            entry_page = extraction_context.get("entryPage", {})
-
     if navigation_steps:
         entry_page_url = normalize_url_value(str(entry_page.get("url", ""))) if isinstance(entry_page, dict) else ""
         if not entry_page_url:
@@ -910,57 +881,10 @@ def infer_label_from_raw_item(item: dict) -> str:
 
 def normalize_ui_element_name(label: str, role: str) -> str:
     base = slugify(label)
-    noise_tokens = {
-        "auto", "btn", "button", "icon", "input", "field", "control", "ctl",
-        "ng", "ion", "app", "component", "elem", "element",
-    }
-    directional_tokens = {"left", "right", "top", "bottom"}
-
-    raw_parts = [part for part in base.split("_") if part]
-    filtered_parts: list[str] = []
-    for part in raw_parts:
-        if part in noise_tokens:
-            continue
-        if part.isdigit():
-            continue
-        if re.fullmatch(r"[a-f0-9]{6,}", part):
-            continue
-        filtered_parts.append(part)
-
-    if not filtered_parts:
-        filtered_parts = [part for part in raw_parts if part not in {"auto"}] or raw_parts
-
-    if filtered_parts[:2] == ["person", "nav"]:
-        filtered_parts = ["person", "navigation"]
-    elif filtered_parts[:2] == ["back", "nav"]:
-        filtered_parts = ["back", "navigation"]
-    elif filtered_parts[:2] == ["home", "nav"]:
-        filtered_parts = ["home", "navigation"]
-
-    if filtered_parts and filtered_parts[0] == "person":
-        filtered_parts[0] = "person"
-
-    if len(filtered_parts) >= 3 and filtered_parts[0] in directional_tokens and filtered_parts[1] == "navigation":
-        filtered_parts = filtered_parts[1:] + [filtered_parts[0]]
-
-    base = "_".join(filtered_parts).strip("_")
-    if base in {"person", "profile", "user"}:
-        base = "person"
     if not base:
         base = role or "element"
-    if role == "textbox" and not base.endswith(("textbox", "input", "field")):
-        return f"{base}_textbox"
-    if role == "password_textbox" and not base.endswith(("password", "field", "textbox", "input")):
-        return f"{base}_password"
-    if role == "message" and not base.endswith("message"):
-        return f"{base}_message"
-    if role == "button" and not base.endswith("button"):
-        return f"{base}_button"
-    if role == "dropdown" and not base.endswith("dropdown"):
-        return f"{base}_dropdown"
-    if role == "link" and not base.endswith("link"):
-        return f"{base}_link"
-    return base or role or "element"
+    suffix = slugify(role or "element")
+    return f"{base}_{suffix}" if suffix and not base.endswith(f"_{suffix}") and base != suffix else (base or suffix or "element")
 
 def infer_name_from_raw_item(item: dict, index: int) -> str:
     role = infer_type_from_raw_item(item)
@@ -1342,190 +1266,18 @@ def sync_page_variables_from_approved_elements(workflow: dict, approved_elements
     return payload
 
 def build_keywords_from_elements(elements: list[dict]) -> list[dict]:
-    keywords = []
-    seen_keyword_names: set[str] = set()
-
-    for idx, element in enumerate(elements, start=1):
-        if not isinstance(element, dict) or not bool(element.get("approved", True)):
-            continue
-
-        element_name = clean_text(element.get("approvedName", ""))
-        locator = clean_text(element.get("locator", ""))
-        element_type = clean_text(element.get("type", "element")).lower()
-
-        if not element_name or not locator:
-            continue
-
-        keyword_title = to_keyword_title(element_name)
-        variable_name = to_robot_variable_name(element_name)
-
-        if element_type == "textbox":
-            keyword_name = f"Enter {keyword_title}"
-            implementation = [f"Input Text When Ready    ${{{variable_name}}}    ${{text}}"]
-            arguments = ["text"]
-            action = "input"
-        elif element_type == "password":
-            keyword_name = f"Enter {keyword_title}"
-            implementation = [f"Input Text When Ready    ${{{variable_name}}}    ${{password}}"]
-            arguments = ["password"]
-            action = "input"
-        elif element_type == "button":
-            keyword_name = f"Click {keyword_title}"
-            implementation = [f"Click When Ready    ${{{variable_name}}}"]
-            arguments = []
-            action = "click"
-        elif element_type == "dropdown":
-            keyword_name = f"Select {keyword_title}"
-            implementation = [
-                f"Wait For Element To Be Ready    ${{{variable_name}}}",
-                f"Select From List By Label    ${{{variable_name}}}    ${{value}}"
-            ]
-            arguments = ["value"]
-            action = "select"
-        elif element_type == "link":
-            keyword_name = f"Click {keyword_title}"
-            implementation = [f"Click When Ready    ${{{variable_name}}}"]
-            arguments = []
-            action = "click"
-        elif element_type == "message":
-            keyword_name = f"Verify {keyword_title}"
-            implementation = [f"Wait Until Element Is Visible    ${{{variable_name}}}    10s"]
-            arguments = []
-            action = "verify"
-        else:
-            continue
-
-        if keyword_name.lower() in seen_keyword_names:
-            continue
-        seen_keyword_names.add(keyword_name.lower())
-        keywords.append({
-            "keywordId": f"KW_{len(keywords)+1:03d}",
-            "keywordName": keyword_name,
-            "targetElement": element_name,
-            "action": action,
-            "arguments": arguments,
-            "implementation": implementation,
-            "approved": True,
-        })
-
-    return keywords
+    del elements
+    return []
 
 
 def sanitize_keyword_name(keyword_name: str, target_element: str = "", action: str = "", approved_element: dict | None = None) -> str:
-    normalized_name = clean_text(keyword_name)
-    target = clean_text(target_element)
-    normalized_action = clean_text(action).lower()
-    target_title = to_keyword_title(target) if target else ""
-    if target_title:
-        if normalized_action == "click":
-            return f"Click {target_title}"
-        if normalized_action == "input":
-            return f"Enter {target_title}"
-        if normalized_action == "select":
-            return f"Select {target_title}"
-        if normalized_action == "verify":
-            return f"Verify {target_title}"
-    if target_title:
-        return target_title
-    if not normalized_name:
-        return normalized_name
-    cleaned = re.sub(r"\b\d+\b", "", normalized_name, flags=re.IGNORECASE)
-    cleaned = re.sub(r"\s+", " ", cleaned).strip()
-    return cleaned or normalized_name
+    del target_element, action, approved_element
+    return clean_text(keyword_name)
 
 
 def normalize_resource_keyword_headers(resource_content: str, approved_keywords: list[dict]) -> str:
-    content = strip_markdown_fences(resource_content or "")
-    if not content.strip() or "*** Keywords ***" not in content:
-        return content
-
-    lines = content.splitlines()
-    approved_by_existing: dict[str, str] = {}
-    approved_by_target_action: dict[tuple[str, str], str] = {}
-    approved_by_target: dict[str, str] = {}
-    variable_to_target: dict[str, str] = {}
-
-    for item in approved_keywords:
-        if not isinstance(item, dict):
-            continue
-        keyword_name = clean_text(str(item.get("keywordName", "")))
-        target_element = clean_text(str(item.get("targetElement", "")))
-        action = clean_text(str(item.get("action", ""))).lower()
-        canonical_name = sanitize_keyword_name(keyword_name, target_element, action)
-        if keyword_name and canonical_name:
-            approved_by_existing[keyword_name.lower()] = canonical_name
-        if target_element and canonical_name:
-            approved_by_target_action[(target_element.lower(), action)] = canonical_name
-            approved_by_target[target_element.lower()] = canonical_name
-        implementation = item.get("implementation", [])
-        if isinstance(implementation, str):
-            implementation_lines = [implementation]
-        elif isinstance(implementation, list):
-            implementation_lines = [str(line) for line in implementation]
-        else:
-            implementation_lines = []
-        for line in implementation_lines:
-            for ref in re.findall(r"\$\{([A-Z0-9_]+)\}", line):
-                variable_to_target.setdefault(clean_text(ref).upper(), target_element)
-
-    normalized_lines: list[str] = []
-    in_keywords = False
-    current_keyword_name = ""
-    current_body: list[str] = []
-
-    def derive_action_from_body(body_lines: list[str]) -> str:
-        for body_line in body_lines:
-            stripped = clean_text(body_line)
-            if not stripped or stripped.startswith("["):
-                continue
-            step_name = re.split(r"\s{2,}|\t+", stripped, maxsplit=1)[0]
-            return clean_text(step_name).split()[0].lower() if clean_text(step_name) else ""
-        return ""
-
-    def derive_target_from_body(body_lines: list[str]) -> str:
-        for body_line in body_lines:
-            for ref in re.findall(r"\$\{([A-Z0-9_]+)\}", body_line):
-                mapped = clean_text(variable_to_target.get(clean_text(ref).upper(), ""))
-                if mapped:
-                    return mapped
-                variable_name = clean_text(ref).lower()
-                if variable_name.endswith("_button") or variable_name.endswith("_textbox") or variable_name.endswith("_dropdown") or variable_name.endswith("_link") or variable_name.endswith("_message") or variable_name.endswith("_field"):
-                    return variable_name
-        return ""
-
-    def flush_block() -> None:
-        nonlocal current_keyword_name, current_body
-        if not current_keyword_name:
-            return
-        canonical_name = approved_by_existing.get(current_keyword_name.lower(), "")
-        derived_target = derive_target_from_body(current_body)
-        derived_action = derive_action_from_body(current_body)
-        if derived_target:
-            canonical_name = approved_by_target_action.get((derived_target.lower(), derived_action), "") or approved_by_target.get(derived_target.lower(), "") or sanitize_keyword_name(current_keyword_name, derived_target, derived_action)
-        normalized_lines.append(canonical_name or current_keyword_name)
-        normalized_lines.extend(current_body)
-        current_keyword_name = ""
-        current_body = []
-
-    for line in lines:
-        stripped = line.strip()
-        if stripped.startswith("***"):
-            if in_keywords:
-                flush_block()
-            in_keywords = stripped.lower() == "*** keywords ***"
-            normalized_lines.append(line)
-            continue
-        if in_keywords and stripped and not line.startswith((" ", "\t")):
-            flush_block()
-            current_keyword_name = stripped
-            continue
-        if in_keywords and current_keyword_name:
-            current_body.append(line)
-            continue
-        normalized_lines.append(line)
-    if in_keywords:
-        flush_block()
-    return "\n".join(normalized_lines)
+    del approved_keywords
+    return strip_markdown_fences(resource_content or "")
 
 
 def get_manual_tests_for_workflow(workflow: dict) -> list[dict]:
@@ -1923,22 +1675,10 @@ def get_keyword_review_data(workflow: dict):
         for item in approved_elements
         if clean_text(str(item.get("approvedName", "")))
     }
-    approved_titles_to_name = {
-        to_keyword_title(name).lower(): name
-        for name in approved_elements_by_name
-    }
-
     disallowed_resource_keywords = {
         "open page",
         "open browser to page",
     }
-
-    def resolve_target_element(keyword_name: str) -> str:
-        lowered_name = clean_text(keyword_name).lower()
-        for candidate_title, element_name in approved_titles_to_name.items():
-            if candidate_title and candidate_title in lowered_name:
-                return element_name
-        return ""
 
     keywords = []
     if source_keywords_path.exists() and approved_elements_by_name:
@@ -1950,7 +1690,7 @@ def get_keyword_review_data(workflow: dict):
                 keyword_name = clean_text(str(item.get("keywordName", "")))
                 if not keyword_name or keyword_name.lower() in disallowed_resource_keywords:
                     continue
-                target_element = clean_text(str(item.get("targetElement", ""))) or resolve_target_element(keyword_name)
+                target_element = clean_text(str(item.get("targetElement", "")))
                 implementation = item.get("implementation", [])
                 if isinstance(implementation, str):
                     implementation = [line.rstrip() for line in implementation.splitlines() if clean_text(line)]
@@ -1981,7 +1721,7 @@ def get_keyword_review_data(workflow: dict):
                 if not keyword_name or lowered_name in disallowed_resource_keywords:
                     continue
 
-                target_element = resolve_target_element(keyword_name)
+                target_element = ""
                 action = "generic"
                 if lowered_name.startswith("click "):
                     action = "click"
@@ -2063,7 +1803,7 @@ def get_keyword_review_data(workflow: dict):
                             keyword_name = clean_text(str(item.get("keywordName", "")))
                             if not keyword_name or keyword_name.lower() in disallowed_resource_keywords:
                                 continue
-                            target_element = clean_text(str(item.get("targetElement", ""))) or resolve_target_element(keyword_name)
+                            target_element = clean_text(str(item.get("targetElement", "")))
                             if target_element and target_element not in approved_elements_by_name:
                                 continue
                             keyword_name = sanitize_keyword_name(keyword_name, target_element, clean_text(str(item.get("action", ""))) or "generic")
@@ -2113,7 +1853,7 @@ def get_keyword_review_data(workflow: dict):
                                         keyword_name = clean_text(str(item.get("keywordName", "")))
                                         if not keyword_name or keyword_name.lower() in disallowed_resource_keywords:
                                             continue
-                                        target_element = clean_text(str(item.get("targetElement", ""))) or resolve_target_element(keyword_name)
+                                        target_element = clean_text(str(item.get("targetElement", "")))
                                         if target_element and target_element not in approved_elements_by_name:
                                             continue
                                         keyword_name = sanitize_keyword_name(keyword_name, target_element, clean_text(str(item.get("action", ""))) or "generic")
@@ -2394,7 +2134,7 @@ def save_keywords_for_workflow(workflow: dict, keywords: list[dict]):
         if not keyword_name or keyword_name.lower() in disallowed_resource_keywords:
             continue
 
-        target_element = resolve_target_element(keyword_name, str(keyword.get("targetElement", "")))
+        target_element = clean_text(str(keyword.get("targetElement", "")))
         keyword_name = sanitize_keyword_name(keyword_name, target_element, clean_text(str(keyword.get("action", ""))) or "generic")
         implementation = keyword.get("implementation", [])
         if isinstance(implementation, str):
@@ -2778,35 +2518,7 @@ def validate_review_artifact_consistency(workflow: dict, approved_keywords: list
 
 
 def is_resource_level_keyword_name(name: str) -> bool:
-    normalized = clean_text(name).lower()
-    if not normalized:
-        return False
-
-    composite_markers = (
-        " with ",
-        " using ",
-        " and ",
-        " then ",
-        " after ",
-        " before ",
-    )
-    scenario_prefixes = (
-        "login ",
-        "log in ",
-        "logout ",
-        "log out ",
-        "submit ",
-        "complete ",
-        "perform ",
-    )
-
-    if normalized.startswith("open ") and normalized.endswith(" page"):
-        return False
-    if any(marker in normalized for marker in composite_markers):
-        return False
-    if any(normalized.startswith(prefix) for prefix in scenario_prefixes):
-        return False
-    return True
+    return bool(clean_text(name))
 
 
 
@@ -3293,12 +3005,8 @@ def generate_manual_tests_for_workflow(workflow_name: str) -> dict:
     return final_json
 
 def infer_manual_intent(title: str, steps: list[str], expected_result: str) -> dict:
-    return {
-        "inputMethod": "type",
-        "submissionMethod": "click",
-        "interactionPattern": "standard",
-        "validationType": "generic",
-    }
+    del title, steps, expected_result
+    return {}
 
 
 def extract_manual_test_cases(manual: dict) -> list[dict]:
@@ -3522,11 +3230,8 @@ def apply_robot_test_naming_and_tags(content: str, workflow: dict | None, workfl
         return testcase_id, testcase_id
 
     def detect_scenario_type(title: str, existing_tags: list[str]) -> str:
-        for tag in existing_tags:
-            normalized = clean_text(tag).lower()
-            if normalized in {"positive", "negative", "edge"}:
-                return normalized
-        return "positive"
+        del title, existing_tags
+        return "generic"
 
     i = 0
     while i < len(lines):
@@ -4185,43 +3890,10 @@ def normalize_azure_work_item(base_url: str, collection: str, project: str, work
 def derive_test_identifier_prefix(source_context: dict | None) -> str:
     if not isinstance(source_context, dict):
         return ""
-
+    source_id = clean_text(str(source_context.get("sourceId", "")))
     title = clean_text(str(source_context.get("title", "")))
-    description = clean_text(str(source_context.get("description", "")))
-    candidates = [title, description]
-
-    tags = source_context.get("tags", [])
-    if isinstance(tags, list):
-        candidates.extend(clean_text(str(tag)) for tag in tags if clean_text(str(tag)))
-
-    stop_words = {
-        "a", "an", "and", "application", "authentication", "flow", "for", "from", "in", "of", "on",
-        "page", "screen", "story", "test", "the", "to", "user", "users", "using", "validation", "verify",
-        "workflow"
-    }
-    preferred_terms = {
-        "login", "logout", "register", "registration", "search", "checkout", "payment", "cart", "order",
-        "profile", "dashboard", "reset", "password", "authentication", "authorization", "admin", "user"
-    }
-
-    seen: list[str] = []
-    for candidate in candidates:
-        words = re.findall(r"[A-Za-z0-9]+", candidate.lower())
-        for word in words:
-            if len(word) < 3 or word in stop_words:
-                continue
-            if word not in seen:
-                seen.append(word)
-
-    prioritized = [word for word in seen if word in preferred_terms]
-    remaining = [word for word in seen if word not in prioritized]
-    selected = (prioritized + remaining)[:2]
-    if not selected:
-        return "FLOW"
-
-    compact = "_".join(compact_code(word)[:8] for word in selected if compact_code(word))
-    compact = re.sub(r"_+", "_", compact).strip("_")
-    return compact[:20] or "FLOW"
+    basis = source_id or title
+    return compact_code(basis)[:20] if basis else ""
 
 
 def build_workflow_payload_from_azure_story(
@@ -4395,11 +4067,9 @@ def page_review(request: Request, workflow_name: str):
 def run_page_review_extraction(request: Request, workflow_name: str):
     workflow = load_workflow_or_404(workflow_name)
     review_data = get_page_review_data(workflow)
-    inferred_reuse = infer_workflow_reuse_context(workflow)
     resource_files = workflow.get("resourceFiles", []) if isinstance(workflow.get("resourceFiles"), list) else []
-    inferred_authoritative = inferred_reuse.get("authoritativeResourceFiles", []) if isinstance(inferred_reuse.get("authoritativeResourceFiles"), list) else []
     merged_resource_files = []
-    for item in list(resource_files) + list(inferred_authoritative):
+    for item in resource_files:
         normalized = clean_text(str(item)).replace("\\", "/")
         if normalized and normalized not in merged_resource_files:
             merged_resource_files.append(normalized)
@@ -4407,33 +4077,6 @@ def run_page_review_extraction(request: Request, workflow_name: str):
 
     navigation_steps = review_data.get("navigation_steps", [])
     target_page_signals = review_data.get("target_page_signals", [])
-    if not navigation_steps:
-        try:
-            from scripts.extract_page_model import infer_story_navigation_steps as _infer_story_navigation_steps
-        except ModuleNotFoundError:
-            import sys as _sys
-            _sys.path.append(str(BASE_DIR))
-            from scripts.extract_page_model import infer_story_navigation_steps as _infer_story_navigation_steps
-        story_context = {
-            "workflowName": clean_text(str(workflow.get("workflowName", workflow_name))),
-            "feature": clean_text(str(workflow.get("feature", ""))),
-            "testIdentifierPrefix": clean_text(str(workflow.get("testIdentifierPrefix", ""))),
-            "applicationCode": clean_text(str(workflow.get("applicationCode", ""))),
-            "resourceFiles": resource_files,
-            "externalContext": workflow.get("externalContext", {}) if isinstance(workflow.get("externalContext"), dict) else {},
-            "pages": workflow.get("pages", []) if isinstance(workflow.get("pages"), list) else [],
-            "pageUrl": review_data.get("page_url", ""),
-            "description": clean_text(str(workflow.get("description", workflow.get("userStory", "")))),
-            "userStory": clean_text(str(workflow.get("userStory", ""))),
-            "observedSteps": workflow.get("observedSteps", []) if isinstance(workflow.get("observedSteps"), list) else [],
-            "observedValidations": workflow.get("observedValidations", []) if isinstance(workflow.get("observedValidations"), list) else [],
-            "acceptanceCriteria": workflow.get("acceptanceCriteria", []) if isinstance(workflow.get("acceptanceCriteria"), list) else [],
-            "inferred_reuse_context": inferred_reuse,
-        }
-        navigation_steps, inferred_signals = _infer_story_navigation_steps(review_data["page_name"], story_context)
-        if not target_page_signals:
-            target_page_signals = inferred_signals
-
     extraction_context = {
         "entryPage": review_data.get("entry_page", {}),
         "targetPage": review_data.get("target_page", {}) or {"name": review_data["page_name"]},
