@@ -171,11 +171,23 @@ def resolve_execution_plan(
     persisted_plan = execution_plan_repository.load_plan(workflow_slug) if FEATURE_FLAGS.enable_execution_plan_persistence else None
     if persisted_plan is not None:
         freshness = execution_plan_repository.get_plan_freshness_context(workflow_slug)
+        persisted_provenance = persisted_plan.get("provenance", {}) if isinstance(persisted_plan.get("provenance", {}), dict) else {}
+        persisted_source_snapshot = persisted_provenance.get("sourceSnapshot", {}) if isinstance(persisted_provenance.get("sourceSnapshot", {}), dict) else {}
         if execution_plan_repository.is_plan_stale(workflow_slug):
             platform_logger.info(
                 "execution_plan_persisted_stale",
                 workflow_slug=workflow_slug,
                 attach_stage=attach_stage,
+                freshness=freshness,
+                source_snapshot=persisted_source_snapshot,
+            )
+        elif not execution_plan_repository.snapshots_match(workflow_slug, persisted_source_snapshot):
+            platform_logger.info(
+                "execution_plan_persisted_snapshot_mismatch",
+                workflow_slug=workflow_slug,
+                attach_stage=attach_stage,
+                source_snapshot=persisted_source_snapshot,
+                current_source_snapshot=execution_plan_repository.get_source_snapshot(workflow_slug),
                 freshness=freshness,
             )
         else:
@@ -189,7 +201,6 @@ def resolve_execution_plan(
                     dict(item) for item in (persisted_execution.get("targetSignals", []) or []) if isinstance(item, dict)
                 ]
                 if persisted_navigation_steps == runtime_navigation_steps and persisted_target_signals == runtime_target_signals:
-                    persisted_provenance = persisted_plan.get("provenance", {}) if isinstance(persisted_plan.get("provenance", {}), dict) else {}
                     platform_logger.info(
                         "execution_plan_reused",
                         workflow_slug=workflow_slug,
@@ -198,7 +209,7 @@ def resolve_execution_plan(
                         navigation_source=persisted_provenance.get("navigationSource", ""),
                         target_signal_source=persisted_provenance.get("targetSignalSource", ""),
                         rag_attached=persisted_provenance.get("ragAttached", False),
-                        source_snapshot=persisted_provenance.get("sourceSnapshot", {}),
+                        source_snapshot=persisted_source_snapshot,
                         persisted=True,
                         freshness=freshness,
                     )
@@ -211,6 +222,7 @@ def resolve_execution_plan(
                     runtime_step_count=len(runtime_navigation_steps),
                     persisted_target_signal_count=len(persisted_target_signals),
                     runtime_target_signal_count=len(runtime_target_signals),
+                    source_snapshot=persisted_source_snapshot,
                     freshness=freshness,
                 )
             else:
@@ -219,6 +231,7 @@ def resolve_execution_plan(
                     workflow_slug=workflow_slug,
                     attach_stage=attach_stage,
                     error_count=len(persisted_errors),
+                    source_snapshot=persisted_source_snapshot,
                     freshness=freshness,
                 )
 

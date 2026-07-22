@@ -61,3 +61,8 @@ class ExecutionPlanRepository:
             if artifact.get("exists") and artifact_mtime is not None and artifact_mtime > plan_mtime:
                 return True
         return False
+
+    def snapshots_match(self, workflow_slug: str, persisted_snapshot: dict[str, Any] | None) -> bool:
+        if not isinstance(persisted_snapshot, dict):
+            return False
+        return persisted_snapshot == self.get_source_snapshot(workflow_slug)
