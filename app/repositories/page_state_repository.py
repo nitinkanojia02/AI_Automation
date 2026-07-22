@@ -8,6 +8,8 @@ from app.domain.page_state_model import PageStateDescriptor
 
 
 class PageStateRepository:
+    REQUIRED_ARTIFACT_KEYS = ("stateId", "stateType", "sourceArtifacts", "signals", "metadata")
+
     def __init__(self, pom_dir: Path):
         self.pom_dir = pom_dir
 
@@ -29,6 +31,21 @@ class PageStateRepository:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
         return path
+
+    def validate_state_artifact(self, payload: dict[str, Any]) -> list[str]:
+        errors: list[str] = []
+        if not isinstance(payload, dict):
+            return ["page state artifact must be an object"]
+        for key in self.REQUIRED_ARTIFACT_KEYS:
+            if key not in payload:
+                errors.append(f"page state artifact missing required key: {key}")
+        if "sourceArtifacts" in payload and not isinstance(payload.get("sourceArtifacts"), list):
+            errors.append("page state artifact sourceArtifacts must be a list")
+        if "signals" in payload and not isinstance(payload.get("signals"), list):
+            errors.append("page state artifact signals must be a list")
+        if "metadata" in payload and not isinstance(payload.get("metadata"), dict):
+            errors.append("page state artifact metadata must be an object")
+        return errors
 
     def build_descriptor(self, page_name: str, state_payload: dict[str, Any] | None = None) -> PageStateDescriptor:
         payload = state_payload if isinstance(state_payload, dict) else {}

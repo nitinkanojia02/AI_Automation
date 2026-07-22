@@ -16,7 +16,8 @@ class PageStateService:
             return {}
 
         state_payload = self.page_state_repository.load_state_artifact(page_name)
-        descriptor = self.page_state_repository.build_descriptor(page_name, state_payload)
+        artifact_errors = self.page_state_repository.validate_state_artifact(state_payload) if state_payload else ["missing state artifact"]
+        descriptor = self.page_state_repository.build_descriptor(page_name, state_payload if not artifact_errors else {})
 
         if not descriptor.state_id:
             descriptor.state_id = str(contract.page_state or contract.page.state or "").strip()
@@ -34,5 +35,10 @@ class PageStateService:
                 for item in (contract.reuse_policy.resource_files or [])
                 if str(item).strip()
             ]
+
+        descriptor.metadata = dict(descriptor.metadata or {})
+        descriptor.metadata["stateSource"] = "artifact" if not artifact_errors else "contract_fallback"
+        if artifact_errors:
+            descriptor.metadata["artifactValidationErrors"] = artifact_errors
 
         return descriptor.to_dict()
