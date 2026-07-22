@@ -1,0 +1,95 @@
+{
+  "workflowName": "home",
+  "feature": "HOME",
+  "applicationCode": "WT",
+  "testIdentifierPrefix": "HOME",
+  "resourceFiles": [
+    "home_page/home_page.resource"
+  ],
+  "preconditions": [
+    "Application is launched and accessible.",
+    "User is not authenticated and is operating in guest state.",
+    "User navigates directly to http://localhost/washtabui/home.",
+    "Home page load completes successfully before interaction begins."
+  ],
+  "testCases": [
+    {
+      "id": "HOME_TC_001",
+      "title": "Verify guest user can directly access the Home page using the approved entry URL",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Launch the application in a new browser session.",
+        "Navigate directly to http://localhost/washtabui/home.",
+        "Wait for the Home page to complete loading."
+      ],
+      "expectedResult": "The application loads the Home page successfully in guest state without requiring authentication, and the browser URL remains http://localhost/washtabui/home."
+    },
+    {
+      "id": "HOME_TC_003",
+      "title": "Verify all approved Home page navigation controls are enabled and interactive in guest state",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Navigate to http://localhost/washtabui/home as a guest user.",
+        "Inspect the Person/Profile button, Back button, Notification button, Home button, Customer signup button, Clean survey button, and Site survey button.",
+        "Verify each button is enabled and can receive click interaction."
+      ],
+      "expectedResult": "All approved Home page navigation buttons are enabled, interactive, and available for guest-state navigation."
+    },
+    {
+      "id": "HOME_TC_004",
+      "title": "Verify Person/Profile button navigates guest user to the login page URL",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Navigate to http://localhost/washtabui/home as a guest user.",
+        "Click the Person/Profile button once.",
+        "Observe the resulting browser URL."
+      ],
+      "expectedResult": "The application transitions from the Home page to the login page and the browser URL equals /washtabui/login?data=undefined."
+    },
+    {
+      "id": "HOME_TC_006",
+      "title": "Verify Customer signup button navigates guest user to the customer-search workflow entry URL",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Navigate to http://localhost/washtabui/home as a guest user.",
+        "Click the Customer signup button once.",
+        "Observe the resulting browser URL."
+      ],
+      "expectedResult": "The application transitions from the Home page to the customer-search workflow entry page and the resulting URL contains customer-search."
+    },
+    {
+      "id": "HOME_TC_008",
+      "title": "Verify Clean survey button navigates guest user to the vehicle-survey workflow entry URL",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Navigate to http://localhost/washtabui/home as a guest user.",
+        "Click the Clean survey button once.",
+        "Observe the resulting browser URL."
+      ],
+      "expectedResult": "The application transitions from the Home page to the vehicle-survey workflow entry page and the resulting URL contains vehicle-survey."
+    },
+    {
+      "id": "HOME_TC_010",
+      "title": "Verify Site survey button navigates guest user to the survey workflow entry URL",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Navigate to http://localhost/washtabui/home as a guest user.",
+        "Click the Site survey button once.",
+        "Observe the resulting browser URL."
+      ],
+      "expectedResult": "The application transitions from the Home page to the survey workflow entry page and the resulting URL contains survey?data."
+    }
+  ]
+}

@@ -1,0 +1,102 @@
+{
+  "pageName": "login_page",
+  "keywords": [
+    {
+      "keywordId": "KW_001",
+      "keywordName": "Enter Username Field",
+      "targetElement": "username_field",
+      "action": "input",
+      "arguments": [
+        "text"
+      ],
+      "implementation": [
+        "Input Text When Ready    ${USER_NAME_TEXTBOX}    ${text}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_002",
+      "keywordName": "Enter Password Field",
+      "targetElement": "password_field",
+      "action": "input",
+      "arguments": [
+        "password"
+      ],
+      "implementation": [
+        "Input Password When Ready    ${PASSWORD_FIELD}    ${password}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_005",
+      "keywordName": "Click Back Button",
+      "targetElement": "back_button",
+      "action": "click",
+      "arguments": [],
+      "implementation": [
+        "Click When Ready    ${BACK_BUTTON}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_006",
+      "keywordName": "Click Home Button",
+      "targetElement": "home_button",
+      "action": "click",
+      "arguments": [],
+      "implementation": [
+        "Click When Ready    ${HOME_BUTTON}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_007",
+      "keywordName": "Click Login Button",
+      "targetElement": "login_button",
+      "action": "click",
+      "arguments": [],
+      "implementation": [
+        "Click When Ready    ${LOGIN_BUTTON}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_008",
+      "keywordName": "Verify Authentication Failed Message",
+      "targetElement": "authentication_failed_message",
+      "action": "verify",
+      "arguments": [],
+      "implementation": [
+        "Wait For Element To Be Ready    ${AUTHENTICATION_FAILED_MESSAGE}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_009",
+      "keywordName": "Verify Username Field",
+      "targetElement": "username_field",
+      "action": "verify",
+      "arguments": [],
+      "implementation": [
+        "Wait For Element To Be Ready    ${USER_NAME_TEXTBOX}",
+        "    Wait For Element To Be Ready    ${PASSWORD_FIELD}",
+        "    Wait For Element To Be Ready    ${LOGIN_BUTTON}",
+        "    Wait For Element To Be Ready    ${USERNAME_FIELD}",
+        "    Wait For Element To Be Ready    ${USERNAME_FIELD}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_010",
+      "keywordName": "Verify Password Field",
+      "targetElement": "password_field",
+      "action": "verify",
+      "arguments": [],
+      "implementation": [
+        "Wait For Element To Be Ready    ${PASSWORD_FIELD}",
+        "    Element Attribute Value Should Be    ${PASSWORD_FIELD}    type    password"
+      ],
+      "approved": true
+    }
+  ]
+}

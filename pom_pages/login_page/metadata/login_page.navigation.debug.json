@@ -1,0 +1,57 @@
+[
+  {
+    "page": "login_page",
+    "entry_url": "http://localhost/washtabui/home",
+    "received_navigation_steps": [
+      {
+        "action": "reuseApprovedEntryContext",
+        "page": "home_page",
+        "element": "",
+        "inferredReuseContext": {
+          "workflowName": "login_page",
+          "workflowType": "dependent_navigation_workflow",
+          "storySummary": "login_page home http://localhost/washtabui/home login_page reuseApprovedEntryContext home_page {'authoritativeResourceFiles': ['login_page/login_page.resource']}",
+          "entryPage": {
+            "name": "home",
+            "url": "http://localhost/washtabui/home"
+          },
+          "targetPage": {
+            "name": "login_page",
+            "url": ""
+          },
+          "currentResourceFiles": [],
+          "inferredRelevantResourceFiles": [],
+          "authoritativeResourceFiles": [],
+          "resourceSummaries": [],
+          "reuseGuidance": [
+            "Prefer current workflow authoritative resources and preserve approved ownership boundaries.",
+            "Reuse approved existing page resources for navigation, setup, and destination validation when already supplied by workflow lineage.",
+            "Prefer approved shared/common resources for generic browser, wait, and interaction behavior.",
+            "Avoid duplicate ownership when an approved resource already provides the capability."
+          ]
+        }
+      }
+    ],
+    "received_target_page_signals": [],
+    "has_inferred_reuse_context": true,
+    "resource_files": [],
+    "raw_resource_files": [],
+    "story_excerpt": "",
+    "external_story_excerpt": ""
+  },
+  {
+    "step": 1,
+    "action": "clickKnownElement",
+    "source_page": "home_page",
+    "element": "person_profile_button",
+    "locator": "id=auto_person_btn",
+    "count": 1,
+    "visible_before_click": true,
+    "clicked": true,
+    "url_after_click": "http://localhost/washtabui/login?data=undefined"
+  },
+  {
+    "target_signals_satisfied": true,
+    "final_url": "http://localhost/washtabui/login?data=undefined"
+  }
+]

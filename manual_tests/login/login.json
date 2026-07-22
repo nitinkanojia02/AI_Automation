@@ -1,0 +1,268 @@
+{
+  "workflowName": "login",
+  "feature": "LOGIN",
+  "applicationCode": "WT",
+  "testIdentifierPrefix": "LOGIN",
+  "resourceFiles": [
+    "login_page/login_page.resource"
+  ],
+  "preconditions": [
+    "Launch the WashTab application.",
+    "Navigate to http://localhost/washtabui/home.",
+    "Verify the Home page is displayed in guest state.",
+    "Verify the user is unauthenticated before starting the workflow."
+  ],
+  "testCases": [
+    {
+      "id": "LOGIN_TC_001",
+      "title": "Open Login page from Home page guest state using person/profile button",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Launch the application and navigate to http://localhost/washtabui/home.",
+        "Verify the Home page is displayed in guest state with no authenticated user identity visible.",
+        "Click the person/profile button from the Home page."
+      ],
+      "expectedResult": "The application transitions from the Home page guest state to the Login page and the Username field, Password field, Login button, Back button, and Home button are visible and interactive."
+    },
+    {
+      "id": "LOGIN_TC_002",
+      "title": "Validate Login page controls visibility and interaction state after opening from Home page",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Navigate to the Home page in guest state.",
+        "Click the person/profile button to open the Login page.",
+        "Click inside the Username field.",
+        "Click inside the Password field.",
+        "Verify the Login, Back, and Home buttons can be interacted with."
+      ],
+      "expectedResult": "The Username and Password fields accept focus and input interaction, and the Login, Back, and Home buttons are visible and enabled on the Login page."
+    },
+    {
+      "id": "LOGIN_TC_003",
+      "title": "Verify password input is masked during typing",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Navigate to the Login page from the Home page using the person/profile button.",
+        "Enter Carwash#1 into the Password field.",
+        "Observe the displayed characters in the Password field while typing."
+      ],
+      "expectedResult": "The Password field masks the entered password characters during input and the plain text password value is not visibly displayed."
+    },
+    {
+      "id": "LOGIN_TC_004",
+      "title": "Login successfully with approved credentials and return to authenticated Home page",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Navigate to the Home page in guest state.",
+        "Click the person/profile button to open the Login page.",
+        "Enter username krisadmin into the Username field.",
+        "Enter password Carwash#1 into the Password field.",
+        "Click the Login button."
+      ],
+      "expectedResult": "The application authenticates the user and returns to the Home page in authenticated state with authenticated user identity display and authenticated-only feature area visible."
+    },
+    {
+      "id": "LOGIN_TC_006",
+      "title": "Reject login with invalid username and invalid password",
+      "type": "Negative",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Navigate to the Login page from the Home page.",
+        "Enter invalid username invaliduser into the Username field.",
+        "Enter invalid password WrongPassword1 into the Password field.",
+        "Click the Login button."
+      ],
+      "expectedResult": "Authentication fails, the generic Failed message is displayed, the user remains unauthenticated, and the application does not transition to authenticated Home state."
+    },
+    {
+      "id": "LOGIN_TC_007",
+      "title": "Reject login with blank username and blank password",
+      "type": "Negative",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Navigate to the Login page from the Home page.",
+        "Leave the Username field empty.",
+        "Leave the Password field empty.",
+        "Click the Login button."
+      ],
+      "expectedResult": "Authentication fails and only the generic Failed message is displayed without separate required-field validation messaging, while the user remains unauthenticated on the Login page or equivalent unauthenticated state."
+    },
+    {
+      "id": "LOGIN_TC_008",
+      "title": "Reject login with populated username and blank password",
+      "type": "Negative",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Navigate to the Login page from the Home page.",
+        "Enter username krisadmin into the Username field.",
+        "Leave the Password field empty.",
+        "Click the Login button."
+      ],
+      "expectedResult": "Authentication fails and only the generic Failed message is displayed without separate required-field validation messaging, while the user remains unauthenticated."
+    },
+    {
+      "id": "LOGIN_TC_009",
+      "title": "Reject login with blank username and populated password",
+      "type": "Negative",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Navigate to the Login page from the Home page.",
+        "Leave the Username field empty.",
+        "Enter password Carwash#1 into the Password field.",
+        "Click the Login button."
+      ],
+      "expectedResult": "Authentication fails and only the generic Failed message is displayed without separate required-field validation messaging, while the user remains unauthenticated."
+    },
+    {
+      "id": "LOGIN_TC_010",
+      "title": "Verify all failed authentication attempts display the same generic Failed message",
+      "type": "Negative",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Navigate to the Login page from the Home page.",
+        "Submit invalid credentials using invalid username and invalid password.",
+        "Observe the failure message.",
+        "Clear the fields and submit with both fields blank.",
+        "Observe the failure message again.",
+        "Clear the fields and submit with only one credential populated.",
+        "Observe the failure message again."
+      ],
+      "expectedResult": "Each failed authentication attempt displays the same generic Failed message and no alternate or detailed validation messages are shown."
+    },
+    {
+      "id": "LOGIN_TC_011",
+      "title": "Return to Home page in unauthenticated state using Back button",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Navigate to the Login page from the Home page.",
+        "Click the Back button on the Login page."
+      ],
+      "expectedResult": "The application returns to the Home page without authenticating the user and authenticated-only UI is not visible."
+    },
+    {
+      "id": "LOGIN_TC_012",
+      "title": "Return to Home page in unauthenticated state using Home button",
+      "type": "Positive",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Navigate to the Login page from the Home page.",
+        "Click the Home button on the Login page."
+      ],
+      "expectedResult": "The application returns to the Home page without authenticating the user and authenticated-only UI is not visible."
+    },
+    {
+      "id": "LOGIN_TC_013",
+      "title": "Validate login behavior with leading whitespace in username",
+      "type": "Edge",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Navigate to the Login page from the Home page.",
+        "Enter username with leading spaces before krisadmin into the Username field.",
+        "Enter password Carwash#1 into the Password field.",
+        "Click the Login button."
+      ],
+      "expectedResult": "The application handles the credential values according to implemented whitespace business behavior and the resulting authentication state and any Failed message are observable and consistent."
+    },
+    {
+      "id": "LOGIN_TC_014",
+      "title": "Validate login behavior with trailing whitespace in username",
+      "type": "Edge",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Navigate to the Login page from the Home page.",
+        "Enter username krisadmin followed by trailing spaces into the Username field.",
+        "Enter password Carwash#1 into the Password field.",
+        "Click the Login button."
+      ],
+      "expectedResult": "The application handles the credential values according to implemented whitespace business behavior and the resulting authentication state and any Failed message are observable and consistent."
+    },
+    {
+      "id": "LOGIN_TC_015",
+      "title": "Validate login behavior with leading whitespace in password",
+      "type": "Edge",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Navigate to the Login page from the Home page.",
+        "Enter username krisadmin into the Username field.",
+        "Enter password with leading spaces before Carwash#1 into the Password field.",
+        "Click the Login button."
+      ],
+      "expectedResult": "The application handles the credential values according to implemented whitespace business behavior and the resulting authentication state and any Failed message are observable and consistent."
+    },
+    {
+      "id": "LOGIN_TC_016",
+      "title": "Validate login behavior with trailing whitespace in password",
+      "type": "Edge",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Navigate to the Login page from the Home page.",
+        "Enter username krisadmin into the Username field.",
+        "Enter password Carwash#1 followed by trailing spaces into the Password field.",
+        "Click the Login button."
+      ],
+      "expectedResult": "The application handles the credential values according to implemented whitespace business behavior and the resulting authentication state and any Failed message are observable and consistent."
+    },
+    {
+      "id": "LOGIN_TC_017",
+      "title": "Validate whitespace-only submission in Username and Password fields",
+      "type": "Negative",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Navigate to the Login page from the Home page.",
+        "Enter only whitespace characters into the Username field.",
+        "Enter only whitespace characters into the Password field.",
+        "Click the Login button."
+      ],
+      "expectedResult": "Authentication fails with the generic Failed message only, the user remains unauthenticated, and no separate required-field validation message is displayed."
+    },
+    {
+      "id": "LOGIN_TC_018",
+      "title": "Verify invalid password with valid username does not authenticate user",
+      "type": "Negative",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Navigate to the Login page from the Home page.",
+        "Enter username krisadmin into the Username field.",
+        "Enter invalid password WrongPassword1 into the Password field.",
+        "Click the Login button."
+      ],
+      "expectedResult": "Authentication fails, the generic Failed message is displayed, and the application remains in unauthenticated state without showing authenticated Home UI."
+    },
+    {
+      "id": "LOGIN_TC_019",
+      "title": "Verify invalid username with valid password does not authenticate user",
+      "type": "Negative",
+      "priority": "Medium",
+      "preconditions": [],
+      "steps": [
+        "Navigate to the Login page from the Home page.",
+        "Enter invalid username wronguser into the Username field.",
+        "Enter password Carwash#1 into the Password field.",
+        "Click the Login button."
+      ],
+      "expectedResult": "Authentication fails, the generic Failed message is displayed, and the user remains unauthenticated."
+    }
+  ]
+}
