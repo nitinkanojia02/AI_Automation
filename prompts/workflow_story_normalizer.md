@@ -31,6 +31,17 @@ Use exactly the following section order and headings:
 12. Downstream Automation Guidance
 13. Acceptance Criteria
 
+Within those headings, prefer the following structural conventions whenever the raw input supports them:
+- In Application Context, explicitly include canonical page identity fields when known:
+  - Canonical page name: `<page_name>`
+  - Canonical page state: `<state_id>`
+- In Transition Expectations, explicitly state branch reset behavior when multiple navigation branches start from the same entry page/state.
+- In Transition Expectations or Approved Test Data, explicitly distinguish target match mode facts when supported by the input:
+  - exact URL match
+  - URL contains fragment
+- When some controls are in scope only for visibility/enabled validation and not for transition execution, state that explicitly instead of implying they are navigation branches.
+- When the workflow is an upstream/bootstrap page with no prior reusable entry context, state that it establishes the canonical entry context for downstream workflow reuse.
+
 Content rules:
 - Preserve only approved, relevant, high-signal information
 - Remove repetition and merge duplicate statements
@@ -61,6 +72,10 @@ Content rules:
 - If a shared or upstream resource may already own a control or navigation behavior, state that reuse should be preferred over duplicate ownership
 - If approved credentials or test data are given, state that they are approved for positive scenarios and should be reused consistently across manual and automation assets
 - If the workflow depends on a previous workflow or page, make that dependency explicit
+- If the workflow is the first landing/bootstrap page, state clearly that no upstream reusable entry context is required and that the workflow establishes the canonical entry context for downstream reuse
+- For multi-branch workflows, explicitly state that each branch begins from the canonical entry context and that the entry context is restored before the next independent branch when that behavior is supported by the input
+- Preserve exact match-vs-contains expectations for URLs and destination identifiers when the raw input distinguishes them
+- If a control is listed only for availability/interactivity validation, preserve that scope and do not silently convert it into a navigation branch
 - Do not create custom keywords, automation code, locator syntax, or technical implementation steps in the story
 - Do not output JSON
 - Do not output markdown tables
@@ -68,17 +83,17 @@ Content rules:
 
 Section expectations:
 - User Story: write one concise business-facing story in the format As a <user/persona>, I want to <goal>, so that <business outcome>.
-- Application Context: include app behavior context, SPA behavior if provided, whether the page is directly reachable, and starting URL only if explicitly provided.
+- Application Context: include app behavior context, SPA behavior if provided, whether the page is directly reachable, and starting URL only if explicitly provided. Include canonical page name and canonical page state as explicit facts when the raw input supports them.
 - Entry Conditions: list the required preconditions and starting page/state.
-- Workflow Scope: summarize what this workflow covers and validates.
+- Workflow Scope: summarize what this workflow covers and validates. If some controls are validation-only in this workflow, state that explicitly.
 - Primary Navigation Journey: describe the intended ordered business journey and page/state transitions.
-- Approved Test Data: include only explicitly approved data and intended usage.
+- Approved Test Data: include only explicitly approved data and intended usage. Preserve exact URL values and URL-fragment expectations separately when the input distinguishes them.
 - Page / Component Elements: list the key elements/components relevant to the workflow and note ownership/reuse guidance when known.
 - Business Rules: capture the governing behavioral rules explicitly supported by the input.
 - Validation Expectations: list observable validations that should be checked.
-- Transition Expectations: describe expected page/application/state transitions for success and failure.
-- Resource Reuse Guidance: explicitly state which upstream/shared resources should be reused if known and when duplicate ownership should be avoided.
-- Downstream Automation Guidance: include concise framework-relevant guidance for manual/resource/automation generation, approved test data reuse expectations, and ownership boundaries.
+- Transition Expectations: describe expected page/application/state transitions for success and failure. For workflows with multiple independent branches, explicitly state branch reset behavior when supported by the input.
+- Resource Reuse Guidance: explicitly state which upstream/shared resources should be reused if known and when duplicate ownership should be avoided. For bootstrap workflows, state that the workflow establishes the canonical upstream entry context for downstream reuse.
+- Downstream Automation Guidance: include concise framework-relevant guidance for manual/resource/automation generation, approved test data reuse expectations, ownership boundaries, and independent branch handling when relevant.
 - Acceptance Criteria: write atomic Given/When/Then criteria covering happy path, negative path, validations, navigation behavior, and important edge cases when supported by the input.
 
 Quality gate before finalizing:
