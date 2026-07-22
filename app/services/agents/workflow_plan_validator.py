@@ -84,6 +84,37 @@ class WorkflowPlanValidator:
         if rag is not None and not isinstance(rag, dict):
             errors.append("rag must be an object when provided")
 
+        execution_runtime = plan.get("executionRuntime", {})
+        if execution_runtime is not None and not isinstance(execution_runtime, dict):
+            errors.append("executionRuntime must be an object when provided")
+        elif isinstance(execution_runtime, dict) and execution_runtime:
+            runtime_page_state = execution_runtime.get("pageState", {})
+            runtime_mcp = execution_runtime.get("mcp", {})
+            if runtime_page_state is not None and not isinstance(runtime_page_state, dict):
+                errors.append("executionRuntime.pageState must be an object when provided")
+            elif isinstance(runtime_page_state, dict) and runtime_page_state:
+                source_snapshot = runtime_page_state.get("sourceSnapshot", {})
+                state_variants = runtime_page_state.get("stateVariants", [])
+                if source_snapshot is not None and not isinstance(source_snapshot, dict):
+                    errors.append("executionRuntime.pageState.sourceSnapshot must be an object when provided")
+                if state_variants is not None and not isinstance(state_variants, list):
+                    errors.append("executionRuntime.pageState.stateVariants must be a list when provided")
+            if runtime_mcp is not None and not isinstance(runtime_mcp, dict):
+                errors.append("executionRuntime.mcp must be an object when provided")
+            elif isinstance(runtime_mcp, dict) and runtime_mcp:
+                runtime_mcp_provenance = runtime_mcp.get("provenance", {})
+                if runtime_mcp_provenance is not None and not isinstance(runtime_mcp_provenance, dict):
+                    errors.append("executionRuntime.mcp.provenance must be an object when provided")
+                runtime_mcp_adapter = runtime_mcp.get("adapter", {})
+                runtime_mcp_dispatch = runtime_mcp.get("dispatch", {})
+                runtime_mcp_execution = runtime_mcp.get("execution", {})
+                if runtime_mcp_adapter is not None and not isinstance(runtime_mcp_adapter, dict):
+                    errors.append("executionRuntime.mcp.adapter must be an object when provided")
+                if runtime_mcp_dispatch is not None and not isinstance(runtime_mcp_dispatch, dict):
+                    errors.append("executionRuntime.mcp.dispatch must be an object when provided")
+                if runtime_mcp_execution is not None and not isinstance(runtime_mcp_execution, dict):
+                    errors.append("executionRuntime.mcp.execution must be an object when provided")
+
         mcp = plan.get("mcp", {})
         if mcp is not None and not isinstance(mcp, dict):
             errors.append("mcp must be an object when provided")
@@ -148,6 +179,25 @@ class WorkflowPlanValidator:
                         dispatch_provenance = dispatch_adapter.get("provenance", {})
                         if dispatch_provenance is not None and not isinstance(dispatch_provenance, dict):
                             errors.append(f"mcp.dispatch.{dispatch_name}.provenance must be an object when provided")
+
+        if isinstance(execution_runtime, dict) and execution_runtime:
+            runtime_page_state = execution_runtime.get("pageState", {}) if isinstance(execution_runtime.get("pageState", {}), dict) else {}
+            runtime_mcp = execution_runtime.get("mcp", {}) if isinstance(execution_runtime.get("mcp", {}), dict) else {}
+            plan_page_state = page_context.get("pageState", {}) if isinstance(page_context.get("pageState", {}), dict) else {}
+            if runtime_page_state and plan_page_state:
+                if runtime_page_state.get("pageName", "") != plan_page_state.get("page_name", ""):
+                    errors.append("executionRuntime.pageState.pageName must match pageContext.pageState.page_name when both are provided")
+                if runtime_page_state.get("sourceSnapshot", {}) != ((plan_page_state.get("metadata", {}) or {}).get("sourceSnapshot", {}) if isinstance(plan_page_state.get("metadata", {}), dict) else {}):
+                    errors.append("executionRuntime.pageState.sourceSnapshot must match pageContext.pageState.metadata.sourceSnapshot when both are provided")
+            if runtime_mcp and isinstance(mcp, dict) and mcp:
+                if runtime_mcp.get("provenance", {}) != mcp.get("provenance", {}):
+                    errors.append("executionRuntime.mcp.provenance must match mcp.provenance when both are provided")
+                if runtime_mcp.get("adapter", {}) != mcp.get("adapter", {}):
+                    errors.append("executionRuntime.mcp.adapter must match mcp.adapter when both are provided")
+                if runtime_mcp.get("dispatch", {}) != mcp.get("dispatch", {}):
+                    errors.append("executionRuntime.mcp.dispatch must match mcp.dispatch when both are provided")
+                if runtime_mcp.get("execution", {}) != mcp.get("execution", {}):
+                    errors.append("executionRuntime.mcp.execution must match mcp.execution when both are provided")
 
         provenance = plan.get("provenance", {})
         if provenance is not None and not isinstance(provenance, dict):

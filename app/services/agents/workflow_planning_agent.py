@@ -42,6 +42,7 @@ class WorkflowPlanningAgent:
         mcp_adapter = plan_payload.get("mcpAdapter", {}) if isinstance(plan_payload.get("mcpAdapter"), dict) else {}
         mcp_dispatch = plan_payload.get("mcpDispatch", {}) if isinstance(plan_payload.get("mcpDispatch"), dict) else {}
         mcp_execution = plan_payload.get("mcpExecution", {}) if isinstance(plan_payload.get("mcpExecution"), dict) else {}
+        execution_runtime = plan_payload.get("executionRuntime", {}) if isinstance(plan_payload.get("executionRuntime"), dict) else {}
         plan_provenance = {
             "planningMode": "deterministic_structural",
             "navigationSource": str(plan_payload.get("navigationSource", "contract_or_runtime")).strip() or "contract_or_runtime",
@@ -84,5 +85,6 @@ class WorkflowPlanningAgent:
                 "dispatch": mcp_dispatch,
                 "execution": mcp_execution,
             },
+            "executionRuntime": execution_runtime,
             "provenance": plan_provenance,
         }

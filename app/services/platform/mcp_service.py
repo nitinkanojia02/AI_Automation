@@ -117,3 +117,26 @@ class McpService:
             "fallbackAdapter": dict(FALLBACK_RUNTIME_ADAPTER),
             **execution_mode,
         }
+
+    def build_execution_runtime_attachment(
+        self,
+        runtime_context: dict[str, Any] | None = None,
+        page_state: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        context = runtime_context if isinstance(runtime_context, dict) else self.build_runtime_context()
+        normalized_page_state = page_state if isinstance(page_state, dict) else {}
+        page_state_metadata = normalized_page_state.get("metadata", {}) if isinstance(normalized_page_state.get("metadata", {}), dict) else {}
+        return {
+            "pageState": {
+                "pageName": str(normalized_page_state.get("page_name", "")).strip(),
+                "sourceSnapshot": page_state_metadata.get("sourceSnapshot", {}) if isinstance(page_state_metadata.get("sourceSnapshot", {}), dict) else {},
+                "stateVariants": page_state_metadata.get("stateVariants", []) if isinstance(page_state_metadata.get("stateVariants", []), list) else [],
+            },
+            "mcp": {
+                "enabled": bool(context.get("enabled", False)),
+                "provenance": context.get("provenance", {}) if isinstance(context.get("provenance", {}), dict) else {},
+                "adapter": self.resolve_execution_adapter(context),
+                "dispatch": self.build_execution_dispatch(context),
+                "execution": self.resolve_execution_mode(context),
+            },
+        }

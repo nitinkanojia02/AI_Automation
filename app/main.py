@@ -208,6 +208,11 @@ def build_and_validate_execution_plan(
 ):
     source_snapshot = execution_plan_repository.get_source_snapshot(workflow_slug)
     resolved_mcp_context = mcp_context if isinstance(mcp_context, dict) else (mcp_service.build_runtime_context() if FEATURE_FLAGS.enable_mcp else {})
+    runtime_page_state = page_state_service.build_state_descriptor(contract) if FEATURE_FLAGS.enable_state_merge else {}
+    execution_runtime_attachment = mcp_service.build_execution_runtime_attachment(
+        runtime_context=resolved_mcp_context,
+        page_state=runtime_page_state,
+    )
     plan = workflow_planning_agent.build_plan(
         contract,
         navigation_steps,
@@ -217,9 +222,10 @@ def build_and_validate_execution_plan(
             "targetSignalSource": "runtime" if target_signals else "contract",
             "sourceSnapshot": source_snapshot,
             "mcpContext": resolved_mcp_context,
-            "mcpAdapter": mcp_service.resolve_execution_adapter(resolved_mcp_context),
-            "mcpDispatch": mcp_service.build_execution_dispatch(resolved_mcp_context),
-            "mcpExecution": mcp_service.resolve_execution_mode(resolved_mcp_context),
+            "mcpAdapter": execution_runtime_attachment.get("mcp", {}).get("adapter", {}),
+            "mcpDispatch": execution_runtime_attachment.get("mcp", {}).get("dispatch", {}),
+            "mcpExecution": execution_runtime_attachment.get("mcp", {}).get("execution", {}),
+            "executionRuntime": execution_runtime_attachment,
         },
     )
     if isinstance(target_signals, list):
@@ -246,6 +252,7 @@ def build_and_validate_execution_plan(
         source_snapshot=plan_provenance.get("sourceSnapshot", {}),
         mcp_adapter=((plan.get("mcp", {}) or {}).get("adapter", {}) if isinstance(plan.get("mcp", {}), dict) else {}),
         mcp_dispatch=((plan.get("mcp", {}) or {}).get("dispatch", {}) if isinstance(plan.get("mcp", {}), dict) else {}),
+        execution_runtime=(plan.get("executionRuntime", {}) if isinstance(plan.get("executionRuntime", {}), dict) else {}),
         persisted=FEATURE_FLAGS.enable_execution_plan_persistence,
     )
     return plan
