@@ -19,6 +19,7 @@ TESTS_DIR = BASE_DIR / "tests"
 POM_DIR = BASE_DIR / "pom_pages"
 RESOURCES_DIR = BASE_DIR / "resources"
 WORKFLOW_KNOWLEDGE_DIR = BASE_DIR / "artifacts" / "workflow_knowledge"
+POM_METADATA_DIR = BASE_DIR / "pom_pages"
 
 
 def clean_text(value: Any) -> str:
@@ -718,9 +719,55 @@ def build_workflow_knowledge(workflow_slug: str) -> Dict[str, Any]:
     return knowledge
 
 
+def persist_reusable_flow_artifacts(workflow_input: Dict[str, Any], knowledge: Dict[str, Any]) -> list[str]:
+    persisted_paths: list[str] = []
+    resource_files = [str(item).replace('\\', '/').strip() for item in ensure_list(workflow_input.get('resourceFiles')) if clean_text(item)]
+    reusable_flows = [item for item in ensure_list(knowledge.get('reusableFlows')) if isinstance(item, dict)]
+    if not resource_files or not reusable_flows:
+        return persisted_paths
+
+    flows_by_page: Dict[str, list[Dict[str, Any]]] = {}
+    for flow in reusable_flows:
+        flow_id = clean_text(flow.get('flowId'))
+        if not flow_id:
+            continue
+        flow_page = flow_id.split('.', 1)[0].strip()
+        if not flow_page:
+            continue
+        flows_by_page.setdefault(flow_page, []).append(flow)
+
+    for resource_file in resource_files:
+        page_name = Path(resource_file).stem.strip()
+        if not page_name:
+            continue
+        page_flows = flows_by_page.get(page_name, [])
+        if not page_flows:
+            continue
+        target_path = POM_METADATA_DIR / page_name / 'metadata' / f'{page_name}.flows.json'
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+        payload = {
+            'pageName': page_name,
+            'flows': page_flows,
+            'provenance': {
+                'workflowName': clean_text(workflow_input.get('workflowName')),
+                'workflowSlug': clean_text(knowledge.get('workflowSlug')),
+                'resourceFile': resource_file,
+            },
+        }
+        target_path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding='utf-8')
+        persisted_paths.append(str(target_path.relative_to(BASE_DIR)).replace('\\', '/'))
+    return persisted_paths
+
+
 def save_workflow_knowledge(workflow_slug: str) -> Path:
     WORKFLOW_KNOWLEDGE_DIR.mkdir(parents=True, exist_ok=True)
     knowledge = build_workflow_knowledge(workflow_slug)
+    workflow_path = WORKFLOW_INPUT_DIR / f'{workflow_slug}.json'
+    workflow_input = load_json(workflow_path)
+    persisted_flow_artifacts = persist_reusable_flow_artifacts(workflow_input, knowledge)
+    if persisted_flow_artifacts:
+        knowledge['provenance'] = knowledge.get('provenance', {}) if isinstance(knowledge.get('provenance'), dict) else {}
+        knowledge['provenance']['reusableFlowArtifacts'] = persisted_flow_artifacts
     target = WORKFLOW_KNOWLEDGE_DIR / f'{workflow_slug}.json'
     target.write_text(json.dumps(knowledge, indent=2, ensure_ascii=False), encoding='utf-8')
     return target

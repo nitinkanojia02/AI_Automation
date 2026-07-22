@@ -6,7 +6,7 @@
   "applicationCode": "WT",
   "testIdentifierPrefix": "HOME",
   "status": "approved_artifact_memory",
-  "generatedAt": "2026-07-22T09:24:23.203449+00:00",
+  "generatedAt": "2026-07-22T09:26:22.379627+00:00",
   "businessContext": {
     "userStory": [],
     "applicationContext": [],
@@ -213,8 +213,221 @@
       }
     ]
   },
-  "manualCoverage": {},
-  "automationKnowledge": {},
+  "manualCoverage": {
+    "approvedScenarios": [
+      {
+        "id": "HOME_TC_001",
+        "title": "Verify Home page loads successfully in guest state using the approved entry URL",
+        "type": "positive",
+        "expectedResult": "The application loads the Home page successfully at http://localhost/washtabui/home in guest state without requiring authentication and the approved navigation controls are displayed."
+      },
+      {
+        "id": "HOME_TC_002",
+        "title": "Verify Person/Profile button is visible and enabled on the Home page in guest state",
+        "type": "positive",
+        "expectedResult": "The Person/Profile button is visible, enabled, and interactive on the Home page while the user remains in guest state."
+      },
+      {
+        "id": "HOME_TC_003",
+        "title": "Verify Back button is visible and enabled on the Home page in guest state",
+        "type": "positive",
+        "expectedResult": "The Back button is visible, enabled, and interactive on the Home page while the user remains in guest state."
+      },
+      {
+        "id": "HOME_TC_004",
+        "title": "Verify Notification button is visible and enabled on the Home page in guest state",
+        "type": "positive",
+        "expectedResult": "The Notification button is visible, enabled, and interactive on the Home page while the user remains in guest state."
+      },
+      {
+        "id": "HOME_TC_005",
+        "title": "Verify Home button is visible and enabled on the Home page in guest state",
+        "type": "positive",
+        "expectedResult": "The Home button is visible, enabled, and interactive on the Home page while the user remains in guest state."
+      },
+      {
+        "id": "HOME_TC_006",
+        "title": "Verify Customer signup button is visible and enabled on the Home page in guest state",
+        "type": "positive",
+        "expectedResult": "The Customer signup button is visible, enabled, and interactive on the Home page while the user remains in guest state."
+      },
+      {
+        "id": "HOME_TC_007",
+        "title": "Verify Clean survey button is visible and enabled on the Home page in guest state",
+        "type": "positive",
+        "expectedResult": "The Clean survey button is visible, enabled, and interactive on the Home page while the user remains in guest state."
+      },
+      {
+        "id": "HOME_TC_008",
+        "title": "Verify Site survey button is visible and enabled on the Home page in guest state",
+        "type": "positive",
+        "expectedResult": "The Site survey button is visible, enabled, and interactive on the Home page while the user remains in guest state."
+      },
+      {
+        "id": "HOME_TC_009",
+        "title": "Verify navigation to login page from the Person/Profile button",
+        "type": "positive",
+        "expectedResult": "The application navigates away from the Home page to the login page and the resulting URL equals /washtabui/login?data=undefined."
+      },
+      {
+        "id": "HOME_TC_011",
+        "title": "Verify navigation to customer-search workflow from the Customer signup button",
+        "type": "positive",
+        "expectedResult": "The application navigates away from the Home page to a destination URL containing customer-search."
+      },
+      {
+        "id": "HOME_TC_012",
+        "title": "Verify navigation to vehicle-survey workflow from the Clean survey button",
+        "type": "positive",
+        "expectedResult": "The application navigates away from the Home page to a destination URL containing vehicle-survey."
+      },
+      {
+        "id": "HOME_TC_013",
+        "title": "Verify navigation to survey workflow from the Site survey button",
+        "type": "positive",
+        "expectedResult": "The application navigates away from the Home page to a destination URL containing survey?data."
+      },
+      {
+        "id": "HOME_TC_019",
+        "title": "Verify Home button interaction does not break guest-state Home page accessibility",
+        "type": "positive",
+        "expectedResult": "The application remains accessible in guest state and the user stays on or returns to the Home page with the approved navigation controls still visible and enabled."
+      },
+      {
+        "id": "HOME_TC_020",
+        "title": "Verify Back button interaction does not remove access to the Home page in guest state",
+        "type": "edge",
+        "expectedResult": "The application does not enter an error state and the user either remains on the Home page or returns to the previous accessible browser location without unauthorized navigation."
+      },
+      {
+        "id": "HOME_TC_021",
+        "title": "Verify Notification button interaction is accessible from the Home page in guest state",
+        "type": "positive",
+        "expectedResult": "The Notification button accepts interaction without breaking the Home page session and the application remains responsive in guest state."
+      }
+    ],
+    "validations": [
+      "The application loads the Home page successfully at http://localhost/washtabui/home in guest state without requiring authentication and the approved navigation controls are displayed.",
+      "The Person/Profile button is visible, enabled, and interactive on the Home page while the user remains in guest state.",
+      "The Back button is visible, enabled, and interactive on the Home page while the user remains in guest state.",
+      "The Notification button is visible, enabled, and interactive on the Home page while the user remains in guest state.",
+      "The Home button is visible, enabled, and interactive on the Home page while the user remains in guest state.",
+      "The Customer signup button is visible, enabled, and interactive on the Home page while the user remains in guest state.",
+      "The Clean survey button is visible, enabled, and interactive on the Home page while the user remains in guest state.",
+      "The Site survey button is visible, enabled, and interactive on the Home page while the user remains in guest state.",
+      "The application navigates away from the Home page to the login page and the resulting URL equals /washtabui/login?data=undefined.",
+      "The application navigates away from the Home page to a destination URL containing customer-search.",
+      "The application navigates away from the Home page to a destination URL containing vehicle-survey.",
+      "The application navigates away from the Home page to a destination URL containing survey?data.",
+      "The application remains accessible in guest state and the user stays on or returns to the Home page with the approved navigation controls still visible and enabled.",
+      "The application does not enter an error state and the user either remains on the Home page or returns to the previous accessible browser location without unauthorized navigation.",
+      "The Notification button accepts interaction without breaking the Home page session and the application remains responsive in guest state."
+    ],
+    "transitions": []
+  },
+  "automationKnowledge": {
+    "approvedKeywords": [
+      {
+        "page": "home_page",
+        "name": "Click Person Profile Button",
+        "targetElement": "",
+        "action": ""
+      },
+      {
+        "page": "home_page",
+        "name": "Click Back Button",
+        "targetElement": "",
+        "action": ""
+      },
+      {
+        "page": "home_page",
+        "name": "Click Notification Button",
+        "targetElement": "",
+        "action": ""
+      },
+      {
+        "page": "home_page",
+        "name": "Click Home Button",
+        "targetElement": "",
+        "action": ""
+      },
+      {
+        "page": "home_page",
+        "name": "Click Customer Signup Button",
+        "targetElement": "",
+        "action": ""
+      },
+      {
+        "page": "home_page",
+        "name": "Click Clean Survey Button",
+        "targetElement": "",
+        "action": ""
+      },
+      {
+        "page": "home_page",
+        "name": "Click Site Survey Button",
+        "targetElement": "",
+        "action": ""
+      },
+      {
+        "page": "home_page",
+        "name": "Verify Home Page Loaded In Guest State",
+        "targetElement": "",
+        "action": ""
+      },
+      {
+        "page": "home_page",
+        "name": "Verify All Home Navigation Controls Are Enabled",
+        "targetElement": "",
+        "action": ""
+      },
+      {
+        "page": "home_page",
+        "name": "Verify Person Profile Navigation Redirect",
+        "targetElement": "",
+        "action": ""
+      },
+      {
+        "page": "home_page",
+        "name": "Verify Customer Signup Navigation Redirect",
+        "targetElement": "",
+        "action": ""
+      },
+      {
+        "page": "home_page",
+        "name": "Verify Clean Survey Navigation Redirect",
+        "targetElement": "",
+        "action": ""
+      },
+      {
+        "page": "home_page",
+        "name": "Verify Site Survey Navigation Redirect",
+        "targetElement": "",
+        "action": ""
+      }
+    ],
+    "approvedTests": [
+      "AUT-WT-HOME01: Verify Home page loads successfully in guest state using the approved entry URL",
+      "AUT-WT-HOME02: Verify Person/Profile button is visible and enabled on the Home page in guest state",
+      "AUT-WT-HOME03: Verify Back button is visible and enabled on the Home page in guest state",
+      "AUT-WT-HOME04: Verify Notification button is visible and enabled on the Home page in guest state",
+      "AUT-WT-HOME05: Verify Home button is visible and enabled on the Home page in guest state",
+      "AUT-WT-HOME06: Verify Customer signup button is visible and enabled on the Home page in guest state",
+      "AUT-WT-HOME07: Verify Clean survey button is visible and enabled on the Home page in guest state",
+      "AUT-WT-HOME08: Verify Site survey button is visible and enabled on the Home page in guest state",
+      "AUT-WT-HOME09: Verify navigation to login page from the Person/Profile button",
+      "AUT-WT-HOME10: Verify navigation to customer-search workflow from the Customer signup button",
+      "AUT-WT-HOME11: Verify navigation to vehicle-survey workflow from the Clean survey button",
+      "AUT-WT-HOME12: Verify navigation to survey workflow from the Site survey button",
+      "AUT-WT-HOME13: Verify Home button interaction does not break guest-state Home page accessibility",
+      "AUT-WT-HOME14: Verify Back button interaction does not remove access to the Home page in guest state",
+      "AUT-WT-HOME15: Verify Notification button interaction is accessible from the Home page in guest state"
+    ],
+    "wrapperExpectations": [
+      "Reuse approved shared/common wrapper keywords before low-level SeleniumLibrary actions.",
+      "Do not invent suite-level custom keywords; compose from approved upstream resource knowledge."
+    ]
+  },
   "downstreamGuidance": {
     "mustReuseResources": [
       "home_page/home_page.resource"
@@ -404,10 +617,13 @@
     "No explicit page-state indicator or guest-state identifier element is captured beyond navigation controls and URL validation."
   ],
   "provenance": {
-    "workflowInput": "",
-    "approvedManualTests": "",
+    "workflowInput": "workflow_inputs/home.json",
+    "approvedManualTests": "manual_tests/home/home.json",
     "approvedResourceFiles": [
       "home_page/home_page.resource"
+    ],
+    "reusableFlowArtifacts": [
+      "pom_pages/home_page/metadata/home_page.flows.json"
     ]
   }
 }
