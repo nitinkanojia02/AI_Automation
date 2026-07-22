@@ -14,11 +14,36 @@
     "sourceUrl": "https://devtfs.dover-global.net/QA/AutomationProject/_workitems/edit/6399"
   },
   "resourceFiles": [
+    "home_page/home_page.resource",
     "login_page/login_page.resource"
   ],
   "pages": [
     {
       "name": "login_page"
+    }
+  ],
+  "entryPage": {
+    "name": "home_page",
+    "url": "http://localhost/washtabui/home",
+    "state": "guest"
+  },
+  "targetPage": {
+    "name": "login_page"
+  },
+  "navigationSteps": [
+    {
+      "action": "reuseApprovedEntryContext",
+      "flowId": "home_page.entry_to_login_page"
+    },
+    {
+      "action": "reuseApprovedEntryContext",
+      "flowId": "login_page.submit_credentials"
+    }
+  ],
+  "targetPageSignals": [
+    {
+      "type": "urlContains",
+      "value": "login"
     }
   ],
   "observedPreconditions": [],
