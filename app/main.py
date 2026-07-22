@@ -19,9 +19,11 @@ from fastapi.templating import Jinja2Templates
 from starlette.status import HTTP_303_SEE_OTHER
 
 from app.config.feature_flags import FEATURE_FLAGS
+from app.repositories.knowledge_repository import KnowledgeRepository
 from app.repositories.resource_repository import ResourceRepository
 from app.repositories.workflow_repository import WorkflowRepository
 from app.services.agents.resource_reuse_agent import ResourceReuseAgent
+from app.services.context.rag_context_service import RagContextService
 from app.services.platform.logger import PlatformLogger
 from app.services.workflows.workflow_contract_builder import WorkflowContractBuilder
 from app.services.workflows.workflow_contract_validator import WorkflowContractValidator
@@ -98,7 +100,9 @@ logger = logging.getLogger(__name__)
 platform_logger = PlatformLogger(__name__)
 workflow_repository = WorkflowRepository(WORKFLOW_DIR)
 resource_repository = ResourceRepository(BASE_DIR)
+knowledge_repository = KnowledgeRepository(BASE_DIR, resource_repository)
 resource_reuse_agent = ResourceReuseAgent(resource_repository)
+rag_context_service = RagContextService(knowledge_repository)
 
 # -------------------------------------------------------------------
 # Generic helpers
@@ -613,6 +617,10 @@ def collect_workflow_expected_outcomes(workflow: dict) -> list[str]:
 
 def clean_workflow_for_prompting(workflow: dict) -> dict:
     cleaned = json.loads(json.dumps(workflow))
+
+    rag_context = cleaned.get("ragContext")
+    if isinstance(rag_context, dict):
+        cleaned["ragContext"] = rag_context
 
     source = cleaned.get("source")
     if isinstance(source, dict):
@@ -4021,6 +4029,9 @@ async def save_workflow(
         if contract_errors:
             raise HTTPException(status_code=400, detail="Workflow contract validation failed: " + "; ".join(contract_errors))
         workflow_repository.save_contract(target_slug, contract)
+        if FEATURE_FLAGS.enable_rag:
+            payload["ragContext"] = rag_context_service.build_context(target_slug, contract)
+            write_json(target, payload)
         platform_logger.info(
             "workflow_contract_saved",
             workflow_slug=target_slug,
@@ -4095,10 +4106,13 @@ def run_page_review_extraction(request: Request, workflow_name: str):
         "observedSteps": workflow.get("observedSteps", []) if isinstance(workflow.get("observedSteps"), list) else [],
         "observedValidations": workflow.get("observedValidations", []) if isinstance(workflow.get("observedValidations"), list) else [],
         "acceptanceCriteria": workflow.get("acceptanceCriteria", []) if isinstance(workflow.get("acceptanceCriteria"), list) else [],
+        "ragContext": workflow.get("ragContext", {}) if isinstance(workflow.get("ragContext"), dict) else {},
     }
     if FEATURE_FLAGS.enable_workflow_contracts and FEATURE_FLAGS.enable_resource_reuse_agent:
         contract = WorkflowContractBuilder.build(extraction_context)
         contract.reuse_policy.resource_files = resource_files
+        if FEATURE_FLAGS.enable_rag:
+            extraction_context["ragContext"] = rag_context_service.build_context(workflow_name, contract)
         try:
             extraction_context["navigationSteps"] = resource_reuse_agent.resolve_navigation_steps(contract) or extraction_context["navigationSteps"]
         except ValueError as exc:
