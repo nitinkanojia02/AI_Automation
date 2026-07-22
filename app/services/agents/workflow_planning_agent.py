@@ -39,10 +39,11 @@ class WorkflowPlanningAgent:
         plan_payload = plan_context if isinstance(plan_context, dict) else {}
         source_snapshot = plan_payload.get("sourceSnapshot", {}) if isinstance(plan_payload.get("sourceSnapshot"), dict) else {}
         mcp_context = plan_payload.get("mcpContext", {}) if isinstance(plan_payload.get("mcpContext"), dict) else {}
-        mcp_adapter = plan_payload.get("mcpAdapter", {}) if isinstance(plan_payload.get("mcpAdapter"), dict) else {}
-        mcp_dispatch = plan_payload.get("mcpDispatch", {}) if isinstance(plan_payload.get("mcpDispatch"), dict) else {}
-        mcp_execution = plan_payload.get("mcpExecution", {}) if isinstance(plan_payload.get("mcpExecution"), dict) else {}
         execution_runtime = plan_payload.get("executionRuntime", {}) if isinstance(plan_payload.get("executionRuntime"), dict) else {}
+        execution_runtime_mcp = execution_runtime.get("mcp", {}) if isinstance(execution_runtime.get("mcp", {}), dict) else {}
+        mcp_adapter = execution_runtime_mcp.get("adapter", {}) if isinstance(execution_runtime_mcp.get("adapter", {}), dict) else {}
+        mcp_dispatch = execution_runtime_mcp.get("dispatch", {}) if isinstance(execution_runtime_mcp.get("dispatch", {}), dict) else {}
+        mcp_execution = execution_runtime_mcp.get("execution", {}) if isinstance(execution_runtime_mcp.get("execution", {}), dict) else {}
         plan_provenance = {
             "planningMode": "deterministic_structural",
             "navigationSource": str(plan_payload.get("navigationSource", "contract_or_runtime")).strip() or "contract_or_runtime",

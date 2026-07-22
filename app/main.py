@@ -222,9 +222,6 @@ def build_and_validate_execution_plan(
             "targetSignalSource": "runtime" if target_signals else "contract",
             "sourceSnapshot": source_snapshot,
             "mcpContext": resolved_mcp_context,
-            "mcpAdapter": execution_runtime_attachment.get("mcp", {}).get("adapter", {}),
-            "mcpDispatch": execution_runtime_attachment.get("mcp", {}).get("dispatch", {}),
-            "mcpExecution": execution_runtime_attachment.get("mcp", {}).get("execution", {}),
             "executionRuntime": execution_runtime_attachment,
         },
     )

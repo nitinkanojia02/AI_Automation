@@ -189,7 +189,11 @@ class WorkflowPlanValidator:
                     errors.append("executionRuntime.pageState.pageName must match pageContext.pageState.page_name when both are provided")
                 if runtime_page_state.get("sourceSnapshot", {}) != ((plan_page_state.get("metadata", {}) or {}).get("sourceSnapshot", {}) if isinstance(plan_page_state.get("metadata", {}), dict) else {}):
                     errors.append("executionRuntime.pageState.sourceSnapshot must match pageContext.pageState.metadata.sourceSnapshot when both are provided")
+                if runtime_page_state.get("stateVariants", []) != ((plan_page_state.get("metadata", {}) or {}).get("stateVariants", []) if isinstance(plan_page_state.get("metadata", {}), dict) else []):
+                    errors.append("executionRuntime.pageState.stateVariants must match pageContext.pageState.metadata.stateVariants when both are provided")
             if runtime_mcp and isinstance(mcp, dict) and mcp:
+                if runtime_mcp.get("enabled", False) != mcp.get("enabled", False):
+                    errors.append("executionRuntime.mcp.enabled must match mcp.enabled when both are provided")
                 if runtime_mcp.get("provenance", {}) != mcp.get("provenance", {}):
                     errors.append("executionRuntime.mcp.provenance must match mcp.provenance when both are provided")
                 if runtime_mcp.get("adapter", {}) != mcp.get("adapter", {}):
