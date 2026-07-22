@@ -1107,11 +1107,39 @@ def _extract_story_lines(value) -> list[str]:
 _URL_PATTERN = re.compile(r"https?://[^\s)]+", re.IGNORECASE)
 
 
+def _extract_heading_sections_from_description(value) -> dict[str, list[str]]:
+    if not isinstance(value, str):
+        return {}
+    sections: dict[str, list[str]] = {}
+    current_key = ""
+    heading_pattern = re.compile(r"^\s*(\d+[.):-]?\s+)?([A-Za-z][A-Za-z /_-]+):?\s*$")
+    for raw_line in value.splitlines():
+        stripped = clean_text(raw_line)
+        if not stripped:
+            continue
+        heading_match = heading_pattern.match(stripped)
+        if heading_match and len(stripped.split()) <= 8:
+            current_key = clean_text(heading_match.group(2)).lower()
+            sections.setdefault(current_key, [])
+            continue
+        if current_key:
+            bullet = re.sub(r"^[-*•]+\s*", "", stripped)
+            normalized = re.sub(r"^\d+[.):-]?\s*", "", bullet)
+            cleaned = clean_text(normalized)
+            if cleaned:
+                sections.setdefault(current_key, []).append(cleaned)
+    return {
+        key: [item for index, item in enumerate(values) if item and item not in values[:index]]
+        for key, values in sections.items()
+        if values
+    }
+
+
 def _extract_urls_from_text_blocks(values: list[str]) -> list[str]:
     urls: list[str] = []
     for value in values:
         for match in _URL_PATTERN.findall(str(value or "")):
-            cleaned = clean_text(match)
+            cleaned = clean_text(match).rstrip('.,;:')
             if cleaned and cleaned not in urls:
                 urls.append(cleaned)
     return urls
@@ -1126,14 +1154,16 @@ def _derive_structured_workflow_context(workflow: dict) -> dict:
     first_page = pages[0] if pages and isinstance(pages[0], dict) else {}
     external = normalized_workflow.get("externalContext", {}) if isinstance(normalized_workflow.get("externalContext"), dict) else {}
     test_data = normalized_workflow.get("testData", {}) if isinstance(normalized_workflow.get("testData"), dict) else {}
+    description_sections = _extract_heading_sections_from_description(external.get("description"))
 
-    application_context_lines = _extract_story_lines(external.get("applicationContext", []))
-    entry_condition_lines = _extract_story_lines(external.get("entryConditions", []))
-    transition_lines = _extract_story_lines(external.get("transitionExpectations", []))
-    validation_lines = _extract_story_lines(external.get("validationExpectations", []))
-    observed_step_lines = _extract_story_lines(normalized_workflow.get("observedSteps", []))
-    observed_validation_lines = _extract_story_lines(normalized_workflow.get("observedValidations", []))
-    all_story_lines = application_context_lines + entry_condition_lines + transition_lines + validation_lines + observed_step_lines + observed_validation_lines
+    application_context_lines = _extract_story_lines(external.get("applicationContext", [])) or description_sections.get("application context", [])
+    entry_condition_lines = _extract_story_lines(external.get("entryConditions", [])) or description_sections.get("entry conditions", [])
+    transition_lines = _extract_story_lines(external.get("transitionExpectations", [])) or description_sections.get("transition expectations", []) + description_sections.get("primary navigation journey", [])
+    validation_lines = _extract_story_lines(external.get("validationExpectations", [])) or description_sections.get("validation expectations", [])
+    observed_step_lines = _extract_story_lines(normalized_workflow.get("observedSteps", [])) or description_sections.get("primary navigation journey", [])
+    observed_validation_lines = _extract_story_lines(normalized_workflow.get("observedValidations", [])) or description_sections.get("acceptance criteria", [])
+    approved_test_data_lines = description_sections.get("approved test data", [])
+    all_story_lines = application_context_lines + entry_condition_lines + transition_lines + validation_lines + observed_step_lines + observed_validation_lines + approved_test_data_lines
 
     entry_page = normalized_workflow.get("entryPage") if isinstance(normalized_workflow.get("entryPage"), dict) else {}
     if not entry_page:
@@ -1146,8 +1176,8 @@ def _derive_structured_workflow_context(workflow: dict) -> dict:
             state_candidates = [line for line in application_context_lines + entry_condition_lines if clean_text(line)]
             for line in state_candidates:
                 lowered = line.lower()
-                if "state" in lowered:
-                    entry_state = clean_text(line.split(":", 1)[-1] if ":" in line else line)
+                if ":" in line and "state" in lowered:
+                    entry_state = clean_text(line.split(":", 1)[-1])
                     break
         entry_name = clean_text(str(first_page.get("name", "")))
         if entry_name or entry_url or entry_state:
@@ -1161,10 +1191,20 @@ def _derive_structured_workflow_context(workflow: dict) -> dict:
         test_data_values = []
         if isinstance(test_data, dict):
             test_data_values.extend([clean_text(str(value)) for value in test_data.values() if clean_text(str(value))])
+        test_data_values.extend(approved_test_data_lines)
         test_data_values.extend(_extract_urls_from_text_blocks(all_story_lines))
         for value in test_data_values:
-            signal_type = "urlContains" if "/" in value or "?" in value else "pageName"
-            target_page_signals.append({"type": signal_type, "value": value})
+            cleaned_value = clean_text(str(value))
+            if not cleaned_value or cleaned_value == normalize_url_value(str(entry_page.get("url", ""))):
+                continue
+            lowered_value = cleaned_value.lower()
+            if lowered_value.endswith(":") or lowered_value.startswith("entry url") or lowered_value.startswith("expected "):
+                continue
+            signal_type = "urlContains" if "/" in cleaned_value or "?" in cleaned_value or "-" in cleaned_value else "pageName"
+            marker = json.dumps({"type": signal_type, "value": cleaned_value}, sort_keys=True, ensure_ascii=False)
+            if marker in {json.dumps(item, sort_keys=True, ensure_ascii=False) for item in target_page_signals if isinstance(item, dict)}:
+                continue
+            target_page_signals.append({"type": signal_type, "value": cleaned_value})
 
     if not navigation_steps:
         workflow_slug = clean_text(str(normalized_workflow.get("workflowName", ""))) or clean_text(str(normalized_workflow.get("feature", "")))
