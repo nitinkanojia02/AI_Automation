@@ -1460,76 +1460,7 @@ def perform_navigation_steps(page, navigation_steps: List[dict], wait_seconds: i
             continue
         action = clean_text(str(step.get("action", "")))
         if action == "reuseApprovedEntryContext":
-            source_page = clean_text(str(step.get("page", "")))
-            inferred_context = step.get("inferredReuseContext") if isinstance(step.get("inferredReuseContext"), dict) else {}
-            authoritative_resources = inferred_context.get("authoritativeResourceFiles", []) if isinstance(inferred_context.get("authoritativeResourceFiles"), list) else []
-            start_count = len(expanded_steps)
-            for resource_path in authoritative_resources:
-                resource_name = Path(str(resource_path)).parent.name.strip()
-                normalized_page = clean_text(resource_name)
-                if not normalized_page:
-                    continue
-                if not normalized_page.endswith("_page"):
-                    normalized_page = f"{normalized_page}_page"
-                if source_page and normalized_page != source_page:
-                    continue
-                resource_file = BASE_DIR / str(resource_path).replace("\\", "/")
-                if not resource_file.exists():
-                    continue
-                resource_text = resource_file.read_text(encoding="utf-8")
-                variable_to_element: Dict[str, str] = {}
-                in_variables = False
-                in_keywords = False
-                current_keyword_name = ""
-                for line in resource_text.splitlines():
-                    stripped = line.strip()
-                    if stripped.startswith("***"):
-                        in_variables = stripped.lower() == "*** variables ***"
-                        in_keywords = stripped.lower() == "*** keywords ***"
-                        current_keyword_name = ""
-                        continue
-                    if in_variables:
-                        match = re.match(r"^\$\{([A-Z0-9_]+)\}\s{2,}.*$", stripped)
-                        if match:
-                            variable_name = clean_text(match.group(1))
-                            if variable_name:
-                                locator_entry = next((item for item in get_page_resource_variables(normalized_page) if clean_text(str(item.get("name", ""))) == variable_name), None)
-                                approved_name = clean_text(str(locator_entry.get("approvedName", ""))) if locator_entry else ""
-                                if approved_name:
-                                    variable_to_element[variable_name] = approved_name
-                        continue
-                    if not in_keywords:
-                        continue
-                    if not stripped:
-                        current_keyword_name = ""
-                        continue
-                    if not line.startswith(" ") and not line.startswith("\t"):
-                        current_keyword_name = stripped
-                        continue
-                    if stripped.startswith("["):
-                        continue
-                    action_metadata = step.get("approvedStepActionMap") if isinstance(step.get("approvedStepActionMap"), dict) else {}
-                    keyword_actions = action_metadata.get(resource_file.as_posix(), {}) if isinstance(action_metadata.get(resource_file.as_posix(), {}), dict) else {}
-                    step_action = clean_text(str(keyword_actions.get(current_keyword_name, "")))
-                    if not step_action:
-                        continue
-                    references = re.findall(r"\$\{([A-Z0-9_]+)\}", stripped)
-                    if not references:
-                        continue
-                    element_name = clean_text(variable_to_element.get(clean_text(references[0]), ""))
-                    if not element_name:
-                        continue
-                    expanded_steps.append({
-                        "action": step_action,
-                        "page": normalized_page,
-                        "element": element_name,
-                        "keyword": current_keyword_name,
-                    })
-                if len(expanded_steps) > start_count:
-                    break
-            if len(expanded_steps) == start_count:
-                raise ValueError(f"Unable to expand approved entry context for step targeting '{source_page or 'unknown'}'.")
-            continue
+            raise ValueError("reuseApprovedEntryContext must be resolved before executor invocation.")
         expanded_steps.append(step)
 
     for index, step in enumerate(expanded_steps, start=1):
@@ -1606,7 +1537,7 @@ def perform_navigation_steps(page, navigation_steps: List[dict], wait_seconds: i
                 navigation_debug.append(debug_entry)
             continue
 
-        raise ValueError(f"Unsupported navigation action '{action}' in step {index}. Supported actions: clickKnownElement, inputKnownElement, waitForUrlContains, waitForElementVisible, reuseApprovedEntryContext.")
+        raise ValueError(f"Unsupported navigation action '{action}' in step {index}. Supported actions: clickKnownElement, inputKnownElement, waitForUrlContains, waitForElementVisible.")
 
 
 def write_signal_timeout_debug(page, metadata_dir: Path, page_name: str):

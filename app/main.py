@@ -19,7 +19,9 @@ from fastapi.templating import Jinja2Templates
 from starlette.status import HTTP_303_SEE_OTHER
 
 from app.config.feature_flags import FEATURE_FLAGS
+from app.repositories.resource_repository import ResourceRepository
 from app.repositories.workflow_repository import WorkflowRepository
+from app.services.agents.resource_reuse_agent import ResourceReuseAgent
 from app.services.platform.logger import PlatformLogger
 from app.services.workflows.workflow_contract_builder import WorkflowContractBuilder
 from app.services.workflows.workflow_contract_validator import WorkflowContractValidator
@@ -102,6 +104,8 @@ templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 logger = logging.getLogger(__name__)
 platform_logger = PlatformLogger(__name__)
 workflow_repository = WorkflowRepository(WORKFLOW_DIR)
+resource_repository = ResourceRepository(BASE_DIR)
+resource_reuse_agent = ResourceReuseAgent(resource_repository)
 
 # -------------------------------------------------------------------
 # Generic helpers
@@ -4453,6 +4457,13 @@ def run_page_review_extraction(request: Request, workflow_name: str):
             "authoritativeResourceFiles": resource_files,
         },
     }
+    if FEATURE_FLAGS.enable_workflow_contracts and FEATURE_FLAGS.enable_resource_reuse_agent:
+        contract = WorkflowContractBuilder.build(extraction_context)
+        contract.reuse_policy.resource_files = resource_files
+        try:
+            extraction_context["navigationSteps"] = resource_reuse_agent.resolve_navigation_steps(contract) or extraction_context["navigationSteps"]
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
     try:
         run_page_extraction(review_data["page_name"], review_data["page_url"], extraction_context)
         updated_review_data = get_page_review_data(workflow)

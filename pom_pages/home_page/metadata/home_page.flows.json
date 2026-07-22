@@ -1,0 +1,22 @@
+{
+  "pageName": "home_page",
+  "flows": [
+    {
+      "flowId": "home_page.entry_to_login_page",
+      "name": "Approved entry flow from home_page to login_page",
+      "entryPage": {
+        "name": "home_page"
+      },
+      "targetPage": {
+        "name": "login_page"
+      },
+      "steps": [
+        {
+          "action": "clickKnownElement",
+          "page": "home_page",
+          "element": "person_profile_button"
+        }
+      ]
+    }
+  ]
+}
