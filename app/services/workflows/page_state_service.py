@@ -19,7 +19,7 @@ class PageStateService:
             return {}
 
         state_payload = self.page_state_repository.load_state_artifact(page_name)
-        artifact_errors = self.page_state_repository.validate_state_artifact(state_payload) if state_payload else ["missing state artifact"]
+        artifact_errors = self.page_state_repository.validate_descriptor_payload(state_payload) if state_payload else ["missing state artifact"]
         artifact_descriptor = self.page_state_repository.build_descriptor(page_name, state_payload if not artifact_errors else {}).to_dict()
         fallback_descriptor = self.page_state_repository.build_descriptor(page_name, {
             "stateId": str(contract.page_state or contract.page.state or "").strip(),
