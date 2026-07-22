@@ -31,10 +31,11 @@ Use exactly the following section order and headings:
 12. Downstream Automation Guidance
 13. Acceptance Criteria
 
-Within those headings, prefer the following structural conventions whenever the raw input supports them:
-- In Application Context, explicitly include canonical page identity fields when known:
+Within those headings, prefer the following structural conventions whenever the raw input explicitly provides them or clearly requires them for execution clarity:
+- In Application Context, explicitly include canonical page identity fields only when the raw input provides them directly or when the workflow clearly depends on them:
   - Canonical page name: `<page_name>`
   - Canonical page state: `<state_id>`
+- Do not invent canonical page identity fields when they are not provided and are not necessary to distinguish meaningful workflow variants.
 - In Transition Expectations, explicitly state branch reset behavior when multiple navigation branches start from the same entry page/state.
 - In Transition Expectations or Approved Test Data, explicitly distinguish target match mode facts when supported by the input:
   - exact URL match
@@ -73,6 +74,8 @@ Content rules:
 - If approved credentials or test data are given, state that they are approved for positive scenarios and should be reused consistently across manual and automation assets
 - If the workflow depends on a previous workflow or page, make that dependency explicit
 - If the workflow is the first landing/bootstrap page, state clearly that no upstream reusable entry context is required and that the workflow establishes the canonical entry context for downstream reuse
+- Include page-state facts only when the raw input explicitly states a page state or when a meaningful workflow/state variant must be distinguished for execution clarity
+- Do not invent page-state identifiers for pages that do not require variant distinction
 - For multi-branch workflows, explicitly state that each branch begins from the canonical entry context and that the entry context is restored before the next independent branch when that behavior is supported by the input
 - Preserve exact match-vs-contains expectations for URLs and destination identifiers when the raw input distinguishes them
 - If a control is listed only for availability/interactivity validation, preserve that scope and do not silently convert it into a navigation branch
@@ -83,7 +86,7 @@ Content rules:
 
 Section expectations:
 - User Story: write one concise business-facing story in the format As a <user/persona>, I want to <goal>, so that <business outcome>.
-- Application Context: include app behavior context, SPA behavior if provided, whether the page is directly reachable, and starting URL only if explicitly provided. Include canonical page name and canonical page state as explicit facts when the raw input supports them.
+- Application Context: include app behavior context, SPA behavior if provided, whether the page is directly reachable, and starting URL only if explicitly provided. Include canonical page name and canonical page state as explicit facts only when the raw input provides them or when they are necessary to distinguish meaningful workflow variants.
 - Entry Conditions: list the required preconditions and starting page/state.
 - Workflow Scope: summarize what this workflow covers and validates. If some controls are validation-only in this workflow, state that explicitly.
 - Primary Navigation Journey: describe the intended ordered business journey and page/state transitions.
