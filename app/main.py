@@ -267,6 +267,8 @@ def resolve_execution_plan(
         if isinstance(runtime_page_state.get("metadata", {}), dict)
         else {}
     ) if isinstance(runtime_page_state, dict) else {}
+    runtime_mcp_context = mcp_context if isinstance(mcp_context, dict) else (mcp_service.build_runtime_context() if FEATURE_FLAGS.enable_mcp else {})
+    runtime_mcp_provenance = runtime_mcp_context.get("provenance", {}) if isinstance(runtime_mcp_context.get("provenance", {}), dict) else {}
 
     persisted_plan = execution_plan_repository.load_plan(workflow_slug) if FEATURE_FLAGS.enable_execution_plan_persistence else None
     if persisted_plan is not None:
@@ -307,9 +309,12 @@ def resolve_execution_plan(
                     if isinstance(persisted_page_state.get("metadata", {}), dict)
                     else {}
                 ) if isinstance(persisted_page_state, dict) else {}
+                persisted_mcp = persisted_plan.get("mcp", {}) if isinstance(persisted_plan.get("mcp", {}), dict) else {}
+                persisted_mcp_provenance = persisted_mcp.get("provenance", {}) if isinstance(persisted_mcp.get("provenance", {}), dict) else {}
                 page_state_aligned = (not runtime_page_state and not persisted_page_state) or (persisted_page_state == runtime_page_state)
                 page_state_snapshot_aligned = (not runtime_page_state_snapshot and not persisted_page_state_snapshot) or (persisted_page_state_snapshot == runtime_page_state_snapshot)
-                if persisted_navigation_steps == runtime_navigation_steps and persisted_target_signals == runtime_target_signals and page_state_aligned and page_state_snapshot_aligned:
+                mcp_provenance_aligned = (not runtime_mcp_provenance and not persisted_mcp_provenance) or (persisted_mcp_provenance == runtime_mcp_provenance)
+                if persisted_navigation_steps == runtime_navigation_steps and persisted_target_signals == runtime_target_signals and page_state_aligned and page_state_snapshot_aligned and mcp_provenance_aligned:
                     platform_logger.info(
                         "execution_plan_reused",
                         workflow_slug=workflow_slug,
@@ -320,6 +325,7 @@ def resolve_execution_plan(
                         rag_attached=persisted_provenance.get("ragAttached", False),
                         source_snapshot=persisted_source_snapshot,
                         page_state_snapshot=persisted_page_state_snapshot,
+                        mcp_provenance=persisted_mcp_provenance,
                         mcp_adapter=((persisted_plan.get("mcp", {}) or {}).get("adapter", {}) if isinstance(persisted_plan.get("mcp", {}), dict) else {}),
                         mcp_dispatch=((persisted_plan.get("mcp", {}) or {}).get("dispatch", {}) if isinstance(persisted_plan.get("mcp", {}), dict) else {}),
                         persisted=True,
@@ -336,8 +342,11 @@ def resolve_execution_plan(
                     runtime_target_signal_count=len(runtime_target_signals),
                     page_state_aligned=page_state_aligned,
                     page_state_snapshot_aligned=page_state_snapshot_aligned,
+                    mcp_provenance_aligned=mcp_provenance_aligned,
                     persisted_page_state_snapshot=persisted_page_state_snapshot,
                     runtime_page_state_snapshot=runtime_page_state_snapshot,
+                    persisted_mcp_provenance=persisted_mcp_provenance,
+                    runtime_mcp_provenance=runtime_mcp_provenance,
                     source_snapshot=persisted_source_snapshot,
                     freshness=freshness,
                 )
