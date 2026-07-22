@@ -1596,6 +1596,15 @@ def process_page(playwright, config: dict, page_entry: Dict[str, str]):
             json.dumps(mcp_dispatch, ensure_ascii=False),
             json.dumps(mcp_adapter, ensure_ascii=False),
         )
+        if mcp_enabled:
+            logger.info(
+                "Execution runtime MCP modes for page '%s': dispatch_mode=%s execution_mode=%s selected_adapter=%s fallback_adapter=%s",
+                page_name,
+                clean_text(str(mcp_dispatch.get("dispatchMode", ""))),
+                clean_text(str(mcp_execution.get("executionMode", ""))),
+                json.dumps(mcp_dispatch.get("selectedAdapter", {}) if isinstance(mcp_dispatch.get("selectedAdapter", {}), dict) else {}, ensure_ascii=False),
+                json.dumps(mcp_dispatch.get("fallbackAdapter", {}) if isinstance(mcp_dispatch.get("fallbackAdapter", {}), dict) else {}, ensure_ascii=False),
+            )
         debug_path = metadata_dir / f"{page_name}.navigation.debug.json"
         if not navigation_steps:
             inferred_steps, inferred_signals = infer_story_navigation_steps(page_name, page_entry)
@@ -1767,6 +1776,20 @@ def validate_execution_runtime_payload(runtime_payload: dict) -> list[str]:
             errors.append("MCP runtime is enabled but dispatch metadata is missing.")
         if enabled and not adapter:
             errors.append("MCP runtime is enabled but adapter metadata is missing.")
+
+        dispatch_mode = clean_text(str(dispatch.get("dispatchMode", "")))
+        execution_mode = clean_text(str(execution.get("executionMode", "")))
+        selected_adapter = dispatch.get("selectedAdapter", {}) if isinstance(dispatch.get("selectedAdapter", {}), dict) else {}
+        fallback_adapter = dispatch.get("fallbackAdapter", {}) if isinstance(dispatch.get("fallbackAdapter", {}), dict) else {}
+
+        if enabled and not dispatch_mode:
+            errors.append("MCP runtime is enabled but dispatch mode is missing.")
+        if enabled and not execution_mode:
+            errors.append("MCP runtime is enabled but execution mode is missing.")
+        if dispatch and not selected_adapter:
+            errors.append("MCP dispatch metadata is missing selected adapter details.")
+        if dispatch and not fallback_adapter:
+            errors.append("MCP dispatch metadata is missing fallback adapter details.")
 
     return errors
 
