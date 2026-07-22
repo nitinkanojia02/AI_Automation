@@ -192,6 +192,7 @@ def attach_execution_plan_if_enabled(
         rag_context=enriched_context.get("ragContext", {}) if isinstance(enriched_context.get("ragContext"), dict) else {},
         attach_stage=attach_stage,
         target_signals=enriched_context.get("targetPageSignals", []) if isinstance(enriched_context.get("targetPageSignals"), list) else [],
+        mcp_context=enriched_context.get("mcpContext", {}) if isinstance(enriched_context.get("mcpContext"), dict) else {},
     )
     return enriched_context
 
@@ -203,8 +204,10 @@ def build_and_validate_execution_plan(
     rag_context: dict | None = None,
     attach_stage: str = "",
     target_signals: list[dict] | None = None,
+    mcp_context: dict | None = None,
 ):
     source_snapshot = execution_plan_repository.get_source_snapshot(workflow_slug)
+    resolved_mcp_context = mcp_context if isinstance(mcp_context, dict) else (mcp_service.build_runtime_context() if FEATURE_FLAGS.enable_mcp else {})
     plan = workflow_planning_agent.build_plan(
         contract,
         navigation_steps,
@@ -213,7 +216,8 @@ def build_and_validate_execution_plan(
             "navigationSource": "runtime" if navigation_steps else "contract",
             "targetSignalSource": "runtime" if target_signals else "contract",
             "sourceSnapshot": source_snapshot,
-            "mcpContext": mcp_service.build_runtime_context() if FEATURE_FLAGS.enable_mcp else {},
+            "mcpContext": resolved_mcp_context,
+            "mcpAdapter": mcp_service.resolve_execution_adapter(resolved_mcp_context) if FEATURE_FLAGS.enable_mcp else {},
         },
     )
     if isinstance(target_signals, list):
@@ -238,6 +242,7 @@ def build_and_validate_execution_plan(
         target_signal_source=plan_provenance.get("targetSignalSource", ""),
         rag_attached=plan_provenance.get("ragAttached", False),
         source_snapshot=plan_provenance.get("sourceSnapshot", {}),
+        mcp_adapter=((plan.get("mcp", {}) or {}).get("adapter", {}) if isinstance(plan.get("mcp", {}), dict) else {}),
         persisted=FEATURE_FLAGS.enable_execution_plan_persistence,
     )
     return plan
@@ -250,6 +255,7 @@ def resolve_execution_plan(
     rag_context: dict | None = None,
     attach_stage: str = "",
     target_signals: list[dict] | None = None,
+    mcp_context: dict | None = None,
 ):
     runtime_navigation_steps = [dict(item) for item in (navigation_steps or []) if isinstance(item, dict)]
     runtime_target_signals = [dict(item) for item in (target_signals or []) if isinstance(item, dict)]
@@ -296,6 +302,7 @@ def resolve_execution_plan(
                         target_signal_source=persisted_provenance.get("targetSignalSource", ""),
                         rag_attached=persisted_provenance.get("ragAttached", False),
                         source_snapshot=persisted_source_snapshot,
+                        mcp_adapter=((persisted_plan.get("mcp", {}) or {}).get("adapter", {}) if isinstance(persisted_plan.get("mcp", {}), dict) else {}),
                         persisted=True,
                         freshness=freshness,
                     )
@@ -328,6 +335,7 @@ def resolve_execution_plan(
         rag_context=rag_context,
         attach_stage=attach_stage,
         target_signals=runtime_target_signals,
+        mcp_context=mcp_context,
     )
 
 

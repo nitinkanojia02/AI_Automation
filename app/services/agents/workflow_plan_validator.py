@@ -91,6 +91,9 @@ class WorkflowPlanValidator:
             provenance = mcp.get("provenance", {})
             if provenance is not None and not isinstance(provenance, dict):
                 errors.append("mcp.provenance must be an object when provided")
+            adapter = mcp.get("adapter", {})
+            if adapter is not None and not isinstance(adapter, dict):
+                errors.append("mcp.adapter must be an object when provided")
 
         provenance = plan.get("provenance", {})
         if provenance is not None and not isinstance(provenance, dict):
