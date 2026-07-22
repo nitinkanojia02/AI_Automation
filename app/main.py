@@ -104,6 +104,37 @@ knowledge_repository = KnowledgeRepository(BASE_DIR, resource_repository)
 resource_reuse_agent = ResourceReuseAgent(resource_repository)
 rag_context_service = RagContextService(knowledge_repository, platform_logger)
 
+
+def ensure_workflow_contract_artifact(workflow_slug: str, workflow_payload: dict | None = None):
+    if not FEATURE_FLAGS.enable_workflow_contracts:
+        return None
+
+    contract_path = workflow_repository.get_contract_path(workflow_slug)
+    if contract_path.exists():
+        return read_json(contract_path)
+
+    payload = workflow_payload if isinstance(workflow_payload, dict) else None
+    if payload is None:
+        workflow_path = WORKFLOW_DIR / f"{workflow_slug}.json"
+        if not workflow_path.exists():
+            return None
+        payload = read_json(workflow_path)
+
+    contract = WorkflowContractBuilder.build(payload)
+    contract_errors = WorkflowContractValidator.validate(contract)
+    if contract_errors:
+        raise HTTPException(status_code=400, detail="Workflow contract validation failed: " + "; ".join(contract_errors))
+
+    workflow_repository.save_contract(workflow_slug, contract)
+    platform_logger.info(
+        "workflow_contract_ensured",
+        workflow_slug=workflow_slug,
+        workflow_id=contract.workflow_id,
+        page_name=contract.page.name,
+        source_type=contract.source_type,
+    )
+    return contract.to_dict()
+
 # -------------------------------------------------------------------
 # Generic helpers
 # -------------------------------------------------------------------
@@ -4030,13 +4061,9 @@ async def save_workflow(
     write_json(target, payload)
 
     if FEATURE_FLAGS.enable_workflow_contracts:
-        contract = WorkflowContractBuilder.build(payload)
-        contract_errors = WorkflowContractValidator.validate(contract)
-        if contract_errors:
-            raise HTTPException(status_code=400, detail="Workflow contract validation failed: " + "; ".join(contract_errors))
-        workflow_repository.save_contract(target_slug, contract)
+        contract_artifact = ensure_workflow_contract_artifact(target_slug, payload)
         if FEATURE_FLAGS.enable_rag:
-            payload["ragContext"] = rag_context_service.build_context(target_slug, contract)
+            payload["ragContext"] = rag_context_service.build_context(target_slug)
             write_json(target, payload)
             rag_provenance = payload["ragContext"].get("provenance", {}) if isinstance(payload["ragContext"], dict) else {}
             platform_logger.info(
@@ -4048,13 +4075,14 @@ async def save_workflow(
                 resource_bundle_count=rag_provenance.get("resourceBundleCount", 0),
                 workflow_knowledge_present=rag_provenance.get("workflowKnowledgePresent", False),
             )
-        platform_logger.info(
-            "workflow_contract_saved",
-            workflow_slug=target_slug,
-            workflow_id=contract.workflow_id,
-            page_name=contract.page.name,
-            source_type=contract.source_type,
-        )
+        if isinstance(contract_artifact, dict):
+            platform_logger.info(
+                "workflow_contract_saved",
+                workflow_slug=target_slug,
+                workflow_id=contract_artifact.get("workflow_id", ""),
+                page_name=(contract_artifact.get("page", {}) or {}).get("name", ""),
+                source_type=contract_artifact.get("source_type", ""),
+            )
 
     normalized_page_name = clean_text(page_name)
     normalized_resource = normalize_resource_file_path(normalized_page_name, resource_file)
@@ -4125,10 +4153,11 @@ def run_page_review_extraction(request: Request, workflow_name: str):
         "ragContext": workflow.get("ragContext", {}) if isinstance(workflow.get("ragContext"), dict) else {},
     }
     if FEATURE_FLAGS.enable_workflow_contracts and FEATURE_FLAGS.enable_resource_reuse_agent:
+        contract_artifact = ensure_workflow_contract_artifact(workflow_name, workflow)
         contract = WorkflowContractBuilder.build(extraction_context)
         contract.reuse_policy.resource_files = resource_files
         if FEATURE_FLAGS.enable_rag:
-            extraction_context["ragContext"] = rag_context_service.build_context(workflow_name, contract)
+            extraction_context["ragContext"] = rag_context_service.build_context(workflow_name)
             rag_provenance = extraction_context["ragContext"].get("provenance", {}) if isinstance(extraction_context["ragContext"], dict) else {}
             platform_logger.info(
                 "rag_context_attached",
@@ -4138,6 +4167,14 @@ def run_page_review_extraction(request: Request, workflow_name: str):
                 canonical_freshness=rag_provenance.get("canonicalFreshness", {}),
                 resource_bundle_count=rag_provenance.get("resourceBundleCount", 0),
                 workflow_knowledge_present=rag_provenance.get("workflowKnowledgePresent", False),
+            )
+        if isinstance(contract_artifact, dict):
+            platform_logger.info(
+                "workflow_contract_available",
+                workflow_slug=workflow_name,
+                workflow_id=contract_artifact.get("workflow_id", ""),
+                page_name=(contract_artifact.get("page", {}) or {}).get("name", ""),
+                source_type=contract_artifact.get("source_type", ""),
             )
         try:
             extraction_context["navigationSteps"] = resource_reuse_agent.resolve_navigation_steps(contract) or extraction_context["navigationSteps"]
