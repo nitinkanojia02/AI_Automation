@@ -39,6 +39,15 @@ class ExecutionPlanRepository:
             }
         return freshness
 
+    def get_source_snapshot(self, workflow_slug: str) -> dict[str, Any]:
+        freshness = self.get_plan_freshness_context(workflow_slug)
+        artifacts = freshness.get("artifacts", {}) if isinstance(freshness.get("artifacts", {}), dict) else {}
+        return {
+            "workflowSlug": workflow_slug,
+            "workflowArtifact": dict(artifacts.get("workflow", {})) if isinstance(artifacts.get("workflow", {}), dict) else {},
+            "contractArtifact": dict(artifacts.get("contract", {})) if isinstance(artifacts.get("contract", {}), dict) else {},
+        }
+
     def is_plan_stale(self, workflow_slug: str) -> bool:
         freshness = self.get_plan_freshness_context(workflow_slug)
         plan_mtime = freshness.get("planMtime")

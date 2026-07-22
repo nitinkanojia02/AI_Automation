@@ -119,6 +119,7 @@ def build_and_validate_execution_plan(
     attach_stage: str = "",
     target_signals: list[dict] | None = None,
 ):
+    source_snapshot = execution_plan_repository.get_source_snapshot(workflow_slug)
     plan = workflow_planning_agent.build_plan(
         contract,
         navigation_steps,
@@ -126,6 +127,7 @@ def build_and_validate_execution_plan(
         plan_context={
             "navigationSource": "runtime" if navigation_steps else "contract",
             "targetSignalSource": "runtime" if target_signals else "contract",
+            "sourceSnapshot": source_snapshot,
         },
     )
     if isinstance(target_signals, list):
@@ -149,6 +151,7 @@ def build_and_validate_execution_plan(
         navigation_source=plan_provenance.get("navigationSource", ""),
         target_signal_source=plan_provenance.get("targetSignalSource", ""),
         rag_attached=plan_provenance.get("ragAttached", False),
+        source_snapshot=plan_provenance.get("sourceSnapshot", {}),
         persisted=FEATURE_FLAGS.enable_execution_plan_persistence,
     )
     return plan
@@ -195,6 +198,7 @@ def resolve_execution_plan(
                         navigation_source=persisted_provenance.get("navigationSource", ""),
                         target_signal_source=persisted_provenance.get("targetSignalSource", ""),
                         rag_attached=persisted_provenance.get("ragAttached", False),
+                        source_snapshot=persisted_provenance.get("sourceSnapshot", {}),
                         persisted=True,
                         freshness=freshness,
                     )

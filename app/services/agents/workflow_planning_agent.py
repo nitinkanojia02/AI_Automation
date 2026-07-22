@@ -33,6 +33,7 @@ class WorkflowPlanningAgent:
         rag_payload = rag_context if isinstance(rag_context, dict) else {}
         rag_provenance = rag_payload.get("provenance", {}) if isinstance(rag_payload.get("provenance"), dict) else {}
         plan_payload = plan_context if isinstance(plan_context, dict) else {}
+        source_snapshot = plan_payload.get("sourceSnapshot", {}) if isinstance(plan_payload.get("sourceSnapshot"), dict) else {}
         plan_provenance = {
             "planningMode": "deterministic_structural",
             "navigationSource": str(plan_payload.get("navigationSource", "contract_or_runtime")).strip() or "contract_or_runtime",
@@ -40,6 +41,7 @@ class WorkflowPlanningAgent:
             "ragAttached": bool(rag_payload),
             "ragSourcePreference": rag_provenance.get("sourcePreference", []) if isinstance(rag_provenance.get("sourcePreference", []), list) else [],
             "contractResourceFileCount": len(normalized_resource_files),
+            "sourceSnapshot": source_snapshot,
         }
 
         return {

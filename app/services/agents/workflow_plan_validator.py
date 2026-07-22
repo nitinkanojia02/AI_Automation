@@ -75,5 +75,16 @@ class WorkflowPlanValidator:
             rag_source_preference = provenance.get("ragSourcePreference", [])
             if rag_source_preference is not None and not isinstance(rag_source_preference, list):
                 errors.append("provenance.ragSourcePreference must be a list when provided")
+            source_snapshot = provenance.get("sourceSnapshot", {})
+            if source_snapshot is not None and not isinstance(source_snapshot, dict):
+                errors.append("provenance.sourceSnapshot must be an object when provided")
+            elif isinstance(source_snapshot, dict):
+                workflow_slug = str(source_snapshot.get("workflowSlug", "")).strip()
+                if not workflow_slug:
+                    errors.append("provenance.sourceSnapshot.workflowSlug is required when sourceSnapshot is provided")
+                for field_name in ("workflowArtifact", "contractArtifact"):
+                    artifact = source_snapshot.get(field_name, {})
+                    if artifact is not None and not isinstance(artifact, dict):
+                        errors.append(f"provenance.sourceSnapshot.{field_name} must be an object when provided")
 
         return errors
