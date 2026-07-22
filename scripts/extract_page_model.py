@@ -1559,17 +1559,39 @@ def process_page(playwright, config: dict, page_entry: Dict[str, str]):
 
         navigation_steps = page_entry.get("navigation_steps", []) if isinstance(page_entry.get("navigation_steps"), list) else []
         target_page_signals = page_entry.get("target_page_signals", []) if isinstance(page_entry.get("target_page_signals"), list) else []
+        execution_runtime = page_entry.get("execution_runtime", {}) if isinstance(page_entry.get("execution_runtime"), dict) else {}
+        page_state = page_entry.get("page_state", {}) if isinstance(page_entry.get("page_state"), dict) else {}
+        mcp_execution = page_entry.get("mcp_execution", {}) if isinstance(page_entry.get("mcp_execution"), dict) else {}
+        mcp_dispatch = page_entry.get("mcp_dispatch", {}) if isinstance(page_entry.get("mcp_dispatch"), dict) else {}
+        mcp_adapter = page_entry.get("mcp_adapter", {}) if isinstance(page_entry.get("mcp_adapter"), dict) else {}
+        mcp_enabled = bool(page_entry.get("mcp_enabled", False))
+        workflow_like = page_entry.get("workflow_like", {}) if isinstance(page_entry.get("workflow_like"), dict) else page_entry
         navigation_debug: List[dict] = [{
             "page": page_name,
             "entry_url": url,
             "received_navigation_steps": navigation_steps,
             "received_target_page_signals": target_page_signals,
+            "execution_runtime": execution_runtime,
+            "page_state": page_state,
+            "mcp_execution": mcp_execution,
+            "mcp_dispatch": mcp_dispatch,
+            "mcp_adapter": mcp_adapter,
+            "mcp_enabled": mcp_enabled,
             "has_inferred_reuse_context": bool(page_entry.get("inferred_reuse_context")),
             "resource_files": (page_entry.get("inferred_reuse_context") or {}).get("authoritativeResourceFiles", []) if isinstance(page_entry.get("inferred_reuse_context"), dict) else [],
             "raw_resource_files": page_entry.get("resourceFiles", []) if isinstance(page_entry.get("resourceFiles"), list) else [],
-            "story_excerpt": build_story_text(page_entry)[:800],
-            "external_story_excerpt": build_story_text(page_entry.get("externalContext", {}))[:800] if isinstance(page_entry.get("externalContext"), dict) else "",
+            "story_excerpt": build_story_text(workflow_like)[:800],
+            "external_story_excerpt": build_story_text(workflow_like.get("externalContext", {}))[:800] if isinstance(workflow_like.get("externalContext"), dict) else "",
         }]
+        logger.info(
+            "Execution runtime attached for page '%s': page_state=%s mcp_enabled=%s mcp_execution=%s mcp_dispatch=%s mcp_adapter=%s",
+            page_name,
+            json.dumps(page_state, ensure_ascii=False),
+            mcp_enabled,
+            json.dumps(mcp_execution, ensure_ascii=False),
+            json.dumps(mcp_dispatch, ensure_ascii=False),
+            json.dumps(mcp_adapter, ensure_ascii=False),
+        )
         debug_path = metadata_dir / f"{page_name}.navigation.debug.json"
         if not navigation_steps:
             inferred_steps, inferred_signals = infer_story_navigation_steps(page_name, page_entry)
@@ -1692,6 +1714,7 @@ def build_navigation_page_config(config: dict, page_name: str, entry_url: str, n
     single_config = dict(config)
     entry_page_payload = navigation_payload.get("entryPage", {}) if isinstance(navigation_payload.get("entryPage"), dict) else {}
     target_page_payload = navigation_payload.get("targetPage", {}) if isinstance(navigation_payload.get("targetPage"), dict) else {}
+    execution_runtime = navigation_payload.get("executionRuntime", {}) if isinstance(navigation_payload.get("executionRuntime"), dict) else {}
     workflow_like_payload = {
         "workflowName": clean_text(str(navigation_payload.get("workflowName", page_name))) or page_name,
         "feature": clean_text(str(navigation_payload.get("feature", ""))),
@@ -1715,15 +1738,23 @@ def build_navigation_page_config(config: dict, page_name: str, entry_url: str, n
         "acceptanceCriteria": navigation_payload.get("acceptanceCriteria", []),
         "description": navigation_payload.get("description", ""),
         "userStory": navigation_payload.get("userStory", ""),
+        "executionRuntime": execution_runtime,
     }
     page_entry = {
         "page_name": page_name,
         "url": entry_url,
+        "workflow_like": workflow_like_payload,
         "navigation_steps": [
             dict(step) if isinstance(step, dict) else step
             for step in navigation_payload.get("navigationSteps", [])
         ],
         "target_page_signals": navigation_payload.get("targetPageSignals", []),
+        "execution_runtime": execution_runtime,
+        "page_state": execution_runtime.get("pageState", {}) if isinstance(execution_runtime.get("pageState", {}), dict) else {},
+        "mcp_execution": ((execution_runtime.get("mcp", {}) or {}).get("execution", {}) if isinstance(execution_runtime.get("mcp", {}), dict) else {}),
+        "mcp_dispatch": ((execution_runtime.get("mcp", {}) or {}).get("dispatch", {}) if isinstance(execution_runtime.get("mcp", {}), dict) else {}),
+        "mcp_adapter": ((execution_runtime.get("mcp", {}) or {}).get("adapter", {}) if isinstance(execution_runtime.get("mcp", {}), dict) else {}),
+        "mcp_enabled": bool(((execution_runtime.get("mcp", {}) or {}).get("enabled", False)) if isinstance(execution_runtime.get("mcp", {}), dict) else False),
     }
     single_config["pages"] = [page_entry]
     return single_config

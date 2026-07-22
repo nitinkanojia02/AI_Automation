@@ -1116,6 +1116,19 @@ def run_page_extraction(page_name: str, page_url: str, extraction_context: dict 
             "targetPage": extraction_context.get("targetPage", {"name": page_name}),
             "navigationSteps": navigation_steps,
             "targetPageSignals": target_page_signals,
+            "executionRuntime": extraction_context.get("executionRuntime", {}) if isinstance(extraction_context.get("executionRuntime", {}), dict) else {},
+            "workflowName": extraction_context.get("workflowName", page_name),
+            "feature": extraction_context.get("feature", ""),
+            "testIdentifierPrefix": extraction_context.get("testIdentifierPrefix", ""),
+            "applicationCode": extraction_context.get("applicationCode", ""),
+            "resourceFiles": extraction_context.get("resourceFiles", []),
+            "externalContext": extraction_context.get("externalContext", {}) if isinstance(extraction_context.get("externalContext", {}), dict) else {},
+            "pages": extraction_context.get("pages", []) if isinstance(extraction_context.get("pages", []), list) else [],
+            "observedSteps": extraction_context.get("observedSteps", []) if isinstance(extraction_context.get("observedSteps", []), list) else [],
+            "observedValidations": extraction_context.get("observedValidations", []) if isinstance(extraction_context.get("observedValidations", []), list) else [],
+            "acceptanceCriteria": extraction_context.get("acceptanceCriteria", []) if isinstance(extraction_context.get("acceptanceCriteria", []), list) else [],
+            "description": extraction_context.get("description", ""),
+            "userStory": extraction_context.get("userStory", ""),
         }, ensure_ascii=False)])
     else:
         resolved_url = clean_text(page_url)
