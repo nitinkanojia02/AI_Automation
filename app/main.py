@@ -108,7 +108,11 @@ workflow_repository = WorkflowRepository(WORKFLOW_DIR)
 execution_plan_repository = ExecutionPlanRepository(WORKFLOW_DIR)
 page_state_repository = PageStateRepository(POM_DIR)
 page_state_merge_service = PageStateMergeService()
-page_state_service = PageStateService(page_state_repository, page_state_merge_service)
+page_state_service = PageStateService(
+    page_state_repository,
+    page_state_merge_service,
+    persist_descriptors=FEATURE_FLAGS.enable_state_merge,
+)
 resource_repository = ResourceRepository(BASE_DIR)
 knowledge_repository = KnowledgeRepository(BASE_DIR, resource_repository)
 resource_reuse_agent = ResourceReuseAgent(resource_repository)

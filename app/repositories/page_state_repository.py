@@ -9,6 +9,7 @@ from app.domain.page_state_model import PageStateDescriptor
 
 class PageStateRepository:
     REQUIRED_ARTIFACT_KEYS = ("stateId", "stateType", "sourceArtifacts", "signals", "metadata")
+    PERSISTED_DESCRIPTOR_KEYS = ("page_name", "state_id", "state_type", "source_artifacts", "signals", "metadata")
 
     def __init__(self, pom_dir: Path):
         self.pom_dir = pom_dir
@@ -31,6 +32,23 @@ class PageStateRepository:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
         return path
+
+    def validate_descriptor_payload(self, payload: dict[str, Any]) -> list[str]:
+        errors: list[str] = []
+        if not isinstance(payload, dict):
+            return ["page state descriptor must be an object"]
+        for key in self.PERSISTED_DESCRIPTOR_KEYS:
+            if key not in payload:
+                errors.append(f"page state descriptor missing required key: {key}")
+        if "source_artifacts" in payload and not isinstance(payload.get("source_artifacts"), list):
+            errors.append("page state descriptor source_artifacts must be a list")
+        if "signals" in payload and not isinstance(payload.get("signals"), list):
+            errors.append("page state descriptor signals must be a list")
+        if "metadata" in payload and not isinstance(payload.get("metadata"), dict):
+            errors.append("page state descriptor metadata must be an object")
+        if not str(payload.get("page_name", "")).strip():
+            errors.append("page state descriptor page_name is required")
+        return errors
 
     def validate_state_artifact(self, payload: dict[str, Any]) -> list[str]:
         errors: list[str] = []

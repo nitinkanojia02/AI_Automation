@@ -8,9 +8,10 @@ from app.services.workflows.page_state_merge_service import PageStateMergeServic
 
 
 class PageStateService:
-    def __init__(self, page_state_repository: PageStateRepository, page_state_merge_service: PageStateMergeService | None = None):
+    def __init__(self, page_state_repository: PageStateRepository, page_state_merge_service: PageStateMergeService | None = None, persist_descriptors: bool = False):
         self.page_state_repository = page_state_repository
         self.page_state_merge_service = page_state_merge_service or PageStateMergeService()
+        self.persist_descriptors = persist_descriptors
 
     def build_state_descriptor(self, contract: WorkflowContract) -> dict[str, Any]:
         page_name = str(contract.page.name or "").strip()
@@ -45,4 +46,12 @@ class PageStateService:
         if artifact_errors:
             descriptor_metadata["artifactValidationErrors"] = artifact_errors
         descriptor["metadata"] = descriptor_metadata
+
+        descriptor_errors = self.page_state_repository.validate_descriptor_payload(descriptor)
+        if self.persist_descriptors and not descriptor_errors:
+            self.page_state_repository.save_state_artifact(page_name, descriptor)
+        elif descriptor_errors:
+            descriptor_metadata["descriptorValidationErrors"] = descriptor_errors
+            descriptor["metadata"] = descriptor_metadata
+
         return descriptor
