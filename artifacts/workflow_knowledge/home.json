@@ -6,11 +6,22 @@
   "applicationCode": "WT",
   "testIdentifierPrefix": "HOME",
   "status": "approved_artifact_memory",
-  "generatedAt": "2026-07-22T09:42:33.366866+00:00",
+  "generatedAt": "2026-07-22T09:45:24.207485+00:00",
   "businessContext": {
-    "userStory": [],
-    "applicationContext": [],
-    "entryConditions": [],
+    "userStory": [
+      "As a guest user, I want to access the Home page and use the available navigation actions, so that I can navigate to login, customer signup, clean survey, and site survey workflows."
+    ],
+    "applicationContext": [
+      "The workflow starts by directly navigating to the application Home page at:",
+      "http://localhost/washtabui/home",
+      "The Home page is expected to load in guest state without authentication. The workflow validates guest-state navigation options and transitions from the Home page to downstream pages through UI controls."
+    ],
+    "entryConditions": [
+      "Application is launched and accessible.",
+      "User is not authenticated and is operating in guest state.",
+      "User navigates directly to http://localhost/washtabui/home.",
+      "Home page load completes successfully before interaction begins."
+    ],
     "acceptanceCriteria": [
       "User Story",
       "As a guest user, I want to access the Home page and use the available navigation actions, so that I can navigate to login, customer signup, clean survey, and site survey workflows.",
@@ -21,24 +32,74 @@
       "Entry Conditions",
       "Application is launched and accessible.",
       "User is not authenticated and is operating in guest state.",
-      "User navigates directly to http://localhost/washtabui/home."
+      "User navigates directly to http://localhost/washtabui/home.",
+      "Home page load completes successfully before interaction begins.",
+      "Workflow Scope",
+      "This workflow covers:",
+      "Guest-state Home page accessibility"
     ],
-    "behaviorRules": [],
+    "behaviorRules": [
+      "The Home page must be accessible in guest state.",
+      "Home page navigation controls must be visible and enabled before interaction.",
+      "Selecting the Person/Profile button must navigate to the login page URL:",
+      "/washtabui/login?data=undefined",
+      "Selecting the Customer signup button must navigate to a URL containing:",
+      "customer-search",
+      "Selecting the Clean survey button must navigate to a URL containing:",
+      "vehicle-survey",
+      "Selecting the Site survey button must navigate to a URL containing:",
+      "survey?data"
+    ],
     "validationExpectations": [
-      "User Story",
-      "As a guest user, I want to access the Home page and use the available navigation actions, so that I can navigate to login, customer signup, clean survey, and site survey workflows.",
-      "Application Context",
-      "The workflow starts by directly navigating to the application Home page at:",
-      "http://localhost/washtabui/home",
-      "The Home page is expected to load in guest state without authentication. The workflow validates guest-state navigation options and transitions from the Home page to downstream pages through UI controls.",
-      "Entry Conditions",
-      "Application is launched and accessible.",
-      "User is not authenticated and is operating in guest state.",
-      "User navigates directly to http://localhost/washtabui/home."
+      "Home page loads successfully at the specified entry URL.",
+      "Guest-state Home page renders without requiring authentication.",
+      "All listed Home page buttons are visible.",
+      "All listed Home page buttons are enabled and interactive.",
+      "Clicking each navigation control results in the expected page transition.",
+      "Resulting URLs contain the expected values or fragments."
     ],
-    "transitionExpectations": [],
-    "approvedTestDataGuidance": [],
-    "reuseGuidance": []
+    "transitionExpectations": [
+      "Successful application launch transitions the user to the Home page in guest state.",
+      "Clicking the Person/Profile button transitions the user from Home to the Login page.",
+      "Clicking the Customer signup button transitions the user from Home to the customer-search page.",
+      "Clicking the Clean survey button transitions the user from Home to the vehicle-survey page.",
+      "Clicking the Site survey button transitions the user from Home to the survey page.",
+      "If navigation fails, the user remains on the Home page or does not reach the expected destination URL.",
+      "Launch the application.",
+      "Navigate to http://localhost/washtabui/home.",
+      "Verify the Home page loads in guest state.",
+      "Verify the following controls are visible and enabled:",
+      "Person/Profile button",
+      "Back button",
+      "Notification button",
+      "Home button",
+      "Customer signup button",
+      "Clean survey button"
+    ],
+    "approvedTestDataGuidance": [
+      "Entry URL:",
+      "http://localhost/washtabui/home",
+      "Expected login URL:",
+      "/washtabui/login?data=undefined",
+      "Expected customer search URL fragment:",
+      "customer-search",
+      "Expected vehicle survey URL fragment:",
+      "vehicle-survey",
+      "Expected survey URL fragment:",
+      "survey?data"
+    ],
+    "reuseGuidance": [
+      "Reuse the Home page resource and shared navigation components across manual and automation assets.",
+      "Reuse common button validation logic for visibility and enabled-state checks.",
+      "Reuse navigation verification resources for URL transition validation.",
+      "Downstream workflows for login, customer-search, vehicle-survey, and survey pages should own their internal page validations; this workflow should validate only successful navigation entry.",
+      "Use the provided Home page URL as the standardized workflow entry point.",
+      "Execute all validations in guest state.",
+      "Validate both UI state and resulting URL transitions.",
+      "Reuse approved URL fragments consistently across manual and automation assets.",
+      "Keep navigation verification isolated from downstream page business validations.",
+      "Treat each navigation path as an independent reusable workflow branch."
+    ]
   },
   "navigationModel": {
     "entryPoint": {
@@ -51,7 +112,28 @@
       "url": "http://localhost/washtabui/home"
     },
     "journey": [],
-    "targetSignals": []
+    "targetSignals": [
+      {
+        "type": "urlContains",
+        "value": "/Profile"
+      },
+      {
+        "type": "urlContains",
+        "value": "/washtabui/login?data=undefined"
+      },
+      {
+        "type": "urlContains",
+        "value": "customer-search"
+      },
+      {
+        "type": "urlContains",
+        "value": "vehicle-survey"
+      },
+      {
+        "type": "urlContains",
+        "value": "survey?data"
+      }
+    ]
   },
   "journeyKnowledge": {
     "directAccessPolicy": "direct_access_allowed",

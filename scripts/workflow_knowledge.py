@@ -134,11 +134,29 @@ def extract_manual_test_cases(manual_data: Dict[str, Any]) -> List[Dict[str, Any
     return []
 
 
+def normalize_heading_label(value: Any) -> str:
+    text = clean_text(value)
+    if not text:
+        return ""
+    text = re.sub(r"^\d+[.):-]?\s*", "", text)
+    return clean_text(text).lower()
+
+
 def normalize_text_blocks(value: Any) -> List[str]:
     if isinstance(value, list):
         flattened: List[str] = []
         for item in value:
             flattened.extend(normalize_text_blocks(item))
+        return unique_strings(flattened)
+    if isinstance(value, dict):
+        flattened: List[str] = []
+        heading = clean_text(value.get("heading") or value.get("title") or value.get("section"))
+        body = value.get("body") if isinstance(value.get("body"), list) else value.get("content")
+        if heading:
+            flattened.append(heading)
+        flattened.extend(normalize_text_blocks(body))
+        for key in ("items", "bullets", "lines", "children", "sections"):
+            flattened.extend(normalize_text_blocks(value.get(key)))
         return unique_strings(flattened)
     if isinstance(value, str):
         cleaned = clean_text(value)
@@ -194,9 +212,46 @@ def extract_story_fragments(story_sections: Dict[str, List[str]]) -> List[str]:
     return unique_strings(fragments, limit=20)
 
 
+def collect_sectioned_description_lines(description: Any) -> Dict[str, List[str]]:
+    if not isinstance(description, str):
+        return {}
+    lines = [line.rstrip() for line in description.splitlines()]
+    sections: Dict[str, List[str]] = {}
+    current_key = ""
+    heading_pattern = re.compile(r"^\s*(\d+[.):-]?\s+)?([A-Za-z][A-Za-z /_-]+):?\s*$")
+    for raw_line in lines:
+        stripped = raw_line.strip()
+        if not stripped:
+            continue
+        heading_match = heading_pattern.match(stripped)
+        if heading_match and len(stripped.split()) <= 8:
+            current_key = normalize_heading_label(heading_match.group(2))
+            sections.setdefault(current_key, [])
+            continue
+        if current_key:
+            bullet = re.sub(r"^[-*•]+\s*", "", stripped)
+            numbered = re.sub(r"^\d+[.):-]?\s*", "", bullet)
+            cleaned = clean_text(numbered)
+            if cleaned:
+                sections.setdefault(current_key, []).append(cleaned)
+    return {key: unique_strings(value) for key, value in sections.items() if value}
+
+
+def _pick_story_section(external: Dict[str, Any], description_sections: Dict[str, List[str]], external_keys: List[str], section_aliases: List[str], fallback: Any = None, limit: int = 10) -> List[str]:
+    values: List[str] = []
+    for key in external_keys:
+        values.extend(normalize_text_blocks(external.get(key)))
+    for alias in section_aliases:
+        values.extend(description_sections.get(normalize_heading_label(alias), []))
+    if not values and fallback is not None:
+        values.extend(normalize_text_blocks(fallback))
+    return compact_story_lines(values, limit=limit)
+
+
 def collect_workflow_story_lines(workflow_input: Dict[str, Any]) -> Dict[str, List[str]]:
     external = workflow_input.get("externalContext") if isinstance(workflow_input.get("externalContext"), dict) else {}
     user_story = workflow_input.get("userStory") if isinstance(workflow_input.get("userStory"), str) else ""
+    description_sections = collect_sectioned_description_lines(external.get("description"))
     acceptance = workflow_input.get("acceptanceCriteria") if isinstance(workflow_input.get("acceptanceCriteria"), list) else external.get("acceptanceCriteria")
     validations = external.get("validationExpectations") if isinstance(external.get("validationExpectations"), list) else workflow_input.get("observedValidations")
     application_context = external.get("applicationContext")
@@ -207,15 +262,15 @@ def collect_workflow_story_lines(workflow_input: Dict[str, Any]) -> Dict[str, Li
     approved_test_data_guidance = external.get("approvedTestDataGuidance")
 
     return {
-        "userStory": unique_strings(([clean_text(user_story)] if clean_text(user_story) else []), limit=1),
-        "applicationContext": compact_story_lines(normalize_text_blocks(application_context), limit=6),
-        "entryConditions": compact_story_lines(normalize_text_blocks(entry_conditions), limit=10),
-        "acceptanceCriteria": compact_story_lines(normalize_text_blocks(acceptance), limit=10),
-        "behaviorRules": compact_story_lines(normalize_text_blocks(behavior_rules), limit=10),
-        "validationExpectations": compact_story_lines(normalize_text_blocks(validations), limit=10),
-        "transitionExpectations": compact_story_lines(normalize_text_blocks(transition_expectations), limit=12),
-        "reuseGuidance": compact_story_lines(normalize_text_blocks(reuse_guidance), limit=8),
-        "approvedTestDataGuidance": compact_story_lines(normalize_text_blocks(approved_test_data_guidance), limit=8),
+        "userStory": unique_strings(([clean_text(user_story)] if clean_text(user_story) else []) or description_sections.get("user story", []), limit=1),
+        "applicationContext": _pick_story_section(external, description_sections, ["applicationContext"], ["application context"], application_context, limit=8),
+        "entryConditions": _pick_story_section(external, description_sections, ["entryConditions"], ["entry conditions"], entry_conditions, limit=12),
+        "acceptanceCriteria": _pick_story_section(external, description_sections, ["acceptanceCriteria"], ["acceptance criteria"], acceptance, limit=14),
+        "behaviorRules": _pick_story_section(external, description_sections, ["behaviorRules"], ["business rules"], behavior_rules, limit=12),
+        "validationExpectations": _pick_story_section(external, description_sections, ["validationExpectations"], ["validation expectations"], validations, limit=12),
+        "transitionExpectations": _pick_story_section(external, description_sections, ["transitionExpectations"], ["transition expectations", "primary navigation journey"], transition_expectations, limit=16),
+        "reuseGuidance": _pick_story_section(external, description_sections, ["pomReuseGuidance"], ["resource reuse guidance", "downstream automation guidance"], reuse_guidance, limit=10),
+        "approvedTestDataGuidance": _pick_story_section(external, description_sections, ["approvedTestDataGuidance"], ["approved test data"], approved_test_data_guidance, limit=10),
     }
 
 
