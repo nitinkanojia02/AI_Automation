@@ -4,6 +4,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List
 
+from scripts.artifact_reuse import normalize_name_tokens
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 try:
@@ -166,6 +168,32 @@ def extract_story_urls(story_sections: Dict[str, List[str]]) -> List[str]:
     return unique_strings(urls, limit=10)
 
 
+def extract_story_fragments(story_sections: Dict[str, List[str]]) -> List[str]:
+    fragments: List[str] = []
+    fragment_pattern = re.compile(r"(?<!https:)(?<!http:)(/[A-Za-z0-9_?=&\-/.]+)")
+    token_pattern = re.compile(r"^[A-Za-z0-9_?=&\-/.]+$")
+    for section_values in story_sections.values():
+        for item in ensure_list(section_values):
+            text = str(item or "")
+            for match in fragment_pattern.findall(text):
+                cleaned = clean_text(match).rstrip(".,;:")
+                if not cleaned or cleaned.startswith("//"):
+                    continue
+                if cleaned.startswith("/localhost/") or cleaned.startswith("/127.0.0.1/"):
+                    continue
+                fragments.append(cleaned)
+            cleaned_text = clean_text(text).rstrip(".,;:")
+            if not cleaned_text or cleaned_text.startswith("http://") or cleaned_text.startswith("https://"):
+                continue
+            if " " in cleaned_text:
+                continue
+            if token_pattern.fullmatch(cleaned_text) and any(token in cleaned_text for token in ("-", "?", "/")):
+                if cleaned_text.startswith("/localhost/") or cleaned_text.startswith("/127.0.0.1/"):
+                    continue
+                fragments.append(cleaned_text)
+    return unique_strings(fragments, limit=20)
+
+
 def collect_workflow_story_lines(workflow_input: Dict[str, Any]) -> Dict[str, List[str]]:
     external = workflow_input.get("externalContext") if isinstance(workflow_input.get("externalContext"), dict) else {}
     user_story = workflow_input.get("userStory") if isinstance(workflow_input.get("userStory"), str) else ""
@@ -198,7 +226,7 @@ def derive_navigation_model(workflow_input: Dict[str, Any], story_sections: Dict
     primary_page = pages[0] if pages and isinstance(pages[0], dict) else {}
 
     inferred_target_name = clean_text(target_page.get("name") or primary_page.get("name"))
-    inferred_target_url = clean_text(target_page.get("url") or primary_page.get("url"))
+    inferred_target_url = clean_text(target_page.get("url"))
     inferred_entry_name = clean_text(entry_page.get("name"))
     inferred_entry_url = clean_text(entry_page.get("url"))
 
@@ -214,14 +242,31 @@ def derive_navigation_model(workflow_input: Dict[str, Any], story_sections: Dict
                 inferred_entry_name = candidate_page
                 break
 
-    if not inferred_target_url:
-        inferred_target_url = clean_text(target_page.get("url"))
-
     story_urls = extract_story_urls(story_sections)
+    story_fragments = extract_story_fragments(story_sections)
     if not inferred_entry_url and story_urls:
         inferred_entry_url = story_urls[0]
     if not inferred_target_url and story_urls:
         inferred_target_url = story_urls[0]
+
+    raw_target_signals = [item for item in ensure_list(workflow_input.get("targetPageSignals")) if isinstance(item, dict)]
+    if not raw_target_signals:
+        for value in story_fragments:
+            signal_type = "urlContains" if any(token in value for token in ("/", "?", "-")) else "pageName"
+            raw_target_signals.append({"type": signal_type, "value": value})
+
+    target_signals: List[Dict[str, Any]] = []
+    seen_signal_keys: set[str] = set()
+    for item in raw_target_signals:
+        signal_type = clean_text(item.get("type"))
+        signal_value = clean_text(item.get("value"))
+        if not signal_type or not signal_value:
+            continue
+        marker = f"{signal_type.lower()}::{signal_value.lower()}"
+        if marker in seen_signal_keys:
+            continue
+        seen_signal_keys.add(marker)
+        target_signals.append({"type": signal_type, "value": signal_value})
 
     journey: List[Dict[str, str]] = []
     for step in ensure_list(workflow_input.get("navigationSteps")):
@@ -242,13 +287,14 @@ def derive_navigation_model(workflow_input: Dict[str, Any], story_sections: Dict
         "entryPoint": {
             "name": inferred_entry_name,
             "url": inferred_entry_url,
+            "state": clean_text(entry_page.get("state")),
         },
         "target": {
             "name": inferred_target_name,
             "url": inferred_target_url,
         },
         "journey": journey[:10],
-        "targetSignals": [item for item in ensure_list(workflow_input.get("targetPageSignals")) if isinstance(item, dict)][:10],
+        "targetSignals": target_signals[:20],
     }
 
 
@@ -563,8 +609,8 @@ def collect_unresolved_gaps_for_workflow(workflow_input: Dict[str, Any]) -> List
 def derive_reusable_flows(workflow_input: Dict[str, Any], navigation_model: Dict[str, Any], resource_knowledge: Dict[str, Any]) -> List[Dict[str, Any]]:
     resource_files = [str(item).replace('\\', '/').strip() for item in ensure_list(workflow_input.get('resourceFiles')) if clean_text(item)]
     entry_point = navigation_model.get('entryPoint') if isinstance(navigation_model.get('entryPoint'), dict) else {}
-    target_signals = [item for item in ensure_list(navigation_model.get('targetSignals')) if isinstance(item, dict)]
     flows: List[Dict[str, Any]] = []
+
     for resource_file in resource_files:
         page_name = Path(resource_file).stem.strip()
         if not page_name:
@@ -572,30 +618,97 @@ def derive_reusable_flows(workflow_input: Dict[str, Any], navigation_model: Dict
         resource_path = POM_DIR / resource_file
         if not resource_path.exists():
             continue
-        keyword_names = [item.get('name', '') for item in extract_keywords_from_resource(read_text(resource_path))]
-        for keyword_name in keyword_names:
-            normalized_keyword = clean_text(keyword_name)
-            if not normalized_keyword.lower().startswith('click '):
+        resource_text = read_text(resource_path)
+        keywords = extract_keywords_from_resource(resource_text)
+        variables = extract_variables_from_resource(resource_text)
+        variable_by_name = {clean_text(item.get('name')): clean_text(item.get('value')) for item in variables}
+
+        click_keywords = {
+            clean_text(item.get('name')): item
+            for item in keywords
+            if clean_text(item.get('name')).lower().startswith('click ')
+        }
+        verify_keywords = [item for item in keywords if clean_text(item.get('name')).lower().startswith('verify ') and 'redirect' in clean_text(item.get('name')).lower()]
+
+        signal_pool: Dict[str, List[Dict[str, Any]]] = {}
+        for verify_keyword in verify_keywords:
+            verify_name = clean_text(verify_keyword.get('name'))
+            signal_key = slugify(verify_name.replace('Verify ', '', 1).replace('Navigation Redirect', '').strip())
+            for body_line in ensure_list(verify_keyword.get('body')):
+                line = clean_text(body_line)
+                if not line:
+                    continue
+                parts = re.split(r"\s{2,}|\t+", line)
+                command = ''
+                target_value = ''
+                if len(parts) >= 2:
+                    command = clean_text(parts[0]).lower()
+                    target_value = clean_text(parts[-1])
+                else:
+                    variable_match = re.search(r"(\$\{[^}]+\})", line)
+                    if variable_match:
+                        target_value = clean_text(variable_match.group(1))
+                        command = clean_text(line[:variable_match.start()]).lower()
+                if not command or not target_value:
+                    continue
+                if target_value.startswith('${') and target_value.endswith('}'):
+                    target_value = variable_by_name.get(target_value[2:-1].strip(), '')
+                target_value = clean_text(target_value)
+                if not target_value:
+                    continue
+                signal_type = ''
+                if 'location should be' in command or 'location is' in command:
+                    signal_type = 'urlEquals'
+                elif 'location should contain' in command or 'location contains' in command:
+                    signal_type = 'urlContains'
+                if signal_type:
+                    signal_pool.setdefault(signal_key, []).append({'type': signal_type, 'value': target_value})
+
+        for keyword_name in click_keywords:
+            element_label = keyword_name.replace('Click ', '', 1)
+            normalized_label = element_label.replace(' Button', '').strip()
+            flow_signal_key = slugify(normalized_label)
+            matched_signals: List[Dict[str, Any]] = signal_pool.get(flow_signal_key, [])[:]
+            unique_signals: List[Dict[str, Any]] = []
+            seen_signal_keys: set[str] = set()
+            for signal in matched_signals:
+                signal_type = clean_text(signal.get('type'))
+                signal_value = clean_text(signal.get('value'))
+                if not signal_type or not signal_value:
+                    continue
+                marker = f"{signal_type.lower()}::{signal_value.lower()}"
+                if marker in seen_signal_keys:
+                    continue
+                seen_signal_keys.add(marker)
+                unique_signals.append({'type': signal_type, 'value': signal_value})
+            if not unique_signals:
                 continue
-            flow_id = f"{page_name}.entry_via_{slugify(normalized_keyword.replace('Click ', '', 1))}"
-            flow_steps = [{
-                'action': 'clickKnownElement',
-                'page': page_name,
-                'element': slugify(normalized_keyword.replace('Click ', '', 1)),
-            }]
-            flow_target_signals = target_signals[:]
+            primary_signal = unique_signals[0]
+            signal_value = clean_text(primary_signal.get('value'))
+            target_name = ''
+            if signal_value:
+                signal_slug = slugify(signal_value.strip('/').split('?', 1)[0].split('/')[-1])
+                target_name = f"{signal_slug}_page" if signal_slug else ''
             flows.append({
-                'flowId': flow_id,
+                'flowId': f"{page_name}.entry_via_{slugify(element_label)}",
                 'entryPage': {
                     'name': clean_text(entry_point.get('name')) or page_name,
                     'url': clean_text(entry_point.get('url')),
                     'state': clean_text(entry_point.get('state')),
                 },
-                'targetPage': navigation_model.get('target', {}) if isinstance(navigation_model.get('target'), dict) else {},
-                'steps': flow_steps,
-                'targetSignals': flow_target_signals,
+                'targetPage': {
+                    'name': target_name,
+                    'url': signal_value,
+                },
+                'steps': [{
+                    'action': 'clickKnownElement',
+                    'page': page_name,
+                    'element': slugify(element_label),
+                }],
+                'targetSignals': unique_signals,
                 'resourceFiles': resource_knowledge.get('authoritativeResources', []),
             })
+
     deduped: List[Dict[str, Any]] = []
     seen: set[str] = set()
     for flow in flows:

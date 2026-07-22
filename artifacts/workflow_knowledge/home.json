@@ -6,7 +6,7 @@
   "applicationCode": "WT",
   "testIdentifierPrefix": "HOME",
   "status": "approved_artifact_memory",
-  "generatedAt": "2026-07-22T09:26:22.379627+00:00",
+  "generatedAt": "2026-07-22T09:42:33.366866+00:00",
   "businessContext": {
     "userStory": [],
     "applicationContext": [],
@@ -43,7 +43,8 @@
   "navigationModel": {
     "entryPoint": {
       "name": "home_page",
-      "url": "http://localhost/washtabui/home"
+      "url": "http://localhost/washtabui/home",
+      "state": ""
     },
     "target": {
       "name": "home_page",
@@ -449,8 +450,8 @@
         "state": ""
       },
       "targetPage": {
-        "name": "home_page",
-        "url": "http://localhost/washtabui/home"
+        "name": "login_page",
+        "url": "/washtabui/login?data=undefined"
       },
       "steps": [
         {
@@ -459,76 +460,12 @@
           "element": "person_profile_button"
         }
       ],
-      "targetSignals": [],
-      "resourceFiles": [
-        "home_page/home_page.resource"
-      ]
-    },
-    {
-      "flowId": "home_page.entry_via_back_button",
-      "entryPage": {
-        "name": "home_page",
-        "url": "http://localhost/washtabui/home",
-        "state": ""
-      },
-      "targetPage": {
-        "name": "home_page",
-        "url": "http://localhost/washtabui/home"
-      },
-      "steps": [
+      "targetSignals": [
         {
-          "action": "clickKnownElement",
-          "page": "home_page",
-          "element": "back_button"
+          "type": "urlEquals",
+          "value": "/washtabui/login?data=undefined"
         }
       ],
-      "targetSignals": [],
-      "resourceFiles": [
-        "home_page/home_page.resource"
-      ]
-    },
-    {
-      "flowId": "home_page.entry_via_notification_button",
-      "entryPage": {
-        "name": "home_page",
-        "url": "http://localhost/washtabui/home",
-        "state": ""
-      },
-      "targetPage": {
-        "name": "home_page",
-        "url": "http://localhost/washtabui/home"
-      },
-      "steps": [
-        {
-          "action": "clickKnownElement",
-          "page": "home_page",
-          "element": "notification_button"
-        }
-      ],
-      "targetSignals": [],
-      "resourceFiles": [
-        "home_page/home_page.resource"
-      ]
-    },
-    {
-      "flowId": "home_page.entry_via_home_button",
-      "entryPage": {
-        "name": "home_page",
-        "url": "http://localhost/washtabui/home",
-        "state": ""
-      },
-      "targetPage": {
-        "name": "home_page",
-        "url": "http://localhost/washtabui/home"
-      },
-      "steps": [
-        {
-          "action": "clickKnownElement",
-          "page": "home_page",
-          "element": "home_button"
-        }
-      ],
-      "targetSignals": [],
       "resourceFiles": [
         "home_page/home_page.resource"
       ]
@@ -541,8 +478,8 @@
         "state": ""
       },
       "targetPage": {
-        "name": "home_page",
-        "url": "http://localhost/washtabui/home"
+        "name": "customer_search_page",
+        "url": "customer-search"
       },
       "steps": [
         {
@@ -551,7 +488,12 @@
           "element": "customer_signup_button"
         }
       ],
-      "targetSignals": [],
+      "targetSignals": [
+        {
+          "type": "urlContains",
+          "value": "customer-search"
+        }
+      ],
       "resourceFiles": [
         "home_page/home_page.resource"
       ]
@@ -564,8 +506,8 @@
         "state": ""
       },
       "targetPage": {
-        "name": "home_page",
-        "url": "http://localhost/washtabui/home"
+        "name": "vehicle_survey_page",
+        "url": "vehicle-survey"
       },
       "steps": [
         {
@@ -574,7 +516,12 @@
           "element": "clean_survey_button"
         }
       ],
-      "targetSignals": [],
+      "targetSignals": [
+        {
+          "type": "urlContains",
+          "value": "vehicle-survey"
+        }
+      ],
       "resourceFiles": [
         "home_page/home_page.resource"
       ]
@@ -587,8 +534,8 @@
         "state": ""
       },
       "targetPage": {
-        "name": "home_page",
-        "url": "http://localhost/washtabui/home"
+        "name": "survey_page",
+        "url": "survey?data"
       },
       "steps": [
         {
@@ -597,7 +544,12 @@
           "element": "site_survey_button"
         }
       ],
-      "targetSignals": [],
+      "targetSignals": [
+        {
+          "type": "urlContains",
+          "value": "survey?data"
+        }
+      ],
       "resourceFiles": [
         "home_page/home_page.resource"
       ]
