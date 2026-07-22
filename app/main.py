@@ -122,6 +122,63 @@ workflow_plan_validator = WorkflowPlanValidator()
 rag_context_service = RagContextService(knowledge_repository, platform_logger)
 
 
+def build_runtime_workflow_context(
+    workflow_payload: dict,
+    workflow_slug: str,
+    attach_stage: str,
+    resource_files: list[str] | None = None,
+) -> tuple[object | None, dict]:
+    if not FEATURE_FLAGS.enable_workflow_contracts:
+        return None, dict(workflow_payload)
+
+    ensure_workflow_contract_artifact(workflow_slug, workflow_payload)
+    runtime_context = dict(workflow_payload)
+    merged_resource_files: list[str] = []
+    for item in (resource_files if isinstance(resource_files, list) else workflow_payload.get("resourceFiles", [])) or []:
+        normalized = clean_text(str(item)).replace("\\", "/")
+        if normalized and normalized not in merged_resource_files:
+            merged_resource_files.append(normalized)
+
+    contract = WorkflowContractBuilder.build(runtime_context)
+    contract.reuse_policy.resource_files = merged_resource_files
+
+    if FEATURE_FLAGS.enable_rag:
+        runtime_context["ragContext"] = rag_context_service.build_context(workflow_slug)
+        rag_provenance = runtime_context["ragContext"].get("provenance", {}) if isinstance(runtime_context["ragContext"], dict) else {}
+        platform_logger.info(
+            "rag_context_attached",
+            workflow_slug=workflow_slug,
+            attach_stage=attach_stage,
+            source_preference=rag_provenance.get("sourcePreference", []),
+            canonical_freshness=rag_provenance.get("canonicalFreshness", {}),
+            resource_bundle_count=rag_provenance.get("resourceBundleCount", 0),
+            workflow_knowledge_present=rag_provenance.get("workflowKnowledgePresent", False),
+        )
+
+    return contract, runtime_context
+
+
+def attach_execution_plan_if_enabled(
+    workflow_slug: str,
+    contract,
+    runtime_context: dict,
+    attach_stage: str,
+) -> dict:
+    if not FEATURE_FLAGS.enable_agents or contract is None:
+        return runtime_context
+
+    enriched_context = dict(runtime_context)
+    enriched_context["executionPlan"] = resolve_execution_plan(
+        workflow_slug=workflow_slug,
+        contract=contract,
+        navigation_steps=enriched_context.get("navigationSteps", []) if isinstance(enriched_context.get("navigationSteps"), list) else [],
+        rag_context=enriched_context.get("ragContext", {}) if isinstance(enriched_context.get("ragContext"), dict) else {},
+        attach_stage=attach_stage,
+        target_signals=enriched_context.get("targetPageSignals", []) if isinstance(enriched_context.get("targetPageSignals"), list) else [],
+    )
+    return enriched_context
+
+
 def build_and_validate_execution_plan(
     workflow_slug: str,
     contract,
@@ -4212,39 +4269,25 @@ async def save_workflow(
     write_json(target, payload)
 
     if FEATURE_FLAGS.enable_workflow_contracts:
-        contract_artifact = ensure_workflow_contract_artifact(target_slug, payload)
-        if FEATURE_FLAGS.enable_rag:
-            payload["ragContext"] = rag_context_service.build_context(target_slug)
-            write_json(target, payload)
-            rag_provenance = payload["ragContext"].get("provenance", {}) if isinstance(payload["ragContext"], dict) else {}
-            platform_logger.info(
-                "rag_context_attached",
-                workflow_slug=target_slug,
-                attach_stage="workflow_save",
-                source_preference=rag_provenance.get("sourcePreference", []),
-                canonical_freshness=rag_provenance.get("canonicalFreshness", {}),
-                resource_bundle_count=rag_provenance.get("resourceBundleCount", 0),
-                workflow_knowledge_present=rag_provenance.get("workflowKnowledgePresent", False),
-            )
-        if FEATURE_FLAGS.enable_agents:
-            planned_contract = WorkflowContractBuilder.build(payload)
-            planned_contract.reuse_policy.resource_files = [str(item).strip() for item in payload.get("resourceFiles", []) if str(item).strip()]
-            payload["executionPlan"] = resolve_execution_plan(
-                workflow_slug=target_slug,
-                contract=planned_contract,
-                navigation_steps=payload.get("navigationSteps", []) if isinstance(payload.get("navigationSteps"), list) else [],
-                rag_context=payload.get("ragContext", {}) if isinstance(payload.get("ragContext"), dict) else {},
-                attach_stage="workflow_save",
-                target_signals=payload.get("targetPageSignals", []) if isinstance(payload.get("targetPageSignals"), list) else [],
-            )
-            write_json(target, payload)
-        if isinstance(contract_artifact, dict):
+        planned_contract, payload = build_runtime_workflow_context(
+            workflow_payload=payload,
+            workflow_slug=target_slug,
+            attach_stage="workflow_save",
+        )
+        payload = attach_execution_plan_if_enabled(
+            workflow_slug=target_slug,
+            contract=planned_contract,
+            runtime_context=payload,
+            attach_stage="workflow_save",
+        )
+        write_json(target, payload)
+        if planned_contract is not None:
             platform_logger.info(
                 "workflow_contract_saved",
                 workflow_slug=target_slug,
-                workflow_id=contract_artifact.get("workflow_id", ""),
-                page_name=(contract_artifact.get("page", {}) or {}).get("name", ""),
-                source_type=contract_artifact.get("source_type", ""),
+                workflow_id=planned_contract.workflow_id,
+                page_name=planned_contract.page.name,
+                source_type=planned_contract.source_type,
             )
 
     normalized_page_name = clean_text(page_name)
@@ -4316,44 +4359,32 @@ def run_page_review_extraction(request: Request, workflow_name: str):
         "ragContext": workflow.get("ragContext", {}) if isinstance(workflow.get("ragContext"), dict) else {},
     }
     if FEATURE_FLAGS.enable_workflow_contracts and FEATURE_FLAGS.enable_resource_reuse_agent:
-        contract_artifact = ensure_workflow_contract_artifact(workflow_name, workflow)
-        contract = WorkflowContractBuilder.build(extraction_context)
-        contract.reuse_policy.resource_files = resource_files
-        if FEATURE_FLAGS.enable_rag:
-            extraction_context["ragContext"] = rag_context_service.build_context(workflow_name)
-            rag_provenance = extraction_context["ragContext"].get("provenance", {}) if isinstance(extraction_context["ragContext"], dict) else {}
-            platform_logger.info(
-                "rag_context_attached",
-                workflow_slug=workflow_name,
-                attach_stage="page_extraction",
-                source_preference=rag_provenance.get("sourcePreference", []),
-                canonical_freshness=rag_provenance.get("canonicalFreshness", {}),
-                resource_bundle_count=rag_provenance.get("resourceBundleCount", 0),
-                workflow_knowledge_present=rag_provenance.get("workflowKnowledgePresent", False),
-            )
-        if isinstance(contract_artifact, dict):
+        contract, extraction_context = build_runtime_workflow_context(
+            workflow_payload=extraction_context,
+            workflow_slug=workflow_name,
+            attach_stage="page_extraction",
+            resource_files=resource_files,
+        )
+        if contract is not None:
             platform_logger.info(
                 "workflow_contract_available",
                 workflow_slug=workflow_name,
-                workflow_id=contract_artifact.get("workflow_id", ""),
-                page_name=(contract_artifact.get("page", {}) or {}).get("name", ""),
-                source_type=contract_artifact.get("source_type", ""),
+                workflow_id=contract.workflow_id,
+                page_name=contract.page.name,
+                source_type=contract.source_type,
             )
         try:
             extraction_context["navigationSteps"] = resource_reuse_agent.resolve_navigation_steps(contract) or extraction_context["navigationSteps"]
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc))
-        if FEATURE_FLAGS.enable_agents:
-            extraction_context["executionPlan"] = resolve_execution_plan(
-                workflow_slug=workflow_name,
-                contract=contract,
-                navigation_steps=extraction_context.get("navigationSteps", []) if isinstance(extraction_context.get("navigationSteps"), list) else [],
-                rag_context=extraction_context.get("ragContext", {}) if isinstance(extraction_context.get("ragContext"), dict) else {},
-                attach_stage="page_extraction",
-                target_signals=extraction_context.get("targetPageSignals", []) if isinstance(extraction_context.get("targetPageSignals"), list) else [],
-            )
-            extraction_context["navigationSteps"] = ((extraction_context.get("executionPlan", {}) or {}).get("execution", {}) or {}).get("navigationSteps", extraction_context.get("navigationSteps", []))
-            extraction_context["targetPageSignals"] = ((extraction_context.get("executionPlan", {}) or {}).get("execution", {}) or {}).get("targetSignals", extraction_context.get("targetPageSignals", []))
+        extraction_context = attach_execution_plan_if_enabled(
+            workflow_slug=workflow_name,
+            contract=contract,
+            runtime_context=extraction_context,
+            attach_stage="page_extraction",
+        )
+        extraction_context["navigationSteps"] = ((extraction_context.get("executionPlan", {}) or {}).get("execution", {}) or {}).get("navigationSteps", extraction_context.get("navigationSteps", []))
+        extraction_context["targetPageSignals"] = ((extraction_context.get("executionPlan", {}) or {}).get("execution", {}) or {}).get("targetSignals", extraction_context.get("targetPageSignals", []))
     try:
         run_page_extraction(review_data["page_name"], review_data["page_url"], extraction_context)
         updated_review_data = get_page_review_data(workflow)
