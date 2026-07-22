@@ -16,6 +16,7 @@ class FeatureFlags:
     enable_resource_reuse_agent: bool = _env_flag("ENABLE_RESOURCE_REUSE_AGENT", False)
     enable_rag: bool = _env_flag("ENABLE_RAG", False)
     enable_agents: bool = _env_flag("ENABLE_AGENTS", False)
+    enable_execution_plan_persistence: bool = _env_flag("ENABLE_EXECUTION_PLAN_PERSISTENCE", True)
     enable_state_merge: bool = _env_flag("ENABLE_STATE_MERGE", False)
     enable_mcp: bool = _env_flag("ENABLE_MCP", False)
 

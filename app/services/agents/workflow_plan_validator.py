@@ -65,4 +65,15 @@ class WorkflowPlanValidator:
         if rag is not None and not isinstance(rag, dict):
             errors.append("rag must be an object when provided")
 
+        provenance = plan.get("provenance", {})
+        if provenance is not None and not isinstance(provenance, dict):
+            errors.append("provenance must be an object when provided")
+        elif isinstance(provenance, dict):
+            planning_mode = str(provenance.get("planningMode", "")).strip()
+            if not planning_mode:
+                errors.append("provenance.planningMode is required when provenance is provided")
+            rag_source_preference = provenance.get("ragSourcePreference", [])
+            if rag_source_preference is not None and not isinstance(rag_source_preference, list):
+                errors.append("provenance.ragSourcePreference must be a list when provided")
+
         return errors

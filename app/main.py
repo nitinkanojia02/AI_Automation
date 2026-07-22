@@ -19,6 +19,7 @@ from fastapi.templating import Jinja2Templates
 from starlette.status import HTTP_303_SEE_OTHER
 
 from app.config.feature_flags import FEATURE_FLAGS
+from app.repositories.execution_plan_repository import ExecutionPlanRepository
 from app.repositories.knowledge_repository import KnowledgeRepository
 from app.repositories.resource_repository import ResourceRepository
 from app.repositories.workflow_repository import WorkflowRepository
@@ -101,12 +102,56 @@ templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 logger = logging.getLogger(__name__)
 platform_logger = PlatformLogger(__name__)
 workflow_repository = WorkflowRepository(WORKFLOW_DIR)
+execution_plan_repository = ExecutionPlanRepository(WORKFLOW_DIR)
 resource_repository = ResourceRepository(BASE_DIR)
 knowledge_repository = KnowledgeRepository(BASE_DIR, resource_repository)
 resource_reuse_agent = ResourceReuseAgent(resource_repository)
 workflow_planning_agent = WorkflowPlanningAgent()
 workflow_plan_validator = WorkflowPlanValidator()
 rag_context_service = RagContextService(knowledge_repository, platform_logger)
+
+
+def build_and_validate_execution_plan(
+    workflow_slug: str,
+    contract,
+    navigation_steps: list[dict] | None = None,
+    rag_context: dict | None = None,
+    attach_stage: str = "",
+    target_signals: list[dict] | None = None,
+):
+    plan = workflow_planning_agent.build_plan(
+        contract,
+        navigation_steps,
+        rag_context,
+        plan_context={
+            "navigationSource": "runtime" if navigation_steps else "contract",
+            "targetSignalSource": "runtime" if target_signals else "contract",
+        },
+    )
+    if isinstance(target_signals, list):
+        plan.setdefault("execution", {})["targetSignals"] = [
+            dict(item) for item in target_signals if isinstance(item, dict)
+        ]
+    plan.setdefault("execution", {})["stepCount"] = len(plan.get("execution", {}).get("navigationSteps", []))
+    plan_errors = workflow_plan_validator.validate(plan)
+    if plan_errors:
+        raise HTTPException(status_code=400, detail="Execution plan validation failed: " + "; ".join(plan_errors))
+
+    if FEATURE_FLAGS.enable_execution_plan_persistence:
+        execution_plan_repository.save_plan(workflow_slug, plan)
+
+    plan_provenance = plan.get("provenance", {}) if isinstance(plan.get("provenance", {}), dict) else {}
+    platform_logger.info(
+        "execution_plan_attached",
+        workflow_slug=workflow_slug,
+        attach_stage=attach_stage,
+        step_count=((plan.get("execution", {}) or {}).get("stepCount", 0)),
+        navigation_source=plan_provenance.get("navigationSource", ""),
+        target_signal_source=plan_provenance.get("targetSignalSource", ""),
+        rag_attached=plan_provenance.get("ragAttached", False),
+        persisted=FEATURE_FLAGS.enable_execution_plan_persistence,
+    )
+    return plan
 
 
 def ensure_workflow_contract_artifact(workflow_slug: str, workflow_payload: dict | None = None):
@@ -4082,21 +4127,15 @@ async def save_workflow(
         if FEATURE_FLAGS.enable_agents:
             planned_contract = WorkflowContractBuilder.build(payload)
             planned_contract.reuse_policy.resource_files = [str(item).strip() for item in payload.get("resourceFiles", []) if str(item).strip()]
-            payload["executionPlan"] = workflow_planning_agent.build_plan(
-                planned_contract,
-                payload.get("navigationSteps", []) if isinstance(payload.get("navigationSteps"), list) else [],
-                payload.get("ragContext", {}) if isinstance(payload.get("ragContext"), dict) else {},
-            )
-            plan_errors = workflow_plan_validator.validate(payload["executionPlan"])
-            if plan_errors:
-                raise HTTPException(status_code=400, detail="Execution plan validation failed: " + "; ".join(plan_errors))
-            write_json(target, payload)
-            platform_logger.info(
-                "execution_plan_attached",
+            payload["executionPlan"] = build_and_validate_execution_plan(
                 workflow_slug=target_slug,
+                contract=planned_contract,
+                navigation_steps=payload.get("navigationSteps", []) if isinstance(payload.get("navigationSteps"), list) else [],
+                rag_context=payload.get("ragContext", {}) if isinstance(payload.get("ragContext"), dict) else {},
                 attach_stage="workflow_save",
-                step_count=((payload.get("executionPlan", {}) or {}).get("execution", {}) or {}).get("stepCount", 0),
+                target_signals=payload.get("targetPageSignals", []) if isinstance(payload.get("targetPageSignals"), list) else [],
             )
+            write_json(target, payload)
         if isinstance(contract_artifact, dict):
             platform_logger.info(
                 "workflow_contract_saved",
@@ -4203,22 +4242,16 @@ def run_page_review_extraction(request: Request, workflow_name: str):
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc))
         if FEATURE_FLAGS.enable_agents:
-            extraction_context["executionPlan"] = workflow_planning_agent.build_plan(
-                contract,
-                extraction_context.get("navigationSteps", []) if isinstance(extraction_context.get("navigationSteps"), list) else [],
-                extraction_context.get("ragContext", {}) if isinstance(extraction_context.get("ragContext"), dict) else {},
+            extraction_context["executionPlan"] = build_and_validate_execution_plan(
+                workflow_slug=workflow_name,
+                contract=contract,
+                navigation_steps=extraction_context.get("navigationSteps", []) if isinstance(extraction_context.get("navigationSteps"), list) else [],
+                rag_context=extraction_context.get("ragContext", {}) if isinstance(extraction_context.get("ragContext"), dict) else {},
+                attach_stage="page_extraction",
+                target_signals=extraction_context.get("targetPageSignals", []) if isinstance(extraction_context.get("targetPageSignals"), list) else [],
             )
-            plan_errors = workflow_plan_validator.validate(extraction_context["executionPlan"])
-            if plan_errors:
-                raise HTTPException(status_code=400, detail="Execution plan validation failed: " + "; ".join(plan_errors))
             extraction_context["navigationSteps"] = ((extraction_context.get("executionPlan", {}) or {}).get("execution", {}) or {}).get("navigationSteps", extraction_context.get("navigationSteps", []))
             extraction_context["targetPageSignals"] = ((extraction_context.get("executionPlan", {}) or {}).get("execution", {}) or {}).get("targetSignals", extraction_context.get("targetPageSignals", []))
-            platform_logger.info(
-                "execution_plan_attached",
-                workflow_slug=workflow_name,
-                attach_stage="page_extraction",
-                step_count=((extraction_context.get("executionPlan", {}) or {}).get("execution", {}) or {}).get("stepCount", 0),
-            )
     try:
         run_page_extraction(review_data["page_name"], review_data["page_url"], extraction_context)
         updated_review_data = get_page_review_data(workflow)

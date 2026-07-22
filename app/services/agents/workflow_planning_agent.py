@@ -11,6 +11,7 @@ class WorkflowPlanningAgent:
         contract: WorkflowContract,
         navigation_steps: list[dict[str, Any]] | None = None,
         rag_context: dict[str, Any] | None = None,
+        plan_context: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         normalized_navigation_steps = [
             dict(step)
@@ -31,6 +32,15 @@ class WorkflowPlanningAgent:
 
         rag_payload = rag_context if isinstance(rag_context, dict) else {}
         rag_provenance = rag_payload.get("provenance", {}) if isinstance(rag_payload.get("provenance"), dict) else {}
+        plan_payload = plan_context if isinstance(plan_context, dict) else {}
+        plan_provenance = {
+            "planningMode": "deterministic_structural",
+            "navigationSource": str(plan_payload.get("navigationSource", "contract_or_runtime")).strip() or "contract_or_runtime",
+            "targetSignalSource": str(plan_payload.get("targetSignalSource", "contract")).strip() or "contract",
+            "ragAttached": bool(rag_payload),
+            "ragSourcePreference": rag_provenance.get("sourcePreference", []) if isinstance(rag_provenance.get("sourcePreference", []), list) else [],
+            "contractResourceFileCount": len(normalized_resource_files),
+        }
 
         return {
             "workflow": {
@@ -55,4 +65,5 @@ class WorkflowPlanningAgent:
             "rag": {
                 "provenance": rag_provenance,
             },
+            "provenance": plan_provenance,
         }
