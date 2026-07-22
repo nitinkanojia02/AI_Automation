@@ -52,6 +52,39 @@ class McpService:
         self.enabled = enabled
         self.repository = repository
 
+    def are_plan_contexts_aligned(self, persisted_plan: dict[str, Any] | None, runtime_context: dict[str, Any] | None) -> dict[str, Any]:
+        normalized_runtime_context = runtime_context if isinstance(runtime_context, dict) else {}
+        runtime_provenance = normalized_runtime_context.get("provenance", {}) if isinstance(normalized_runtime_context.get("provenance", {}), dict) else {}
+        persisted_mcp = persisted_plan.get("mcp", {}) if isinstance((persisted_plan or {}).get("mcp", {}), dict) else {}
+        persisted_provenance = persisted_mcp.get("provenance", {}) if isinstance(persisted_mcp.get("provenance", {}), dict) else {}
+        persisted_adapter = persisted_mcp.get("adapter", {}) if isinstance(persisted_mcp.get("adapter", {}), dict) else {}
+        persisted_dispatch = persisted_mcp.get("dispatch", {}) if isinstance(persisted_mcp.get("dispatch", {}), dict) else {}
+        persisted_execution = persisted_mcp.get("execution", {}) if isinstance(persisted_mcp.get("execution", {}), dict) else {}
+
+        runtime_adapter = self.resolve_execution_adapter(normalized_runtime_context)
+        runtime_dispatch = self.build_execution_dispatch(normalized_runtime_context)
+        runtime_execution = self.resolve_execution_mode(normalized_runtime_context)
+
+        provenance_aligned = (not runtime_provenance and not persisted_provenance) or (persisted_provenance == runtime_provenance)
+        adapter_aligned = (not persisted_adapter and not runtime_adapter) or (persisted_adapter == runtime_adapter)
+        dispatch_aligned = (not persisted_dispatch and not runtime_dispatch) or (persisted_dispatch == runtime_dispatch)
+        execution_aligned = (not persisted_execution and not runtime_execution) or (persisted_execution == runtime_execution)
+
+        return {
+            "persistedProvenance": persisted_provenance,
+            "runtimeProvenance": runtime_provenance,
+            "persistedAdapter": persisted_adapter,
+            "runtimeAdapter": runtime_adapter,
+            "persistedDispatch": persisted_dispatch,
+            "runtimeDispatch": runtime_dispatch,
+            "persistedExecution": persisted_execution,
+            "runtimeExecution": runtime_execution,
+            "provenanceAligned": provenance_aligned,
+            "adapterAligned": adapter_aligned,
+            "dispatchAligned": dispatch_aligned,
+            "executionAligned": execution_aligned,
+        }
+
     def build_runtime_context(self, config: dict[str, Any] | None = None) -> dict[str, Any]:
         payload = config if isinstance(config, dict) else {}
         if not payload and self.repository is not None:

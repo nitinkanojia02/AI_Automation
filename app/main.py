@@ -308,12 +308,19 @@ def resolve_execution_plan(
                 )
                 persisted_page_state_snapshot = page_state_alignment.get("persistedPageStateSnapshot", {}) if isinstance(page_state_alignment.get("persistedPageStateSnapshot", {}), dict) else {}
                 runtime_page_state_snapshot = page_state_alignment.get("runtimePageStateSnapshot", {}) if isinstance(page_state_alignment.get("runtimePageStateSnapshot", {}), dict) else {}
-                persisted_mcp = persisted_plan.get("mcp", {}) if isinstance(persisted_plan.get("mcp", {}), dict) else {}
-                persisted_mcp_provenance = persisted_mcp.get("provenance", {}) if isinstance(persisted_mcp.get("provenance", {}), dict) else {}
+                mcp_alignment = mcp_service.are_plan_contexts_aligned(
+                    persisted_plan=persisted_plan,
+                    runtime_context=runtime_mcp_context,
+                )
+                persisted_mcp_provenance = mcp_alignment.get("persistedProvenance", {}) if isinstance(mcp_alignment.get("persistedProvenance", {}), dict) else {}
+                runtime_mcp_provenance = mcp_alignment.get("runtimeProvenance", {}) if isinstance(mcp_alignment.get("runtimeProvenance", {}), dict) else {}
                 page_state_aligned = bool(page_state_alignment.get("pageStateAligned", False))
                 page_state_snapshot_aligned = bool(page_state_alignment.get("pageStateSnapshotAligned", False))
-                mcp_provenance_aligned = (not runtime_mcp_provenance and not persisted_mcp_provenance) or (persisted_mcp_provenance == runtime_mcp_provenance)
-                if persisted_navigation_steps == runtime_navigation_steps and persisted_target_signals == runtime_target_signals and page_state_aligned and page_state_snapshot_aligned and mcp_provenance_aligned:
+                mcp_provenance_aligned = bool(mcp_alignment.get("provenanceAligned", False))
+                mcp_adapter_aligned = bool(mcp_alignment.get("adapterAligned", False))
+                mcp_dispatch_aligned = bool(mcp_alignment.get("dispatchAligned", False))
+                mcp_execution_aligned = bool(mcp_alignment.get("executionAligned", False))
+                if persisted_navigation_steps == runtime_navigation_steps and persisted_target_signals == runtime_target_signals and page_state_aligned and page_state_snapshot_aligned and mcp_provenance_aligned and mcp_adapter_aligned and mcp_dispatch_aligned and mcp_execution_aligned:
                     platform_logger.info(
                         "execution_plan_reused",
                         workflow_slug=workflow_slug,
@@ -325,8 +332,9 @@ def resolve_execution_plan(
                         source_snapshot=persisted_source_snapshot,
                         page_state_snapshot=persisted_page_state_snapshot,
                         mcp_provenance=persisted_mcp_provenance,
-                        mcp_adapter=((persisted_plan.get("mcp", {}) or {}).get("adapter", {}) if isinstance(persisted_plan.get("mcp", {}), dict) else {}),
-                        mcp_dispatch=((persisted_plan.get("mcp", {}) or {}).get("dispatch", {}) if isinstance(persisted_plan.get("mcp", {}), dict) else {}),
+                        mcp_adapter=(mcp_alignment.get("persistedAdapter", {}) if isinstance(mcp_alignment.get("persistedAdapter", {}), dict) else {}),
+                        mcp_dispatch=(mcp_alignment.get("persistedDispatch", {}) if isinstance(mcp_alignment.get("persistedDispatch", {}), dict) else {}),
+                        mcp_execution=(mcp_alignment.get("persistedExecution", {}) if isinstance(mcp_alignment.get("persistedExecution", {}), dict) else {}),
                         persisted=True,
                         freshness=freshness,
                     )
@@ -342,10 +350,19 @@ def resolve_execution_plan(
                     page_state_aligned=page_state_aligned,
                     page_state_snapshot_aligned=page_state_snapshot_aligned,
                     mcp_provenance_aligned=mcp_provenance_aligned,
+                    mcp_adapter_aligned=mcp_adapter_aligned,
+                    mcp_dispatch_aligned=mcp_dispatch_aligned,
+                    mcp_execution_aligned=mcp_execution_aligned,
                     persisted_page_state_snapshot=persisted_page_state_snapshot,
                     runtime_page_state_snapshot=runtime_page_state_snapshot,
                     persisted_mcp_provenance=persisted_mcp_provenance,
                     runtime_mcp_provenance=runtime_mcp_provenance,
+                    persisted_mcp_adapter=(mcp_alignment.get("persistedAdapter", {}) if isinstance(mcp_alignment.get("persistedAdapter", {}), dict) else {}),
+                    runtime_mcp_adapter=(mcp_alignment.get("runtimeAdapter", {}) if isinstance(mcp_alignment.get("runtimeAdapter", {}), dict) else {}),
+                    persisted_mcp_dispatch=(mcp_alignment.get("persistedDispatch", {}) if isinstance(mcp_alignment.get("persistedDispatch", {}), dict) else {}),
+                    runtime_mcp_dispatch=(mcp_alignment.get("runtimeDispatch", {}) if isinstance(mcp_alignment.get("runtimeDispatch", {}), dict) else {}),
+                    persisted_mcp_execution=(mcp_alignment.get("persistedExecution", {}) if isinstance(mcp_alignment.get("persistedExecution", {}), dict) else {}),
+                    runtime_mcp_execution=(mcp_alignment.get("runtimeExecution", {}) if isinstance(mcp_alignment.get("runtimeExecution", {}), dict) else {}),
                     source_snapshot=persisted_source_snapshot,
                     freshness=freshness,
                 )
