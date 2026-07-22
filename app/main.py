@@ -167,35 +167,56 @@ def resolve_execution_plan(
 
     persisted_plan = execution_plan_repository.load_plan(workflow_slug) if FEATURE_FLAGS.enable_execution_plan_persistence else None
     if persisted_plan is not None:
-        persisted_errors = workflow_plan_validator.validate(persisted_plan)
-        if not persisted_errors:
-            persisted_execution = persisted_plan.get("execution", {}) if isinstance(persisted_plan.get("execution", {}), dict) else {}
-            persisted_navigation_steps = [
-                dict(item) for item in (persisted_execution.get("navigationSteps", []) or []) if isinstance(item, dict)
-            ]
-            persisted_target_signals = [
-                dict(item) for item in (persisted_execution.get("targetSignals", []) or []) if isinstance(item, dict)
-            ]
-            if persisted_navigation_steps == runtime_navigation_steps and persisted_target_signals == runtime_target_signals:
-                persisted_provenance = persisted_plan.get("provenance", {}) if isinstance(persisted_plan.get("provenance", {}), dict) else {}
-                platform_logger.info(
-                    "execution_plan_reused",
-                    workflow_slug=workflow_slug,
-                    attach_stage=attach_stage,
-                    step_count=(persisted_execution.get("stepCount", len(persisted_navigation_steps))),
-                    navigation_source=persisted_provenance.get("navigationSource", ""),
-                    target_signal_source=persisted_provenance.get("targetSignalSource", ""),
-                    rag_attached=persisted_provenance.get("ragAttached", False),
-                    persisted=True,
-                )
-                return persisted_plan
-        else:
+        freshness = execution_plan_repository.get_plan_freshness_context(workflow_slug)
+        if execution_plan_repository.is_plan_stale(workflow_slug):
             platform_logger.info(
-                "execution_plan_persisted_invalid",
+                "execution_plan_persisted_stale",
                 workflow_slug=workflow_slug,
                 attach_stage=attach_stage,
-                error_count=len(persisted_errors),
+                freshness=freshness,
             )
+        else:
+            persisted_errors = workflow_plan_validator.validate(persisted_plan)
+            if not persisted_errors:
+                persisted_execution = persisted_plan.get("execution", {}) if isinstance(persisted_plan.get("execution", {}), dict) else {}
+                persisted_navigation_steps = [
+                    dict(item) for item in (persisted_execution.get("navigationSteps", []) or []) if isinstance(item, dict)
+                ]
+                persisted_target_signals = [
+                    dict(item) for item in (persisted_execution.get("targetSignals", []) or []) if isinstance(item, dict)
+                ]
+                if persisted_navigation_steps == runtime_navigation_steps and persisted_target_signals == runtime_target_signals:
+                    persisted_provenance = persisted_plan.get("provenance", {}) if isinstance(persisted_plan.get("provenance", {}), dict) else {}
+                    platform_logger.info(
+                        "execution_plan_reused",
+                        workflow_slug=workflow_slug,
+                        attach_stage=attach_stage,
+                        step_count=(persisted_execution.get("stepCount", len(persisted_navigation_steps))),
+                        navigation_source=persisted_provenance.get("navigationSource", ""),
+                        target_signal_source=persisted_provenance.get("targetSignalSource", ""),
+                        rag_attached=persisted_provenance.get("ragAttached", False),
+                        persisted=True,
+                        freshness=freshness,
+                    )
+                    return persisted_plan
+                platform_logger.info(
+                    "execution_plan_persisted_misaligned",
+                    workflow_slug=workflow_slug,
+                    attach_stage=attach_stage,
+                    persisted_step_count=len(persisted_navigation_steps),
+                    runtime_step_count=len(runtime_navigation_steps),
+                    persisted_target_signal_count=len(persisted_target_signals),
+                    runtime_target_signal_count=len(runtime_target_signals),
+                    freshness=freshness,
+                )
+            else:
+                platform_logger.info(
+                    "execution_plan_persisted_invalid",
+                    workflow_slug=workflow_slug,
+                    attach_stage=attach_stage,
+                    error_count=len(persisted_errors),
+                    freshness=freshness,
+                )
 
     return build_and_validate_execution_plan(
         workflow_slug=workflow_slug,
