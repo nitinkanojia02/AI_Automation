@@ -162,6 +162,18 @@ class McpService:
         return {
             "pageState": {
                 "pageName": str(normalized_page_state.get("page_name", "")).strip(),
+                "stateId": str(normalized_page_state.get("state_id", "")).strip(),
+                "stateType": str(normalized_page_state.get("state_type", "")).strip(),
+                "sourceArtifacts": [
+                    str(item).strip()
+                    for item in normalized_page_state.get("source_artifacts", [])
+                    if str(item).strip()
+                ] if isinstance(normalized_page_state.get("source_artifacts", []), list) else [],
+                "signals": [
+                    dict(item)
+                    for item in normalized_page_state.get("signals", [])
+                    if isinstance(item, dict)
+                ] if isinstance(normalized_page_state.get("signals", []), list) else [],
                 "sourceSnapshot": page_state_metadata.get("sourceSnapshot", {}) if isinstance(page_state_metadata.get("sourceSnapshot", {}), dict) else {},
                 "stateVariants": page_state_metadata.get("stateVariants", []) if isinstance(page_state_metadata.get("stateVariants", []), list) else [],
             },
@@ -172,4 +184,16 @@ class McpService:
                 "dispatch": self.build_execution_dispatch(context),
                 "execution": self.resolve_execution_mode(context),
             },
+        }
+
+    def build_extraction_runtime_payload(self, execution_runtime: dict[str, Any] | None = None) -> dict[str, Any]:
+        normalized_execution_runtime = execution_runtime if isinstance(execution_runtime, dict) else {}
+        normalized_mcp = normalized_execution_runtime.get("mcp", {}) if isinstance(normalized_execution_runtime.get("mcp", {}), dict) else {}
+        return {
+            "executionRuntime": normalized_execution_runtime,
+            "pageState": normalized_execution_runtime.get("pageState", {}) if isinstance(normalized_execution_runtime.get("pageState", {}), dict) else {},
+            "mcpExecution": normalized_mcp.get("execution", {}) if isinstance(normalized_mcp.get("execution", {}), dict) else {},
+            "mcpDispatch": normalized_mcp.get("dispatch", {}) if isinstance(normalized_mcp.get("dispatch", {}), dict) else {},
+            "mcpAdapter": normalized_mcp.get("adapter", {}) if isinstance(normalized_mcp.get("adapter", {}), dict) else {},
+            "mcpEnabled": bool(normalized_mcp.get("enabled", False)),
         }

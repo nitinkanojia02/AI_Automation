@@ -4473,14 +4473,10 @@ def run_page_review_extraction(request: Request, workflow_name: str):
         execution_plan = extraction_context.get("executionPlan", {}) if isinstance(extraction_context.get("executionPlan", {}), dict) else {}
         execution_plan_execution = execution_plan.get("execution", {}) if isinstance(execution_plan.get("execution", {}), dict) else {}
         execution_runtime = execution_plan.get("executionRuntime", {}) if isinstance(execution_plan.get("executionRuntime", {}), dict) else {}
+        extraction_runtime_payload = mcp_service.build_extraction_runtime_payload(execution_runtime)
         extraction_context["navigationSteps"] = execution_plan_execution.get("navigationSteps", extraction_context.get("navigationSteps", []))
         extraction_context["targetPageSignals"] = execution_plan_execution.get("targetSignals", extraction_context.get("targetPageSignals", []))
-        extraction_context["executionRuntime"] = execution_runtime
-        extraction_context["pageState"] = execution_runtime.get("pageState", {}) if isinstance(execution_runtime.get("pageState", {}), dict) else {}
-        extraction_context["mcpExecution"] = ((execution_runtime.get("mcp", {}) or {}).get("execution", {}) if isinstance(execution_runtime.get("mcp", {}), dict) else {})
-        extraction_context["mcpDispatch"] = ((execution_runtime.get("mcp", {}) or {}).get("dispatch", {}) if isinstance(execution_runtime.get("mcp", {}), dict) else {})
-        extraction_context["mcpAdapter"] = ((execution_runtime.get("mcp", {}) or {}).get("adapter", {}) if isinstance(execution_runtime.get("mcp", {}), dict) else {})
-        extraction_context["mcpEnabled"] = bool(((execution_runtime.get("mcp", {}) or {}).get("enabled", False)) if isinstance(execution_runtime.get("mcp", {}), dict) else False)
+        extraction_context.update(extraction_runtime_payload)
         platform_logger.info(
             "execution_runtime_attached_for_extraction",
             workflow_slug=workflow_name,
