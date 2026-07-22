@@ -217,21 +217,8 @@ def build_and_validate_execution_plan(
             "targetSignalSource": "runtime" if target_signals else "contract",
             "sourceSnapshot": source_snapshot,
             "mcpContext": resolved_mcp_context,
-            "mcpAdapter": mcp_service.resolve_execution_adapter(resolved_mcp_context) if FEATURE_FLAGS.enable_mcp else {},
-            "mcpDispatch": mcp_service.build_execution_dispatch(resolved_mcp_context) if FEATURE_FLAGS.enable_mcp else {
-                "selectedAdapter": {
-                    "enabled": False,
-                    "adapterType": "default_runtime",
-                    "selectionMode": "feature_disabled",
-                },
-                "fallbackAdapter": {
-                    "enabled": True,
-                    "adapterType": "default_runtime",
-                    "selectionMode": "deterministic_fallback",
-                },
-                "dispatchMode": "fallback_only",
-                "executionMode": "current_runtime_only",
-            },
+            "mcpAdapter": mcp_service.resolve_execution_adapter(resolved_mcp_context),
+            "mcpDispatch": mcp_service.build_execution_dispatch(resolved_mcp_context),
         },
     )
     if isinstance(target_signals, list):

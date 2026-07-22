@@ -4,6 +4,29 @@ from typing import Any
 from app.repositories.mcp_repository import McpRepository
 
 
+DEFAULT_RUNTIME_ADAPTER = {
+    "enabled": False,
+    "adapterType": "default_runtime",
+    "provider": "",
+    "transport": "",
+    "endpoint": "",
+    "capabilityScope": [],
+    "provenance": {},
+    "selectionMode": "feature_disabled",
+}
+
+FALLBACK_RUNTIME_ADAPTER = {
+    "enabled": True,
+    "adapterType": "default_runtime",
+    "provider": "",
+    "transport": "",
+    "endpoint": "",
+    "capabilityScope": [],
+    "provenance": {},
+    "selectionMode": "deterministic_fallback",
+}
+
+
 @dataclass(frozen=True)
 class McpRuntimeContext:
     enabled: bool
@@ -55,10 +78,11 @@ class McpService:
 
     def build_execution_adapter(self, runtime_context: dict[str, Any] | None = None) -> dict[str, Any]:
         context = runtime_context if isinstance(runtime_context, dict) else self.build_runtime_context()
-        adapter_type = "mcp_runtime_context" if bool(context.get("enabled", False)) else "default_runtime"
+        if not bool(context.get("enabled", False)):
+            return dict(DEFAULT_RUNTIME_ADAPTER)
         return {
-            "enabled": bool(context.get("enabled", False)),
-            "adapterType": adapter_type,
+            "enabled": True,
+            "adapterType": "mcp_runtime_context",
             "provider": str(context.get("provider", "")).strip(),
             "transport": str(context.get("transport", "")).strip(),
             "endpoint": str(context.get("endpoint", "")).strip(),
@@ -73,19 +97,16 @@ class McpService:
     def resolve_execution_adapter(self, runtime_context: dict[str, Any] | None = None) -> dict[str, Any]:
         context = runtime_context if isinstance(runtime_context, dict) else self.build_runtime_context()
         adapter = self.build_execution_adapter(context)
-        adapter["selectionMode"] = "feature_flag_runtime_context"
+        adapter["selectionMode"] = "feature_flag_runtime_context" if bool(context.get("enabled", False)) else "feature_disabled"
         return adapter
 
     def build_execution_dispatch(self, runtime_context: dict[str, Any] | None = None) -> dict[str, Any]:
         context = runtime_context if isinstance(runtime_context, dict) else self.build_runtime_context()
         adapter = self.resolve_execution_adapter(context)
+        mcp_enabled = bool(context.get("enabled", False))
         return {
             "selectedAdapter": dict(adapter),
-            "fallbackAdapter": {
-                "enabled": True,
-                "adapterType": "default_runtime",
-                "selectionMode": "deterministic_fallback",
-            },
-            "dispatchMode": "selected_or_fallback",
-            "executionMode": "non_blocking_adapter_selection",
+            "fallbackAdapter": dict(FALLBACK_RUNTIME_ADAPTER),
+            "dispatchMode": "selected_or_fallback" if mcp_enabled else "fallback_only",
+            "executionMode": "non_blocking_adapter_selection" if mcp_enabled else "current_runtime_only",
         }

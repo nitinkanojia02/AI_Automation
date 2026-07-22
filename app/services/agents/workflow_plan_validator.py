@@ -94,9 +94,47 @@ class WorkflowPlanValidator:
             adapter = mcp.get("adapter", {})
             if adapter is not None and not isinstance(adapter, dict):
                 errors.append("mcp.adapter must be an object when provided")
+            elif isinstance(adapter, dict) and adapter:
+                if not isinstance(adapter.get("enabled", False), bool):
+                    errors.append("mcp.adapter.enabled must be a boolean when adapter is provided")
+                if not str(adapter.get("adapterType", "")).strip():
+                    errors.append("mcp.adapter.adapterType is required when adapter is provided")
+                if not str(adapter.get("selectionMode", "")).strip():
+                    errors.append("mcp.adapter.selectionMode is required when adapter is provided")
+                capability_scope = adapter.get("capabilityScope", [])
+                if capability_scope is not None and not isinstance(capability_scope, list):
+                    errors.append("mcp.adapter.capabilityScope must be a list when provided")
+                adapter_provenance = adapter.get("provenance", {})
+                if adapter_provenance is not None and not isinstance(adapter_provenance, dict):
+                    errors.append("mcp.adapter.provenance must be an object when provided")
             dispatch = mcp.get("dispatch", {})
             if dispatch is not None and not isinstance(dispatch, dict):
                 errors.append("mcp.dispatch must be an object when provided")
+            elif isinstance(dispatch, dict) and dispatch:
+                selected_adapter = dispatch.get("selectedAdapter", {})
+                fallback_adapter = dispatch.get("fallbackAdapter", {})
+                if not isinstance(selected_adapter, dict) or not selected_adapter:
+                    errors.append("mcp.dispatch.selectedAdapter must be a non-empty object when dispatch is provided")
+                if not isinstance(fallback_adapter, dict) or not fallback_adapter:
+                    errors.append("mcp.dispatch.fallbackAdapter must be a non-empty object when dispatch is provided")
+                if not str(dispatch.get("dispatchMode", "")).strip():
+                    errors.append("mcp.dispatch.dispatchMode is required when dispatch is provided")
+                if not str(dispatch.get("executionMode", "")).strip():
+                    errors.append("mcp.dispatch.executionMode is required when dispatch is provided")
+                for dispatch_name, dispatch_adapter in (("selectedAdapter", selected_adapter), ("fallbackAdapter", fallback_adapter)):
+                    if isinstance(dispatch_adapter, dict):
+                        if not isinstance(dispatch_adapter.get("enabled", False), bool):
+                            errors.append(f"mcp.dispatch.{dispatch_name}.enabled must be a boolean when provided")
+                        if not str(dispatch_adapter.get("adapterType", "")).strip():
+                            errors.append(f"mcp.dispatch.{dispatch_name}.adapterType is required when provided")
+                        if not str(dispatch_adapter.get("selectionMode", "")).strip():
+                            errors.append(f"mcp.dispatch.{dispatch_name}.selectionMode is required when provided")
+                        capability_scope = dispatch_adapter.get("capabilityScope", [])
+                        if capability_scope is not None and not isinstance(capability_scope, list):
+                            errors.append(f"mcp.dispatch.{dispatch_name}.capabilityScope must be a list when provided")
+                        dispatch_provenance = dispatch_adapter.get("provenance", {})
+                        if dispatch_provenance is not None and not isinstance(dispatch_provenance, dict):
+                            errors.append(f"mcp.dispatch.{dispatch_name}.provenance must be an object when provided")
 
         provenance = plan.get("provenance", {})
         if provenance is not None and not isinstance(provenance, dict):
