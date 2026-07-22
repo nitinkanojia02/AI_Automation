@@ -4095,10 +4095,6 @@ def run_page_review_extraction(request: Request, workflow_name: str):
         "observedSteps": workflow.get("observedSteps", []) if isinstance(workflow.get("observedSteps"), list) else [],
         "observedValidations": workflow.get("observedValidations", []) if isinstance(workflow.get("observedValidations"), list) else [],
         "acceptanceCriteria": workflow.get("acceptanceCriteria", []) if isinstance(workflow.get("acceptanceCriteria"), list) else [],
-        "inferred_reuse_context": {
-            **inferred_reuse,
-            "authoritativeResourceFiles": resource_files,
-        },
     }
     if FEATURE_FLAGS.enable_workflow_contracts and FEATURE_FLAGS.enable_resource_reuse_agent:
         contract = WorkflowContractBuilder.build(extraction_context)

@@ -19,4 +19,18 @@ class WorkflowContractValidator:
             errors.append("target_page.name is required when target_page is provided")
         if contract.navigation_steps and not (contract.entry_page and contract.entry_page.url):
             errors.append("entry_page.url is required when navigation steps are present")
+
+        for index, step in enumerate(contract.navigation_steps or []):
+            if not isinstance(step, dict):
+                errors.append(f"navigation_steps[{index}] must be an object")
+                continue
+            action = str(step.get("action", "")).strip()
+            if not action:
+                errors.append(f"navigation_steps[{index}].action is required")
+                continue
+            if action == "reuseApprovedEntryContext":
+                flow_id = str(step.get("flowId", "")).strip()
+                if not flow_id:
+                    errors.append(f"navigation_steps[{index}].flowId is required for reuseApprovedEntryContext")
+
         return errors
