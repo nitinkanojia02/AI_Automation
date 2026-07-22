@@ -154,6 +154,59 @@ def build_and_validate_execution_plan(
     return plan
 
 
+def resolve_execution_plan(
+    workflow_slug: str,
+    contract,
+    navigation_steps: list[dict] | None = None,
+    rag_context: dict | None = None,
+    attach_stage: str = "",
+    target_signals: list[dict] | None = None,
+):
+    runtime_navigation_steps = [dict(item) for item in (navigation_steps or []) if isinstance(item, dict)]
+    runtime_target_signals = [dict(item) for item in (target_signals or []) if isinstance(item, dict)]
+
+    persisted_plan = execution_plan_repository.load_plan(workflow_slug) if FEATURE_FLAGS.enable_execution_plan_persistence else None
+    if persisted_plan is not None:
+        persisted_errors = workflow_plan_validator.validate(persisted_plan)
+        if not persisted_errors:
+            persisted_execution = persisted_plan.get("execution", {}) if isinstance(persisted_plan.get("execution", {}), dict) else {}
+            persisted_navigation_steps = [
+                dict(item) for item in (persisted_execution.get("navigationSteps", []) or []) if isinstance(item, dict)
+            ]
+            persisted_target_signals = [
+                dict(item) for item in (persisted_execution.get("targetSignals", []) or []) if isinstance(item, dict)
+            ]
+            if persisted_navigation_steps == runtime_navigation_steps and persisted_target_signals == runtime_target_signals:
+                persisted_provenance = persisted_plan.get("provenance", {}) if isinstance(persisted_plan.get("provenance", {}), dict) else {}
+                platform_logger.info(
+                    "execution_plan_reused",
+                    workflow_slug=workflow_slug,
+                    attach_stage=attach_stage,
+                    step_count=(persisted_execution.get("stepCount", len(persisted_navigation_steps))),
+                    navigation_source=persisted_provenance.get("navigationSource", ""),
+                    target_signal_source=persisted_provenance.get("targetSignalSource", ""),
+                    rag_attached=persisted_provenance.get("ragAttached", False),
+                    persisted=True,
+                )
+                return persisted_plan
+        else:
+            platform_logger.info(
+                "execution_plan_persisted_invalid",
+                workflow_slug=workflow_slug,
+                attach_stage=attach_stage,
+                error_count=len(persisted_errors),
+            )
+
+    return build_and_validate_execution_plan(
+        workflow_slug=workflow_slug,
+        contract=contract,
+        navigation_steps=runtime_navigation_steps,
+        rag_context=rag_context,
+        attach_stage=attach_stage,
+        target_signals=runtime_target_signals,
+    )
+
+
 def ensure_workflow_contract_artifact(workflow_slug: str, workflow_payload: dict | None = None):
     if not FEATURE_FLAGS.enable_workflow_contracts:
         return None
@@ -4127,7 +4180,7 @@ async def save_workflow(
         if FEATURE_FLAGS.enable_agents:
             planned_contract = WorkflowContractBuilder.build(payload)
             planned_contract.reuse_policy.resource_files = [str(item).strip() for item in payload.get("resourceFiles", []) if str(item).strip()]
-            payload["executionPlan"] = build_and_validate_execution_plan(
+            payload["executionPlan"] = resolve_execution_plan(
                 workflow_slug=target_slug,
                 contract=planned_contract,
                 navigation_steps=payload.get("navigationSteps", []) if isinstance(payload.get("navigationSteps"), list) else [],
@@ -4242,7 +4295,7 @@ def run_page_review_extraction(request: Request, workflow_name: str):
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc))
         if FEATURE_FLAGS.enable_agents:
-            extraction_context["executionPlan"] = build_and_validate_execution_plan(
+            extraction_context["executionPlan"] = resolve_execution_plan(
                 workflow_slug=workflow_name,
                 contract=contract,
                 navigation_steps=extraction_context.get("navigationSteps", []) if isinstance(extraction_context.get("navigationSteps"), list) else [],
