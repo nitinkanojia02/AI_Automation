@@ -4446,8 +4446,26 @@ def run_page_review_extraction(request: Request, workflow_name: str):
             runtime_context=extraction_context,
             attach_stage="page_extraction",
         )
-        extraction_context["navigationSteps"] = ((extraction_context.get("executionPlan", {}) or {}).get("execution", {}) or {}).get("navigationSteps", extraction_context.get("navigationSteps", []))
-        extraction_context["targetPageSignals"] = ((extraction_context.get("executionPlan", {}) or {}).get("execution", {}) or {}).get("targetSignals", extraction_context.get("targetPageSignals", []))
+        execution_plan = extraction_context.get("executionPlan", {}) if isinstance(extraction_context.get("executionPlan", {}), dict) else {}
+        execution_plan_execution = execution_plan.get("execution", {}) if isinstance(execution_plan.get("execution", {}), dict) else {}
+        execution_runtime = execution_plan.get("executionRuntime", {}) if isinstance(execution_plan.get("executionRuntime", {}), dict) else {}
+        extraction_context["navigationSteps"] = execution_plan_execution.get("navigationSteps", extraction_context.get("navigationSteps", []))
+        extraction_context["targetPageSignals"] = execution_plan_execution.get("targetSignals", extraction_context.get("targetPageSignals", []))
+        extraction_context["executionRuntime"] = execution_runtime
+        extraction_context["pageState"] = execution_runtime.get("pageState", {}) if isinstance(execution_runtime.get("pageState", {}), dict) else {}
+        extraction_context["mcpExecution"] = ((execution_runtime.get("mcp", {}) or {}).get("execution", {}) if isinstance(execution_runtime.get("mcp", {}), dict) else {})
+        extraction_context["mcpDispatch"] = ((execution_runtime.get("mcp", {}) or {}).get("dispatch", {}) if isinstance(execution_runtime.get("mcp", {}), dict) else {})
+        extraction_context["mcpAdapter"] = ((execution_runtime.get("mcp", {}) or {}).get("adapter", {}) if isinstance(execution_runtime.get("mcp", {}), dict) else {})
+        extraction_context["mcpEnabled"] = bool(((execution_runtime.get("mcp", {}) or {}).get("enabled", False)) if isinstance(execution_runtime.get("mcp", {}), dict) else False)
+        platform_logger.info(
+            "execution_runtime_attached_for_extraction",
+            workflow_slug=workflow_name,
+            page_state=extraction_context.get("pageState", {}),
+            mcp_execution=extraction_context.get("mcpExecution", {}),
+            mcp_dispatch=extraction_context.get("mcpDispatch", {}),
+            mcp_adapter=extraction_context.get("mcpAdapter", {}),
+            mcp_enabled=extraction_context.get("mcpEnabled", False),
+        )
     try:
         run_page_extraction(review_data["page_name"], review_data["page_url"], extraction_context)
         updated_review_data = get_page_review_data(workflow)
