@@ -3,7 +3,7 @@
   "keywords": [
     {
       "keywordId": "KW_001",
-      "keywordName": "Click Auto Person Btn Button",
+      "keywordName": "Click Auto Person Btn",
       "targetElement": "person_profile_button",
       "action": "click",
       "arguments": [],
@@ -14,7 +14,7 @@
     },
     {
       "keywordId": "KW_002",
-      "keywordName": "Click Auto Back Btn Button",
+      "keywordName": "Click Auto Back Btn",
       "targetElement": "back_button",
       "action": "click",
       "arguments": [],
@@ -25,7 +25,7 @@
     },
     {
       "keywordId": "KW_003",
-      "keywordName": "Click Auto Notification Btn Button",
+      "keywordName": "Click Auto Notification Btn",
       "targetElement": "notification_button",
       "action": "click",
       "arguments": [],
@@ -36,7 +36,7 @@
     },
     {
       "keywordId": "KW_004",
-      "keywordName": "Click Auto Home Btn Button",
+      "keywordName": "Click Auto Home Btn",
       "targetElement": "home_button",
       "action": "click",
       "arguments": [],
@@ -47,7 +47,7 @@
     },
     {
       "keywordId": "KW_005",
-      "keywordName": "Click Auto Btn Customer Signup Button",
+      "keywordName": "Click Auto Btn Customer Signup",
       "targetElement": "customer_signup_button",
       "action": "click",
       "arguments": [],
@@ -58,7 +58,7 @@
     },
     {
       "keywordId": "KW_006",
-      "keywordName": "Click Auto Btn Clean Survey Button",
+      "keywordName": "Click Auto Btn Clean Survey",
       "targetElement": "clean_survey_button",
       "action": "click",
       "arguments": [],
@@ -69,7 +69,7 @@
     },
     {
       "keywordId": "KW_007",
-      "keywordName": "Click Auto Btn Site Survey Button",
+      "keywordName": "Click Auto Btn Site Survey",
       "targetElement": "site_survey_button",
       "action": "click",
       "arguments": [],
@@ -85,20 +85,20 @@
       "action": "verify",
       "arguments": [],
       "implementation": [
+        "Location Should Be    ${PAGE_URL}",
         "Wait For Element To Be Ready    ${PERSON_PROFILE_BUTTON}",
         "Wait For Element To Be Ready    ${PERSON_PROFILE_BUTTON}",
         "Wait For Element To Be Ready    ${PERSON_PROFILE_BUTTON}",
         "Wait For Element To Be Ready    ${PERSON_PROFILE_BUTTON}",
         "Wait For Element To Be Ready    ${PERSON_PROFILE_BUTTON}",
         "Wait For Element To Be Ready    ${PERSON_PROFILE_BUTTON}",
-        "Wait For Element To Be Ready    ${PERSON_PROFILE_BUTTON}",
-        "Location Should Be    ${PAGE_URL}"
+        "Wait For Element To Be Ready    ${PERSON_PROFILE_BUTTON}"
       ],
       "approved": true
     },
     {
       "keywordId": "KW_009",
-      "keywordName": "Verify Person Profile Navigation Redirect",
+      "keywordName": "Verify Navigation To Login Page",
       "targetElement": "person_profile_button",
       "action": "verify",
       "arguments": [],
@@ -109,7 +109,7 @@
     },
     {
       "keywordId": "KW_010",
-      "keywordName": "Verify Customer Signup Navigation Redirect",
+      "keywordName": "Verify Navigation To Customer Search Page",
       "targetElement": "customer_signup_button",
       "action": "verify",
       "arguments": [],
@@ -120,7 +120,7 @@
     },
     {
       "keywordId": "KW_011",
-      "keywordName": "Verify Clean Survey Navigation Redirect",
+      "keywordName": "Verify Navigation To Vehicle Survey Page",
       "targetElement": "clean_survey_button",
       "action": "verify",
       "arguments": [],
@@ -131,7 +131,7 @@
     },
     {
       "keywordId": "KW_012",
-      "keywordName": "Verify Site Survey Navigation Redirect",
+      "keywordName": "Verify Navigation To Site Survey Page",
       "targetElement": "site_survey_button",
       "action": "verify",
       "arguments": [],

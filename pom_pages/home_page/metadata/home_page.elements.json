@@ -293,107 +293,128 @@
   ],
   "reviewSummary": {
     "overall_quality": "medium",
-    "summary": "The draft captures the core guest-state navigation controls required for the workflow, but several element names are weak or inconsistent, and there are noisy non-actionable elements and brittle locators that should be removed or normalized before downstream automation generation.",
+    "summary": "The draft captures the primary guest-state navigation controls required for the Home workflow, but several approved element names are overly technical, and the artifact includes noisy duplicate/layout elements that reduce downstream automation quality.",
     "issues": [
       {
         "severity": "medium",
         "type": "naming",
-        "element_name": "person_button",
-        "message": "The element name is too generic and does not reflect the business meaning described in the workflow.",
-        "suggested_fix": "Rename to 'person_profile_button' to align with workflow terminology and downstream keyword generation."
+        "element_name": "auto_person_btn_button",
+        "message": "Element name is technical and derived from DOM id instead of business intent.",
+        "suggested_fix": "Rename to Person Profile Button for clearer downstream keyword and test generation."
       },
       {
         "severity": "medium",
         "type": "naming",
-        "element_name": "customersignup_button",
-        "message": "The element name lacks readability and semantic consistency.",
-        "suggested_fix": "Rename to 'customer_signup_button' using underscore-separated business terminology."
+        "element_name": "auto_back_btn_button",
+        "message": "Element name exposes implementation details instead of user-facing intent.",
+        "suggested_fix": "Rename to Back Button."
       },
       {
         "severity": "medium",
         "type": "naming",
-        "element_name": "cleansurvey_button",
-        "message": "The element name is compressed and inconsistent with approved workflow terminology.",
-        "suggested_fix": "Rename to 'clean_survey_button'."
+        "element_name": "auto_notification_btn_button",
+        "message": "Element name is DOM-centric and not business-readable.",
+        "suggested_fix": "Rename to Notification Button."
       },
       {
         "severity": "medium",
         "type": "naming",
-        "element_name": "sitesurvey_button",
-        "message": "The element name is compressed and inconsistent with approved workflow terminology.",
-        "suggested_fix": "Rename to 'site_survey_button'."
+        "element_name": "auto_home_btn_button",
+        "message": "Element name is technical and redundant.",
+        "suggested_fix": "Rename to Home Button."
+      },
+      {
+        "severity": "medium",
+        "type": "naming",
+        "element_name": "auto_btn_customersignup_button",
+        "message": "Element name is difficult to read and tightly coupled to implementation naming.",
+        "suggested_fix": "Rename to Customer Signup Button."
+      },
+      {
+        "severity": "medium",
+        "type": "naming",
+        "element_name": "auto_btn_cleansurvey_button",
+        "message": "Element name is implementation-centric rather than workflow-centric.",
+        "suggested_fix": "Rename to Clean Survey Button."
+      },
+      {
+        "severity": "medium",
+        "type": "naming",
+        "element_name": "auto_btn_sitesurvey_button",
+        "message": "Element name is implementation-centric rather than business-readable.",
+        "suggested_fix": "Rename to Site Survey Button."
       },
       {
         "severity": "high",
         "type": "locator",
         "element_name": "element_8",
-        "message": "The locator 'xpath=//a' is overly generic and likely to match multiple links, making it brittle and unsafe for automation.",
-        "suggested_fix": "Remove this element entirely because it duplicates the Home button navigation control already represented by a stronger ID-based locator."
+        "message": "Locator xpath=//a is overly generic and likely to match multiple links, creating unstable automation behavior.",
+        "suggested_fix": "Remove this duplicate wrapper element and rely on the existing Home Button element with id=auto_home_btn."
+      },
+      {
+        "severity": "high",
+        "type": "duplicate",
+        "element_name": "element_8",
+        "message": "This link appears to be the internal anchor rendered inside the Home button shadow DOM and duplicates the Home button control already captured.",
+        "suggested_fix": "Remove the duplicate link element from the approved page model."
       },
       {
         "severity": "medium",
         "type": "noise",
-        "element_name": "background_content",
-        "message": "The background container is a layout-only element and does not represent a meaningful business interaction or validation target for this workflow.",
-        "suggested_fix": "Remove the element from the approved page model unless a future workflow explicitly requires background-content verification."
-      },
-      {
-        "severity": "medium",
-        "type": "duplicate",
-        "element_name": "element_8",
-        "message": "This link element appears to be the native anchor inside the Home button shadow DOM and duplicates the already approved Home button control.",
-        "suggested_fix": "Keep only the ID-based 'home_button' element as the canonical automation control."
+        "element_name": "background_content_element",
+        "message": "Background content container is layout-only and does not provide meaningful workflow interaction or validation value.",
+        "suggested_fix": "Remove the background container from approved elements."
       },
       {
         "severity": "low",
-        "type": "classification",
-        "element_name": "home_button",
-        "message": "The shadow DOM indicates the native control renders as an anchor element rather than a button, but workflow intent treats it as a navigation button.",
-        "suggested_fix": "Retain type 'button' for workflow readability and interaction consistency while documenting that the native control is anchor-backed."
+        "type": "validation_gap",
+        "element_name": "",
+        "message": "No explicit page-state indicator or guest-state identifier element is captured beyond navigation controls and URL validation.",
+        "suggested_fix": "If available in the UI, capture a stable guest-state page identifier or header element to strengthen non-URL page verification."
       }
     ],
     "approved_elements": [
       {
-        "name": "person_profile_button",
+        "name": "Person Profile Button",
         "type": "button",
         "locator": "id=auto_person_btn",
-        "description": "Navigates the guest user to the login page."
+        "description": "Navigates guest users to the login workflow."
       },
       {
-        "name": "back_button",
+        "name": "Back Button",
         "type": "button",
         "locator": "id=auto_back_btn",
-        "description": "Provides backward navigation control from the home page header."
+        "description": "Shared application navigation control for backward navigation."
       },
       {
-        "name": "notification_button",
+        "name": "Notification Button",
         "type": "button",
         "locator": "id=auto_notification_btn",
-        "description": "Provides access to notifications from the home page header."
+        "description": "Opens guest-accessible notification functionality."
       },
       {
-        "name": "home_button",
+        "name": "Home Button",
         "type": "button",
         "locator": "id=auto_home_btn",
-        "description": "Represents the primary home navigation control."
+        "description": "Shared application navigation control for returning to the Home page."
       },
       {
-        "name": "customer_signup_button",
+        "name": "Customer Signup Button",
         "type": "button",
         "locator": "id=auto_btn_CustomerSignup",
-        "description": "Navigates the guest user to the customer signup or customer-search workflow."
+        "description": "Navigates guest users to the customer-search or signup workflow."
       },
       {
-        "name": "clean_survey_button",
+        "name": "Clean Survey Button",
         "type": "button",
         "locator": "id=auto_btn_CleanSurvey",
-        "description": "Navigates the guest user to the vehicle survey workflow."
+        "description": "Navigates guest users to the vehicle survey workflow."
       },
       {
-        "name": "site_survey_button",
+        "name": "Site Survey Button",
         "type": "button",
         "locator": "id=auto_btn_SiteSurvey",
-        "description": "Navigates the guest user to the site survey workflow."
+        "description": "Navigates guest users to the site survey workflow."
       }
     ]
   }
