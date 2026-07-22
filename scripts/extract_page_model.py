@@ -1409,42 +1409,6 @@ def resolve_known_element_locator(page_name: str, element_name: str) -> str:
     raise ValueError(f"Known element '{element_name}' was not found in resource variables for page '{page_name}'.")
 
 
-def infer_entry_page_name(current_page: str, workflow_like: dict, relevant_resources: List[str]) -> str:
-    candidate_pages: List[str] = []
-
-    entry_page_payload = workflow_like.get("entryPage") if isinstance(workflow_like.get("entryPage"), dict) else {}
-    explicit_entry = slugify(clean_text(str(entry_page_payload.get("name", ""))))
-    if explicit_entry and explicit_entry != "element_page":
-        candidate_pages.append(explicit_entry)
-
-    for resource_path in relevant_resources:
-        resource_parent = Path(str(resource_path)).parent.name.strip()
-        normalized = slugify(resource_parent)
-        if normalized and normalized != current_page:
-            candidate_pages.append(normalized)
-
-    story_text = build_story_text(workflow_like).lower()
-    page_mentions = re.findall(r"\b([a-z0-9][a-z0-9\s/_-]*?)\s+page\b", story_text, flags=re.IGNORECASE)
-    for mention in page_mentions:
-        normalized = slugify(mention)
-        if normalized and normalized not in {"page", "component", "elements", "element"}:
-            if not normalized.endswith("_page"):
-                normalized = f"{normalized}_page"
-            if normalized != current_page:
-                candidate_pages.append(normalized)
-
-    seen = set()
-    for candidate in candidate_pages:
-        normalized_candidate = candidate if candidate.endswith("_page") else f"{candidate}_page"
-        if normalized_candidate in seen:
-            continue
-        seen.add(normalized_candidate)
-        if get_page_resource_variables(normalized_candidate):
-            return normalized_candidate
-
-    return ""
-
-
 def infer_story_navigation_steps(page_name: str, workflow_like: dict) -> Tuple[List[dict], List[dict]]:
     if not isinstance(workflow_like, dict):
         return [], []
@@ -1464,12 +1428,8 @@ def infer_story_navigation_steps(page_name: str, workflow_like: dict) -> Tuple[L
     entry_page_name = slugify(clean_text(str(entry_page_payload.get("name", ""))))
     target_page_name = slugify(clean_text(str(target_page_payload.get("name", ""))))
 
-    if target_page_name in {"", "element", "element_page"}:
+    if not target_page_name:
         target_page_name = current_page
-
-    inferred_entry_page_name = infer_entry_page_name(current_page, workflow_like, relevant_resources)
-    if entry_page_name in {"", "element", "element_page"}:
-        entry_page_name = inferred_entry_page_name
 
     if relevant_resources and entry_page_name and target_page_name and entry_page_name != target_page_name and current_page == target_page_name:
         source_page_name = entry_page_name if entry_page_name.endswith("_page") else f"{entry_page_name}_page"
@@ -1537,12 +1497,6 @@ def perform_navigation_steps(page, navigation_steps: List[dict], wait_seconds: i
                                 approved_name = clean_text(str(locator_entry.get("approvedName", ""))) if locator_entry else ""
                                 if approved_name:
                                     variable_to_element[variable_name] = approved_name
-                                else:
-                                    parts = [part for part in variable_name.lower().split("_") if part]
-                                    if len(parts) > 1:
-                                        variable_to_element[variable_name] = "_".join(parts[:-1])
-                                    else:
-                                        variable_to_element[variable_name] = "_".join(parts)
                         continue
                     if not in_keywords:
                         continue
@@ -1554,8 +1508,10 @@ def perform_navigation_steps(page, navigation_steps: List[dict], wait_seconds: i
                         continue
                     if stripped.startswith("["):
                         continue
-                    lowered = clean_text(stripped).lower()
-                    if not lowered.startswith("click"):
+                    action_metadata = step.get("approvedStepActionMap") if isinstance(step.get("approvedStepActionMap"), dict) else {}
+                    keyword_actions = action_metadata.get(resource_file.as_posix(), {}) if isinstance(action_metadata.get(resource_file.as_posix(), {}), dict) else {}
+                    step_action = clean_text(str(keyword_actions.get(current_keyword_name, "")))
+                    if not step_action:
                         continue
                     references = re.findall(r"\$\{([A-Z0-9_]+)\}", stripped)
                     if not references:
@@ -1564,29 +1520,12 @@ def perform_navigation_steps(page, navigation_steps: List[dict], wait_seconds: i
                     if not element_name:
                         continue
                     expanded_steps.append({
-                        "action": "clickKnownElement",
+                        "action": step_action,
                         "page": normalized_page,
                         "element": element_name,
                         "keyword": current_keyword_name,
                     })
                 if len(expanded_steps) > start_count:
-                    break
-            if len(expanded_steps) == start_count and source_page:
-                approved_variables = get_page_resource_variables(source_page)
-                for item in approved_variables:
-                    approved_name = clean_text(str(item.get("approvedName", "")))
-                    locator = clean_text(str(item.get("value", "")))
-                    kind = clean_text(str(item.get("kind", ""))).lower()
-                    if not approved_name or not locator:
-                        continue
-                    if kind and kind != "locator":
-                        continue
-                    expanded_steps.append({
-                        "action": "clickKnownElement",
-                        "page": source_page,
-                        "element": approved_name,
-                        "keyword": "metadata_fallback",
-                    })
                     break
             if len(expanded_steps) == start_count:
                 raise ValueError(f"Unable to expand approved entry context for step targeting '{source_page or 'unknown'}'.")
@@ -1705,12 +1644,7 @@ def wait_for_target_page_signals(page, target_page_signals: List[dict], wait_sec
         remaining = []
         for signal in pending:
             signal_type = clean_text(str(signal.get("type", "")))
-            normalized_type = {
-                "knownelement": "knownElement",
-                "element_visible": "knownElement",
-                "url_contains": "urlContains",
-                "urlcontains": "urlContains",
-            }.get(signal_type.lower(), signal_type)
+            normalized_type = signal_type
             if normalized_type == "knownElement":
                 try:
                     locator = resolve_known_element_locator(str(signal.get("page", "")), str(signal.get("element", "")))

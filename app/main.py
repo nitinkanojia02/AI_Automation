@@ -745,48 +745,21 @@ def build_workflow_payload(
 # Extraction handling
 # -------------------------------------------------------------------
 
-def normalize_navigation_action(action: str) -> str:
-    normalized = clean_text(action)
-    aliases = {
-        "waitforurlcontains": "waitForUrlContains",
-        "wait_for_url_contains": "waitForUrlContains",
-        "waitforelementvisible": "waitForElementVisible",
-        "wait_for_element_visible": "waitForElementVisible",
-        "inputknownelement": "inputKnownElement",
-        "input_known_element": "inputKnownElement",
-        "clickknownelement": "clickKnownElement",
-        "click_known_element": "clickKnownElement",
-        "reuseapprovedentrycontext": "reuseApprovedEntryContext",
-        "reuse_approved_entry_context": "reuseApprovedEntryContext",
-    }
-    return aliases.get(normalized.lower(), normalized)
-
-
 def normalize_navigation_steps(steps: list[dict] | None) -> list[dict]:
     normalized_steps: list[dict] = []
     for step in steps or []:
         if not isinstance(step, dict):
             continue
-        item = dict(step)
-        item["action"] = normalize_navigation_action(str(item.get("action", "")))
-        normalized_steps.append(item)
+        normalized_steps.append(dict(step))
     return normalized_steps
 
 
 def normalize_target_page_signals(signals: list[dict] | None) -> list[dict]:
     normalized_signals: list[dict] = []
-    signal_aliases = {
-        "element_visible": "knownElement",
-        "known_element": "knownElement",
-        "url_contains": "urlContains",
-    }
     for signal in signals or []:
         if not isinstance(signal, dict):
             continue
-        item = dict(signal)
-        signal_type = clean_text(str(item.get("type", "")))
-        item["type"] = signal_aliases.get(signal_type.lower(), signal_type)
-        normalized_signals.append(item)
+        normalized_signals.append(dict(signal))
     return normalized_signals
 
 
@@ -824,7 +797,7 @@ def run_page_extraction(page_name: str, page_url: str, extraction_context: dict 
             extraction_context["targetPageSignals"] = target_page_signals
             if not isinstance(entry_page, dict) or not normalize_url_value(str(entry_page.get("url", ""))):
                 extraction_context["entryPage"] = {
-                    "name": clean_text(str((entry_page or {}).get("name", "") if isinstance(entry_page, dict) else "")) or "home",
+                    "name": clean_text(str((entry_page or {}).get("name", "") if isinstance(entry_page, dict) else "")),
                     "url": clean_text(str(extraction_context.get("pageUrl") or extraction_context.get("url") or "")),
                 }
             entry_page = extraction_context.get("entryPage", {})
@@ -846,7 +819,7 @@ def run_page_extraction(page_name: str, page_url: str, extraction_context: dict 
                 extraction_context = dict(extraction_context)
                 current_entry = extraction_context.get("entryPage", {}) if isinstance(extraction_context.get("entryPage", {}), dict) else {}
                 extraction_context["entryPage"] = {
-                    "name": clean_text(str(current_entry.get("name", ""))) or "home",
+                    "name": clean_text(str(current_entry.get("name", ""))),
                     "url": entry_page_url,
                 }
                 entry_page = extraction_context["entryPage"]
