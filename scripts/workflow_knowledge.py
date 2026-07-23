@@ -275,66 +275,24 @@ def collect_workflow_story_lines(workflow_input: Dict[str, Any]) -> Dict[str, Li
 
 
 def derive_navigation_model(workflow_input: Dict[str, Any], story_sections: Dict[str, List[str]]) -> Dict[str, Any]:
+    del story_sections
     entry_page = workflow_input.get("entryPage") if isinstance(workflow_input.get("entryPage"), dict) else {}
     target_page = workflow_input.get("targetPage") if isinstance(workflow_input.get("targetPage"), dict) else {}
-    pages = workflow_input.get("pages") if isinstance(workflow_input.get("pages"), list) else []
-    primary_page = pages[0] if pages and isinstance(pages[0], dict) else {}
 
-    inferred_target_name = clean_text(target_page.get("name"))
-    inferred_target_url = clean_text(target_page.get("url")).strip("`")
     inferred_entry_name = clean_text(entry_page.get("name"))
     inferred_entry_url = clean_text(entry_page.get("url")).strip("`")
     inferred_entry_state = clean_text(entry_page.get("state")).strip("`")
-
-    application_context = ensure_list(story_sections.get("applicationContext"))
-    entry_conditions = ensure_list(story_sections.get("entryConditions"))
-    transition_expectations = ensure_list(story_sections.get("transitionExpectations"))
-    approved_test_data = ensure_list(story_sections.get("approvedTestDataGuidance"))
-    combined_lines = application_context + entry_conditions + transition_expectations + approved_test_data
-
-    story_urls = extract_story_urls(story_sections)
-    story_fragments = extract_story_fragments(story_sections)
-    if not inferred_entry_url and story_urls:
-        inferred_entry_url = clean_text(story_urls[0]).strip("`")
-    if not inferred_entry_name:
-        canonical_candidates = [line for line in application_context if "canonical page name" in line.lower() and ":" in line]
-        if canonical_candidates:
-            inferred_entry_name = clean_text(canonical_candidates[0].split(":", 1)[-1]).strip("`")
-    if not inferred_entry_state:
-        state_candidates = [line for line in application_context + entry_conditions if "state" in line.lower() and ":" in line]
-        if state_candidates:
-            inferred_entry_state = clean_text(state_candidates[0].split(":", 1)[-1]).strip("`")
-
-    entry_workflow_name = inferred_entry_name
-
-    raw_target_signals = [item for item in ensure_list(workflow_input.get("targetPageSignals")) if isinstance(item, dict)]
-    if not raw_target_signals:
-        approved_data_lines = ensure_list(story_sections.get("approvedTestDataGuidance"))
-        candidate_values: List[str] = []
-        for line in approved_data_lines + transition_expectations:
-            if not isinstance(line, str):
-                continue
-            cleaned_line = clean_text(line).strip("`")
-            if not cleaned_line:
-                continue
-            if cleaned_line.startswith("http://") or cleaned_line.startswith("https://"):
-                candidate_values.append(cleaned_line)
-                continue
-            if cleaned_line.startswith("/") or "?" in cleaned_line or "-" in cleaned_line:
-                candidate_values.append(cleaned_line)
-        for value in candidate_values + story_fragments:
-            cleaned_value = clean_text(value).strip("`")
-            if not cleaned_value or cleaned_value == inferred_entry_url:
-                continue
-            signal_type = "urlEquals" if cleaned_value.startswith("/") else ("urlContains" if any(token in cleaned_value for token in ("?", "-")) else "pageName")
-            raw_target_signals.append({"type": signal_type, "value": cleaned_value})
+    inferred_target_name = clean_text(target_page.get("name"))
+    inferred_target_url = clean_text(target_page.get("url")).strip("`")
 
     target_signals: List[Dict[str, Any]] = []
     seen_signal_keys: set[str] = set()
-    for item in raw_target_signals:
+    for item in ensure_list(workflow_input.get("targetPageSignals")):
+        if not isinstance(item, dict):
+            continue
         signal_type = clean_text(item.get("type"))
         signal_value = clean_text(item.get("value")).strip("`")
-        if not signal_type or not signal_value or signal_value == inferred_entry_url:
+        if not signal_type or not signal_value:
             continue
         marker = f"{signal_type.lower()}::{signal_value.lower()}"
         if marker in seen_signal_keys:
@@ -342,46 +300,17 @@ def derive_navigation_model(workflow_input: Dict[str, Any], story_sections: Dict
         seen_signal_keys.add(marker)
         target_signals.append({"type": signal_type, "value": signal_value})
 
-    if not inferred_target_name:
-        for line in combined_lines:
-            cleaned_line = clean_text(line)
-            if "transitions" in cleaned_line.lower() and " to " in cleaned_line.lower():
-                tail = cleaned_line.rsplit(" to ", 1)[-1]
-                if " in authenticated state" in tail.lower():
-                    inferred_target_name = clean_text(tail.split(" in ", 1)[0]).strip("`.")
-                    break
-
-    if not inferred_target_url and target_signals:
-        inferred_target_url = clean_text(target_signals[0].get("value")).strip("`")
-
-    if not inferred_target_name and target_signals:
-        first_signal_value = clean_text(str(target_signals[0].get("value", ""))).strip("`")
-        if first_signal_value.startswith("/"):
-            inferred_target_name = clean_text(primary_page.get("name"))
-        elif first_signal_value:
-            inferred_target_name = f"{slugify(first_signal_value.strip('/').split('?', 1)[0].split('/')[-1])}_page"
-
-    if not inferred_target_name:
-        inferred_target_name = clean_text(primary_page.get("name"))
-
     journey: List[Dict[str, str]] = []
     for step in ensure_list(workflow_input.get("navigationSteps")):
         if not isinstance(step, dict):
             continue
-        action = clean_text(step.get("action"))
-        page = clean_text(step.get("page"))
-        element = clean_text(step.get("element"))
-        flow_id = clean_text(step.get("flowId"))
-        if not any([action, page, element, flow_id]):
-            continue
-        payload = {"action": action}
-        if page:
-            payload["page"] = page
-        if element:
-            payload["element"] = element
-        if flow_id:
-            payload["flowId"] = flow_id
-        journey.append(payload)
+        payload: Dict[str, str] = {}
+        for key in ("action", "page", "element", "flowId"):
+            value = clean_text(step.get(key))
+            if value:
+                payload[key] = value
+        if payload:
+            journey.append(payload)
 
     return {
         "entryPoint": {
@@ -857,10 +786,15 @@ def build_workflow_knowledge_context(workflow_input: Dict[str, Any]) -> Dict[str
 
     entry_url = clean_text(((navigation_model.get('entryPoint') or {}).get('url')))
     target_url = clean_text(((navigation_model.get('target') or {}).get('url')))
-    if entry_url and target_url and entry_url == target_url:
+    target_signals = navigation_model.get('targetSignals') if isinstance(navigation_model.get('targetSignals'), list) else []
+    if navigation_model.get('journey'):
+        direct_access_policy = "must_use_entry_journey"
+    elif entry_url and target_url and entry_url != target_url:
         direct_access_policy = "direct_access_allowed"
+    elif target_signals:
+        direct_access_policy = "unknown"
     else:
-        direct_access_policy = "must_use_entry_journey" if navigation_model.get('journey') else "direct_access_allowed"
+        direct_access_policy = "unknown"
 
     entry_journey = [
         {

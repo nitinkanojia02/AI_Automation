@@ -1303,15 +1303,11 @@ def _derive_structured_workflow_context(workflow: dict) -> dict:
             test_data_values.extend([clean_text(str(value)) for value in test_data.values() if clean_text(str(value))])
         test_data_values.extend(approved_test_data_lines)
         test_data_values.extend(_extract_urls_from_text_blocks(all_story_lines))
-        transition_signal_candidates: list[str] = []
-        for line in transition_lines + observed_step_lines + observed_validation_lines:
-            cleaned_line = clean_text(line)
-            lowered_line = cleaned_line.lower()
-            if "person/profile" in lowered_line and "login page" in lowered_line:
-                exact_login_url = _parse_labeled_value(approved_test_data_lines, "exact url match")
-                if exact_login_url:
-                    transition_signal_candidates.append(exact_login_url)
-        test_data_values.extend(transition_signal_candidates)
+        existing_signal_markers = {
+            json.dumps(item, sort_keys=True, ensure_ascii=False)
+            for item in target_page_signals
+            if isinstance(item, dict)
+        }
         for value in test_data_values:
             cleaned_value = normalize_url_value(str(value)) or clean_text(str(value)).strip("`")
             if not cleaned_value or cleaned_value == normalize_url_value(str(entry_page.get("url", ""))):
@@ -1321,49 +1317,18 @@ def _derive_structured_workflow_context(workflow: dict) -> dict:
                 continue
             if cleaned_value.startswith("/"):
                 signal_type = "urlEquals"
+            elif cleaned_value.startswith("http://") or cleaned_value.startswith("https://"):
+                signal_type = "urlContains"
             else:
-                signal_type = "urlContains" if "/" in cleaned_value or "?" in cleaned_value or "-" in cleaned_value else "pageName"
-            marker = json.dumps({"type": signal_type, "value": cleaned_value}, sort_keys=True, ensure_ascii=False)
-            if marker in {json.dumps(item, sort_keys=True, ensure_ascii=False) for item in target_page_signals if isinstance(item, dict)}:
                 continue
+            marker = json.dumps({"type": signal_type, "value": cleaned_value}, sort_keys=True, ensure_ascii=False)
+            if marker in existing_signal_markers:
+                continue
+            existing_signal_markers.add(marker)
             target_page_signals.append({"type": signal_type, "value": cleaned_value})
 
     if not navigation_steps:
         reusable_flow_artifacts = workflow_knowledge_payload.get("reusableFlows", []) if isinstance(workflow_knowledge_payload.get("reusableFlows", []), list) else []
-        flow_target_markers = [clean_text(str(signal.get("value", ""))).lower() for signal in target_page_signals if isinstance(signal, dict)]
-        for line in transition_lines + observed_step_lines + observed_validation_lines:
-            cleaned_line = clean_text(line)
-            lowered_line = cleaned_line.lower()
-            if not cleaned_line:
-                continue
-            entry_markers = []
-            if entry_story_name:
-                entry_markers.append(entry_story_name.lower())
-            if entry_page_name:
-                entry_markers.append(entry_page_name.lower())
-            if not any(marker and marker in lowered_line for marker in entry_markers):
-                continue
-            if "login page" not in lowered_line:
-                continue
-            if not target_page:
-                target_page = {
-                    "name": "login_page",
-                    "url": "",
-                    "state": "",
-                }
-            if not any(step.get("action") == "reuseApprovedEntryContext" for step in navigation_steps if isinstance(step, dict)):
-                navigation_steps.append({"action": "reuseApprovedEntryContext"})
-            if not any(step.get("action") == "click" for step in navigation_steps if isinstance(step, dict)):
-                navigation_steps.append({
-                    "action": "click",
-                    "target": {
-                        "page": entry_story_name or entry_page_name,
-                        "description": cleaned_line,
-                    },
-                })
-            if not any((signal.get("type") == "pageName" and clean_text(str(signal.get("value", ""))).lower() == "login_page") for signal in target_page_signals if isinstance(signal, dict)):
-                target_page_signals.append({"type": "pageName", "value": "login_page"})
-            break
         flow_target_markers = [clean_text(str(signal.get("value", ""))).lower() for signal in target_page_signals if isinstance(signal, dict)]
         for flow in reusable_flow_artifacts:
             if not isinstance(flow, dict):
