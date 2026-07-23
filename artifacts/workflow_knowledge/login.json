@@ -1,0 +1,499 @@
+{
+  "workflowName": "login",
+  "workflowSlug": "login",
+  "module": "Imported",
+  "feature": "Login Feature",
+  "applicationCode": "WT",
+  "testIdentifierPrefix": "LOGIN",
+  "status": "approved_artifact_memory",
+  "generatedAt": "2026-07-23T04:31:27.290495+00:00",
+  "businessContext": {
+    "userStory": [
+      "As a customer, I want to open the Login page from the Home page and sign in with approved credentials, so that I can access authenticated account features and logged-in functionality."
+    ],
+    "applicationContext": [
+      "WashTab is a single page application (SPA).",
+      "Canonical page name: `home_page`",
+      "Canonical page state: `guest`"
+    ],
+    "entryConditions": [
+      "Launch the WashTab application.",
+      "Navigate to the exact URL `http://localhost/washtabui/home`.",
+      "Verify `home_page` is loaded in `guest` state.",
+      "Verify the user is unauthenticated before starting the workflow."
+    ],
+    "acceptanceCriteria": [
+      "User Story",
+      "As a customer, I want to open the Login page from the Home page and sign in with approved credentials, so that I can access authenticated account features and logged-in functionality.",
+      "Application Context",
+      "WashTab is a single page application (SPA).",
+      "Canonical page name: `home_page`",
+      "Canonical page state: `guest`",
+      "The workflow begins at the exact URL:",
+      "`http://localhost/washtabui/home`",
+      "The Login page is not directly accessed by URL in this workflow and must be opened through the Home page person/profile button.",
+      "Successful authentication returns the user to `home_page` in authenticated state.",
+      "Entry Conditions",
+      "Launch the WashTab application.",
+      "Navigate to the exact URL `http://localhost/washtabui/home`.",
+      "Verify `home_page` is loaded in `guest` state."
+    ],
+    "behaviorRules": [
+      "The Login page must be opened through the `home_page` person/profile button for this workflow.",
+      "Password input must be masked by default.",
+      "Valid credentials must authenticate the user successfully.",
+      "Invalid credentials must not authenticate the user.",
+      "Authentication failures, including blank username, blank password, partial credentials, and incorrect credentials, must display only the generic `Failed` message.",
+      "Separate required-field validation messaging must not be displayed.",
+      "Failed authentication must maintain unauthenticated state.",
+      "Leading and trailing whitespace handling must follow implemented application behavior and be observationally validated.",
+      "Back and Home buttons on the Login page must return the user to `home_page` without authentication.",
+      "Successful authentication must return the user to `home_page` in authenticated state."
+    ],
+    "validationExpectations": [
+      "The Login page opens successfully from `home_page`.",
+      "Username, Password, and Login controls are visible and interactive.",
+      "Back and Home buttons are visible and functional.",
+      "Password input remains masked during entry.",
+      "Invalid credential submissions display the generic `Failed` message.",
+      "Blank credential submissions display the generic `Failed` message.",
+      "Partial credential submissions display the generic `Failed` message.",
+      "No dedicated required-field validation message is displayed.",
+      "Failed authentication does not transition the application into authenticated state.",
+      "Successful authentication using approved credentials returns the user to authenticated `home_page`.",
+      "Authenticated user identity and authenticated-only features are visible after successful login.",
+      "Whitespace-modified credential handling is validated according to implemented application behavior."
+    ],
+    "transitionExpectations": [
+      "Clicking the person/profile button transitions the application from `home_page` in `guest` state to the Login page.",
+      "Successful authentication transitions the application from the Login page to `home_page` in authenticated state.",
+      "Failed authentication keeps the user on the Login page or otherwise maintains unauthenticated state.",
+      "Invalid, blank, partial, and whitespace-modified credential failures must not transition the application into authenticated state.",
+      "Back button navigation returns the user from the Login page to `home_page` in unauthenticated state.",
+      "Home button navigation returns the user from the Login page to `home_page` in unauthenticated state.",
+      "Independent negative and return-navigation branches must begin from the canonical `home_page` `guest` entry context.",
+      "The unauthenticated entry state must be restored before executing each independent branch.",
+      "Start on `home_page` in `guest` state.",
+      "Click the person/profile button.",
+      "Transition from `home_page` to the Login page.",
+      "Validate Login page controls and behaviors.",
+      "Enter Username and Password credentials.",
+      "Submit authentication using the Login button."
+    ],
+    "approvedTestDataGuidance": [],
+    "reuseGuidance": [
+      "Reuse the existing `home_page` resource for:",
+      "Application launch",
+      "Home page validation",
+      "Person/profile button interaction",
+      "Authenticated-state validation",
+      "Reuse the existing Login page resource for:",
+      "Credential entry",
+      "Login submission",
+      "Login validation behavior",
+      "Generic `Failed` message validation"
+    ]
+  },
+  "navigationModel": {
+    "entryPoint": {
+      "name": "login_page",
+      "url": "http://localhost/washtabui/home`",
+      "state": "`guest`"
+    },
+    "target": {
+      "name": "login_page",
+      "url": "http://localhost/washtabui/home`."
+    },
+    "journey": [],
+    "targetSignals": [
+      {
+        "type": "urlContains",
+        "value": "/profile"
+      }
+    ]
+  },
+  "journeyKnowledge": {
+    "directAccessPolicy": "direct_access_allowed",
+    "entryJourney": [],
+    "successDestination": [],
+    "returnDestinations": [],
+    "authoritativeEntryResources": [
+      "home_page/home_page.resource"
+    ],
+    "authoritativeDestinationValidationResources": [
+      "home_page/home_page.resource"
+    ]
+  },
+  "resourceKnowledge": {
+    "authoritativeResources": [
+      "home_page/home_page.resource"
+    ],
+    "sharedResources": [
+      "resources/common_keywords.resource"
+    ],
+    "resourceSummaries": [
+      {
+        "resourceFile": "pom_pages/home_page/home_page.resource",
+        "type": "page",
+        "variableNames": [
+          "PAGE_URL",
+          "EXPECTED_HOME_URL",
+          "EXPECTED_LOGIN_URL",
+          "EXPECTED_CUSTOMER_SEARCH_URL_FRAGMENT",
+          "EXPECTED_VEHICLE_SURVEY_URL_FRAGMENT",
+          "EXPECTED_SITE_SURVEY_URL_FRAGMENT",
+          "PERSON_PROFILE_BUTTON",
+          "BACK_BUTTON",
+          "NOTIFICATION_BUTTON",
+          "HOME_BUTTON",
+          "CUSTOMER_SIGNUP_BUTTON",
+          "CLEAN_SURVEY_BUTTON",
+          "SITE_SURVEY_BUTTON"
+        ],
+        "keywordNames": [
+          "Click Person Profile Button",
+          "Click Back Button",
+          "Click Notification Button",
+          "Click Home Button",
+          "Click Customer Signup Button",
+          "Click Clean Survey Button",
+          "Click Site Survey Button",
+          "Verify Home Page Loaded In Guest State",
+          "Verify Person Profile Button Visible And Enabled",
+          "Verify Back Button Visible And Enabled",
+          "Verify Notification Button Visible And Enabled",
+          "Verify Home Button Visible And Enabled",
+          "Verify Customer Signup Button Visible And Enabled",
+          "Verify Clean Survey Button Visible And Enabled",
+          "Verify Site Survey Button Visible And Enabled",
+          "Verify Navigation To Login Page",
+          "Verify Navigation To Customer Search Page",
+          "Verify Navigation To Vehicle Survey Page",
+          "Verify Navigation To Site Survey Page"
+        ]
+      },
+      {
+        "resourceFile": "resources/common_keywords.resource",
+        "type": "common",
+        "variableNames": [
+          "BROWSER",
+          "DEFAULT_TIMEOUT"
+        ],
+        "keywordNames": [
+          "Open Browser Session",
+          "Close Browser Session",
+          "Open Browser To Url",
+          "Go To Url",
+          "Wait For Element To Be Ready",
+          "Click When Ready",
+          "Input Text When Ready",
+          "Input Password When Ready"
+        ]
+      }
+    ],
+    "resourceOwnership": [
+      {
+        "resource": "pom_pages/home_page/home_page.resource",
+        "variables": [
+          "PAGE_URL",
+          "EXPECTED_HOME_URL",
+          "EXPECTED_LOGIN_URL",
+          "EXPECTED_CUSTOMER_SEARCH_URL_FRAGMENT",
+          "EXPECTED_VEHICLE_SURVEY_URL_FRAGMENT",
+          "EXPECTED_SITE_SURVEY_URL_FRAGMENT",
+          "PERSON_PROFILE_BUTTON",
+          "BACK_BUTTON",
+          "NOTIFICATION_BUTTON",
+          "HOME_BUTTON",
+          "CUSTOMER_SIGNUP_BUTTON",
+          "CLEAN_SURVEY_BUTTON",
+          "SITE_SURVEY_BUTTON"
+        ],
+        "keywords": [
+          "Click Person Profile Button",
+          "Click Back Button",
+          "Click Notification Button",
+          "Click Home Button",
+          "Click Customer Signup Button",
+          "Click Clean Survey Button",
+          "Click Site Survey Button",
+          "Verify Home Page Loaded In Guest State",
+          "Verify Person Profile Button Visible And Enabled",
+          "Verify Back Button Visible And Enabled",
+          "Verify Notification Button Visible And Enabled",
+          "Verify Home Button Visible And Enabled",
+          "Verify Customer Signup Button Visible And Enabled",
+          "Verify Clean Survey Button Visible And Enabled",
+          "Verify Site Survey Button Visible And Enabled",
+          "Verify Navigation To Login Page",
+          "Verify Navigation To Customer Search Page",
+          "Verify Navigation To Vehicle Survey Page",
+          "Verify Navigation To Site Survey Page"
+        ]
+      }
+    ],
+    "reuseSignals": {
+      "duplicateVariables": [],
+      "duplicateKeywords": [],
+      "variableReuseCandidates": [],
+      "keywordReuseCandidates": [],
+      "ownershipConflicts": [],
+      "summary": {}
+    }
+  },
+  "elementKnowledge": {
+    "approvedElements": [
+      {
+        "page": "login_page",
+        "name": "username_field",
+        "type": "textbox",
+        "locator": "xpath=//input[@placeholder='User Name']"
+      },
+      {
+        "page": "login_page",
+        "name": "password_field",
+        "type": "password",
+        "locator": "id=password"
+      },
+      {
+        "page": "login_page",
+        "name": "login_button",
+        "type": "button",
+        "locator": "xpath=//ion-button[@text='Login' or normalize-space(.)='Login']"
+      },
+      {
+        "page": "login_page",
+        "name": "back_button",
+        "type": "button",
+        "locator": "id=auto_back_btn"
+      },
+      {
+        "page": "login_page",
+        "name": "home_button",
+        "type": "button",
+        "locator": "id=auto_home_btn"
+      },
+      {
+        "page": "login_page",
+        "name": "authentication_failed_message",
+        "type": "message",
+        "locator": "text=Failed"
+      }
+    ]
+  },
+  "manualCoverage": {
+    "approvedScenarios": [
+      {
+        "id": "LOGIN_TC_001",
+        "title": "Verify guest user can open the Login page from home_page using the person/profile button",
+        "type": "positive",
+        "expectedResult": "The application transitions from home_page guest state to the Login page and the browser URL matches the approved login navigation pattern /washtabui/login?data=undefined."
+      },
+      {
+        "id": "LOGIN_TC_002",
+        "title": "Verify Login page controls are visible and interactable after navigation from home_page",
+        "type": "positive",
+        "expectedResult": "The Username field, Password field, Login button, Back button, and Home button are visible, enabled, and available for user interaction on the Login page."
+      },
+      {
+        "id": "LOGIN_TC_003",
+        "title": "Verify password input remains masked during credential entry",
+        "type": "positive",
+        "expectedResult": "The Password field masks entered characters during input and does not display the plain text password value."
+      },
+      {
+        "id": "LOGIN_TC_004",
+        "title": "Verify successful authentication with approved credentials returns the user to authenticated home_page",
+        "type": "positive",
+        "expectedResult": "The application authenticates the user successfully, returns to home_page in authenticated state, displays authenticated user identity information, and displays authenticated-only functionality."
+      },
+      {
+        "id": "LOGIN_TC_005",
+        "title": "Verify invalid username and invalid password display only the generic Failed authentication message",
+        "type": "negative",
+        "expectedResult": "Authentication fails, the generic Failed message is displayed, no dedicated required-field validation message is shown, and the application remains unauthenticated on the Login page or in an unauthenticated state."
+      },
+      {
+        "id": "LOGIN_TC_006",
+        "title": "Verify blank username and blank password submission displays only the generic Failed message",
+        "type": "negative",
+        "expectedResult": "Authentication fails, the generic Failed message is displayed, no dedicated required-field validation message appears, and the user remains unauthenticated without transition to authenticated home_page."
+      },
+      {
+        "id": "LOGIN_TC_007",
+        "title": "Verify login attempt with populated username and blank password displays only the generic Failed message",
+        "type": "negative",
+        "expectedResult": "Authentication fails, the generic Failed message is displayed, no dedicated required-field validation message appears, and the application remains unauthenticated."
+      },
+      {
+        "id": "LOGIN_TC_008",
+        "title": "Verify login attempt with blank username and populated password displays only the generic Failed message",
+        "type": "negative",
+        "expectedResult": "Authentication fails, the generic Failed message is displayed, no dedicated required-field validation message appears, and the application remains unauthenticated."
+      },
+      {
+        "id": "LOGIN_TC_009",
+        "title": "Verify login with valid username and incorrect password does not authenticate the user",
+        "type": "negative",
+        "expectedResult": "Authentication fails, the generic Failed message is displayed, authenticated-only UI is not shown, and the user remains unauthenticated."
+      },
+      {
+        "id": "LOGIN_TC_010",
+        "title": "Verify login with incorrect username and valid password does not authenticate the user",
+        "type": "negative",
+        "expectedResult": "Authentication fails, the generic Failed message is displayed, authenticated identity information is not displayed, and the application remains in unauthenticated state."
+      },
+      {
+        "id": "LOGIN_TC_011",
+        "title": "Verify leading whitespace in username credential is handled according to implemented application behavior",
+        "type": "edge",
+        "expectedResult": "The application processes the whitespace-modified username according to implemented behavior and either authenticates successfully or displays only the generic Failed message while preserving an observable authenticated or unauthenticated state transition outcome."
+      },
+      {
+        "id": "LOGIN_TC_012",
+        "title": "Verify trailing whitespace in password credential is handled according to implemented application behavior",
+        "type": "edge",
+        "expectedResult": "The application processes the whitespace-modified password according to implemented behavior and either authenticates successfully or displays only the generic Failed message while preserving observable authentication state behavior."
+      },
+      {
+        "id": "LOGIN_TC_013",
+        "title": "Verify whitespace-only credentials do not authenticate the user",
+        "type": "negative",
+        "expectedResult": "Authentication fails, only the generic Failed message is displayed, no separate required-field validation appears, and the user remains unauthenticated."
+      },
+      {
+        "id": "LOGIN_TC_014",
+        "title": "Verify Back button returns the user from Login page to home_page in guest state",
+        "type": "positive",
+        "expectedResult": "The application returns the user to home_page in unauthenticated guest state and authenticated-only UI is not displayed."
+      },
+      {
+        "id": "LOGIN_TC_015",
+        "title": "Verify Home button returns the user from Login page to home_page in guest state",
+        "type": "positive",
+        "expectedResult": "The application returns the user to home_page in unauthenticated guest state and authenticated-only features are not visible."
+      }
+    ],
+    "validations": [
+      "The application transitions from home_page guest state to the Login page and the browser URL matches the approved login navigation pattern /washtabui/login?data=undefined.",
+      "The Username field, Password field, Login button, Back button, and Home button are visible, enabled, and available for user interaction on the Login page.",
+      "The Password field masks entered characters during input and does not display the plain text password value.",
+      "The application authenticates the user successfully, returns to home_page in authenticated state, displays authenticated user identity information, and displays authenticated-only functionality.",
+      "Authentication fails, the generic Failed message is displayed, no dedicated required-field validation message is shown, and the application remains unauthenticated on the Login page or in an unauthenticated state.",
+      "Authentication fails, the generic Failed message is displayed, no dedicated required-field validation message appears, and the user remains unauthenticated without transition to authenticated home_page.",
+      "Authentication fails, the generic Failed message is displayed, no dedicated required-field validation message appears, and the application remains unauthenticated.",
+      "Authentication fails, the generic Failed message is displayed, authenticated-only UI is not shown, and the user remains unauthenticated.",
+      "Authentication fails, the generic Failed message is displayed, authenticated identity information is not displayed, and the application remains in unauthenticated state.",
+      "The application processes the whitespace-modified username according to implemented behavior and either authenticates successfully or displays only the generic Failed message while preserving an observable authenticated or unauthenticated state transition outcome.",
+      "The application processes the whitespace-modified password according to implemented behavior and either authenticates successfully or displays only the generic Failed message while preserving observable authentication state behavior.",
+      "Authentication fails, only the generic Failed message is displayed, no separate required-field validation appears, and the user remains unauthenticated.",
+      "The application returns the user to home_page in unauthenticated guest state and authenticated-only UI is not displayed.",
+      "The application returns the user to home_page in unauthenticated guest state and authenticated-only features are not visible."
+    ],
+    "transitions": []
+  },
+  "automationKnowledge": {
+    "approvedKeywords": [
+      {
+        "page": "login_page",
+        "name": "Enter Username",
+        "targetElement": "",
+        "action": ""
+      },
+      {
+        "page": "login_page",
+        "name": "Enter Password",
+        "targetElement": "",
+        "action": ""
+      },
+      {
+        "page": "login_page",
+        "name": "Click Login Button",
+        "targetElement": "",
+        "action": ""
+      },
+      {
+        "page": "login_page",
+        "name": "Verify Login Page Loaded",
+        "targetElement": "",
+        "action": ""
+      },
+      {
+        "page": "login_page",
+        "name": "Verify Authentication Failed Message Displayed",
+        "targetElement": "",
+        "action": ""
+      },
+      {
+        "page": "login_page",
+        "name": "Verify Password Field Is Masked",
+        "targetElement": "",
+        "action": ""
+      },
+      {
+        "page": "login_page",
+        "name": "Login With Credentials",
+        "targetElement": "",
+        "action": ""
+      }
+    ],
+    "approvedTests": [
+      "AUT-WT-LOGIN01: Verify guest user can open the Login page from home_page using the person/profile button",
+      "AUT-WT-LOGIN02: Verify Login page controls are visible and interactable after navigation from home_page",
+      "AUT-WT-LOGIN03: Verify password input remains masked during credential entry",
+      "AUT-WT-LOGIN04: Verify successful authentication with approved credentials returns the user to authenticated home_page",
+      "AUT-WT-LOGIN05: Verify invalid username and invalid password display only the generic Failed authentication message",
+      "AUT-WT-LOGIN06: Verify blank username and blank password submission displays only the generic Failed message",
+      "AUT-WT-LOGIN07: Verify login attempt with populated username and blank password displays only the generic Failed message",
+      "AUT-WT-LOGIN08: Verify login attempt with blank username and populated password displays only the generic Failed message",
+      "AUT-WT-LOGIN09: Verify login with valid username and incorrect password does not authenticate the user",
+      "AUT-WT-LOGIN10: Verify login with incorrect username and valid password does not authenticate the user",
+      "AUT-WT-LOGIN11: Verify leading whitespace in username credential is handled according to implemented application behavior",
+      "AUT-WT-LOGIN12: Verify trailing whitespace in password credential is handled according to implemented application behavior",
+      "AUT-WT-LOGIN13: Verify whitespace-only credentials do not authenticate the user",
+      "AUT-WT-LOGIN14: Verify Back button returns the user from Login page to home_page in guest state",
+      "AUT-WT-LOGIN15: Verify Home button returns the user from Login page to home_page in guest state"
+    ],
+    "wrapperExpectations": [
+      "Reuse approved shared/common wrapper keywords before low-level SeleniumLibrary actions.",
+      "Do not invent suite-level custom keywords; compose from approved upstream resource knowledge."
+    ]
+  },
+  "downstreamGuidance": {
+    "mustReuseResources": [
+      "home_page/home_page.resource"
+    ],
+    "upstreamWorkflowKnowledge": [],
+    "mustNotInvent": [
+      "suite-level custom keywords",
+      "duplicate ownership for controls already owned in approved upstream resources",
+      "hardcoded workflow routing or mapped page logic in Python"
+    ],
+    "generationRule": "Downstream generation must consume approved workflow knowledge plus approved resource context before creating new artifacts."
+  },
+  "reusableFlows": [],
+  "unresolvedGaps": [
+    "The login username input field required for authentication workflows is missing from the approved elements.",
+    "The password input field required for authentication and password masking validation is missing from the approved elements.",
+    "The primary login submission control is missing from the approved page model.",
+    "The generic Failed authentication message expected by all negative authentication scenarios is missing.",
+    "The artifact does not provide observable negative-outcome validation support for failed authentication scenarios beyond remaining on the page.",
+    "The person/profile button belongs to the upstream shared home_page workflow context and should not be owned by login_page.",
+    "The notification button is unrelated to the documented login workflow and adds unnecessary page noise.",
+    "The customer signup button is unrelated to login authentication coverage and appears to belong to another business workflow.",
+    "The clean survey button is unrelated to the login workflow.",
+    "The site survey button is unrelated to the login workflow.",
+    "The locator xpath=//a is dangerously generic and likely to match multiple links across the application.",
+    "This generic anchor element duplicates the Home button behavior already represented by auto_home_btn_button.",
+    "The background content container is a decorative layout wrapper and not meaningful for workflow automation.",
+    "The approved element naming relies on implementation IDs instead of business semantics.",
+    "The approved element naming is implementation-centric rather than workflow-centric."
+  ],
+  "provenance": {
+    "workflowInput": "workflow_inputs/login.json",
+    "approvedManualTests": "manual_tests/login/login.json",
+    "approvedResourceFiles": [
+      "home_page/home_page.resource"
+    ]
+  }
+}

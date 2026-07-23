@@ -1,0 +1,437 @@
+{
+  "pageName": "login_page",
+  "pageUrl": null,
+  "rawElements": [
+    {
+      "tag": "ion-button",
+      "text": "auto_person_btn",
+      "attributes": {
+        "_ngcontent-ng-c1512357107": "",
+        "id": "auto_person_btn",
+        "color": "light",
+        "class": "header-icon-btn ng-star-inserted ion-color ion-color-light md button button-solid in-toolbar ion-activatable ion-focusable hydrated"
+      },
+      "label": "",
+      "visibility": {
+        "is_visible": true,
+        "is_in_viewport": true,
+        "is_covered": false,
+        "has_visible_descendant": false,
+        "width": 45,
+        "height": 45,
+        "x": 1665,
+        "y": 23
+      },
+      "shadow": {
+        "has_shadow_root": true,
+        "has_native_control": true,
+        "text": "",
+        "icon_aria_label": "",
+        "aria_label": "",
+        "tag": "button",
+        "type": "button",
+        "disabled": false,
+        "placeholder": ""
+      }
+    },
+    {
+      "tag": "ion-button",
+      "text": "auto_back_btn",
+      "attributes": {
+        "_ngcontent-ng-c1512357107": "",
+        "id": "auto_back_btn",
+        "color": "light",
+        "class": "header-icon-btn ion-color ion-color-light md button button-solid in-toolbar ion-activatable ion-focusable hydrated"
+      },
+      "label": "",
+      "visibility": {
+        "is_visible": true,
+        "is_in_viewport": true,
+        "is_covered": false,
+        "has_visible_descendant": false,
+        "width": 45,
+        "height": 45,
+        "x": 1725,
+        "y": 23
+      },
+      "shadow": {
+        "has_shadow_root": true,
+        "has_native_control": true,
+        "text": "",
+        "icon_aria_label": "",
+        "aria_label": "",
+        "tag": "button",
+        "type": "button",
+        "disabled": false,
+        "placeholder": ""
+      }
+    },
+    {
+      "tag": "ion-button",
+      "text": "auto_notification_btn",
+      "attributes": {
+        "_ngcontent-ng-c1512357107": "",
+        "id": "auto_notification_btn",
+        "color": "light",
+        "class": "header-icon-btn ion-color ion-color-light md button button-solid in-toolbar ion-activatable ion-focusable hydrated"
+      },
+      "label": "",
+      "visibility": {
+        "is_visible": true,
+        "is_in_viewport": true,
+        "is_covered": false,
+        "has_visible_descendant": false,
+        "width": 45,
+        "height": 45,
+        "x": 1785,
+        "y": 23
+      },
+      "shadow": {
+        "has_shadow_root": true,
+        "has_native_control": true,
+        "text": "",
+        "icon_aria_label": "",
+        "aria_label": "",
+        "tag": "button",
+        "type": "button",
+        "disabled": false,
+        "placeholder": ""
+      }
+    },
+    {
+      "tag": "ion-button",
+      "text": "auto_home_btn",
+      "attributes": {
+        "_ngcontent-ng-c1512357107": "",
+        "id": "auto_home_btn",
+        "color": "light",
+        "class": "header-icon-btn ion-color ion-color-light md button button-solid in-toolbar ion-activatable ion-focusable hydrated",
+        "tabindex": "0"
+      },
+      "label": "",
+      "visibility": {
+        "is_visible": true,
+        "is_in_viewport": true,
+        "is_covered": false,
+        "has_visible_descendant": false,
+        "width": 45,
+        "height": 45,
+        "x": 1845,
+        "y": 23
+      },
+      "shadow": {
+        "has_shadow_root": true,
+        "has_native_control": true,
+        "text": "",
+        "icon_aria_label": "",
+        "aria_label": "",
+        "tag": "a",
+        "type": "",
+        "disabled": false,
+        "placeholder": ""
+      }
+    },
+    {
+      "tag": "app-main-button",
+      "text": "auto_btn_CustomerSignup",
+      "attributes": {
+        "_ngcontent-ng-c255735496": "",
+        "tappable": "",
+        "id": "auto_btn_CustomerSignup",
+        "icsicon": "CustomerClubSignup-Bt",
+        "_nghost-ng-c2807194416": "",
+        "class": "ng-star-inserted"
+      },
+      "label": "",
+      "visibility": {
+        "is_visible": true,
+        "is_in_viewport": true,
+        "is_covered": false,
+        "has_visible_descendant": true,
+        "width": 547.1875,
+        "height": 17,
+        "x": 0,
+        "y": 358.484375
+      },
+      "shadow": null
+    },
+    {
+      "tag": "app-main-button",
+      "text": "auto_btn_CleanSurvey",
+      "attributes": {
+        "_ngcontent-ng-c255735496": "",
+        "tappable": "",
+        "id": "auto_btn_CleanSurvey",
+        "icsicon": "Clean-Survey-Bt",
+        "_nghost-ng-c2807194416": "",
+        "class": "ng-star-inserted"
+      },
+      "label": "",
+      "visibility": {
+        "is_visible": true,
+        "is_in_viewport": true,
+        "is_covered": false,
+        "has_visible_descendant": true,
+        "width": 547.1875,
+        "height": 17,
+        "x": 547.1875,
+        "y": 358.484375
+      },
+      "shadow": null
+    },
+    {
+      "tag": "app-main-button",
+      "text": "auto_btn_SiteSurvey",
+      "attributes": {
+        "_ngcontent-ng-c255735496": "",
+        "tappable": "",
+        "id": "auto_btn_SiteSurvey",
+        "icsicon": "Site-Survey-Bt",
+        "_nghost-ng-c2807194416": "",
+        "class": "ng-star-inserted"
+      },
+      "label": "",
+      "visibility": {
+        "is_visible": true,
+        "is_in_viewport": true,
+        "is_covered": false,
+        "has_visible_descendant": true,
+        "width": 547.1875,
+        "height": 17,
+        "x": 1094.375,
+        "y": 358.484375
+      },
+      "shadow": null
+    },
+    {
+      "tag": "a",
+      "text": "",
+      "attributes": {
+        "href": "/washtabui/home",
+        "class": "button-native",
+        "part": "native",
+        "data-shadow-host-tag": "ion-button"
+      },
+      "label": "",
+      "visibility": {
+        "is_visible": true,
+        "is_in_viewport": true,
+        "is_covered": false,
+        "has_visible_descendant": true,
+        "width": 45,
+        "height": 45,
+        "x": 1845,
+        "y": 23
+      },
+      "shadow": null
+    },
+    {
+      "tag": "div",
+      "text": "background-content",
+      "attributes": {
+        "id": "background-content",
+        "part": "background",
+        "data-shadow-host-tag": "ion-content"
+      },
+      "label": "",
+      "visibility": {
+        "is_visible": true,
+        "is_in_viewport": true,
+        "is_covered": false,
+        "has_visible_descendant": false,
+        "width": 1920,
+        "height": 1306,
+        "x": 0,
+        "y": 0
+      },
+      "shadow": null
+    }
+  ],
+  "elements": [
+    {
+      "approvedName": "username_field",
+      "type": "textbox",
+      "locator": "xpath=//input[@placeholder='User Name']",
+      "approved": true
+    },
+    {
+      "approvedName": "password_field",
+      "type": "password",
+      "locator": "id=password",
+      "approved": true
+    },
+    {
+      "approvedName": "login_button",
+      "type": "button",
+      "locator": "xpath=//ion-button[@text='Login' or normalize-space(.)='Login']",
+      "approved": true
+    },
+    {
+      "approvedName": "back_button",
+      "type": "button",
+      "locator": "id=auto_back_btn",
+      "approved": true
+    },
+    {
+      "approvedName": "home_button",
+      "type": "button",
+      "locator": "id=auto_home_btn",
+      "approved": true
+    },
+    {
+      "approvedName": "authentication_failed_message",
+      "type": "message",
+      "locator": "text=Failed",
+      "approved": true
+    }
+  ],
+  "reviewSummary": {
+    "overall_quality": "low",
+    "summary": "The draft artifact contains mostly unrelated home-page and decorative elements while missing the core login workflow controls and validation elements required for downstream automation. Several approved elements use weak naming and brittle or overly generic locators.",
+    "issues": [
+      {
+        "severity": "critical",
+        "type": "missing_element",
+        "element_name": "Username field",
+        "message": "The login username input field required for authentication workflows is missing from the approved elements.",
+        "suggested_fix": "Add a semantically named username input element using a stable locator such as the User Name placeholder or dedicated input identifier."
+      },
+      {
+        "severity": "critical",
+        "type": "missing_element",
+        "element_name": "Password field",
+        "message": "The password input field required for authentication and password masking validation is missing from the approved elements.",
+        "suggested_fix": "Add a password field element using a stable identifier such as id=password."
+      },
+      {
+        "severity": "critical",
+        "type": "missing_element",
+        "element_name": "Login button",
+        "message": "The primary login submission control is missing from the approved page model.",
+        "suggested_fix": "Add a Login button element with a stable semantic locator tied to the Login control."
+      },
+      {
+        "severity": "high",
+        "type": "missing_element",
+        "element_name": "Authentication failed message",
+        "message": "The generic Failed authentication message expected by all negative authentication scenarios is missing.",
+        "suggested_fix": "Add a semantic authentication failure message element using a reusable text or alert locator for the generic Failed message."
+      },
+      {
+        "severity": "high",
+        "type": "validation_gap",
+        "element_name": "",
+        "message": "The artifact does not provide observable negative-outcome validation support for failed authentication scenarios beyond remaining on the page.",
+        "suggested_fix": "Include the generic Failed authentication message element as a first-class validation element for negative login coverage."
+      },
+      {
+        "severity": "high",
+        "type": "classification",
+        "element_name": "auto_person_btn_button",
+        "message": "The person/profile button belongs to the upstream shared home_page workflow context and should not be owned by login_page.",
+        "suggested_fix": "Move ownership of the person/profile button to the home_page resource and reference it through upstream navigation reuse guidance."
+      },
+      {
+        "severity": "medium",
+        "type": "noise",
+        "element_name": "auto_notification_btn_button",
+        "message": "The notification button is unrelated to the documented login workflow and adds unnecessary page noise.",
+        "suggested_fix": "Remove the notification button from the approved login page model unless a downstream workflow explicitly depends on it."
+      },
+      {
+        "severity": "medium",
+        "type": "noise",
+        "element_name": "auto_btn_customersignup_button",
+        "message": "The customer signup button is unrelated to login authentication coverage and appears to belong to another business workflow.",
+        "suggested_fix": "Remove unrelated survey and signup controls from the login page artifact."
+      },
+      {
+        "severity": "medium",
+        "type": "noise",
+        "element_name": "auto_btn_cleansurvey_button",
+        "message": "The clean survey button is unrelated to the login workflow.",
+        "suggested_fix": "Remove this control from the login page artifact."
+      },
+      {
+        "severity": "medium",
+        "type": "noise",
+        "element_name": "auto_btn_sitesurvey_button",
+        "message": "The site survey button is unrelated to the login workflow.",
+        "suggested_fix": "Remove this control from the login page artifact."
+      },
+      {
+        "severity": "high",
+        "type": "locator",
+        "element_name": "element_8",
+        "message": "The locator xpath=//a is dangerously generic and likely to match multiple links across the application.",
+        "suggested_fix": "Remove the duplicate wrapper link element and keep the stable home button locator id=auto_home_btn."
+      },
+      {
+        "severity": "medium",
+        "type": "duplicate",
+        "element_name": "element_8",
+        "message": "This generic anchor element duplicates the Home button behavior already represented by auto_home_btn_button.",
+        "suggested_fix": "Remove the duplicate anchor wrapper element from the approved model."
+      },
+      {
+        "severity": "medium",
+        "type": "noise",
+        "element_name": "background_content_element",
+        "message": "The background content container is a decorative layout wrapper and not meaningful for workflow automation.",
+        "suggested_fix": "Remove the background container from the approved elements."
+      },
+      {
+        "severity": "medium",
+        "type": "naming",
+        "element_name": "auto_back_btn_button",
+        "message": "The approved element naming relies on implementation IDs instead of business semantics.",
+        "suggested_fix": "Rename to Back Button for downstream readability and maintainability."
+      },
+      {
+        "severity": "medium",
+        "type": "naming",
+        "element_name": "auto_home_btn_button",
+        "message": "The approved element naming is implementation-centric rather than workflow-centric.",
+        "suggested_fix": "Rename to Home Button using business-readable naming."
+      }
+    ],
+    "approved_elements": [
+      {
+        "name": "Username Field",
+        "type": "input",
+        "locator": "xpath=//input[@placeholder='User Name']",
+        "description": "Primary username input for customer authentication."
+      },
+      {
+        "name": "Password Field",
+        "type": "password_input",
+        "locator": "id=password",
+        "description": "Password entry field with masked input behavior."
+      },
+      {
+        "name": "Login Button",
+        "type": "button",
+        "locator": "xpath=//ion-button[@text='Login' or normalize-space(.)='Login']",
+        "description": "Primary authentication submission control."
+      },
+      {
+        "name": "Back Button",
+        "type": "button",
+        "locator": "id=auto_back_btn",
+        "description": "Returns the user to home_page without authentication."
+      },
+      {
+        "name": "Home Button",
+        "type": "button",
+        "locator": "id=auto_home_btn",
+        "description": "Navigates the user back to home_page in unauthenticated state."
+      },
+      {
+        "name": "Authentication Failed Message",
+        "type": "message",
+        "locator": "text=Failed",
+        "description": "Generic authentication failure message displayed for rejected login attempts."
+      }
+    ]
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "pageName": "login_page",
+  "pageUrl": "http://localhost/washtabui/home%60",
+  "variables": [
+    {
+      "variableName": "PAGE_URL",
+      "value": "http://localhost/washtabui/home%60",
+      "source": "approved_page",
+      "kind": "page_url"
+    },
+    {
+      "variableName": "USERNAME_FIELD",
+      "value": "xpath=//input[@placeholder='User Name']",
+      "source": "approved_element",
+      "kind": "locator",
+      "approvedName": "username_field",
+      "type": "textbox"
+    },
+    {
+      "variableName": "PASSWORD_FIELD",
+      "value": "id=password",
+      "source": "approved_element",
+      "kind": "locator",
+      "approvedName": "password_field",
+      "type": "password"
+    },
+    {
+      "variableName": "LOGIN_BUTTON",
+      "value": "xpath=//ion-button[@text='Login' or normalize-space(.)='Login']",
+      "source": "approved_element",
+      "kind": "locator",
+      "approvedName": "login_button",
+      "type": "button"
+    },
+    {
+      "variableName": "BACK_BUTTON",
+      "value": "id=auto_back_btn",
+      "source": "approved_element",
+      "kind": "locator",
+      "approvedName": "back_button",
+      "type": "button"
+    },
+    {
+      "variableName": "HOME_BUTTON",
+      "value": "id=auto_home_btn",
+      "source": "approved_element",
+      "kind": "locator",
+      "approvedName": "home_button",
+      "type": "button"
+    },
+    {
+      "variableName": "AUTHENTICATION_FAILED_MESSAGE",
+      "value": "text=Failed",
+      "source": "approved_element",
+      "kind": "locator",
+      "approvedName": "authentication_failed_message",
+      "type": "message"
+    }
+  ]
+}

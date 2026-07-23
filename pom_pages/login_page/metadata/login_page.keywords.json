@@ -1,0 +1,97 @@
+{
+  "pageName": "login_page",
+  "keywords": [
+    {
+      "keywordId": "LOGIN_KW_001",
+      "keywordName": "Enter Username",
+      "targetElement": "username_field",
+      "action": "input",
+      "arguments": [
+        "username"
+      ],
+      "implementation": [
+        "Input Text When Ready    ${USERNAME_FIELD}    ${username}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "LOGIN_KW_002",
+      "keywordName": "Enter Password",
+      "targetElement": "password_field",
+      "action": "input",
+      "arguments": [
+        "password"
+      ],
+      "implementation": [
+        "Input Password When Ready    ${PASSWORD_FIELD}    ${password}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "LOGIN_KW_003",
+      "keywordName": "Click Login Button",
+      "targetElement": "login_button",
+      "action": "click",
+      "arguments": [],
+      "implementation": [
+        "Click When Ready    ${LOGIN_BUTTON}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "LOGIN_KW_004",
+      "keywordName": "Verify Login Page Loaded",
+      "targetElement": "login_button",
+      "action": "verify",
+      "arguments": [],
+      "implementation": [
+        "Wait For Element To Be Ready    ${USERNAME_FIELD}",
+        "Wait For Element To Be Ready    ${PASSWORD_FIELD}",
+        "Wait For Element To Be Ready    ${LOGIN_BUTTON}",
+        "Wait For Element To Be Ready    ${LOGIN_BUTTON}",
+        "Wait For Element To Be Ready    ${LOGIN_BUTTON}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "LOGIN_KW_005",
+      "keywordName": "Verify Authentication Failed Message Displayed",
+      "targetElement": "authentication_failed_message",
+      "action": "verify",
+      "arguments": [],
+      "implementation": [
+        "Wait Until Element Is Visible    ${AUTHENTICATION_FAILED_MESSAGE_LOCATOR}",
+        "Element Text Should Be    ${AUTHENTICATION_FAILED_MESSAGE_LOCATOR}    ${AUTHENTICATION_FAILED_MESSAGE}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "LOGIN_KW_006",
+      "keywordName": "Verify Password Field Is Masked",
+      "targetElement": "password_field",
+      "action": "verify",
+      "arguments": [],
+      "implementation": [
+        "Wait Until Element Is Visible    ${PASSWORD_FIELD}",
+        "Element Attribute Value Should Be    ${PASSWORD_FIELD}    type    password"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "LOGIN_KW_007",
+      "keywordName": "Login With Credentials",
+      "targetElement": "login_button",
+      "action": "generic",
+      "arguments": [
+        "username",
+        "password"
+      ],
+      "implementation": [
+        "Enter Username    ${username}",
+        "Enter Password    ${password}",
+        "Click Login Button"
+      ],
+      "approved": true
+    }
+  ]
+}

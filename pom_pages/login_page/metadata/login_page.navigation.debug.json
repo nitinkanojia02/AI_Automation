@@ -1,0 +1,28 @@
+[
+  {
+    "page": "login_page",
+    "entry_url": "http://localhost/washtabui/home`",
+    "received_navigation_steps": [],
+    "received_target_page_signals": [],
+    "execution_runtime": {},
+    "page_state": {},
+    "mcp_execution": {},
+    "mcp_dispatch": {},
+    "mcp_adapter": {},
+    "mcp_enabled": false,
+    "has_inferred_reuse_context": false,
+    "resource_files": [],
+    "raw_resource_files": [],
+    "story_excerpt": "",
+    "external_story_excerpt": ""
+  },
+  {
+    "inferred_navigation_steps": [],
+    "inferred_target_page_signals": []
+  },
+  {
+    "navigation_attempted": false,
+    "reason": "No navigation steps were available or inferred.",
+    "final_url": "http://localhost/washtabui/home%60"
+  }
+]
