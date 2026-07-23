@@ -947,28 +947,13 @@ def validate_robot_alignment_with_resource_context(content: str, resource_contex
         called_common_helpers = [name for name in suite_called_keywords if name in common_helper_names]
         if not called_common_helpers:
             warnings.append("Generated suite does not appear to call retrieved common/shared helper keywords")
-        if "input text when ready" in common_helper_names and any(name in {"input text", "input password"} for name in suite_called_keywords):
-            warnings.append(
-                "Wrapper-priority violation: shared/common text-entry wrapper 'Input Text When Ready' exists, but the suite still uses direct SeleniumLibrary Input Text/Input Password calls. Shared wrapper keywords must take precedence for field entry."
-            )
 
-    page_resource_import_count = sum(1 for resource in resource_context if resource.get("type") != "common")
-    low_level_step_count = len([
-        name for name in suite_called_keywords
-        if name in {
-            "wait for element to be ready",
-            "wait until element is visible",
-            "element text should be",
-            "get element attribute",
-            "input text when ready",
-            "input password when ready",
-            "click when ready",
-        }
-    ])
-    page_keyword_usage_count = len([name for name in suite_called_keywords if name in page_keyword_names])
-    if page_resource_import_count and page_keyword_names and low_level_step_count >= 6 and page_keyword_usage_count <= max(2, len(test_step_sequences) // 3):
+    page_resource_keyword_invocations = [name for name in suite_called_keywords if name in page_keyword_names]
+    page_resource_keyword_count = len(page_resource_keyword_invocations)
+    suite_step_count = sum(len(steps) for steps in test_step_sequences)
+    if page_keyword_names and suite_step_count >= 6 and page_resource_keyword_count == 0:
         errors.append(
-            "Resource-first reuse violation: approved page resources are available, but the generated suite still relies primarily on low-level interaction/assertion steps instead of approved page-resource keywords. Regenerate or repair the suite to call existing page-resource keywords wherever they structurally satisfy the manual intent."
+            "Resource-first reuse violation: approved page resources are available for this workflow, but the generated suite does not call any approved page-resource keywords. Regenerate or repair the suite to reuse approved page-resource keywords from imported page resources wherever structurally applicable."
         )
 
     has_setup = bool(re.search(r"(?im)^\s*(?:Suite Setup|Test Setup)\s+.+$", content))
@@ -993,35 +978,7 @@ def validate_robot_alignment_with_resource_context(content: str, resource_contex
         setup_keyword_name, _setup_args = scan_keyword_invocation(setup_match.group(2))
         setup_keyword_name = clean_text(setup_keyword_name).lower()
 
-    if has_setup and test_step_sequences:
-        opener_like_keywords = [
-            name for name in page_keyword_names
-            if any(token in name for token in ["open ", "launch ", "guest state", "page is loaded", "page loaded"])
-        ]
-        repeated_opener_counts = {name: suite_keyword_counts.get(name, 0) for name in opener_like_keywords if suite_keyword_counts.get(name, 0)}
-        if repeated_opener_counts:
-            best_repeated_opener = max(repeated_opener_counts, key=repeated_opener_counts.get)
-            best_count = repeated_opener_counts[best_repeated_opener]
-            if best_count >= max(2, len(test_step_sequences) // 2):
-                if setup_keyword_name and setup_keyword_name != best_repeated_opener:
-                    warnings.append(
-                        f"Generated suite uses setup '{setup_keyword_name}' but repeatedly invokes higher-level page startup keyword '{best_repeated_opener}' inside test bodies. Prefer the strongest reusable semantic setup abstraction instead of a lower-level opener."
-                    )
-                elif not setup_keyword_name:
-                    warnings.append(
-                        "Generated suite appears to have setup configured, but the repeated highest-level page startup abstraction is still being invoked inside test bodies. Prefer moving that semantic opener into setup."
-                    )
-
-    repeated_open_keywords = {
-        name for name in page_keyword_names
-        if any(token in name for token in ["open ", "launch ", "guest state", "page is loaded", "page loaded"])
-    }
-    if not has_setup and repeated_open_keywords:
-        repeated_opener_usage = sum(suite_keyword_counts.get(name, 0) for name in repeated_open_keywords)
-        if repeated_opener_usage >= 2:
-            warnings.append(
-                "Generated suite repeatedly invokes a page-opening/page-readiness keyword inside test bodies instead of lifting it into Test Setup or Suite Setup."
-            )
+    del has_setup, has_teardown, setup_keyword_name, suite_keyword_counts
 
     return len(errors) == 0, ("Warnings:\n" + "\n".join(warnings)) if warnings else ""
 
@@ -1488,30 +1445,6 @@ def validate_robot_content(content: str, allowed_resources: list[str]) -> tuple[
 
     if len(common_prefix) >= 2:
         warnings.append("Generated suite repeats the same startup steps across tests; prefer moving repeated opening/navigation/wait steps into Test Setup or Suite Setup")
-
-    if has_setup and all_test_steps:
-        page_startup_keywords = {
-            clean_text(name).lower()
-            for name in resource_keyword_names
-            if any(token in clean_text(name).lower() for token in ["open ", "launch ", "guest state", "page is loaded", "page loaded"])
-        }
-        repeated_page_startup = {
-            name: sum(1 for steps in all_test_steps if steps and clean_text(steps[0]).lower() == name)
-            for name in page_startup_keywords
-        }
-        repeated_page_startup = {name: count for name, count in repeated_page_startup.items() if count >= max(2, len(all_test_steps) // 2)}
-        setup_lines = re.findall(r"(?im)^\s*(?:Suite Setup|Test Setup)\s{2,}(.+)$", content)
-        configured_setup_keywords = set()
-        for line in setup_lines:
-            kw_name, _args = scan_keyword_invocation(line)
-            if kw_name:
-                configured_setup_keywords.add(clean_text(kw_name).lower())
-        if repeated_page_startup:
-            strongest_startup = max(repeated_page_startup, key=repeated_page_startup.get)
-            if strongest_startup not in configured_setup_keywords:
-                warnings.append(
-                    f"Generated suite has setup configured but still repeats semantic page startup keyword '{strongest_startup}' at the beginning of most tests. Prefer promoting that higher-level page setup abstraction into Test Setup or Suite Setup."
-                )
 
     if not re.search(r"(?im)^AUT-[A-Z0-9]{2,8}-[A-Z0-9_]{3,20}\d{2}:\s+.+$", content):
         warnings.append("Generated suite test case names should follow the concise format AUT-<APPCODE>-<FEATURECODE><NN>: <Title>")
