@@ -302,13 +302,8 @@ def analyze_manual_test_reuse(manual_data: Dict[str, Any], workflow_context: Dic
         )
         seen_signatures.setdefault(signature, []).append(case_id)
 
-        if expected.lower() in {
-            "system behaves as expected",
-            "workflow completes successfully",
-            "system works correctly",
-            "validation should appear",
-            "login should happen",
-        }:
+        expected_signature = normalize_text_signature(expected)
+        if expected_signature and len(expected_signature.split()) <= 4:
             weak_expected_results.append({"id": case_id, "title": title, "expectedResult": expected})
 
         if any(clean_text(step) for step in steps):
@@ -404,10 +399,6 @@ def analyze_keyword_artifact_reuse(keywords: List[Dict[str, Any]], page_name: st
 
     low_value_wrapper_keywords: List[Dict[str, Any]] = []
     common_reuse_opportunities: List[Dict[str, Any]] = []
-    helper_pattern = re.compile(
-        r"^(Click Element|Input Text|Input Password|Wait Until Element Is Visible|Wait Until Page Contains Element|Click When Ready|Input Text When Ready|Input Password When Ready)\b",
-        flags=re.IGNORECASE,
-    )
     for keyword in keywords:
         if not isinstance(keyword, dict):
             continue
@@ -417,19 +408,12 @@ def analyze_keyword_artifact_reuse(keywords: List[Dict[str, Any]], page_name: st
             implementation = [line.rstrip() for line in implementation.splitlines() if clean_text(line)]
         normalized_lines = [clean_text(line) for line in implementation if clean_text(line)]
         normalized_name = keyword_name.lower()
-        name_tokens = set(normalize_name_tokens(keyword_name).split()) if keyword_name else set()
-        implementation_uses_helpers = any(helper_pattern.match(line) for line in normalized_lines)
         references_page_variable = any("${" in line for line in normalized_lines)
 
-        if len(normalized_lines) <= 2 and implementation_uses_helpers and not references_page_variable:
+        if len(normalized_lines) <= 1 and not references_page_variable:
             low_value_wrapper_keywords.append({
                 "keywordName": keyword_name,
-                "reason": "Keyword is a thin low-level wrapper and may not provide enough reusable page-level abstraction.",
-            })
-        if common_keyword_names and implementation_uses_helpers and not references_page_variable:
-            common_reuse_opportunities.append({
-                "keywordName": keyword_name,
-                "reason": "Implementation uses low-level steps even though shared/common helpers exist in approved resource context.",
+                "reason": "Keyword is a very thin wrapper and may not provide enough reusable page-level abstraction.",
             })
         if normalized_name in common_keyword_names:
             common_reuse_opportunities.append({
@@ -487,10 +471,7 @@ def analyze_robot_suite_reuse(robot_content: str, resource_context: List[Dict[st
     low_level_calls_with_reuse_available: List[Dict[str, Any]] = []
     reused_keywords: set[str] = set()
     suite_called_keywords: List[str] = []
-    generic_wrapper_names = {
-        "go to url", "click when ready", "wait for element to be ready", "input text when ready",
-        "input text", "input password", "wait until page contains element", "click element"
-    }
+    framework_keywords, _ = get_framework_keyword_catalog()
 
     for raw_line in robot_content.splitlines():
         stripped = raw_line.strip()
@@ -515,19 +496,15 @@ def analyze_robot_suite_reuse(robot_content: str, resource_context: List[Dict[st
                     "approvedVariables": owners,
                     "usedByKeyword": keyword_name,
                 })
-                if keyword_name in generic_wrapper_names:
+                if keyword_name in framework_keywords:
                     low_level_calls_with_reuse_available.append({
                         "keyword": keyword_name,
                         "literal": candidate,
                         "approvedVariables": owners,
-                        "reason": "Suite is using a low-level or generic interaction with a literal even though approved semantic variables already exist.",
+                        "reason": "Suite uses a framework/library keyword with a literal even though approved resource variables already exist.",
                     })
 
     missing_common_wrapper_reuse: List[str] = []
-    if "input text when ready" in common_keywords and any(name in suite_called_keywords for name in {"input text", "input password"}):
-        missing_common_wrapper_reuse.append("input text when ready")
-    if "click when ready" in common_keywords and "click element" in suite_called_keywords:
-        missing_common_wrapper_reuse.append("click when ready")
 
     return {
         "literalReuseOpportunities": literal_value_hits,
