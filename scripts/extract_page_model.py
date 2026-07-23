@@ -862,7 +862,7 @@ def build_fallback_keyword_name(label: str, role: str) -> str:
     if role in {"textbox", "password"}:
         return f"Enter {label_title}"
     if role in {"button", "link", "radio"}:
-        return label_title if clean_text(label_title).lower().startswith(("click ", "open ", "select ")) else f"Click {label_title}"
+        return f"Click {label_title}"
     return label_title or "Interact With Element"
 
 

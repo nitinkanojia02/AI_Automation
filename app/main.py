@@ -2381,10 +2381,7 @@ def get_keyword_review_data(workflow: dict):
         for item in approved_elements
         if clean_text(str(item.get("approvedName", "")))
     }
-    disallowed_resource_keywords = {
-        "open page",
-        "open browser to page",
-    }
+    disallowed_resource_keywords: set[str] = set()
 
     keywords = []
     if source_keywords_path.exists() and approved_elements_by_name:
@@ -2805,10 +2802,7 @@ def save_keywords_for_workflow(workflow: dict, keywords: list[dict]):
     }
     approved_variable_names = set(canonical_variable_by_target.values())
 
-    disallowed_resource_keywords = {
-        "open page",
-        "open browser to page",
-    }
+    disallowed_resource_keywords: set[str] = set()
 
     def resolve_target_element(keyword_name: str, provided_target: str = "") -> str:
         target = clean_text(provided_target)
@@ -3323,39 +3317,13 @@ def validate_generated_resource_against_approved_artifacts(
             + ", ".join(non_resource_keywords_missing_from_resource)
         )
 
-    direct_low_level_calls = [
-        "wait until element is visible",
-        "wait until element is enabled",
-        "click element",
-        "input text",
-        "input password",
-        "go to",
-        "open browser",
-    ]
-    forbidden_builtin_assertion_keywords = [
-        "location should not contain",
-        "location should be",
-        "wait until location contains",
-    ]
-    common_usage_patterns = [
-        "click when ready",
-        "input text when ready",
-        "wait for element to be ready",
-        "open browser session",
-        "close browser session",
-        "open browser to url",
-        "go to url",
-    ]
-    if common_keyword_names:
-        low_level_hits = sum(len(re.findall(rf"(?im)^\s*{re.escape(name)}\b", resource_content)) for name in direct_low_level_calls)
-        common_hits = sum(len(re.findall(rf"(?im)^\s*{re.escape(name)}\b", resource_content)) for name in common_usage_patterns if name in common_keyword_names)
-        if low_level_hits >= 3 and common_hits == 0:
-            errors.append(
-                "Generated page resource does not reuse retrieved common/shared keywords even though common resource context is available; prefer common wrappers over raw SeleniumLibrary calls."
-            )
+    if common_keyword_names and page_keyword_count == 0 and keyword_blocks:
+        warnings.append(
+            "Generated page resource does not define page-level reusable keywords even though common/shared resource context is available. Prefer grounded page-level keywords and reuse imported common/shared helpers where structurally applicable."
+        )
 
+    if common_keyword_names:
         approved_implementation_tokens = set()
-        approved_low_level_tokens = set()
         for item in approved_keywords:
             if not isinstance(item, dict) or not bool(item.get("approved", True)):
                 continue
@@ -3364,32 +3332,16 @@ def validate_generated_resource_against_approved_artifacts(
                 if not token:
                     continue
                 approved_implementation_tokens.add(token)
-                if token in direct_low_level_calls:
-                    approved_low_level_tokens.add(token)
 
-        resource_low_level_tokens = {
-            name for name in direct_low_level_calls
+        resource_keyword_tokens = {
+            clean_text(name).lower()
+            for name in page_keyword_names
             if re.search(rf"(?im)^\s*{re.escape(name)}\b", resource_content)
         }
-        if resource_low_level_tokens and approved_implementation_tokens and not (resource_low_level_tokens & approved_implementation_tokens):
+        if approved_implementation_tokens and not resource_keyword_tokens and keyword_blocks:
             warnings.append(
-                "Generated page resource fell back to raw low-level interaction keywords that are not reflected in the approved reviewed keyword implementations. Prefer preserving approved reviewed implementations and use shared/common helpers when the common resource context indicates a reusable abstraction."
+                "Generated page resource does not preserve approved reviewed keyword lineage strongly enough. Prefer page-level reusable keywords grounded in the approved reviewed implementations and imported resources."
             )
-
-        if approved_low_level_tokens and common_hits > 0 and resource_low_level_tokens:
-            warnings.append(
-                "Approved reviewed keywords still contain some raw low-level interaction steps while shared/common helpers are also available. Consider improving the reviewed keyword generation/review prompts so approved implementations converge on shared helper usage before final resource generation."
-            )
-
-    forbidden_builtin_hits = [
-        keyword_name for keyword_name in forbidden_builtin_assertion_keywords
-        if re.search(rf"(?im)^\s*{re.escape(keyword_name)}\b", resource_content)
-    ]
-    if forbidden_builtin_hits:
-        warnings.append(
-            "Generated page resource uses raw Selenium/Browser assertion keywords instead of approved/common abstractions: "
-            + ", ".join(sorted(set(forbidden_builtin_hits)))
-        )
 
     reuse_analysis = analyze_reuse_conflicts(resource_content, candidate_file)
     if reuse_analysis.get("summary", {}).get("duplicateVariableCount", 0) > 0:
