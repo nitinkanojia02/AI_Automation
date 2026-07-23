@@ -299,119 +299,126 @@
   ],
   "reviewSummary": {
     "overall_quality": "low",
-    "summary": "The draft artifact is heavily polluted with upstream home_page controls, weak technical naming, duplicate navigation ownership, and missing core login workflow elements such as username/password fields, login submission control, and failed authentication validation elements.",
+    "summary": "The draft artifact is heavily polluted with upstream home-page shell controls, technical naming, duplicate ownership, and non-actionable decorative elements. Critical login workflow elements such as username field, password field, login button, and failed authentication message are missing, which makes the artifact insufficient for downstream login automation generation.",
     "issues": [
       {
         "severity": "critical",
         "type": "missing_element",
         "element_name": "",
-        "message": "The Login page model is missing the core Username field required for authentication workflows.",
-        "suggested_fix": "Add a semantically named username input element with a stable locator such as an id, formcontrolname, or reliable placeholder-based locator."
+        "message": "The Login page Username field is missing from the approved elements despite being a core workflow interaction element.",
+        "suggested_fix": "Add a semantically named username input element with a stable locator."
       },
       {
         "severity": "critical",
         "type": "missing_element",
         "element_name": "",
-        "message": "The Login page model is missing the Password field required for authentication and password masking validation.",
-        "suggested_fix": "Add a semantically named password input element with a stable locator and preserve support for masking validation."
+        "message": "The Login page Password field is missing from the approved elements even though password entry and masking validation are core workflow requirements.",
+        "suggested_fix": "Add a semantically named password input element with a stable locator."
       },
       {
         "severity": "critical",
         "type": "missing_element",
         "element_name": "",
-        "message": "The Login page model is missing the Login button required for credential submission and authentication validation.",
+        "message": "The Login button is missing from the approved elements, preventing downstream authentication workflow automation.",
         "suggested_fix": "Add a semantically named login button element with a stable locator."
       },
       {
         "severity": "critical",
         "type": "validation_gap",
         "element_name": "",
-        "message": "The workflow requires explicit validation of the generic 'Failed' authentication message, but no failed authentication message element exists in the page model.",
-        "suggested_fix": "Add a reusable failed_authentication_message element with a stable locator suitable for negative authentication assertions."
+        "message": "No generic Failed authentication message element exists even though the workflow explicitly requires validation of the Failed message across all negative authentication scenarios.",
+        "suggested_fix": "Add a reusable failed authentication message element with a stable observable locator."
+      },
+      {
+        "severity": "high",
+        "type": "duplicate",
+        "element_name": "element_8",
+        "message": "The generic anchor element duplicates the Home button ownership already modeled by auto_home_btn_button and uses an unsafe locator.",
+        "suggested_fix": "Remove the generic anchor element and reuse the Home button ownership already represented by the Home button control."
+      },
+      {
+        "severity": "high",
+        "type": "locator",
+        "element_name": "element_8",
+        "message": "Locator xpath=//a is extremely generic and likely to match multiple links, making the element brittle and unsafe for automation reuse.",
+        "suggested_fix": "Remove the element or replace it with a unique semantic locator tied to a business control."
       },
       {
         "severity": "high",
         "type": "noise",
-        "element_name": "auto_btn_customersignup_button",
-        "message": "Customer signup button belongs to upstream home_page navigation and is not part of the Login page workflow ownership.",
-        "suggested_fix": "Remove this element from the login_page artifact and reuse ownership from home_page.resource."
-      },
-      {
-        "severity": "high",
-        "type": "noise",
-        "element_name": "auto_btn_cleansurvey_button",
-        "message": "Clean survey button belongs to upstream home_page navigation and is not part of the Login page workflow ownership.",
-        "suggested_fix": "Remove this element from the login_page artifact and reuse ownership from home_page.resource."
-      },
-      {
-        "severity": "high",
-        "type": "noise",
-        "element_name": "auto_btn_sitesurvey_button",
-        "message": "Site survey button belongs to upstream home_page navigation and is not part of the Login page workflow ownership.",
-        "suggested_fix": "Remove this element from the login_page artifact and reuse ownership from home_page.resource."
+        "element_name": "background_content_element",
+        "message": "The background content element is decorative/layout-only and provides no meaningful workflow automation value.",
+        "suggested_fix": "Remove the background content element from the approved model."
       },
       {
         "severity": "medium",
         "type": "naming",
         "element_name": "auto_person_btn_button",
-        "message": "The element name is implementation-centric and not business-readable.",
+        "message": "The element name is technical, implementation-centric, and not business-readable.",
         "suggested_fix": "Rename to person_profile_button."
       },
       {
         "severity": "medium",
         "type": "naming",
         "element_name": "auto_back_btn_button",
-        "message": "The element name is implementation-centric and not business-readable.",
+        "message": "The element name exposes raw DOM naming instead of business intent.",
         "suggested_fix": "Rename to back_button."
       },
       {
         "severity": "medium",
         "type": "naming",
         "element_name": "auto_notification_btn_button",
-        "message": "The element name is implementation-centric and not business-readable.",
+        "message": "The element name is implementation-centric and weak for reusable automation generation.",
         "suggested_fix": "Rename to notification_button."
       },
       {
         "severity": "medium",
         "type": "naming",
         "element_name": "auto_home_btn_button",
-        "message": "The element name is implementation-centric and not business-readable.",
+        "message": "The element name is tied to DOM naming conventions instead of user-facing semantics.",
         "suggested_fix": "Rename to home_button."
       },
       {
-        "severity": "high",
-        "type": "duplicate",
-        "element_name": "element_8",
-        "message": "This generic anchor element duplicates the Home navigation control already represented by the home button element.",
-        "suggested_fix": "Remove the duplicate generic anchor element and keep only the semantically meaningful home button control."
-      },
-      {
-        "severity": "high",
-        "type": "locator",
-        "element_name": "element_8",
-        "message": "Locator xpath=//a is dangerously generic and likely to match multiple links, creating brittle automation behavior.",
-        "suggested_fix": "Remove this locator entirely or replace it with a uniquely attributable locator tied to the intended navigation control."
+        "severity": "medium",
+        "type": "naming",
+        "element_name": "auto_btn_customersignup_button",
+        "message": "The element name is inconsistent and overly technical.",
+        "suggested_fix": "Rename to customer_signup_button."
       },
       {
         "severity": "medium",
-        "type": "noise",
-        "element_name": "background_content_element",
-        "message": "Background content container is decorative/layout-only and provides no meaningful automation value.",
-        "suggested_fix": "Remove the background content element from the approved page model."
+        "type": "naming",
+        "element_name": "auto_btn_cleansurvey_button",
+        "message": "The element name is implementation-oriented instead of workflow-oriented.",
+        "suggested_fix": "Rename to clean_survey_button."
+      },
+      {
+        "severity": "medium",
+        "type": "naming",
+        "element_name": "auto_btn_sitesurvey_button",
+        "message": "The element name is not business-readable and weak for downstream keyword generation.",
+        "suggested_fix": "Rename to site_survey_button."
       },
       {
         "severity": "medium",
         "type": "classification",
-        "element_name": "auto_home_btn_button",
-        "message": "The underlying shadow-native control is an anchor/link but is classified only as a button.",
-        "suggested_fix": "Classify consistently as a navigation button or navigation link based on framework standards and intended reuse."
+        "element_name": "auto_btn_customersignup_button",
+        "message": "Customer signup is an upstream home-page workflow navigation control and does not belong to the canonical Login page model.",
+        "suggested_fix": "Remove from the login_page artifact and rely on upstream home_page resource ownership."
       },
       {
         "severity": "medium",
-        "type": "validation_gap",
-        "element_name": "",
-        "message": "The workflow explicitly requires authenticated-state validation after successful login, but no authenticated user identity display or authenticated-only feature indicator is modeled.",
-        "suggested_fix": "Add reusable authenticated state indicators owned by the appropriate upstream page resource."
+        "type": "classification",
+        "element_name": "auto_btn_cleansurvey_button",
+        "message": "Clean survey is an upstream home-page workflow navigation control unrelated to Login page ownership.",
+        "suggested_fix": "Remove from the login_page artifact and rely on upstream home_page resource ownership."
+      },
+      {
+        "severity": "medium",
+        "type": "classification",
+        "element_name": "auto_btn_sitesurvey_button",
+        "message": "Site survey is an upstream home-page workflow navigation control unrelated to Login page ownership.",
+        "suggested_fix": "Remove from the login_page artifact and rely on upstream home_page resource ownership."
       }
     ],
     "approved_elements": [
@@ -425,7 +432,7 @@
         "name": "back_button",
         "type": "button",
         "locator": "id=auto_back_btn",
-        "description": "Returns the user to home_page without authentication."
+        "description": "Returns the unauthenticated user to home_page."
       },
       {
         "name": "notification_button",
@@ -437,7 +444,7 @@
         "name": "home_button",
         "type": "button",
         "locator": "id=auto_home_btn",
-        "description": "Returns the user to home_page without authentication."
+        "description": "Returns the user to home_page."
       }
     ]
   }

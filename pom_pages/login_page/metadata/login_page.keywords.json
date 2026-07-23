@@ -2,7 +2,51 @@
   "pageName": "login_page",
   "keywords": [
     {
-      "keywordId": "LOGIN_KW_001",
+      "keywordId": "KW_001",
+      "keywordName": "Click Auto Person Btn",
+      "targetElement": "person_profile_button",
+      "action": "click",
+      "arguments": [],
+      "implementation": [
+        "Click When Ready    ${PERSON_PROFILE_BUTTON}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_002",
+      "keywordName": "Click Auto Back Btn",
+      "targetElement": "back_button",
+      "action": "click",
+      "arguments": [],
+      "implementation": [
+        "Click When Ready    ${BACK_BUTTON}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_003",
+      "keywordName": "Click Auto Notification Btn",
+      "targetElement": "notification_button",
+      "action": "click",
+      "arguments": [],
+      "implementation": [
+        "Click When Ready    ${NOTIFICATION_BUTTON}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_004",
+      "keywordName": "Click Auto Home Btn",
+      "targetElement": "home_button",
+      "action": "click",
+      "arguments": [],
+      "implementation": [
+        "Click When Ready    ${HOME_BUTTON}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "KW_005",
       "keywordName": "Enter Username",
       "targetElement": "username_field",
       "action": "input",
@@ -15,7 +59,7 @@
       "approved": true
     },
     {
-      "keywordId": "LOGIN_KW_002",
+      "keywordId": "KW_006",
       "keywordName": "Enter Password",
       "targetElement": "password_field",
       "action": "input",
@@ -28,7 +72,7 @@
       "approved": true
     },
     {
-      "keywordId": "LOGIN_KW_003",
+      "keywordId": "KW_007",
       "keywordName": "Click Login Button",
       "targetElement": "login_button",
       "action": "click",
@@ -39,34 +83,22 @@
       "approved": true
     },
     {
-      "keywordId": "LOGIN_KW_004",
-      "keywordName": "Verify Login Page Loaded",
-      "targetElement": "username_field",
+      "keywordId": "KW_008",
+      "keywordName": "Verify Login Page Controls Visible And Enabled",
+      "targetElement": "login_button",
       "action": "verify",
       "arguments": [],
       "implementation": [
         "Wait For Element To Be Ready    ${USERNAME_FIELD}",
         "Wait For Element To Be Ready    ${PASSWORD_FIELD}",
         "Wait For Element To Be Ready    ${LOGIN_BUTTON}",
-        "Wait For Element To Be Ready    ${USERNAME_FIELD}",
-        "Wait For Element To Be Ready    ${USERNAME_FIELD}"
+        "Wait For Element To Be Ready    ${BACK_BUTTON}",
+        "Wait For Element To Be Ready    ${HOME_BUTTON}"
       ],
       "approved": true
     },
     {
-      "keywordId": "LOGIN_KW_005",
-      "keywordName": "Verify Failed Authentication Message Displayed",
-      "targetElement": "failed_authentication_message",
-      "action": "verify",
-      "arguments": [],
-      "implementation": [
-        "Wait Until Element Is Visible    ${FAILED_AUTHENTICATION_MESSAGE_ELEMENT}",
-        "Element Text Should Be    ${FAILED_AUTHENTICATION_MESSAGE_ELEMENT}    ${FAILED_AUTHENTICATION_MESSAGE}"
-      ],
-      "approved": true
-    },
-    {
-      "keywordId": "LOGIN_KW_006",
+      "keywordId": "KW_009",
       "keywordName": "Verify Password Field Is Masked",
       "targetElement": "password_field",
       "action": "verify",
@@ -78,40 +110,33 @@
       "approved": true
     },
     {
-      "keywordId": "LOGIN_KW_007",
-      "keywordName": "Verify Username Field Visible And Enabled",
-      "targetElement": "username_field",
+      "keywordId": "KW_010",
+      "keywordName": "Verify Failed Authentication Message Displayed",
+      "targetElement": "failed_authentication_message",
       "action": "verify",
       "arguments": [],
       "implementation": [
-        "Wait For Element To Be Ready    ${USERNAME_FIELD}"
+        "Wait Until Element Is Visible    ${FAILED_AUTHENTICATION_MESSAGE_ELEMENT}",
+        "Element Text Should Be    ${FAILED_AUTHENTICATION_MESSAGE_ELEMENT}    ${FAILED_AUTHENTICATION_MESSAGE}"
       ],
       "approved": true
     },
     {
-      "keywordId": "LOGIN_KW_008",
-      "keywordName": "Verify Password Field Visible And Enabled",
-      "targetElement": "password_field",
+      "keywordId": "KW_011",
+      "keywordName": "Verify Login Page Remains Unauthenticated",
+      "targetElement": "failed_authentication_message",
       "action": "verify",
       "arguments": [],
       "implementation": [
-        "Wait For Element To Be Ready    ${PASSWORD_FIELD}"
-      ],
-      "approved": true
-    },
-    {
-      "keywordId": "LOGIN_KW_009",
-      "keywordName": "Verify Login Button Visible And Enabled",
-      "targetElement": "login_button",
-      "action": "verify",
-      "arguments": [],
-      "implementation": [
+        "Wait Until Element Is Visible    ${FAILED_AUTHENTICATION_MESSAGE_ELEMENT}",
+        "Wait For Element To Be Ready    ${USERNAME_FIELD}",
+        "Wait For Element To Be Ready    ${PASSWORD_FIELD}",
         "Wait For Element To Be Ready    ${LOGIN_BUTTON}"
       ],
       "approved": true
     },
     {
-      "keywordId": "LOGIN_KW_010",
+      "keywordId": "KW_012",
       "keywordName": "Perform Login",
       "targetElement": "login_button",
       "action": "generic",

@@ -8,20 +8,35 @@ ${EXPECTED_LOGIN_URL_FRAGMENT}    /washtabui/login?data=undefined
 ${VALID_USERNAME}    krisadmin
 ${VALID_PASSWORD}    Carwash#1
 ${INVALID_USERNAME}    invaliduser
-${INVALID_PASSWORD}    invalidpassword
-${INVALID_PASSWORD_ALT}    WrongPassword#1
-${MIXED_CASE_USERNAME}    KrisAdmin
+${INVALID_PASSWORD}    InvalidPassword1
+${INVALID_PASSWORD_FOR_VALID_USER}    Carwash#999
+${UPPERCASE_USERNAME}    KRISADMIN
+${UPPERCASE_PASSWORD}    CARWASH#1
 ${FAILED_AUTHENTICATION_MESSAGE}    Failed
+${LONG_USERNAME_VALUE}    krisadminkrisadminkrisadminkrisadminkrisadminkrisadminkrisadmin
+${LONG_PASSWORD_VALUE}    Carwash#1Carwash#1Carwash#1Carwash#1Carwash#1Carwash#1
+${PERSON_PROFILE_BUTTON}    id=auto_person_btn
 ${USERNAME_FIELD}    xpath=//input[@placeholder='User Name']
 ${PASSWORD_FIELD}    id=password
 ${LOGIN_BUTTON}    xpath=//ion-button[normalize-space(.)='Login']
 ${FAILED_AUTHENTICATION_MESSAGE_ELEMENT}    text=Failed
 ${BACK_BUTTON}    id=auto_back_btn
 ${HOME_BUTTON}    id=auto_home_btn
-${PERSON_PROFILE_BUTTON}    id=auto_person_btn
 ${NOTIFICATION_BUTTON}    id=auto_notification_btn
 
 *** Keywords ***
+Click Person Profile Button
+    Click When Ready    ${PERSON_PROFILE_BUTTON}
+
+Click Back Button
+    Click When Ready    ${BACK_BUTTON}
+
+Click Notification Button
+    Click When Ready    ${NOTIFICATION_BUTTON}
+
+Click Home Button
+    Click When Ready    ${HOME_BUTTON}
+
 Enter Username
     [Arguments]    ${username}
     Input Text When Ready    ${USERNAME_FIELD}    ${username}
@@ -46,6 +61,9 @@ Verify Login Page Loaded
     Wait For Element To Be Ready    ${BACK_BUTTON}
     Wait For Element To Be Ready    ${HOME_BUTTON}
 
+Verify Login Page Controls Visible And Enabled
+    Verify Login Page Loaded
+
 Verify Username Field Visible And Enabled
     Wait For Element To Be Ready    ${USERNAME_FIELD}
 
@@ -59,11 +77,12 @@ Verify Failed Authentication Message Displayed
     Wait Until Element Is Visible    ${FAILED_AUTHENTICATION_MESSAGE_ELEMENT}
     Element Text Should Be    ${FAILED_AUTHENTICATION_MESSAGE_ELEMENT}    ${FAILED_AUTHENTICATION_MESSAGE}
 
-Verify User Remains Unauthenticated On Login Failure
+Verify Login Page Remains Unauthenticated
     Verify Failed Authentication Message Displayed
-    Verify Login Page Loaded
+    Wait For Element To Be Ready    ${USERNAME_FIELD}
+    Wait For Element To Be Ready    ${PASSWORD_FIELD}
+    Wait For Element To Be Ready    ${LOGIN_BUTTON}
 
 Verify Password Field Is Masked
     Wait For Element To Be Ready    ${PASSWORD_FIELD}
-    ${password_field_type}=    Get Element Attribute    ${PASSWORD_FIELD}    type
-    Should Be Equal    ${password_field_type}    password
+    Element Attribute Value Should Be    ${PASSWORD_FIELD}    type    password
