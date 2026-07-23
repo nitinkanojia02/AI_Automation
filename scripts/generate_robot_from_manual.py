@@ -853,6 +853,17 @@ def validate_robot_alignment_with_resource_context(content: str, resource_contex
     errors: list[str] = []
     warnings: list[str] = []
 
+    def scan_keyword_invocation(raw_text: str) -> tuple[str, list[str]]:
+        stripped = raw_text.strip()
+        parts = [part.strip() for part in re.split(r"\s{2,}|\t+", stripped) if part.strip()]
+        if not parts:
+            return "", []
+        if parts[0].startswith("${") and parts[0].endswith("}="):
+            if len(parts) >= 2:
+                return parts[1], parts[2:]
+            return "", []
+        return parts[0], parts[1:]
+
     approved_resource_keyword_names = {
         clean_text(str(keyword.get("name", ""))).lower()
         for resource in resource_context
@@ -885,9 +896,9 @@ def validate_robot_alignment_with_resource_context(content: str, resource_contex
             current_sequence = []
             continue
         if raw_line.startswith((" ", "\t")) and stripped and not stripped.startswith("["):
-            parts = [part.strip() for part in re.split(r"\s{2,}|\t+", stripped) if part.strip()]
-            if parts:
-                keyword_name = clean_text(parts[0]).lower()
+            keyword_name, _arguments = scan_keyword_invocation(stripped)
+            keyword_name = clean_text(keyword_name).lower()
+            if keyword_name:
                 suite_called_keywords.append(keyword_name)
                 current_sequence.append(keyword_name)
     if current_sequence:
@@ -940,6 +951,25 @@ def validate_robot_alignment_with_resource_context(content: str, resource_contex
             warnings.append(
                 "Wrapper-priority violation: shared/common text-entry wrapper 'Input Text When Ready' exists, but the suite still uses direct SeleniumLibrary Input Text/Input Password calls. Shared wrapper keywords must take precedence for field entry."
             )
+
+    page_resource_import_count = sum(1 for resource in resource_context if resource.get("type") != "common")
+    low_level_step_count = len([
+        name for name in suite_called_keywords
+        if name in {
+            "wait for element to be ready",
+            "wait until element is visible",
+            "element text should be",
+            "get element attribute",
+            "input text when ready",
+            "input password when ready",
+            "click when ready",
+        }
+    ])
+    page_keyword_usage_count = len([name for name in suite_called_keywords if name in page_keyword_names])
+    if page_resource_import_count and page_keyword_names and low_level_step_count >= 6 and page_keyword_usage_count <= max(2, len(test_step_sequences) // 3):
+        errors.append(
+            "Resource-first reuse violation: approved page resources are available, but the generated suite still relies primarily on low-level interaction/assertion steps instead of approved page-resource keywords. Regenerate or repair the suite to call existing page-resource keywords wherever they structurally satisfy the manual intent."
+        )
 
     has_setup = bool(re.search(r"(?im)^\s*(?:Suite Setup|Test Setup)\s+.+$", content))
     has_teardown = bool(re.search(r"(?im)^\s*(?:Suite Teardown|Test Teardown)\s+.+$", content))
@@ -1039,6 +1069,144 @@ def collect_resource_validation_keywords(resource_context: list[dict]) -> list[s
 def warn_on_assertion_quality(manual_expected_outcomes: list[str], robot_content: str, resource_validation_keywords: list[str]) -> str:
     del manual_expected_outcomes, robot_content, resource_validation_keywords
     return ""
+
+
+def _normalize_step_signature(step_line: str) -> str:
+    stripped = step_line.strip()
+    if not stripped or stripped.startswith("["):
+        return ""
+    parts = [part.strip() for part in re.split(r"\s{2,}|\t+", stripped) if part.strip()]
+    if not parts:
+        return ""
+    return " || ".join(parts)
+
+
+def _extract_test_case_blocks(content: str) -> tuple[list[str], list[dict], str]:
+    lines = content.splitlines()
+    pre_lines: list[str] = []
+    blocks: list[dict] = []
+    post_lines: list[str] = []
+    in_test_cases = False
+    current_block: dict | None = None
+
+    for line in lines:
+        stripped = line.strip()
+        lowered = stripped.lower()
+        if lowered == "*** test cases ***":
+            in_test_cases = True
+            pre_lines.append(line)
+            continue
+        if in_test_cases and stripped.startswith("***") and lowered != "*** test cases ***":
+            if current_block:
+                blocks.append(current_block)
+                current_block = None
+            post_lines.append(line)
+            in_test_cases = False
+            continue
+        if not in_test_cases:
+            if not post_lines:
+                pre_lines.append(line)
+            else:
+                post_lines.append(line)
+            continue
+        if stripped and not line.startswith((" ", "\t")):
+            if current_block:
+                blocks.append(current_block)
+            current_block = {"header": line, "body": []}
+            continue
+        if current_block is None:
+            pre_lines.append(line)
+            continue
+        current_block["body"].append(line)
+
+    if current_block:
+        blocks.append(current_block)
+
+    trailing_newline = "\n" if content.endswith("\n") else ""
+    return pre_lines, blocks, trailing_newline
+
+
+def _build_keyword_body_signature(keyword: dict) -> tuple[str, ...]:
+    signature: list[str] = []
+    for body_line in keyword.get("body", []):
+        normalized = _normalize_step_signature(str(body_line))
+        if normalized:
+            signature.append(normalized)
+    return tuple(signature)
+
+
+def apply_resource_keyword_normalization(content: str, resource_context: list[dict]) -> str:
+    page_keyword_map: dict[tuple[str, ...], str] = {}
+    single_step_map: dict[str, str] = {}
+    for resource in resource_context:
+        if resource.get("type") == "common":
+            continue
+        for keyword in resource.get("keywords", []):
+            args = keyword.get("args", []) or []
+            if args:
+                continue
+            signature = _build_keyword_body_signature(keyword)
+            if not signature:
+                continue
+            keyword_name = clean_text(str(keyword.get("name", "")))
+            if not keyword_name:
+                continue
+            if signature not in page_keyword_map:
+                page_keyword_map[signature] = keyword_name
+            if len(signature) == 1 and signature[0] not in single_step_map:
+                single_step_map[signature[0]] = keyword_name
+
+    if not page_keyword_map and not single_step_map:
+        return content
+
+    pre_lines, blocks, trailing_newline = _extract_test_case_blocks(content)
+    if not blocks:
+        return content
+
+    normalized_blocks: list[str] = []
+    changed = False
+    for block in blocks:
+        body_lines = block.get("body", [])
+        rewritten_body: list[str] = []
+        index = 0
+        while index < len(body_lines):
+            current_line = body_lines[index]
+            current_signature = _normalize_step_signature(current_line)
+            if current_signature and current_signature in single_step_map and current_line.startswith((" ", "\t")):
+                rewritten_body.append(f"    {single_step_map[current_signature]}")
+                index += 1
+                changed = True
+                continue
+            matched = False
+            for signature, keyword_name in sorted(page_keyword_map.items(), key=lambda item: len(item[0]), reverse=True):
+                length = len(signature)
+                if length <= 1 or index + length > len(body_lines):
+                    continue
+                candidate_lines = body_lines[index:index + length]
+                if any(not line.startswith((" ", "\t")) for line in candidate_lines):
+                    continue
+                candidate_signature = tuple(
+                    normalized
+                    for normalized in (_normalize_step_signature(line) for line in candidate_lines)
+                    if normalized
+                )
+                if candidate_signature != signature:
+                    continue
+                rewritten_body.append(f"    {keyword_name}")
+                index += length
+                matched = True
+                changed = True
+                break
+            if matched:
+                continue
+            rewritten_body.append(current_line)
+            index += 1
+        normalized_blocks.append("\n".join([block["header"], *rewritten_body]))
+
+    reconstructed = "\n".join(pre_lines + normalized_blocks)
+    if trailing_newline:
+        reconstructed += trailing_newline
+    return reconstructed if changed else content
 
 
 def normalize_generated_robot_identifiers(content: str, identifier_policy: dict) -> str:
@@ -1672,6 +1840,8 @@ def process_manual_file(config: dict, manual_json_path: Path):
         followup_robot_content = re.sub(r"\n```$", "", followup_robot_content)
         robot_content = normalize_generated_robot_identifiers(followup_robot_content or robot_content, identifier_policy)
         is_valid, validation_message = validate_robot_content(robot_content, resource_files)
+    robot_content = apply_resource_keyword_normalization(robot_content, resource_context)
+
     imported_page_resources = [
         line.strip()
         for line in re.findall(r"(?im)^\s*Resource\s+(.+?)\s*$", robot_content)
@@ -1700,6 +1870,30 @@ def process_manual_file(config: dict, manual_json_path: Path):
             robot_content = new_settings_section + ("\n\n" + robot_content if robot_content else "")
 
     alignment_valid, alignment_message = validate_robot_alignment_with_resource_context(robot_content, resource_context)
+    if alignment_message and re.search(r"Resource-first reuse violation", alignment_message, flags=re.IGNORECASE):
+        resource_reuse_repair_prompt = (
+            build_validation_review_prompt(manual_data, resource_context, robot_content)
+            + "\n\nResource alignment findings to repair before returning the suite:\n"
+            + alignment_message
+            + "\n\nRepair instruction:\n"
+            + "The suite must prefer approved page-resource keywords over low-level locator-driven steps whenever the imported page resources already provide reusable keywords that structurally satisfy the manual test intent. "
+            + "Keep upstream navigation/resource ownership intact, but replace repeated low-level page-local login actions and page-local validations with exact existing page-resource keywords from resource_context when available. "
+            + "Do not invent keywords. Return only corrected Robot Framework code."
+        )
+        repaired_alignment_content = call_ai_chat(
+            endpoint=endpoint,
+            token=token,
+            prompt=resource_reuse_repair_prompt,
+            timeout_seconds=ai.get("timeout_seconds", 120),
+            verify_ssl=ai.get("verify_ssl", False),
+        )
+        repaired_alignment_content = repaired_alignment_content.strip()
+        repaired_alignment_content = re.sub(r"^```[a-zA-Z0-9_-]*\s*\n", "", repaired_alignment_content)
+        repaired_alignment_content = re.sub(r"\n```$", "", repaired_alignment_content)
+        robot_content = normalize_generated_robot_identifiers(repaired_alignment_content or robot_content, identifier_policy)
+        robot_content = apply_resource_keyword_normalization(robot_content, resource_context)
+        alignment_valid, alignment_message = validate_robot_alignment_with_resource_context(robot_content, resource_context)
+
     manual_expected_outcomes = collect_manual_expected_outcomes(manual_data)
     resource_validation_keywords = collect_resource_validation_keywords(resource_context)
     assertion_warning = warn_on_assertion_quality(manual_expected_outcomes, robot_content, resource_validation_keywords)
