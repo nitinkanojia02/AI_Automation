@@ -1490,6 +1490,46 @@ def should_exclude_manual(
 
     return any(k in excluded_modules for k in keys)
 
+def _normalize_resource_file_entries(resource_files: list[str]) -> list[str]:
+    normalized: list[str] = []
+    seen: set[str] = set()
+    for entry in resource_files:
+        cleaned = str(entry).replace("\\", "/").strip()
+        if not cleaned or cleaned in seen:
+            continue
+        seen.add(cleaned)
+        normalized.append(cleaned)
+    return normalized
+
+
+def _derive_page_local_resource_files(manual_data: dict) -> list[str]:
+    candidate_names: list[str] = []
+    workflow_name = clean_text(str(manual_data.get("workflowName", "")))
+    if workflow_name:
+        candidate_names.append(slugify(workflow_name))
+    module_name = clean_text(str(manual_data.get("module", "")))
+    if module_name:
+        candidate_names.append(slugify(module_name))
+
+    page_resources: list[str] = []
+    seen: set[str] = set()
+    for candidate in candidate_names:
+        resource_rel_path = f"{candidate}_page/{candidate}_page.resource"
+        resource_path = BASE_DIR / "pom_pages" / resource_rel_path
+        if resource_path.exists() and resource_rel_path not in seen:
+            seen.add(resource_rel_path)
+            page_resources.append(resource_rel_path)
+    return page_resources
+
+
+def _merge_manual_resource_files(manual_data: dict, resource_files: list[str]) -> list[str]:
+    merged = _normalize_resource_file_entries(resource_files)
+    for candidate in _derive_page_local_resource_files(manual_data):
+        if candidate not in merged:
+            merged.append(candidate)
+    return merged
+
+
 def process_manual_file(config: dict, manual_json_path: Path):
     gc = config["generation_control"]
     ai = config["ai"]
@@ -1506,7 +1546,7 @@ def process_manual_file(config: dict, manual_json_path: Path):
     if not isinstance(resource_files, list) or not resource_files:
         raise ValueError(f"{manual_json_path.name}: 'resourceFiles' must be a non-empty list")
 
-    resource_files = [str(x).replace("\\", "/").strip() for x in resource_files if str(x).strip()]
+    resource_files = _merge_manual_resource_files(manual_data, resource_files)
     if not resource_files:
         raise ValueError(f"{manual_json_path.name}: 'resourceFiles' must contain valid entries")
 
@@ -1632,6 +1672,33 @@ def process_manual_file(config: dict, manual_json_path: Path):
         followup_robot_content = re.sub(r"\n```$", "", followup_robot_content)
         robot_content = normalize_generated_robot_identifiers(followup_robot_content or robot_content, identifier_policy)
         is_valid, validation_message = validate_robot_content(robot_content, resource_files)
+    imported_page_resources = [
+        line.strip()
+        for line in re.findall(r"(?im)^\s*Resource\s+(.+?)\s*$", robot_content)
+        if line.strip().startswith("../pom_pages/")
+    ]
+    expected_page_resource_imports = {f"../pom_pages/{rel_path}" for rel_path in resource_files}
+    missing_page_resource_imports = sorted(expected_page_resource_imports - set(imported_page_resources))
+    if missing_page_resource_imports:
+        settings_section = "*** Settings ***\n"
+        settings_match = re.search(r"(?is)^\*\*\* Settings \*\*\*\n(.*?)(?:\n\*\*\*|\Z)", robot_content)
+        if settings_match:
+            settings_section = settings_match.group(0)
+        settings_lines = settings_section.splitlines()
+        insert_at = len(settings_lines)
+        for index, line in enumerate(settings_lines):
+            if re.match(r"(?im)^\s*(Suite Setup|Test Setup|Suite Teardown|Test Teardown)\b", line):
+                insert_at = index
+                break
+        for resource_import in missing_page_resource_imports:
+            settings_lines.insert(insert_at, f"Resource    {resource_import}")
+            insert_at += 1
+        new_settings_section = "\n".join(settings_lines)
+        if settings_match:
+            robot_content = robot_content[:settings_match.start()] + new_settings_section + robot_content[settings_match.end():]
+        else:
+            robot_content = new_settings_section + ("\n\n" + robot_content if robot_content else "")
+
     alignment_valid, alignment_message = validate_robot_alignment_with_resource_context(robot_content, resource_context)
     manual_expected_outcomes = collect_manual_expected_outcomes(manual_data)
     resource_validation_keywords = collect_resource_validation_keywords(resource_context)
