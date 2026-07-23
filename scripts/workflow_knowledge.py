@@ -280,7 +280,7 @@ def derive_navigation_model(workflow_input: Dict[str, Any], story_sections: Dict
     pages = workflow_input.get("pages") if isinstance(workflow_input.get("pages"), list) else []
     primary_page = pages[0] if pages and isinstance(pages[0], dict) else {}
 
-    inferred_target_name = clean_text(target_page.get("name") or primary_page.get("name"))
+    inferred_target_name = clean_text(target_page.get("name"))
     inferred_target_url = clean_text(target_page.get("url")).strip("`")
     inferred_entry_name = clean_text(entry_page.get("name"))
     inferred_entry_url = clean_text(entry_page.get("url")).strip("`")
@@ -305,13 +305,28 @@ def derive_navigation_model(workflow_input: Dict[str, Any], story_sections: Dict
         if state_candidates:
             inferred_entry_state = clean_text(state_candidates[0].split(":", 1)[-1]).strip("`")
 
+    entry_workflow_name = inferred_entry_name
+
     raw_target_signals = [item for item in ensure_list(workflow_input.get("targetPageSignals")) if isinstance(item, dict)]
     if not raw_target_signals:
-        for value in story_fragments:
+        approved_data_lines = ensure_list(story_sections.get("approvedTestDataGuidance"))
+        candidate_values: List[str] = []
+        for line in approved_data_lines + transition_expectations:
+            if not isinstance(line, str):
+                continue
+            cleaned_line = clean_text(line).strip("`")
+            if not cleaned_line:
+                continue
+            if cleaned_line.startswith("http://") or cleaned_line.startswith("https://"):
+                candidate_values.append(cleaned_line)
+                continue
+            if cleaned_line.startswith("/") or "?" in cleaned_line or "-" in cleaned_line:
+                candidate_values.append(cleaned_line)
+        for value in candidate_values + story_fragments:
             cleaned_value = clean_text(value).strip("`")
             if not cleaned_value or cleaned_value == inferred_entry_url:
                 continue
-            signal_type = "urlContains" if any(token in cleaned_value for token in ("/", "?", "-")) else "pageName"
+            signal_type = "urlEquals" if cleaned_value.startswith("/") else ("urlContains" if any(token in cleaned_value for token in ("?", "-")) else "pageName")
             raw_target_signals.append({"type": signal_type, "value": cleaned_value})
 
     target_signals: List[Dict[str, Any]] = []
@@ -338,6 +353,16 @@ def derive_navigation_model(workflow_input: Dict[str, Any], story_sections: Dict
 
     if not inferred_target_url and target_signals:
         inferred_target_url = clean_text(target_signals[0].get("value")).strip("`")
+
+    if not inferred_target_name and target_signals:
+        first_signal_value = clean_text(str(target_signals[0].get("value", ""))).strip("`")
+        if first_signal_value.startswith("/"):
+            inferred_target_name = clean_text(primary_page.get("name"))
+        elif first_signal_value:
+            inferred_target_name = f"{slugify(first_signal_value.strip('/').split('?', 1)[0].split('/')[-1])}_page"
+
+    if not inferred_target_name:
+        inferred_target_name = clean_text(primary_page.get("name"))
 
     journey: List[Dict[str, str]] = []
     for step in ensure_list(workflow_input.get("navigationSteps")):

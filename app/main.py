@@ -146,9 +146,12 @@ def build_runtime_workflow_context(
             if not isinstance(current_value, dict) or not current_value:
                 runtime_context[key] = derived_context.get(key, {})
 
+    if not isinstance(runtime_context.get("resourceFiles"), list) or not runtime_context.get("resourceFiles"):
+        runtime_context["resourceFiles"] = derived_context.get("resourceFiles", [])
+
     ensure_workflow_contract_artifact(workflow_slug, runtime_context)
     merged_resource_files: list[str] = []
-    for item in (resource_files if isinstance(resource_files, list) else workflow_payload.get("resourceFiles", [])) or []:
+    for item in (resource_files if isinstance(resource_files, list) else runtime_context.get("resourceFiles", [])) or []:
         normalized = clean_text(str(item)).replace("\\", "/")
         if normalized and normalized not in merged_resource_files:
             merged_resource_files.append(normalized)
@@ -1156,6 +1159,53 @@ def _derive_structured_workflow_context(workflow: dict) -> dict:
     test_data = normalized_workflow.get("testData", {}) if isinstance(normalized_workflow.get("testData"), dict) else {}
     description_sections = _extract_heading_sections_from_description(external.get("description"))
 
+    def _parse_labeled_value(lines: list[str], label_fragment: str) -> str:
+        for raw_line in lines:
+            line = clean_text(raw_line)
+            if not line:
+                continue
+            lowered = line.lower()
+            if label_fragment in lowered and ":" in line:
+                return normalize_url_value(line.split(":", 1)[-1]) or clean_text(line.split(":", 1)[-1]).strip("`")
+        return ""
+
+    def _page_name_to_resource(page_name: str) -> str:
+        normalized_name = clean_text(page_name)
+        return f"{normalized_name}/{normalized_name}.resource" if normalized_name else ""
+
+    declared_resource_files = normalized_workflow.get("resourceFiles", []) if isinstance(normalized_workflow.get("resourceFiles"), list) else []
+    page_resource_files: list[str] = []
+    for page in pages:
+        if not isinstance(page, dict):
+            continue
+        page_name = clean_text(str(page.get("name", "")))
+        if not page_name:
+            continue
+        page_resource = f"{page_name}/{page_name}.resource"
+        if page_resource not in page_resource_files:
+            page_resource_files.append(page_resource)
+    merged_resource_files: list[str] = []
+    for item in declared_resource_files + page_resource_files:
+        normalized_item = clean_text(str(item)).replace('\\', '/')
+        if normalized_item and normalized_item not in merged_resource_files:
+            merged_resource_files.append(normalized_item)
+
+    story_resource_candidates: list[str] = []
+    for line in description_sections.get("resource reuse guidance", []) + description_sections.get("downstream automation guidance", []):
+        page_candidate = _parse_labeled_value([line], "reuse the existing")
+        if not page_candidate:
+            lowered_line = clean_text(line).lower()
+            if lowered_line.startswith("reuse the existing ") and lowered_line.endswith(" resource for"):
+                page_candidate = clean_text(line[len("Reuse the existing "):].rsplit(" resource", 1)[0]).strip("`")
+        if page_candidate:
+            candidate_resource = _page_name_to_resource(page_candidate)
+            if candidate_resource and candidate_resource not in story_resource_candidates:
+                story_resource_candidates.append(candidate_resource)
+
+    for item in story_resource_candidates:
+        if item not in merged_resource_files:
+            merged_resource_files.append(item)
+
     application_context_lines = _extract_story_lines(external.get("applicationContext", [])) or description_sections.get("application context", [])
     entry_condition_lines = _extract_story_lines(external.get("entryConditions", [])) or description_sections.get("entry conditions", [])
     transition_lines = _extract_story_lines(external.get("transitionExpectations", [])) or description_sections.get("transition expectations", []) + description_sections.get("primary navigation journey", [])
@@ -1173,11 +1223,16 @@ def _derive_structured_workflow_context(workflow: dict) -> dict:
     knowledge_target = knowledge_navigation_model.get("target", {}) if isinstance(knowledge_navigation_model.get("target", {}), dict) else {}
 
     entry_page = normalized_workflow.get("entryPage") if isinstance(normalized_workflow.get("entryPage"), dict) else {}
+    entry_story_name = _parse_labeled_value(application_context_lines, "canonical page name")
+    entry_story_state = _parse_labeled_value(application_context_lines + entry_condition_lines, "canonical page state")
+    entry_story_url = _parse_labeled_value(approved_test_data_lines + application_context_lines + entry_condition_lines, "exact url match") or _parse_labeled_value(approved_test_data_lines + application_context_lines + entry_condition_lines, "entry url")
     if not entry_page:
         entry_url = normalize_url_value(str(test_data.get("entryUrl", "")))
         if not entry_url:
+            entry_url = entry_story_url
+        if not entry_url:
             extracted_urls = _extract_urls_from_text_blocks(application_context_lines + entry_condition_lines + observed_step_lines)
-            entry_url = extracted_urls[0] if extracted_urls else normalize_url_value(str(first_page.get("url", "")))
+            entry_url = entry_story_url or (extracted_urls[0] if extracted_urls else normalize_url_value(str(first_page.get("url", ""))))
         if not entry_url:
             story_urls = _extract_urls_from_text_blocks(application_context_lines + entry_condition_lines + observed_step_lines + approved_test_data_lines)
             entry_url = story_urls[0] if story_urls else ""
@@ -1185,7 +1240,7 @@ def _derive_structured_workflow_context(workflow: dict) -> dict:
             entry_url = normalize_url_value(str(knowledge_entry_point.get("url", "")))
         entry_state = clean_text(str(first_page.get("state", "")))
         if not entry_state:
-            entry_state = clean_text(str(knowledge_entry_point.get("state", ""))).strip("`")
+            entry_state = entry_story_state or clean_text(str(knowledge_entry_point.get("state", ""))).strip("`")
         if not entry_state:
             state_candidates = [line for line in application_context_lines + entry_condition_lines if clean_text(line)]
             for line in state_candidates:
@@ -1193,9 +1248,20 @@ def _derive_structured_workflow_context(workflow: dict) -> dict:
                 if ":" in line and "state" in lowered:
                     entry_state = clean_text(line.split(":", 1)[-1]).strip("`")
                     break
-        entry_name = clean_text(str(first_page.get("name", "")))
+        entry_name = entry_story_name or clean_text(str(knowledge_entry_point.get("name", "")))
         if not entry_name:
-            entry_name = clean_text(str(knowledge_entry_point.get("name", "")))
+            transition_candidates = application_context_lines + transition_lines + observed_step_lines + observed_validation_lines
+            for line in transition_candidates:
+                cleaned_line = clean_text(line)
+                lowered_line = cleaned_line.lower()
+                if " from `" in lowered_line and "` to " in lowered_line:
+                    entry_name = clean_text(cleaned_line.split(" from ", 1)[1].split(" to ", 1)[0]).strip("`.")
+                    break
+                if lowered_line.startswith("start on `") and "`" in cleaned_line[10:]:
+                    entry_name = clean_text(cleaned_line.split("`", 2)[1]).strip("`.")
+                    break
+        if not entry_name:
+            entry_name = clean_text(str(first_page.get("name", "")))
         if entry_name or entry_url or entry_state:
             entry_page = {"name": entry_name, "url": entry_url, "state": entry_state}
 
@@ -1211,6 +1277,15 @@ def _derive_structured_workflow_context(workflow: dict) -> dict:
             test_data_values.extend([clean_text(str(value)) for value in test_data.values() if clean_text(str(value))])
         test_data_values.extend(approved_test_data_lines)
         test_data_values.extend(_extract_urls_from_text_blocks(all_story_lines))
+        transition_signal_candidates: list[str] = []
+        for line in transition_lines + observed_step_lines + observed_validation_lines:
+            cleaned_line = clean_text(line)
+            lowered_line = cleaned_line.lower()
+            if "person/profile" in lowered_line and "login page" in lowered_line:
+                exact_login_url = _parse_labeled_value(approved_test_data_lines, "exact url match")
+                if exact_login_url:
+                    transition_signal_candidates.append(exact_login_url)
+        test_data_values.extend(transition_signal_candidates)
         for value in test_data_values:
             cleaned_value = normalize_url_value(str(value)) or clean_text(str(value)).strip("`")
             if not cleaned_value or cleaned_value == normalize_url_value(str(entry_page.get("url", ""))):
@@ -1218,7 +1293,10 @@ def _derive_structured_workflow_context(workflow: dict) -> dict:
             lowered_value = cleaned_value.lower()
             if lowered_value.endswith(":") or lowered_value.startswith("entry url") or lowered_value.startswith("expected "):
                 continue
-            signal_type = "urlContains" if "/" in cleaned_value or "?" in cleaned_value or "-" in cleaned_value else "pageName"
+            if cleaned_value.startswith("/"):
+                signal_type = "urlEquals"
+            else:
+                signal_type = "urlContains" if "/" in cleaned_value or "?" in cleaned_value or "-" in cleaned_value else "pageName"
             marker = json.dumps({"type": signal_type, "value": cleaned_value}, sort_keys=True, ensure_ascii=False)
             if marker in {json.dumps(item, sort_keys=True, ensure_ascii=False) for item in target_page_signals if isinstance(item, dict)}:
                 continue
@@ -1226,14 +1304,24 @@ def _derive_structured_workflow_context(workflow: dict) -> dict:
 
     if not navigation_steps:
         reusable_flow_artifacts = workflow_knowledge_payload.get("reusableFlows", []) if isinstance(workflow_knowledge_payload.get("reusableFlows", []), list) else []
+        flow_target_markers = [clean_text(str(signal.get("value", ""))).lower() for signal in target_page_signals if isinstance(signal, dict)]
         for flow in reusable_flow_artifacts:
             if not isinstance(flow, dict):
                 continue
             flow_id = clean_text(str(flow.get("flowId", "")))
-            if flow_id:
-                navigation_steps.append({"action": "reuseApprovedEntryContext", "flowId": flow_id})
+            if not flow_id:
+                continue
+            flow_target = flow.get("targetPage", {}) if isinstance(flow.get("targetPage", {}), dict) else {}
+            flow_target_values = [
+                clean_text(str(flow_target.get("name", ""))).lower(),
+                normalize_url_value(str(flow_target.get("url", ""))).lower(),
+            ]
+            flow_target_values.extend([clean_text(str(signal.get("value", ""))).lower() for signal in normalize_target_page_signals(flow.get("targetSignals", []))])
+            if flow_target_markers and not any(value and value in flow_target_markers for value in flow_target_values):
+                continue
+            navigation_steps.append({"action": "reuseApprovedEntryContext", "flowId": flow_id})
 
-        bundle_resources = resource_repository.load_bundles(normalized_workflow.get("resourceFiles", []))
+        bundle_resources = resource_repository.load_bundles(merged_resource_files)
         for bundle in bundle_resources:
             page_name = clean_text(str(bundle.get("pageName", "")))
             reusable_flows = bundle.get("reusableFlows", []) if isinstance(bundle.get("reusableFlows", []), list) else []
@@ -1312,6 +1400,7 @@ def _derive_structured_workflow_context(workflow: dict) -> dict:
         "targetPage": target_page,
         "navigationSteps": deduped_steps,
         "targetPageSignals": deduped_signals,
+        "resourceFiles": merged_resource_files,
     }
 
 
@@ -1773,6 +1862,10 @@ def sync_page_variables_from_approved_elements(workflow: dict, approved_elements
     page_name = pages[0].get("name") if pages else "page"
     page_url = pages[0].get("url") if pages and isinstance(pages[0], dict) else ""
     page_url = normalize_url_value(str(page_url))
+    if not page_url and isinstance(workflow.get("targetPage"), dict):
+        page_url = normalize_url_value(str(workflow.get("targetPage", {}).get("url", "")))
+    if not page_url and isinstance(workflow.get("entryPage"), dict):
+        page_url = normalize_url_value(str(workflow.get("entryPage", {}).get("url", "")))
     metadata_dir = get_page_metadata_dir(page_name)
     navigation_debug_path = metadata_dir / f"{page_name}.navigation.debug.json"
     if navigation_debug_path.exists():
@@ -2045,6 +2138,17 @@ def review_and_refine_page_elements(workflow: dict, review_data: dict) -> tuple[
             continue
         draft_elements.append(normalize_extracted_element(item, idx))
 
+    approved_element_names = {
+        clean_text(str(item.get("approvedName", ""))).lower()
+        for item in load_approved_elements_for_workflow(workflow)
+        if isinstance(item, dict) and clean_text(str(item.get("approvedName", "")))
+    }
+    if approved_element_names:
+        draft_elements = [
+            item for item in draft_elements
+            if clean_text(str(item.get("approvedName", ""))).lower() in approved_element_names
+        ]
+
     draft_payload = {
         "pageName": review_data["page_name"],
         "pageUrl": review_data["page_url"],
@@ -2114,6 +2218,11 @@ def review_and_refine_page_elements(workflow: dict, review_data: dict) -> tuple[
                     "approved": True,
                     "description": clean_text(str(item.get("description", ""))),
                 })
+            if approved_element_names:
+                normalized = [
+                    item for item in normalized
+                    if clean_text(str(item.get("approvedName", ""))).lower() in approved_element_names
+                ]
             if normalized:
                 refined_elements = normalized
                 refined_payload_to_store = {
@@ -4340,6 +4449,12 @@ def normalize_resource_file_path(page_name: str, resource_file: str) -> str:
 
 def normalize_url_value(value: str) -> str:
     value = clean_text(value).strip().strip('`').rstrip('.,;:')
+    if not value:
+        return ""
+    value = value.replace("%60", "")
+    value = value.strip().strip('`').rstrip('.,;:')
+    if value.startswith("`") and value.endswith("`"):
+        value = value[1:-1].strip()
     return value
 
 
