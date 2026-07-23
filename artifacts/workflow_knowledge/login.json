@@ -6,7 +6,7 @@
   "applicationCode": "WT",
   "testIdentifierPrefix": "LOGIN",
   "status": "approved_artifact_memory",
-  "generatedAt": "2026-07-23T04:31:27.290495+00:00",
+  "generatedAt": "2026-07-23T05:03:34.303377+00:00",
   "businessContext": {
     "userStory": [
       "As a customer, I want to open the Login page from the Home page and sign in with approved credentials, so that I can access authenticated account features and logged-in functionality."
@@ -97,12 +97,12 @@
   "navigationModel": {
     "entryPoint": {
       "name": "login_page",
-      "url": "http://localhost/washtabui/home`",
-      "state": "`guest`"
+      "url": "http://localhost/washtabui/home",
+      "state": "guest"
     },
     "target": {
       "name": "login_page",
-      "url": "http://localhost/washtabui/home`."
+      "url": "/profile"
     },
     "journey": [],
     "targetSignals": [
@@ -118,15 +118,18 @@
     "successDestination": [],
     "returnDestinations": [],
     "authoritativeEntryResources": [
-      "home_page/home_page.resource"
+      "home_page/home_page.resource",
+      "login_page/login_page.resource"
     ],
     "authoritativeDestinationValidationResources": [
-      "home_page/home_page.resource"
+      "home_page/home_page.resource",
+      "login_page/login_page.resource"
     ]
   },
   "resourceKnowledge": {
     "authoritativeResources": [
-      "home_page/home_page.resource"
+      "home_page/home_page.resource",
+      "login_page/login_page.resource"
     ],
     "sharedResources": [
       "resources/common_keywords.resource"
@@ -170,6 +173,37 @@
           "Verify Navigation To Customer Search Page",
           "Verify Navigation To Vehicle Survey Page",
           "Verify Navigation To Site Survey Page"
+        ]
+      },
+      {
+        "resourceFile": "pom_pages/login_page/login_page.resource",
+        "type": "page",
+        "variableNames": [
+          "PAGE_URL",
+          "EXPECTED_HOME_URL",
+          "EXPECTED_LOGIN_URL",
+          "USERNAME_FIELD",
+          "PASSWORD_FIELD",
+          "LOGIN_BUTTON",
+          "BACK_BUTTON",
+          "HOME_BUTTON",
+          "AUTHENTICATION_FAILED_MESSAGE_LOCATOR",
+          "AUTHENTICATION_FAILED_MESSAGE",
+          "VALID_USERNAME",
+          "VALID_PASSWORD",
+          "INVALID_USERNAME",
+          "INVALID_PASSWORD",
+          "WRONG_USERNAME",
+          "WRONG_PASSWORD"
+        ],
+        "keywordNames": [
+          "Enter Username",
+          "Enter Password",
+          "Click Login Button",
+          "Verify Login Page Loaded",
+          "Verify Authentication Failed Message Displayed",
+          "Verify Password Field Is Masked",
+          "Login With Credentials"
         ]
       },
       {
@@ -229,6 +263,36 @@
           "Verify Navigation To Customer Search Page",
           "Verify Navigation To Vehicle Survey Page",
           "Verify Navigation To Site Survey Page"
+        ]
+      },
+      {
+        "resource": "pom_pages/login_page/login_page.resource",
+        "variables": [
+          "PAGE_URL",
+          "EXPECTED_HOME_URL",
+          "EXPECTED_LOGIN_URL",
+          "USERNAME_FIELD",
+          "PASSWORD_FIELD",
+          "LOGIN_BUTTON",
+          "BACK_BUTTON",
+          "HOME_BUTTON",
+          "AUTHENTICATION_FAILED_MESSAGE_LOCATOR",
+          "AUTHENTICATION_FAILED_MESSAGE",
+          "VALID_USERNAME",
+          "VALID_PASSWORD",
+          "INVALID_USERNAME",
+          "INVALID_PASSWORD",
+          "WRONG_USERNAME",
+          "WRONG_PASSWORD"
+        ],
+        "keywords": [
+          "Enter Username",
+          "Enter Password",
+          "Click Login Button",
+          "Verify Login Page Loaded",
+          "Verify Authentication Failed Message Displayed",
+          "Verify Password Field Is Masked",
+          "Login With Credentials"
         ]
       }
     ],
@@ -461,7 +525,8 @@
   },
   "downstreamGuidance": {
     "mustReuseResources": [
-      "home_page/home_page.resource"
+      "home_page/home_page.resource",
+      "login_page/login_page.resource"
     ],
     "upstreamWorkflowKnowledge": [],
     "mustNotInvent": [
@@ -493,7 +558,8 @@
     "workflowInput": "workflow_inputs/login.json",
     "approvedManualTests": "manual_tests/login/login.json",
     "approvedResourceFiles": [
-      "home_page/home_page.resource"
+      "home_page/home_page.resource",
+      "login_page/login_page.resource"
     ]
   }
 }

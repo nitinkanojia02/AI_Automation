@@ -281,47 +281,63 @@ def derive_navigation_model(workflow_input: Dict[str, Any], story_sections: Dict
     primary_page = pages[0] if pages and isinstance(pages[0], dict) else {}
 
     inferred_target_name = clean_text(target_page.get("name") or primary_page.get("name"))
-    inferred_target_url = clean_text(target_page.get("url"))
+    inferred_target_url = clean_text(target_page.get("url")).strip("`")
     inferred_entry_name = clean_text(entry_page.get("name"))
-    inferred_entry_url = clean_text(entry_page.get("url"))
+    inferred_entry_url = clean_text(entry_page.get("url")).strip("`")
+    inferred_entry_state = clean_text(entry_page.get("state")).strip("`")
 
-    if not inferred_entry_name:
-        inferred_entry_name = clean_text(primary_page.get("name"))
-
-    if inferred_entry_name and inferred_target_name and inferred_entry_name.lower() == inferred_target_name.lower():
-        for step in ensure_list(workflow_input.get("navigationSteps")):
-            if not isinstance(step, dict):
-                continue
-            candidate_page = clean_text(step.get("page"))
-            if candidate_page and candidate_page.lower() != inferred_target_name.lower():
-                inferred_entry_name = candidate_page
-                break
+    application_context = ensure_list(story_sections.get("applicationContext"))
+    entry_conditions = ensure_list(story_sections.get("entryConditions"))
+    transition_expectations = ensure_list(story_sections.get("transitionExpectations"))
+    approved_test_data = ensure_list(story_sections.get("approvedTestDataGuidance"))
+    combined_lines = application_context + entry_conditions + transition_expectations + approved_test_data
 
     story_urls = extract_story_urls(story_sections)
     story_fragments = extract_story_fragments(story_sections)
     if not inferred_entry_url and story_urls:
-        inferred_entry_url = story_urls[0]
-    if not inferred_target_url and story_urls:
-        inferred_target_url = story_urls[0]
+        inferred_entry_url = clean_text(story_urls[0]).strip("`")
+    if not inferred_entry_name:
+        canonical_candidates = [line for line in application_context if "canonical page name" in line.lower() and ":" in line]
+        if canonical_candidates:
+            inferred_entry_name = clean_text(canonical_candidates[0].split(":", 1)[-1]).strip("`")
+    if not inferred_entry_state:
+        state_candidates = [line for line in application_context + entry_conditions if "state" in line.lower() and ":" in line]
+        if state_candidates:
+            inferred_entry_state = clean_text(state_candidates[0].split(":", 1)[-1]).strip("`")
 
     raw_target_signals = [item for item in ensure_list(workflow_input.get("targetPageSignals")) if isinstance(item, dict)]
     if not raw_target_signals:
         for value in story_fragments:
-            signal_type = "urlContains" if any(token in value for token in ("/", "?", "-")) else "pageName"
-            raw_target_signals.append({"type": signal_type, "value": value})
+            cleaned_value = clean_text(value).strip("`")
+            if not cleaned_value or cleaned_value == inferred_entry_url:
+                continue
+            signal_type = "urlContains" if any(token in cleaned_value for token in ("/", "?", "-")) else "pageName"
+            raw_target_signals.append({"type": signal_type, "value": cleaned_value})
 
     target_signals: List[Dict[str, Any]] = []
     seen_signal_keys: set[str] = set()
     for item in raw_target_signals:
         signal_type = clean_text(item.get("type"))
-        signal_value = clean_text(item.get("value"))
-        if not signal_type or not signal_value:
+        signal_value = clean_text(item.get("value")).strip("`")
+        if not signal_type or not signal_value or signal_value == inferred_entry_url:
             continue
         marker = f"{signal_type.lower()}::{signal_value.lower()}"
         if marker in seen_signal_keys:
             continue
         seen_signal_keys.add(marker)
         target_signals.append({"type": signal_type, "value": signal_value})
+
+    if not inferred_target_name:
+        for line in combined_lines:
+            cleaned_line = clean_text(line)
+            if "transitions" in cleaned_line.lower() and " to " in cleaned_line.lower():
+                tail = cleaned_line.rsplit(" to ", 1)[-1]
+                if " in authenticated state" in tail.lower():
+                    inferred_target_name = clean_text(tail.split(" in ", 1)[0]).strip("`.")
+                    break
+
+    if not inferred_target_url and target_signals:
+        inferred_target_url = clean_text(target_signals[0].get("value")).strip("`")
 
     journey: List[Dict[str, str]] = []
     for step in ensure_list(workflow_input.get("navigationSteps")):
@@ -330,19 +346,23 @@ def derive_navigation_model(workflow_input: Dict[str, Any], story_sections: Dict
         action = clean_text(step.get("action"))
         page = clean_text(step.get("page"))
         element = clean_text(step.get("element"))
-        if not any([action, page, element]):
+        flow_id = clean_text(step.get("flowId"))
+        if not any([action, page, element, flow_id]):
             continue
-        journey.append({
-            "page": page,
-            "action": action,
-            "element": element,
-        })
+        payload = {"action": action}
+        if page:
+            payload["page"] = page
+        if element:
+            payload["element"] = element
+        if flow_id:
+            payload["flowId"] = flow_id
+        journey.append(payload)
 
     return {
         "entryPoint": {
             "name": inferred_entry_name,
             "url": inferred_entry_url,
-            "state": clean_text(entry_page.get("state")),
+            "state": inferred_entry_state,
         },
         "target": {
             "name": inferred_target_name,
@@ -453,8 +473,13 @@ def collect_resource_knowledge(workflow_input: Dict[str, Any]) -> Dict[str, Any]
     inferred = workflow_input.get('inferredReuseContext') if isinstance(workflow_input.get('inferredReuseContext'), dict) else {}
     authoritative = [str(item).replace('\\', '/').strip() for item in ensure_list(inferred.get('authoritativeResourceFiles')) if clean_text(item)]
     inferred_relevant = [str(item).replace('\\', '/').strip() for item in ensure_list(inferred.get('inferredRelevantResourceFiles')) if clean_text(item)]
+    page_resources = [
+        f"{clean_text(page.get('name'))}/{clean_text(page.get('name'))}.resource"
+        for page in ensure_list(workflow_input.get('pages'))
+        if isinstance(page, dict) and clean_text(page.get('name'))
+    ]
     merged_resources: List[str] = []
-    for item in resource_files + authoritative + inferred_relevant:
+    for item in resource_files + authoritative + inferred_relevant + page_resources:
         if item and item not in merged_resources:
             merged_resources.append(item)
 

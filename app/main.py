@@ -1163,7 +1163,14 @@ def _derive_structured_workflow_context(workflow: dict) -> dict:
     observed_step_lines = _extract_story_lines(normalized_workflow.get("observedSteps", [])) or description_sections.get("primary navigation journey", [])
     observed_validation_lines = _extract_story_lines(normalized_workflow.get("observedValidations", [])) or description_sections.get("acceptance criteria", [])
     approved_test_data_lines = description_sections.get("approved test data", [])
-    all_story_lines = application_context_lines + entry_condition_lines + transition_lines + validation_lines + observed_step_lines + observed_validation_lines + approved_test_data_lines
+    resource_reuse_lines = description_sections.get("resource reuse guidance", [])
+    all_story_lines = application_context_lines + entry_condition_lines + transition_lines + validation_lines + observed_step_lines + observed_validation_lines + approved_test_data_lines + resource_reuse_lines
+
+    workflow_slug = clean_text(str(normalized_workflow.get("workflowName", ""))) or clean_text(str(normalized_workflow.get("feature", "")))
+    workflow_knowledge_payload = knowledge_repository.load_workflow_knowledge_artifact(slugify(workflow_slug)) if workflow_slug else {}
+    knowledge_navigation_model = workflow_knowledge_payload.get("navigationModel", {}) if isinstance(workflow_knowledge_payload.get("navigationModel", {}), dict) else {}
+    knowledge_entry_point = knowledge_navigation_model.get("entryPoint", {}) if isinstance(knowledge_navigation_model.get("entryPoint", {}), dict) else {}
+    knowledge_target = knowledge_navigation_model.get("target", {}) if isinstance(knowledge_navigation_model.get("target", {}), dict) else {}
 
     entry_page = normalized_workflow.get("entryPage") if isinstance(normalized_workflow.get("entryPage"), dict) else {}
     if not entry_page:
@@ -1171,21 +1178,32 @@ def _derive_structured_workflow_context(workflow: dict) -> dict:
         if not entry_url:
             extracted_urls = _extract_urls_from_text_blocks(application_context_lines + entry_condition_lines + observed_step_lines)
             entry_url = extracted_urls[0] if extracted_urls else normalize_url_value(str(first_page.get("url", "")))
+        if not entry_url:
+            story_urls = _extract_urls_from_text_blocks(application_context_lines + entry_condition_lines + observed_step_lines + approved_test_data_lines)
+            entry_url = story_urls[0] if story_urls else ""
+        if not entry_url:
+            entry_url = normalize_url_value(str(knowledge_entry_point.get("url", "")))
         entry_state = clean_text(str(first_page.get("state", "")))
+        if not entry_state:
+            entry_state = clean_text(str(knowledge_entry_point.get("state", ""))).strip("`")
         if not entry_state:
             state_candidates = [line for line in application_context_lines + entry_condition_lines if clean_text(line)]
             for line in state_candidates:
                 lowered = line.lower()
                 if ":" in line and "state" in lowered:
-                    entry_state = clean_text(line.split(":", 1)[-1])
+                    entry_state = clean_text(line.split(":", 1)[-1]).strip("`")
                     break
         entry_name = clean_text(str(first_page.get("name", "")))
+        if not entry_name:
+            entry_name = clean_text(str(knowledge_entry_point.get("name", "")))
         if entry_name or entry_url or entry_state:
             entry_page = {"name": entry_name, "url": entry_url, "state": entry_state}
 
     target_page = normalized_workflow.get("targetPage") if isinstance(normalized_workflow.get("targetPage"), dict) else {}
     navigation_steps = normalize_navigation_steps(normalized_workflow.get("navigationSteps", []))
     target_page_signals = normalize_target_page_signals(normalized_workflow.get("targetPageSignals", []))
+    if not target_page_signals:
+        target_page_signals = normalize_target_page_signals(knowledge_navigation_model.get("targetSignals", []))
 
     if not target_page_signals:
         test_data_values = []
@@ -1194,7 +1212,7 @@ def _derive_structured_workflow_context(workflow: dict) -> dict:
         test_data_values.extend(approved_test_data_lines)
         test_data_values.extend(_extract_urls_from_text_blocks(all_story_lines))
         for value in test_data_values:
-            cleaned_value = clean_text(str(value))
+            cleaned_value = normalize_url_value(str(value)) or clean_text(str(value)).strip("`")
             if not cleaned_value or cleaned_value == normalize_url_value(str(entry_page.get("url", ""))):
                 continue
             lowered_value = cleaned_value.lower()
@@ -1207,8 +1225,6 @@ def _derive_structured_workflow_context(workflow: dict) -> dict:
             target_page_signals.append({"type": signal_type, "value": cleaned_value})
 
     if not navigation_steps:
-        workflow_slug = clean_text(str(normalized_workflow.get("workflowName", ""))) or clean_text(str(normalized_workflow.get("feature", "")))
-        workflow_knowledge_payload = knowledge_repository.load_workflow_knowledge_artifact(slugify(workflow_slug)) if workflow_slug else {}
         reusable_flow_artifacts = workflow_knowledge_payload.get("reusableFlows", []) if isinstance(workflow_knowledge_payload.get("reusableFlows", []), list) else []
         for flow in reusable_flow_artifacts:
             if not isinstance(flow, dict):
@@ -1216,6 +1232,7 @@ def _derive_structured_workflow_context(workflow: dict) -> dict:
             flow_id = clean_text(str(flow.get("flowId", "")))
             if flow_id:
                 navigation_steps.append({"action": "reuseApprovedEntryContext", "flowId": flow_id})
+
         bundle_resources = resource_repository.load_bundles(normalized_workflow.get("resourceFiles", []))
         for bundle in bundle_resources:
             page_name = clean_text(str(bundle.get("pageName", "")))
@@ -1226,7 +1243,7 @@ def _derive_structured_workflow_context(workflow: dict) -> dict:
                 flow_target = flow.get("targetPage", {}) if isinstance(flow.get("targetPage", {}), dict) else {}
                 flow_entry = flow.get("entryPage", {}) if isinstance(flow.get("entryPage", {}), dict) else {}
                 target_name = clean_text(str(flow_target.get("name", "")))
-                target_url = clean_text(str(flow_target.get("url", "")))
+                target_url = normalize_url_value(str(flow_target.get("url", ""))) or clean_text(str(flow_target.get("url", "")))
                 if not target_name and not target_url:
                     continue
                 target_markers = [marker.lower() for marker in [target_name, target_url] if marker]
@@ -1246,14 +1263,24 @@ def _derive_structured_workflow_context(workflow: dict) -> dict:
                     target_page = {
                         "name": target_name,
                         "url": target_url,
-                        "state": clean_text(str(flow_target.get("state", ""))),
+                        "state": clean_text(str(flow_target.get("state", ""))).strip("`"),
                     }
                 if not entry_page:
                     entry_page = {
                         "name": clean_text(str(flow_entry.get("name", page_name))),
-                        "url": clean_text(str(flow_entry.get("url", ""))),
-                        "state": clean_text(str(flow_entry.get("state", ""))),
+                        "url": normalize_url_value(str(flow_entry.get("url", ""))) or clean_text(str(flow_entry.get("url", ""))),
+                        "state": clean_text(str(flow_entry.get("state", ""))).strip("`"),
                     }
+
+    if not target_page:
+        target_name = clean_text(str(first_page.get("name", ""))) or clean_text(str(knowledge_target.get("name", "")))
+        target_url = normalize_url_value(str(knowledge_target.get("url", ""))) or clean_text(str(knowledge_target.get("url", "")))
+        if target_name or target_url:
+            target_page = {
+                "name": target_name,
+                "url": target_url,
+                "state": clean_text(str(knowledge_target.get("state", ""))).strip("`"),
+            }
 
     deduped_steps: list[dict] = []
     seen_steps: set[str] = set()
@@ -1272,6 +1299,13 @@ def _derive_structured_workflow_context(workflow: dict) -> dict:
             continue
         seen_signals.add(marker)
         deduped_signals.append(signal)
+
+    if not entry_page and isinstance(knowledge_entry_point, dict):
+        entry_page = {
+            "name": clean_text(str(knowledge_entry_point.get("name", ""))),
+            "url": normalize_url_value(str(knowledge_entry_point.get("url", ""))) or clean_text(str(knowledge_entry_point.get("url", ""))),
+            "state": clean_text(str(knowledge_entry_point.get("state", ""))).strip("`"),
+        }
 
     return {
         "entryPage": entry_page,
@@ -4305,8 +4339,8 @@ def normalize_resource_file_path(page_name: str, resource_file: str) -> str:
 
 
 def normalize_url_value(value: str) -> str:
-    value = clean_text(value)
-    return value.strip()
+    value = clean_text(value).strip().strip('`').rstrip('.,;:')
+    return value
 
 
 def strip_html_tags(value: str) -> str:
