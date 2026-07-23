@@ -63,6 +63,14 @@
       "kind": "locator",
       "approvedName": "home_button",
       "type": "button"
+    },
+    {
+      "variableName": "NOTIFICATION_BUTTON",
+      "value": "id=auto_notification_btn",
+      "source": "approved_element",
+      "kind": "locator",
+      "approvedName": "notification_button",
+      "type": "button"
     }
   ]
 }

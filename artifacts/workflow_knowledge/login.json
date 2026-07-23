@@ -6,7 +6,7 @@
   "applicationCode": "WT",
   "testIdentifierPrefix": "LOGIN",
   "status": "approved_artifact_memory",
-  "generatedAt": "2026-07-23T05:32:12.936561+00:00",
+  "generatedAt": "2026-07-23T05:49:08.833401+00:00",
   "businessContext": {
     "userStory": [
       "As a customer, I want to open the Login page from the Home page and sign in with approved credentials, so that I can access authenticated account features and logged-in functionality."
@@ -101,27 +101,14 @@
       "state": "guest"
     },
     "target": {
-      "name": "home_page",
-      "url": "Invalid, blank, partial, and whitespace-modified credential failures must not transition the application into authenticated state."
+      "name": "",
+      "url": ""
     },
     "journey": [],
-    "targetSignals": [
-      {
-        "type": "urlContains",
-        "value": "Invalid, blank, partial, and whitespace-modified credential failures must not transition the application into authenticated state."
-      },
-      {
-        "type": "urlContains",
-        "value": "Independent negative and return-navigation branches must begin from the canonical `home_page` `guest` entry context."
-      },
-      {
-        "type": "urlEquals",
-        "value": "/profile"
-      }
-    ]
+    "targetSignals": []
   },
   "journeyKnowledge": {
-    "directAccessPolicy": "direct_access_allowed",
+    "directAccessPolicy": "unknown",
     "entryJourney": [],
     "successDestination": [],
     "returnDestinations": [],
@@ -196,26 +183,27 @@
           "INVALID_PASSWORD",
           "INVALID_PASSWORD_ALT",
           "MIXED_CASE_USERNAME",
-          "FAILED_AUTH_MESSAGE",
-          "PERSON_PROFILE_BUTTON",
+          "FAILED_AUTHENTICATION_MESSAGE",
           "USERNAME_FIELD",
           "PASSWORD_FIELD",
           "LOGIN_BUTTON",
+          "FAILED_AUTHENTICATION_MESSAGE_ELEMENT",
           "BACK_BUTTON",
           "HOME_BUTTON",
-          "FAILED_AUTHENTICATION_MESSAGE"
+          "PERSON_PROFILE_BUTTON",
+          "NOTIFICATION_BUTTON"
         ],
         "keywordNames": [
           "Enter Username",
           "Enter Password",
           "Click Login Button",
-          "Click Person Profile Button",
-          "Click Back Button",
-          "Click Home Button",
-          "Verify Login Page Controls Visible And Enabled",
+          "Perform Login",
+          "Verify Login Page Loaded",
+          "Verify Username Field Visible And Enabled",
+          "Verify Password Field Visible And Enabled",
+          "Verify Login Button Visible And Enabled",
           "Verify Failed Authentication Message Displayed",
           "Verify User Remains Unauthenticated On Login Failure",
-          "Verify Login Redirected To Authenticated Home Page",
           "Verify Password Field Is Masked"
         ]
       },
@@ -290,26 +278,27 @@
           "INVALID_PASSWORD",
           "INVALID_PASSWORD_ALT",
           "MIXED_CASE_USERNAME",
-          "FAILED_AUTH_MESSAGE",
-          "PERSON_PROFILE_BUTTON",
+          "FAILED_AUTHENTICATION_MESSAGE",
           "USERNAME_FIELD",
           "PASSWORD_FIELD",
           "LOGIN_BUTTON",
+          "FAILED_AUTHENTICATION_MESSAGE_ELEMENT",
           "BACK_BUTTON",
           "HOME_BUTTON",
-          "FAILED_AUTHENTICATION_MESSAGE"
+          "PERSON_PROFILE_BUTTON",
+          "NOTIFICATION_BUTTON"
         ],
         "keywords": [
           "Enter Username",
           "Enter Password",
           "Click Login Button",
-          "Click Person Profile Button",
-          "Click Back Button",
-          "Click Home Button",
-          "Verify Login Page Controls Visible And Enabled",
+          "Perform Login",
+          "Verify Login Page Loaded",
+          "Verify Username Field Visible And Enabled",
+          "Verify Password Field Visible And Enabled",
+          "Verify Login Button Visible And Enabled",
           "Verify Failed Authentication Message Displayed",
           "Verify User Remains Unauthenticated On Login Failure",
-          "Verify Login Redirected To Authenticated Home Page",
           "Verify Password Field Is Masked"
         ]
       }
@@ -366,6 +355,12 @@
         "name": "home_button",
         "type": "button",
         "locator": "id=auto_home_btn"
+      },
+      {
+        "page": "login_page",
+        "name": "notification_button",
+        "type": "button",
+        "locator": "id=auto_notification_btn"
       }
     ]
   },
@@ -375,102 +370,116 @@
         "id": "LOGIN_TC_002",
         "title": "Verify Login page controls are visible and enabled after navigation from home_page",
         "type": "positive",
-        "expectedResult": "The Login page displays interactive Username, Password, Login, Back, and Home controls after navigation from home_page."
+        "expectedResult": "The Username field, Password field, Login button, Back button, and Home button are visible and enabled for interaction on the Login page."
       },
       {
         "id": "LOGIN_TC_003",
-        "title": "Verify password field masks characters during manual entry",
+        "title": "Verify password field masks entered characters during credential entry",
         "type": "positive",
-        "expectedResult": "The Password field masks entered characters during input and does not display the plaintext password value on screen."
+        "expectedResult": "The Password field displays masked characters instead of the plain text password value while input is being entered."
       },
       {
         "id": "LOGIN_TC_004",
-        "title": "Verify successful authentication using approved credentials returns the user to authenticated home_page",
+        "title": "Verify successful authentication using approved credentials returns user to authenticated home_page",
         "type": "positive",
-        "expectedResult": "The application authenticates the user, returns to home_page in authenticated state, and authenticated user identity display and authenticated-only functionality become visible."
+        "expectedResult": "The application authenticates the user successfully, returns to home_page in authenticated state, and authenticated-only UI and authenticated user identity indicators become visible."
       },
       {
         "id": "LOGIN_TC_005",
         "title": "Verify invalid username with valid password displays only the generic Failed message",
         "type": "negative",
-        "expectedResult": "Authentication fails, the generic Failed message is displayed, no dedicated required-field validation message is shown, and the user remains unauthenticated on the Login page or in unauthenticated state."
+        "expectedResult": "Authentication fails, only the generic Failed message is displayed, no dedicated required-field validation message appears, and the application remains unauthenticated on the Login page or in unauthenticated state."
       },
       {
         "id": "LOGIN_TC_006",
         "title": "Verify valid username with invalid password displays only the generic Failed message",
         "type": "negative",
-        "expectedResult": "Authentication fails, the generic Failed message is displayed, the application does not transition to authenticated state, and no separate required-field validation message appears."
+        "expectedResult": "Authentication fails, only the generic Failed message is displayed, no authenticated-only UI is shown, and the user remains unauthenticated."
       },
       {
         "id": "LOGIN_TC_007",
-        "title": "Verify invalid username and invalid password combination does not authenticate the user",
+        "title": "Verify invalid username and invalid password combination cannot authenticate",
         "type": "negative",
-        "expectedResult": "Authentication fails, only the generic Failed message is visible, and the user remains unauthenticated without returning to authenticated home_page."
+        "expectedResult": "Authentication is rejected, the generic Failed message is displayed, the user is not redirected to authenticated home_page state, and no dedicated required-field validation message is shown."
       },
       {
         "id": "LOGIN_TC_008",
-        "title": "Verify blank Username and blank Password submission displays only the generic Failed message",
+        "title": "Verify blank username and blank password submission displays generic Failed message only",
         "type": "negative",
-        "expectedResult": "Authentication fails, the generic Failed message is displayed, no dedicated required-field validation message appears, and the application remains in unauthenticated state."
+        "expectedResult": "Authentication fails, only the generic Failed message is displayed, no separate required-field validation message is displayed, and the application remains unauthenticated."
       },
       {
         "id": "LOGIN_TC_009",
-        "title": "Verify blank Username with populated Password displays only the generic Failed message",
+        "title": "Verify blank username with populated password displays generic Failed message only",
         "type": "negative",
-        "expectedResult": "Authentication fails, only the generic Failed message is displayed, and the application does not transition into authenticated state."
+        "expectedResult": "Authentication fails, only the generic Failed message is displayed, no dedicated required-field validation is shown, and the user remains unauthenticated."
       },
       {
         "id": "LOGIN_TC_010",
-        "title": "Verify populated Username with blank Password displays only the generic Failed message",
+        "title": "Verify populated username with blank password displays generic Failed message only",
         "type": "negative",
-        "expectedResult": "Authentication fails, only the generic Failed message is displayed, and the user remains unauthenticated without dedicated required-field validation messaging."
+        "expectedResult": "Authentication fails, only the generic Failed message is displayed, no dedicated required-field validation is shown, and the application remains unauthenticated."
       },
       {
         "id": "LOGIN_TC_011",
-        "title": "Verify leading whitespace in Username credential submission follows implemented application behavior",
+        "title": "Verify username with leading whitespace follows implemented authentication behavior observationally",
         "type": "edge",
-        "expectedResult": "The application behavior for leading whitespace in credentials is observationally validated, and if authentication fails the generic Failed message is the only authentication error shown while the application remains unauthenticated."
+        "expectedResult": "The application processes the whitespace-modified credentials according to implemented behavior, and the resulting authentication state, navigation behavior, and any Failed message visibility are observable without assuming automatic trimming or rejection."
       },
       {
         "id": "LOGIN_TC_012",
-        "title": "Verify trailing whitespace in Password credential submission follows implemented application behavior",
+        "title": "Verify username with trailing whitespace follows implemented authentication behavior observationally",
         "type": "edge",
-        "expectedResult": "The application behavior for trailing whitespace in credentials is observationally validated, and any authentication failure displays only the generic Failed message while maintaining unauthenticated state."
+        "expectedResult": "The application processes the trailing-whitespace username according to implemented behavior, and the resulting authenticated or failed state is observable without assuming normalization."
       },
       {
         "id": "LOGIN_TC_013",
-        "title": "Verify whitespace-only credential submission does not authenticate the user",
-        "type": "negative",
-        "expectedResult": "The user is not authenticated, the application remains in unauthenticated state, and only the generic Failed message is displayed if validation feedback appears."
+        "title": "Verify password with leading whitespace follows implemented authentication behavior observationally",
+        "type": "edge",
+        "expectedResult": "The application processes the whitespace-modified password according to implemented behavior, and the resulting authentication outcome and navigation state are observable without assuming trimming behavior."
       },
       {
         "id": "LOGIN_TC_014",
-        "title": "Verify Back button returns the user from Login page to unauthenticated home_page",
-        "type": "positive",
-        "expectedResult": "The application returns the user to home_page in unauthenticated guest state without logging in the user."
+        "title": "Verify password with trailing whitespace follows implemented authentication behavior observationally",
+        "type": "edge",
+        "expectedResult": "The application processes the trailing-whitespace password according to implemented behavior, and the resulting authentication state and Failed message behavior are observable without assuming rejection or normalization."
       },
       {
         "id": "LOGIN_TC_015",
-        "title": "Verify Home button returns the user from Login page to unauthenticated home_page",
+        "title": "Verify whitespace-only username and password submission remains unauthenticated",
+        "type": "negative",
+        "expectedResult": "Authentication fails, the generic Failed message is displayed, no dedicated required-field validation message appears, and the user remains unauthenticated."
+      },
+      {
+        "id": "LOGIN_TC_016",
+        "title": "Verify Login page Back button returns guest user to home_page without authentication",
         "type": "positive",
-        "expectedResult": "The application returns the user to home_page in unauthenticated guest state and no authenticated user functionality is displayed."
+        "expectedResult": "The application returns the user to home_page in unauthenticated guest state without exposing authenticated-only UI."
+      },
+      {
+        "id": "LOGIN_TC_017",
+        "title": "Verify Login page Home button returns guest user to home_page without authentication",
+        "type": "positive",
+        "expectedResult": "The application returns the user to home_page in unauthenticated guest state and authenticated-only functionality remains unavailable."
       }
     ],
     "validations": [
-      "The Login page displays interactive Username, Password, Login, Back, and Home controls after navigation from home_page.",
-      "The Password field masks entered characters during input and does not display the plaintext password value on screen.",
-      "The application authenticates the user, returns to home_page in authenticated state, and authenticated user identity display and authenticated-only functionality become visible.",
-      "Authentication fails, the generic Failed message is displayed, no dedicated required-field validation message is shown, and the user remains unauthenticated on the Login page or in unauthenticated state.",
-      "Authentication fails, the generic Failed message is displayed, the application does not transition to authenticated state, and no separate required-field validation message appears.",
-      "Authentication fails, only the generic Failed message is visible, and the user remains unauthenticated without returning to authenticated home_page.",
-      "Authentication fails, the generic Failed message is displayed, no dedicated required-field validation message appears, and the application remains in unauthenticated state.",
-      "Authentication fails, only the generic Failed message is displayed, and the application does not transition into authenticated state.",
-      "Authentication fails, only the generic Failed message is displayed, and the user remains unauthenticated without dedicated required-field validation messaging.",
-      "The application behavior for leading whitespace in credentials is observationally validated, and if authentication fails the generic Failed message is the only authentication error shown while the application remains unauthenticated.",
-      "The application behavior for trailing whitespace in credentials is observationally validated, and any authentication failure displays only the generic Failed message while maintaining unauthenticated state.",
-      "The user is not authenticated, the application remains in unauthenticated state, and only the generic Failed message is displayed if validation feedback appears.",
-      "The application returns the user to home_page in unauthenticated guest state without logging in the user.",
-      "The application returns the user to home_page in unauthenticated guest state and no authenticated user functionality is displayed."
+      "The Username field, Password field, Login button, Back button, and Home button are visible and enabled for interaction on the Login page.",
+      "The Password field displays masked characters instead of the plain text password value while input is being entered.",
+      "The application authenticates the user successfully, returns to home_page in authenticated state, and authenticated-only UI and authenticated user identity indicators become visible.",
+      "Authentication fails, only the generic Failed message is displayed, no dedicated required-field validation message appears, and the application remains unauthenticated on the Login page or in unauthenticated state.",
+      "Authentication fails, only the generic Failed message is displayed, no authenticated-only UI is shown, and the user remains unauthenticated.",
+      "Authentication is rejected, the generic Failed message is displayed, the user is not redirected to authenticated home_page state, and no dedicated required-field validation message is shown.",
+      "Authentication fails, only the generic Failed message is displayed, no separate required-field validation message is displayed, and the application remains unauthenticated.",
+      "Authentication fails, only the generic Failed message is displayed, no dedicated required-field validation is shown, and the user remains unauthenticated.",
+      "Authentication fails, only the generic Failed message is displayed, no dedicated required-field validation is shown, and the application remains unauthenticated.",
+      "The application processes the whitespace-modified credentials according to implemented behavior, and the resulting authentication state, navigation behavior, and any Failed message visibility are observable without assuming automatic trimming or rejection.",
+      "The application processes the trailing-whitespace username according to implemented behavior, and the resulting authenticated or failed state is observable without assuming normalization.",
+      "The application processes the whitespace-modified password according to implemented behavior, and the resulting authentication outcome and navigation state are observable without assuming trimming behavior.",
+      "The application processes the trailing-whitespace password according to implemented behavior, and the resulting authentication state and Failed message behavior are observable without assuming rejection or normalization.",
+      "Authentication fails, the generic Failed message is displayed, no dedicated required-field validation message appears, and the user remains unauthenticated.",
+      "The application returns the user to home_page in unauthenticated guest state without exposing authenticated-only UI.",
+      "The application returns the user to home_page in unauthenticated guest state and authenticated-only functionality remains unavailable."
     ],
     "transitions": []
   },
@@ -496,25 +505,31 @@
       },
       {
         "page": "login_page",
-        "name": "Click Person Profile Button",
+        "name": "Perform Login",
         "targetElement": "",
         "action": ""
       },
       {
         "page": "login_page",
-        "name": "Click Back Button",
+        "name": "Verify Login Page Loaded",
         "targetElement": "",
         "action": ""
       },
       {
         "page": "login_page",
-        "name": "Click Home Button",
+        "name": "Verify Username Field Visible And Enabled",
         "targetElement": "",
         "action": ""
       },
       {
         "page": "login_page",
-        "name": "Verify Login Page Controls Visible And Enabled",
+        "name": "Verify Password Field Visible And Enabled",
+        "targetElement": "",
+        "action": ""
+      },
+      {
+        "page": "login_page",
+        "name": "Verify Login Button Visible And Enabled",
         "targetElement": "",
         "action": ""
       },
@@ -532,12 +547,6 @@
       },
       {
         "page": "login_page",
-        "name": "Verify Login Redirected To Authenticated Home Page",
-        "targetElement": "",
-        "action": ""
-      },
-      {
-        "page": "login_page",
         "name": "Verify Password Field Is Masked",
         "targetElement": "",
         "action": ""
@@ -545,19 +554,21 @@
     ],
     "approvedTests": [
       "AUT-WT-LOGIN01: Verify Login page controls are visible and enabled after navigation from home_page",
-      "AUT-WT-LOGIN02: Verify password field masks characters during manual entry",
-      "AUT-WT-LOGIN03: Verify successful authentication using approved credentials returns the user to authenticated home_page",
+      "AUT-WT-LOGIN02: Verify password field masks entered characters during credential entry",
+      "AUT-WT-LOGIN03: Verify successful authentication using approved credentials returns user to authenticated home_page",
       "AUT-WT-LOGIN04: Verify invalid username with valid password displays only the generic Failed message",
       "AUT-WT-LOGIN05: Verify valid username with invalid password displays only the generic Failed message",
-      "AUT-WT-LOGIN06: Verify invalid username and invalid password combination does not authenticate the user",
-      "AUT-WT-LOGIN07: Verify blank Username and blank Password submission displays only the generic Failed message",
-      "AUT-WT-LOGIN08: Verify blank Username with populated Password displays only the generic Failed message",
-      "AUT-WT-LOGIN09: Verify populated Username with blank Password displays only the generic Failed message",
-      "AUT-WT-LOGIN10: Verify leading whitespace in Username credential submission follows implemented application behavior",
-      "AUT-WT-LOGIN11: Verify trailing whitespace in Password credential submission follows implemented application behavior",
-      "AUT-WT-LOGIN12: Verify whitespace-only credential submission does not authenticate the user",
-      "AUT-WT-LOGIN13: Verify Back button returns the user from Login page to unauthenticated home_page",
-      "AUT-WT-LOGIN14: Verify Home button returns the user from Login page to unauthenticated home_page"
+      "AUT-WT-LOGIN06: Verify invalid username and invalid password combination cannot authenticate",
+      "AUT-WT-LOGIN07: Verify blank username and blank password submission displays generic Failed message only",
+      "AUT-WT-LOGIN08: Verify blank username with populated password displays generic Failed message only",
+      "AUT-WT-LOGIN09: Verify populated username with blank password displays generic Failed message only",
+      "AUT-WT-LOGIN10: Verify username with leading whitespace follows implemented authentication behavior observationally",
+      "AUT-WT-LOGIN11: Verify username with trailing whitespace follows implemented authentication behavior observationally",
+      "AUT-WT-LOGIN12: Verify password with leading whitespace follows implemented authentication behavior observationally",
+      "AUT-WT-LOGIN13: Verify password with trailing whitespace follows implemented authentication behavior observationally",
+      "AUT-WT-LOGIN14: Verify whitespace-only username and password submission remains unauthenticated",
+      "AUT-WT-LOGIN15: Verify Login page Back button returns guest user to home_page without authentication",
+      "AUT-WT-LOGIN16: Verify Login page Home button returns guest user to home_page without authentication"
     ],
     "wrapperExpectations": [
       "Reuse approved shared/common wrapper keywords before low-level SeleniumLibrary actions.",
@@ -579,21 +590,19 @@
   },
   "reusableFlows": [],
   "unresolvedGaps": [
-    "The Login page Username field required for authentication workflows is missing from the approved element set.",
-    "The Login page Password field required for authentication and password masking validation is missing from the approved element set.",
-    "The Login button used to submit authentication is missing from the approved element set.",
-    "The workflow explicitly requires validation of the generic 'Failed' authentication message, but no validation/message element exists in the approved model.",
-    "Customer signup button belongs to the upstream home_page workflow and is unrelated to the login_page workflow scope.",
-    "Clean survey button is unrelated to the login workflow and should not be owned by login_page.",
-    "Site survey button is unrelated to the login workflow and should not be modeled as a login_page element.",
-    "The Home button already exists as a shared upstream navigation control and is duplicated by a generic anchor element.",
-    "Locator xpath=//a is dangerously generic and likely to match multiple links across the application.",
-    "Element naming exposes raw DOM ids instead of business-readable semantics.",
-    "Element naming is implementation-centric rather than workflow-centric.",
-    "Element naming exposes technical DOM identifiers and the control is not relevant to login workflow validation.",
-    "Element naming exposes raw implementation details instead of reusable navigation semantics.",
-    "Background container is decorative/layout-only and provides no meaningful automation value.",
-    "The workflow requires authenticated-state validation after successful login, but no authenticated user identity display or authenticated-only feature area elements are modeled."
+    "The Login page model is missing the core Username field required for authentication workflows.",
+    "The Login page model is missing the Password field required for authentication and password masking validation.",
+    "The Login page model is missing the Login button required for credential submission and authentication validation.",
+    "The workflow requires explicit validation of the generic 'Failed' authentication message, but no failed authentication message element exists in the page model.",
+    "Customer signup button belongs to upstream home_page navigation and is not part of the Login page workflow ownership.",
+    "Clean survey button belongs to upstream home_page navigation and is not part of the Login page workflow ownership.",
+    "Site survey button belongs to upstream home_page navigation and is not part of the Login page workflow ownership.",
+    "The element name is implementation-centric and not business-readable.",
+    "This generic anchor element duplicates the Home navigation control already represented by the home button element.",
+    "Locator xpath=//a is dangerously generic and likely to match multiple links, creating brittle automation behavior.",
+    "Background content container is decorative/layout-only and provides no meaningful automation value.",
+    "The underlying shadow-native control is an anchor/link but is classified only as a button.",
+    "The workflow explicitly requires authenticated-state validation after successful login, but no authenticated user identity display or authenticated-only feature indicator is modeled."
   ],
   "provenance": {
     "workflowInput": "workflow_inputs/login.json",
