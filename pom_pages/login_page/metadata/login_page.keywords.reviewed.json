@@ -40,7 +40,7 @@
     },
     {
       "keywordId": "LOGIN_KW_004",
-      "keywordName": "Verify Login Page Loaded",
+      "keywordName": "Verify Login Page Controls Visible And Enabled",
       "targetElement": "login_button",
       "action": "verify",
       "arguments": [],
@@ -55,41 +55,81 @@
     },
     {
       "keywordId": "LOGIN_KW_005",
-      "keywordName": "Verify Authentication Failed Message Displayed",
-      "targetElement": "authentication_failed_message",
-      "action": "verify",
-      "arguments": [],
-      "implementation": [
-        "Wait Until Element Is Visible    ${AUTHENTICATION_FAILED_MESSAGE_LOCATOR}",
-        "Element Text Should Be    ${AUTHENTICATION_FAILED_MESSAGE_LOCATOR}    ${AUTHENTICATION_FAILED_MESSAGE}"
-      ],
-      "approved": true
-    },
-    {
-      "keywordId": "LOGIN_KW_006",
       "keywordName": "Verify Password Field Is Masked",
       "targetElement": "password_field",
       "action": "verify",
       "arguments": [],
       "implementation": [
-        "Wait Until Element Is Visible    ${PASSWORD_FIELD}",
+        "Wait For Element To Be Ready    ${PASSWORD_FIELD}",
         "Element Attribute Value Should Be    ${PASSWORD_FIELD}    type    password"
       ],
       "approved": true
     },
     {
-      "keywordId": "LOGIN_KW_007",
-      "keywordName": "Login With Credentials",
-      "targetElement": "login_button",
-      "action": "generic",
-      "arguments": [
-        "username",
-        "password"
-      ],
+      "keywordId": "LOGIN_KW_006",
+      "keywordName": "Verify Failed Authentication Message Displayed",
+      "targetElement": "failed_authentication_message",
+      "action": "verify",
+      "arguments": [],
       "implementation": [
-        "Enter Username    ${username}",
-        "Enter Password    ${password}",
-        "Click Login Button"
+        "Wait Until Element Is Visible    ${FAILED_AUTH_MESSAGE_LOCATOR}",
+        "Element Text Should Be    ${FAILED_AUTH_MESSAGE_LOCATOR}    ${FAILED_AUTH_MESSAGE}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "LOGIN_KW_007",
+      "keywordName": "Verify User Remains Unauthenticated On Login Failure",
+      "targetElement": "failed_authentication_message",
+      "action": "verify",
+      "arguments": [],
+      "implementation": [
+        "Wait Until Element Is Visible    ${FAILED_AUTH_MESSAGE_LOCATOR}",
+        "Location Should Contain    ${EXPECTED_LOGIN_URL_FRAGMENT}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "LOGIN_KW_008",
+      "keywordName": "Verify Login Redirected To Authenticated Home Page",
+      "targetElement": "login_button",
+      "action": "verify",
+      "arguments": [],
+      "implementation": [
+        "Wait Until Location Contains    ${EXPECTED_HOME_URL}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "LOGIN_KW_009",
+      "keywordName": "Click Auto Person Btn",
+      "targetElement": "person_profile_button",
+      "action": "click",
+      "arguments": [],
+      "implementation": [
+        "Click When Ready    ${PERSON_PROFILE_BUTTON}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "LOGIN_KW_010",
+      "keywordName": "Click Auto Back Btn",
+      "targetElement": "back_button",
+      "action": "click",
+      "arguments": [],
+      "implementation": [
+        "Click When Ready    ${BACK_BUTTON}"
+      ],
+      "approved": true
+    },
+    {
+      "keywordId": "LOGIN_KW_011",
+      "keywordName": "Click Auto Home Btn",
+      "targetElement": "home_button",
+      "action": "click",
+      "arguments": [],
+      "implementation": [
+        "Click When Ready    ${HOME_BUTTON}"
       ],
       "approved": true
     }
