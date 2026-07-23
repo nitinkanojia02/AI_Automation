@@ -4224,7 +4224,11 @@ def generate_automation_for_workflow(workflow_name: str) -> str:
 
 @app.get("/")
 def home(request: Request):
-    workflows = sorted([p.stem for p in WORKFLOW_DIR.glob("*.json") if not p.name.endswith(".status.json")])
+    workflows = sorted([
+        p.stem
+        for p in WORKFLOW_DIR.glob("*.json")
+        if not p.name.endswith(".status.json") and not p.name.endswith(".contract.json")
+    ])
 
     workflow_rows = []
     for workflow_name in workflows:
