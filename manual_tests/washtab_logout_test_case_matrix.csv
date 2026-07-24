@@ -1,0 +1,30 @@
+TC ID,Module,Feature,Title,Preconditions,Test Steps,Expected Result,Priority,Type,Status
+LOGOUT-001,Washtab,Logout,"Verify clicking User button opens logout dialog","User is logged into the Washtab application; User is on the Home page","1. Launch the Washtab application
+2. Log in with valid credentials
+3. Ensure Home page is displayed
+4. Click the User button","A logout confirmation dialog is displayed; Dialog appears on top of the Home page",High,Manual,Not Executed
+LOGOUT-002,Washtab,Logout,"Verify logout dialog shows correct heading","User is logged in; User is on Home page; Logout dialog is opened","1. Click the User button on Home page
+2. Observe the dialog heading","Dialog heading should be displayed as: Confirm Log Out",High,Manual,Not Executed
+LOGOUT-003,Washtab,Logout,"Verify logout dialog shows message with logged-in username","User is logged in with a known username; User is on Home page","1. Note the logged-in username
+2. Click the User button
+3. Observe the message shown in the logout dialog","Dialog message should display: Log out <Username>; <Username> should match the currently logged-in user",High,Manual,Not Executed
+LOGOUT-004,Washtab,Logout,"Verify logout dialog contains Yes and No buttons","User is logged in; User is on Home page; Logout dialog is opened","1. Click the User button
+2. Observe the buttons in the dialog","Dialog displays Yes button; Dialog displays No button",High,Manual,Not Executed
+LOGOUT-005,Washtab,Logout,"Verify clicking No closes the logout dialog","User is logged in; User is on Home page; Logout dialog is opened","1. Click the User button
+2. In the logout dialog, click No","Logout dialog closes; User remains logged in; Home page is displayed",High,Manual,Not Executed
+LOGOUT-006,Washtab,Logout,"Verify clicking Yes logs out user and redirects to Login page","User is logged in; User is on Home page; Logout dialog is opened","1. Click the User button
+2. In the logout dialog, click Yes","User is logged out successfully; Application navigates to the Login page; Home page is no longer accessible without logging in again",Critical,Manual,Not Executed
+LOGOUT-007,Washtab,Logout,"Verify logged-out user cannot continue using Home page without login","User has logged out using Yes button; Login page is displayed","1. After logout, try navigating back using browser/app back action if applicable
+2. Attempt to access Home page","User should remain logged out; Application should show Login page or ask user to log in again; Home page should not be accessible without authentication",High,Manual,Not Executed
+LOGOUT-008,Washtab,Logout,"Verify dialog behavior when No is clicked versus Yes is clicked","User is logged in; User is on Home page","1. Click the User button
+2. Verify dialog is displayed
+3. Click No
+4. Reopen the dialog by clicking the User button again
+5. Click Yes","On clicking No, dialog closes and Home page remains displayed; On clicking Yes, user is logged out and redirected to Login page",Medium,Manual,Not Executed
+LOGOUT-009,Washtab,Logout,"Verify logout dialog is not shown automatically","User is logged in and on the Home page","1. Log in to the application
+2. Stay on Home page without clicking User button","Logout dialog should not appear automatically",Low,Manual,Not Executed
+LOGOUT-010,Washtab,Logout,"Verify correct username is shown for different users","Multiple valid users are available for login","1. Log in as User A
+2. Open logout dialog and verify username
+3. Log out
+4. Log in as User B
+5. Open logout dialog and verify username","Each time, the dialog should show the currently logged-in username correctly",Medium,Manual,Not Executed
